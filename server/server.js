@@ -7,12 +7,14 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Vite 개발 서버
+    origin: ["http://localhost:5173", "http://3.34.188.85"], // 실제 도메인 추가
     methods: ["GET", "POST"]
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://3.34.188.85"]
+}));
 app.use(express.json());
 
 // 연결된 사용자들을 저장
