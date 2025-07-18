@@ -22,7 +22,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [isTyping, setIsTyping] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<number>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // 환경에 따라 서버 URL 설정
