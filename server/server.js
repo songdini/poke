@@ -20,6 +20,9 @@ app.use(express.json());
 // 연결된 사용자들을 저장
 const connectedUsers = new Map();
 
+// 투표 상태 저장: { room: { targetUsername: { votes: { [username]: true/false }, total: number } } }
+const kickVotes = {};
+
 io.on('connection', (socket) => {
   console.log('사용자가 연결되었습니다:', socket.id);
 
@@ -74,6 +77,56 @@ io.on('connection', (socket) => {
         username: user.username,
         isTyping: data.isTyping
       });
+    }
+  });
+
+  // 강퇴 투표 요청
+  socket.on('kickVoteRequest', ({ targetUsername, room }) => {
+    if (!kickVotes[room]) kickVotes[room] = {};
+    if (!kickVotes[room][targetUsername]) {
+      kickVotes[room][targetUsername] = { votes: {}, total: 0 };
+    }
+    // 투표 초기화
+    kickVotes[room][targetUsername] = { votes: {}, total: 0 };
+    // 방 전체에 투표 요청
+    io.to(room).emit('kickVoteStart', { targetUsername });
+  });
+
+  // 강퇴 투표 응답
+  socket.on('kickVote', ({ targetUsername, room, agree, username }) => {
+    if (!kickVotes[room] || !kickVotes[room][targetUsername]) return;
+    kickVotes[room][targetUsername].votes[username] = agree;
+    kickVotes[room][targetUsername].total++;
+    // 방의 전체 인원 수
+    const roomUsers = Array.from(connectedUsers.values()).filter(u => u.room === room);
+    // 투표 결과 집계
+    const agreeCount = Object.values(kickVotes[room][targetUsername].votes).filter(v => v).length;
+    const totalCount = roomUsers.length;
+    // 실시간 투표 현황 브로드캐스트
+    io.to(room).emit('kickVoteUpdate', {
+      targetUsername,
+      agreeCount,
+      totalCount,
+      voted: Object.keys(kickVotes[room][targetUsername].votes)
+    });
+    // 모든 인원이 투표를 마치면 결과 처리
+    if (Object.keys(kickVotes[room][targetUsername].votes).length >= totalCount - 1) { // 본인 제외
+      if (agreeCount > (totalCount - 1) / 2) {
+        // 과반수 찬성 → 강퇴
+        for (const [id, user] of connectedUsers.entries()) {
+          if (user.username === targetUsername && user.room === room) {
+            io.to(id).emit('kicked');
+            io.to(room).emit('kickVoteResult', { targetUsername, result: 'kicked' });
+            io.sockets.sockets.get(id)?.disconnect();
+            break;
+          }
+        }
+      } else {
+        // 강퇴 실패
+        io.to(room).emit('kickVoteResult', { targetUsername, result: 'not_kicked' });
+      }
+      // 투표 상태 초기화
+      delete kickVotes[room][targetUsername];
     }
   });
 

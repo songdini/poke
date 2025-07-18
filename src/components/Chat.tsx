@@ -18,6 +18,15 @@ interface ChatProps {
   room: string;
 }
 
+interface KickVoteState {
+  voting: boolean;
+  targetUsername: string;
+  agreeCount: number;
+  totalCount: number;
+  voted: string[];
+  result?: 'kicked' | 'not_kicked';
+}
+
 const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [socket, setSocket] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,6 +39,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [kicked, setKicked] = useState(false);
   const [showDrawing, setShowDrawing] = useState(false);
+  const [kickVote, setKickVote] = useState<KickVoteState | null>(null);
 
   useEffect(() => {
     // 환경에 따라 서버 URL 설정
@@ -85,6 +95,75 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     };
   }, [username, room]);
 
+  // 강퇴 투표 관련 소켓 이벤트 처리
+  useEffect(() => {
+    if (!socket) return;
+    // 투표 시작
+    const handleKickVoteStart = ({ targetUsername }: { targetUsername: string }) => {
+      setKickVote({ voting: true, targetUsername, agreeCount: 0, totalCount: 0, voted: [] });
+    };
+    // 투표 현황
+    const handleKickVoteUpdate = (data: any) => {
+      setKickVote((prev) => prev ? { ...prev, ...data, voting: true } : { ...data, voting: true });
+    };
+    // 투표 결과
+    const handleKickVoteResult = ({ targetUsername, result }: any) => {
+      setKickVote((prev) => prev && prev.targetUsername === targetUsername ? { ...prev, result, voting: false } : prev);
+      setTimeout(() => setKickVote(null), 2000);
+    };
+    socket.on('kickVoteStart', handleKickVoteStart);
+    socket.on('kickVoteUpdate', handleKickVoteUpdate);
+    socket.on('kickVoteResult', handleKickVoteResult);
+    return () => {
+      socket.off('kickVoteStart', handleKickVoteStart);
+      socket.off('kickVoteUpdate', handleKickVoteUpdate);
+      socket.off('kickVoteResult', handleKickVoteResult);
+    };
+  }, [socket]);
+
+  // 강퇴 요청
+  const kickUser = (targetUsername: string) => {
+    if (socket) {
+      socket.emit('kick', { targetUsername, room });
+    }
+  };
+
+  // 강퇴 알림 수신
+  useEffect(() => {
+    if (!socket) return;
+    const handleKicked = () => {
+      setKicked(true);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    };
+    socket.on('kicked', handleKicked);
+    return () => {
+      socket.off('kicked', handleKicked);
+    };
+  }, [socket]);
+
+  // 그림 메시지 전송
+  const sendDrawing = (dataUrl: string) => {
+    if (socket) {
+      socket.emit('sendMessage', { message: dataUrl, room, isImage: true });
+    }
+  };
+
+  // 투표 요청
+  const requestKickVote = (targetUsername: string) => {
+    if (socket) {
+      socket.emit('kickVoteRequest', { targetUsername, room });
+    }
+  };
+
+  // 투표 응답
+  const sendKickVote = (agree: boolean) => {
+    if (socket && kickVote) {
+      socket.emit('kickVote', { targetUsername: kickVote.targetUsername, room, agree, username });
+    }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -129,35 +208,6 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     });
   };
 
-  // 강퇴 요청
-  const kickUser = (targetUsername: string) => {
-    if (socket) {
-      socket.emit('kick', { targetUsername, room });
-    }
-  };
-
-  // 강퇴 알림 수신
-  useEffect(() => {
-    if (!socket) return;
-    const handleKicked = () => {
-      setKicked(true);
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    };
-    socket.on('kicked', handleKicked);
-    return () => {
-      socket.off('kicked', handleKicked);
-    };
-  }, [socket]);
-
-  // 그림 메시지 전송
-  const sendDrawing = (dataUrl: string) => {
-    if (socket) {
-      socket.emit('sendMessage', { message: dataUrl, room, isImage: true });
-    }
-  };
-
   if (kicked) {
     return (
       <div className="chat-container">
@@ -171,8 +221,39 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
 
   return (
     <div className="chat-container">
+      {/* 투표 UI */}
+      {kickVote && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
+            <h3 style={{ color: '#39ff14', marginBottom: 16 }}>강퇴 투표</h3>
+            <div style={{ marginBottom: 16 }}>
+              <b style={{ color: '#f87171' }}>{kickVote.targetUsername}</b> 님을 강퇴하시겠습니까?
+            </div>
+            {kickVote.result ? (
+              <div style={{ color: kickVote.result === 'kicked' ? '#39ff14' : '#f87171', fontWeight: 600, fontSize: 18 }}>
+                {kickVote.result === 'kicked' ? '강퇴 성공!' : '강퇴 실패'}
+              </div>
+            ) : (
+              <>
+                {!kickVote.voted.includes(username) && (
+                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 12 }}>
+                    <button onClick={() => sendKickVote(true)} style={{ background: '#39ff14', color: '#18181b', padding: '8px 24px', border: 'none', borderRadius: 6, fontWeight: 600 }}>찬성</button>
+                    <button onClick={() => sendKickVote(false)} style={{ background: '#f87171', color: '#fff', padding: '8px 24px', border: 'none', borderRadius: 6, fontWeight: 600 }}>반대</button>
+                  </div>
+                )}
+                <div style={{ color: '#a3e635', fontSize: 15 }}>
+                  투표 현황: {kickVote.agreeCount} / {kickVote.totalCount - 1} (본인 제외)
+                </div>
+                <div style={{ color: '#64748b', fontSize: 13, marginTop: 8 }}>
+                  {kickVote.voted.length > 0 && `투표함: ${kickVote.voted.join(', ')}`}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <div className="chat-header">
-        <h2>💬 실시간 채팅</h2>
+        <h2>💬 Add File... (7/21)</h2>
         <div className="connection-status">
           <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
           {isConnected ? '연결됨' : '연결 중...'}
@@ -214,14 +295,24 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
                   {user}
                 </span>
                 {user !== username && (
-                  <button
-                    className="kick-btn"
-                    title="강퇴"
-                    onClick={() => kickUser(user)}
-                    style={{ marginLeft: 8, background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 18 }}
-                  >
-                    🦶
-                  </button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      className="kick-btn"
+                      title="강퇴"
+                      onClick={() => kickUser(user)}
+                      style={{ marginLeft: 4, background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 18 }}
+                    >
+                      🦶
+                    </button>
+                    <button
+                      className="kick-btn"
+                      title="투표로 강퇴"
+                      onClick={() => requestKickVote(user)}
+                      style={{ marginLeft: 4, background: 'none', border: 'none', color: '#a3e635', cursor: 'pointer', fontSize: 18 }}
+                    >
+                      🗳️
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

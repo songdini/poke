@@ -72,9 +72,23 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        // 흰 배경으로 채우기
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
     }
   };
+
+  // 캔버스가 처음 마운트될 때 흰 배경으로 초기화
+  React.useEffect(() => {
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
+  }, []);
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -129,7 +143,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
           ref={canvasRef}
           width={320}
           height={240}
-          style={{ border: '1px solid #333', borderRadius: 8, background: '#18181b', touchAction: 'none', display: 'block', margin: '0 auto' }}
+          style={{ border: '1px solid #333', borderRadius: 8, background: '#fff', touchAction: 'none', display: 'block', margin: '0 auto' }}
           onMouseDown={startDrawing}
           onMouseUp={endDrawing}
           onMouseOut={endDrawing}
