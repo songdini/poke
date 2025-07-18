@@ -1,27 +1,35 @@
+body, .app, .chat-container {
+  background: #18181b !important;
+  color: #d1fae7 !important;
+}
+
 .chat-container {
   max-width: 1200px;
   margin: 0 auto;
   height: 80vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: #23272f;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   overflow: hidden;
 }
 
 .chat-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #18181b;
+  color: #39ff14;
   padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  border-bottom: 1px solid #333;
 }
 
 .chat-header h2 {
   margin: 0;
   font-size: 1.5rem;
+  font-family: inherit;
 }
 
 .connection-status {
@@ -39,7 +47,7 @@
 }
 
 .status-dot.connected {
-  background: #4ade80;
+  background: #39ff14;
   animation: pulse 2s infinite;
 }
 
@@ -63,22 +71,26 @@
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background: #f8fafc;
+  background: #18181b;
   min-height: 0;
   max-height: 60vh; /* 모바일에서 너무 길어지지 않게 */
   word-break: break-all; /* 긴 단어도 줄바꿈 */
+  font-family: 'Fira Mono', 'Consolas', monospace;
 }
 
 /* 메시지 박스 개선 */
 .message {
   margin-bottom: 16px;
   padding: 12px 16px;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background: #23272f;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   max-width: 90vw; /* PC/모바일 모두에서 최대 너비 제한 */
   word-break: break-word;
   overflow-wrap: anywhere;
+  color: #d1fae7;
+  font-family: inherit;
+  border-left: 4px solid #39ff14;
 }
 
 /* PC에서만 메시지 최대 너비 제한 */
@@ -100,7 +112,7 @@
   .chat-sidebar {
     width: 100%;
     border-left: none;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid #333;
     margin-top: 10px;
   }
   .chat-messages {
@@ -119,8 +131,9 @@
 
 .message.own-message {
   margin-left: auto;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #18181b;
+  color: #39ff14;
+  border-left: 4px solid #fff;
 }
 
 .message-header {
@@ -129,24 +142,25 @@
   align-items: center;
   margin-bottom: 8px;
   font-size: 0.85rem;
+  color: #a3e635;
 }
 
 .username {
   font-weight: 600;
-  color: #374151;
+  color: #39ff14;
 }
 
 .own-message .username {
-  color: rgba(255, 255, 255, 0.9);
+  color: #fff;
 }
 
 .timestamp {
-  color: #9ca3af;
+  color: #64748b;
   font-size: 0.75rem;
 }
 
 .own-message .timestamp {
-  color: rgba(255, 255, 255, 0.7);
+  color: #a3e635;
 }
 
 .message-content {
@@ -156,22 +170,23 @@
 
 .typing-indicator {
   padding: 8px 16px;
-  color: #6b7280;
+  color: #a3e635;
   font-style: italic;
   font-size: 0.9rem;
 }
 
 .chat-sidebar {
   width: 250px;
-  background: #f1f5f9;
+  background: #23272f;
   padding: 20px;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid #333;
 }
 
 .chat-sidebar h3 {
   margin: 0 0 16px 0;
-  color: #374151;
+  color: #39ff14;
   font-size: 1.1rem;
+  font-family: inherit;
 }
 
 .users-list {
@@ -185,24 +200,33 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: white;
+  background: #18181b;
   border-radius: 8px;
   font-size: 0.9rem;
-  color: #374151;
+  color: #d1fae7;
+  font-family: inherit;
 }
 
 .user-dot {
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: #39ff14;
   border-radius: 50%;
   display: inline-block;
 }
 
+.kick-btn {
+  color: #f87171 !important;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
 .chat-input {
   padding: 20px;
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  background: #18181b;
+  border-top: 1px solid #333;
   display: flex;
   gap: 12px;
   align-items: flex-end;
@@ -211,52 +235,66 @@
 .chat-input textarea {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #333;
   border-radius: 8px;
   resize: none;
-  font-family: inherit;
-  font-size: 0.9rem;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.95rem;
   line-height: 1.5;
   min-height: 44px;
   max-height: 120px;
+  background: #23272f;
+  color: #d1fae7;
   transition: border-color 0.2s;
 }
 
 .chat-input textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #39ff14;
 }
 
 .chat-input textarea:disabled {
-  background: #f9fafb;
-  color: #9ca3af;
+  background: #23272f;
+  color: #64748b;
 }
 
-.chat-input button {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+.chat-input button, .emoji-btn, .draw-btn {
+  padding: 12px 16px;
+  background: #23272f;
+  color: #39ff14;
+  border: 1px solid #333;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  min-width: 80px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  transition: background 0.2s, color 0.2s, border 0.2s;
 }
 
-.chat-input button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.chat-input button:hover, .emoji-btn:hover, .draw-btn:hover {
+  background: #39ff14;
+  color: #18181b;
+  border-color: #39ff14;
 }
 
 .chat-input button:disabled {
-  background: #d1d5db;
+  background: #23272f;
+  color: #64748b;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  border-color: #333;
 }
 
-/* 스크롤바 스타일링 */
+/* 그림 메시지 스타일 */
+.message-content img {
+  background: #23272f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  max-width: 200px;
+  max-height: 150px;
+  margin-top: 4px;
+}
+
+/* 스크롤바 스타일 */
 .chat-messages::-webkit-scrollbar {
   width: 6px;
 }
@@ -266,7 +304,7 @@
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #333;
   border-radius: 3px;
 }
 
@@ -288,7 +326,7 @@
   .chat-sidebar {
     width: 100%;
     border-left: none;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid #333;
   }
   
   .message {

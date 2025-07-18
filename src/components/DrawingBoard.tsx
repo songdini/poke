@@ -5,10 +5,15 @@ interface DrawingBoardProps {
   onClose: () => void;
 }
 
+const COLORS = ['#222', '#39ff14', '#e11d48', '#2563eb', '#facc15', '#10b981', '#fff'];
+const SIZES = [2, 4, 8, 14];
+
 const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
+  const [color, setColor] = useState<string>('#222');
+  const [size, setSize] = useState<number>(4);
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     setDrawing(true);
@@ -27,8 +32,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
     if (!ctx) return;
     const pos = getPos(e);
     if (lastPos) {
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(lastPos.x, lastPos.y);
@@ -73,13 +78,58 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
-        <h3 style={{ margin: 0, marginBottom: 12 }}>🖌️ 그림 그리기</h3>
+      <div style={{ background: '#23272f', borderRadius: 12, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
+        <h3 style={{ margin: 0, marginBottom: 12, color: '#39ff14', fontFamily: 'Fira Mono, Consolas, monospace' }}>🖌️ 그림 그리기</h3>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 12, alignItems: 'center', justifyContent: 'center' }}>
+          {/* 색상 선택 */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: color === c ? '2px solid #39ff14' : '2px solid #333',
+                  background: c,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+                title={c}
+              />
+            ))}
+          </div>
+          {/* 굵기 선택 */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {SIZES.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSize(s)}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: size === s ? '2px solid #39ff14' : '2px solid #333',
+                  background: '#18181b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+                title={`굵기 ${s}`}
+              >
+                <div style={{ width: s, height: s, background: color, borderRadius: '50%' }} />
+              </button>
+            ))}
+          </div>
+        </div>
         <canvas
           ref={canvasRef}
           width={320}
           height={240}
-          style={{ border: '1px solid #ddd', borderRadius: 8, background: '#fff', touchAction: 'none' }}
+          style={{ border: '1px solid #333', borderRadius: 8, background: '#18181b', touchAction: 'none', display: 'block', margin: '0 auto' }}
           onMouseDown={startDrawing}
           onMouseUp={endDrawing}
           onMouseOut={endDrawing}
@@ -90,8 +140,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
           onTouchMove={draw}
         />
         <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button onClick={handleClear} style={{ padding: '8px 16px' }}>지우기</button>
-          <button onClick={handleSend} style={{ padding: '8px 16px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6 }}>전송</button>
+          <button onClick={handleClear} style={{ padding: '8px 16px', background: '#23272f', color: '#39ff14', border: '1px solid #333', borderRadius: 6 }}>지우기</button>
+          <button onClick={handleSend} style={{ padding: '8px 16px', background: '#39ff14', color: '#18181b', border: 'none', borderRadius: 6 }}>전송</button>
           <button onClick={onClose} style={{ padding: '8px 16px', background: '#f87171', color: 'white', border: 'none', borderRadius: 6 }}>닫기</button>
         </div>
       </div>
