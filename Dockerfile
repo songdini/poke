@@ -6,5 +6,5 @@ RUN npm install && npm run build
 
 # 2단계: nginx로 정적 파일 서빙
 FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80 
