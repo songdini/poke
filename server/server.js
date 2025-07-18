@@ -49,7 +49,7 @@ io.on('connection', (socket) => {
 
   // 메시지 전송
   socket.on('sendMessage', (messageData) => {
-    const { message, room } = messageData;
+    const { message, room, isImage } = messageData;
     const user = connectedUsers.get(socket.id);
     
     if (user) {
@@ -57,11 +57,12 @@ io.on('connection', (socket) => {
         username: user.username,
         message,
         timestamp: new Date().toISOString(),
-        id: socket.id
+        id: socket.id,
+        isImage: !!isImage
       };
       
       io.to(room).emit('newMessage', messageObj);
-      console.log(`${user.username}: ${message}`);
+      console.log(`${user.username}: ${isImage ? '[이미지]' : message}`);
     }
   });
 
@@ -73,6 +74,18 @@ io.on('connection', (socket) => {
         username: user.username,
         isTyping: data.isTyping
       });
+    }
+  });
+
+  // 강퇴 이벤트 처리
+  socket.on('kick', ({ targetUsername, room }) => {
+    // 해당 방의 소켓들 중에서 username이 targetUsername인 소켓을 찾음
+    for (const [id, user] of connectedUsers.entries()) {
+      if (user.username === targetUsername && user.room === room) {
+        io.to(id).emit('kicked');
+        io.sockets.sockets.get(id)?.disconnect();
+        break;
+      }
     }
   });
 
