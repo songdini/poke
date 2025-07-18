@@ -1,0 +1,27 @@
+version: "3"
+services:
+  # 백엔드 서버
+  chat-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - chat-network
+
+  # 프론트엔드
+  react-app:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - chat-server
+    networks:
+      - chat-network
+
+networks:
+  chat-network:
+    driver: bridge 

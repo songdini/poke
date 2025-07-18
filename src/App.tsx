@@ -1,35 +1,74 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import Chat from './components/Chat'
+
+interface UserData {
+  username: string;
+  room: string;
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [userData, setUserData] = useState<UserData | null>(null);
+
+  const handleJoinChat = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get('username') as string;
+    const room = formData.get('room') as string;
+    
+    if (username.trim() && room.trim()) {
+      setUserData({ username: username.trim(), room: room.trim() });
+    }
+  };
+
+  if (!userData) {
+    return (
+      <div className="app">
+        <div className="join-container">
+          <h1>💬 실시간 채팅</h1>
+          <p>채팅방에 입장하려면 정보를 입력해주세요.</p>
+          
+          <form onSubmit={handleJoinChat} className="join-form">
+            <div className="form-group">
+              <label htmlFor="username">사용자 이름</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="사용자 이름을 입력하세요"
+                required
+                minLength={2}
+                maxLength={20}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="room">채팅방</label>
+              <input
+                type="text"
+                id="room"
+                name="room"
+                placeholder="채팅방 이름을 입력하세요"
+                required
+                minLength={2}
+                maxLength={20}
+              />
+            </div>
+            
+            <button type="submit" className="join-button">
+              채팅방 입장
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="app">
+      <Chat username={userData.username} room={userData.room} />
+    </div>
+  );
 }
 
 export default App
