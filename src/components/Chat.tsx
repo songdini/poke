@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io as socketIO } from 'socket.io-client';
+import io from 'socket.io-client';
 import './Chat.css';
 
 interface Message {
@@ -27,7 +27,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   useEffect(() => {
     // 환경에 따라 서버 URL 설정
     const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
-    const newSocket = socketIO(serverUrl);
+    const newSocket = io(serverUrl);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
