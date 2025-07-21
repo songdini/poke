@@ -150,6 +150,34 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     }
   };
 
+  // 이미지 파일 전송
+  const sendImageFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (socket && dataUrl) {
+        socket.emit('sendMessage', { message: dataUrl, room, isImage: true });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 클립보드 붙여넣기 지원
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          sendImageFile(file);
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+  };
+
   // 투표 요청
   const requestKickVote = (targetUsername: string) => {
     if (socket) {
@@ -208,6 +236,13 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     });
   };
 
+  // 이모지 단독 메시지 판별
+  const isSingleEmoji = (text: string) => {
+    // 유니코드 이모지 정규식 (간단 버전)
+    const emojiRegex = /^\s*(?:[\u231A-\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD-\u25FE\u2614-\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA-\u26AB\u26BD-\u26BE\u26C4-\u26C5\u26CE\u26D4\u26EA\u26F2-\u26F3\u26F5\u26FA\u26FD\u2705\u270A-\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B-\u2B1C\u2B50\u2B55\u1F004\u1F0CF\u1F18E\u1F191-\u1F19A\u1F1E6-\u1F1FF\u1F201-\u1F202\u1F21A\u1F22F\u1F232-\u1F23A\u1F250-\u1F251\u1F300-\u1F321\u1F324-\u1F393\u1F396-\u1F397\u1F399-\u1F39B\u1F39E-\u1F3F0\u1F3F3-\u1F3F5\u1F3F7-\u1F4FD\u1F4FF-\u1F53D\u1F549-\u1F54E\u1F550-\u1F567\u1F56F-\u1F570\u1F573-\u1F579\u1F587\u1F58A-\u1F58D\u1F590\u1F595-\u1F596\u1F5A4-\u1F5A5\u1F5A8\u1F5B1-\u1F5B2\u1F5BC\u1F5C2-\u1F5C4\u1F5D1-\u1F5D3\u1F5DC-\u1F5DE\u1F5E1\u1F5E3\u1F5E8\u1F5EF\u1F5F3\u1F5FA-\u1F64F\u1F680-\u1F6C5\u1F6CB-\u1F6D2\u1F6E0-\u1F6E5\u1F6E9\u1F6EB-\u1F6EC\u1F6F0\u1F6F3-\u1F6F8\u1F910-\u1F93A\u1F93C-\u1F93E\u1F940-\u1F945\u1F947-\u1F94C\u1F950-\u1F96B\u1F980-\u1F997\u1F9C0\u1F9D0-\u1F9E6\u200D\u2640-\u2642\uFE0F]+)\s*$/u;
+    return emojiRegex.test(text);
+  };
+
   if (kicked) {
     return (
       <div className="chat-container">
@@ -263,8 +298,21 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       <div className="chat-main">
         <div className="chat-messages">
           {messages.map((msg) => (
-            <div key={msg.id} className={`message ${msg.username === username ? 'own-message' : ''}`}>
-              <div className="message-header">
+            <div key={msg.id} className={`message ${msg.username === username ? 'own-message' : ''}`}
+              style={isSingleEmoji(msg.message) && !msg.isImage ? {
+                background: 'none',
+                boxShadow: 'none',
+                border: 'none',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '24px 0',
+                fontSize: 64,
+                color: '#fff',
+                lineHeight: 1.1
+              } : {}}
+            >
+              <div className="message-header" style={isSingleEmoji(msg.message) && !msg.isImage ? { display: 'none' } : {}}>
                 <span className="username">{msg.username}</span>
                 <span className="timestamp">{formatTime(msg.timestamp)}</span>
               </div>
@@ -344,6 +392,21 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
           >
             🖌️
           </button>
+          {/* 이미지 첨부 버튼 */}
+          <label style={{ marginRight: 8, cursor: 'pointer' }}>
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={e => {
+                if (e.target.files && e.target.files[0]) {
+                  sendImageFile(e.target.files[0]);
+                  e.target.value = '';
+                }
+              }}
+            />
+            <span role="img" aria-label="이미지">📎</span>
+          </label>
           {showEmojiPicker && (
             <div style={{ position: 'absolute', bottom: 70, left: 20, zIndex: 10 }}>
               <EmojiPicker onEmojiClick={addEmoji} autoFocusSearch={false} height={350} width={300} />
@@ -357,6 +420,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             placeholder="메시지를 입력하세요..."
             disabled={!isConnected}
             style={{ flex: 1 }}
+            onPaste={handlePaste}
           />
           <button onClick={sendMessage} disabled={!isConnected || !messageInput.trim()}>
             전송

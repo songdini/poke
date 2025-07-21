@@ -8,37 +8,55 @@ interface DrawingBoardProps {
 const COLORS = ['#222', '#39ff14', '#e11d48', '#2563eb', '#facc15', '#10b981', '#fff'];
 const SIZES = [2, 4, 8, 14];
 
+type Path = {
+  color: string;
+  size: number;
+  isEraser: boolean;
+  points: { x: number; y: number }[];
+};
+
 const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
   const [color, setColor] = useState<string>('#222');
   const [size, setSize] = useState<number>(4);
-  const [isEraser, setIsEraser] = useState(false); // 지우개 모드 추가
+  const [isEraser, setIsEraser] = useState(false);
+  const [paths, setPaths] = useState<Path[]>([]);
+  const [currentPath, setCurrentPath] = useState<Path | null>(null);
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     setDrawing(true);
     const pos = getPos(e);
     setLastPos(pos);
+    setCurrentPath({
+      color,
+      size,
+      isEraser,
+      points: [pos]
+    });
   };
 
   const endDrawing = () => {
     setDrawing(false);
     setLastPos(null);
+    if (currentPath && currentPath.points.length > 1) {
+      setPaths(prev => [...prev, currentPath]);
+    }
+    setCurrentPath(null);
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!drawing || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
     const pos = getPos(e);
-    if (lastPos) {
+    if (lastPos && currentPath) {
+      // 캔버스에 바로 그림
+      const ctx = canvasRef.current.getContext('2d');
+      if (!ctx) return;
       if (isEraser) {
-        // 지우개 모드: 투명하게 지우기
         ctx.globalCompositeOperation = 'destination-out';
         ctx.strokeStyle = 'rgba(0,0,0,1)';
       } else {
-        // 일반 그리기 모드
         ctx.globalCompositeOperation = 'source-over';
         ctx.strokeStyle = color;
       }
@@ -48,6 +66,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
       ctx.moveTo(lastPos.x, lastPos.y);
       ctx.lineTo(pos.x, pos.y);
       ctx.stroke();
+      // 현재 path에 점 추가
+      setCurrentPath(prev => prev ? { ...prev, points: [...prev.points, pos] } : prev);
     }
     setLastPos(pos);
   };
@@ -68,6 +88,42 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
     return { x: 0, y: 0 };
   };
 
+  // 전체 다시 그리기 (paths 배열 기반)
+  const redraw = (allPaths: Path[]) => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    for (const path of allPaths) {
+      ctx.beginPath();
+      ctx.lineCap = 'round';
+      ctx.lineWidth = path.size;
+      if (path.isEraser) {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = path.color;
+      }
+      path.points.forEach((pt, idx) => {
+        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  };
+
+  // Undo 기능
+  const handleUndo = () => {
+    if (paths.length === 0) return;
+    const newPaths = paths.slice(0, -1);
+    setPaths(newPaths);
+    setTimeout(() => redraw(newPaths), 0);
+  };
+
   const handleSend = () => {
     if (canvasRef.current) {
       const dataUrl = canvasRef.current.toDataURL('image/png');
@@ -77,11 +133,11 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   };
 
   const handleClear = () => {
+    setPaths([]);
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        // 흰 배경으로 채우기
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
@@ -104,6 +160,11 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
     }
   }, []);
 
+  // paths가 바뀔 때마다 다시 그림
+  React.useEffect(() => {
+    redraw(paths);
+  }, [paths]);
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#23272f', borderRadius: 12, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
@@ -116,7 +177,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
                 key={c}
                 onClick={() => {
                   setColor(c);
-                  setIsEraser(false); // 색상 선택 시 지우개 모드 해제
+                  setIsEraser(false);
                 }}
                 style={{
                   width: 24,
@@ -138,20 +199,21 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
                 key={s}
                 onClick={() => setSize(s)}
                 style={{
-                  width: 24,
-                  height: 24,
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
-                  border: size === s ? '2px solid #39ff14' : '2px solid #333',
-                  background: '#18181b',
+                  border: size === s ? '2px solid #39ff14' : '2px solid #bbb',
+                  background: '#eee',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
                   outline: 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
                 }}
                 title={`굵기 ${s}`}
               >
-                <div style={{ width: s, height: s, background: isEraser ? '#f87171' : color, borderRadius: '50%' }} />
+                <div style={{ width: s, height: s, background: isEraser ? '#f87171' : color, borderRadius: '50%', border: '1px solid #888' }} />
               </button>
             ))}
           </div>
@@ -174,6 +236,27 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
             title="지우개"
           >
             🧽
+          </button>
+          {/* Undo 버튼 */}
+          <button
+            onClick={handleUndo}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: '2px solid #333',
+              background: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              outline: 'none',
+              fontSize: '16px',
+              marginLeft: 4
+            }}
+            title="실행 취소"
+          >
+            ↩️
           </button>
         </div>
         <canvas
