@@ -121,13 +121,6 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     };
   }, [socket]);
 
-  // 강퇴 요청
-  const kickUser = (targetUsername: string) => {
-    if (socket) {
-      socket.emit('kick', { targetUsername, room });
-    }
-  };
-
   // 강퇴 알림 수신
   useEffect(() => {
     if (!socket) return;
