@@ -256,14 +256,17 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       case 'attack':
         console.log('클라이언트 attack 메시지 수신:', data);
         const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
-        if (!attackedPlayer) return;
-        setAttackedId(data.targetId); // 애니메이션용
+        if (!attackedPlayer) {
+          console.log('공격 대상 없음:', data.targetId, gameState.players.map(p => p.id));
+          return;
+        }
+        setAttackedId(data.targetId);
         const updatedPlayersAfterAttack = gameState.players.map(p =>
           p.id === data.targetId
             ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
             : p
         );
-
+        console.log('players 상태:', updatedPlayersAfterAttack);
         setGameState(prev => ({
           ...prev,
           players: updatedPlayersAfterAttack,
@@ -275,9 +278,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             timestamp: new Date()
           }]
         }));
-        // 공격 애니메이션 1초 후 해제
         setTimeout(() => setAttackedId(null), 1000);
-        // 공격 끝 알림 후 낮 안내
         setTimeout(() => {
           setGameState(prev => ({
             ...prev,
