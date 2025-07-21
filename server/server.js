@@ -23,32 +23,195 @@ const connectedUsers = new Map();
 // 투표 상태 저장: { room: { targetUsername: { votes: { [username]: true/false }, total: number } } }
 const kickVotes = {};
 
+// 마피아 게임 상태 저장
+const mafiaGames = new Map();
+
 io.on('connection', (socket) => {
   console.log('사용자가 연결되었습니다:', socket.id);
 
   // 사용자 입장
   socket.on('join', (userData) => {
-    const { username, room } = userData;
+    const { username, room, gameType } = userData;
     
     socket.join(room);
-    connectedUsers.set(socket.id, { username, room });
+    connectedUsers.set(socket.id, { username, room, gameType });
     
-    // 방에 입장 메시지 전송
-    socket.to(room).emit('userJoined', {
-      username,
-      message: `${username}님이 입장하셨습니다.`,
-      timestamp: new Date().toISOString()
-    });
-    
-    // 현재 방의 사용자 목록 전송
-    const roomUsers = Array.from(connectedUsers.values())
-      .filter(user => user.room === room)
-      .map(user => user.username);
-    
-    io.to(room).emit('userList', roomUsers);
+    // 마피아 게임인 경우
+    if (gameType === 'mafia') {
+      if (!mafiaGames.has(room)) {
+        mafiaGames.set(room, {
+          players: [],
+          gameStarted: false,
+          phase: 'waiting',
+          voteUsed: false // 투표 사용 여부 추가
+        });
+      }
+      
+      const game = mafiaGames.get(room);
+      const player = {
+        id: socket.id,
+        username,
+        role: 'citizen', // 나중에 배정
+        isAlive: true,
+        lives: 3,
+        isProtected: false
+      };
+      
+      game.players.push(player);
+      
+      // 모든 클라이언트에게 플레이어 목록 업데이트
+      io.to(room).emit('mafia-update', {
+        type: 'join',
+        data: { player }
+      });
+    } else {
+      // 일반 채팅방
+      socket.to(room).emit('userJoined', {
+        username,
+        message: `${username}님이 입장하셨습니다.`,
+        timestamp: new Date().toISOString()
+      });
+      
+      // 현재 방의 사용자 목록 전송
+      const roomUsers = Array.from(connectedUsers.values())
+        .filter(user => user.room === room)
+        .map(user => user.username);
+      
+      io.to(room).emit('userList', roomUsers);
+    }
     
     console.log(`${username}님이 ${room}방에 입장했습니다.`);
   });
+
+  // 마피아 게임 메시지 처리
+  socket.on('mafia-message', (messageData) => {
+    const { room, message } = messageData;
+    const user = connectedUsers.get(socket.id);
+    
+    if (user && user.gameType === 'mafia') {
+      io.to(room).emit('mafia-update', {
+        type: 'message',
+        data: message
+      });
+    }
+  });
+
+  // 마피아 게임 시작
+  socket.on('mafia-game-start', ({ room }) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    // 역할 배정
+    game.players.forEach((player, index) => {
+      if (index === 0) player.role = 'mafia';
+      else if (index === 1 && game.players.length >= 4) player.role = 'doctor';
+      else if (index === 2) player.role = 'joker';
+      else player.role = 'citizen';
+    });
+
+    game.gameStarted = true;
+    game.phase = 'day';
+    game.voteUsed = false; // 새로운 게임 시작 시 투표 사용 가능
+
+    io.to(room).emit('mafia-update', {
+      type: 'game-start',
+      data: { players: game.players }
+    });
+  });
+
+  // 마피아 투표
+  socket.on('mafia-vote', ({ room, targetId }) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    // 이미 투표를 사용했으면 무시
+    if (game.voteUsed) return;
+
+    const targetPlayer = game.players.find(p => p.id === targetId);
+    if (!targetPlayer) return;
+
+    if (targetPlayer.role === 'joker') {
+      io.to(room).emit('mafia-update', {
+        type: 'game-over',
+        data: { winner: 'joker', message: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!` }
+      });
+    } else {
+      targetPlayer.isAlive = false;
+      targetPlayer.lives = 0;
+      game.voteUsed = true; // 투표 사용됨
+
+      io.to(room).emit('mafia-update', {
+        type: 'vote',
+        data: { targetId, player: targetPlayer }
+      });
+
+      // 게임 종료 체크
+      checkMafiaGameEnd(room);
+    }
+  });
+
+  // 마피아 공격
+  socket.on('mafia-attack', ({ room, targetId }) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    const targetPlayer = game.players.find(p => p.id === targetId);
+    if (!targetPlayer) return;
+
+    targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
+    targetPlayer.isAlive = targetPlayer.lives > 0;
+
+    io.to(room).emit('mafia-update', {
+      type: 'attack',
+      data: { targetId, player: targetPlayer }
+    });
+
+    // 의사 치료 단계로
+    game.phase = 'doctor-healing';
+  });
+
+  // 의사 치료
+  socket.on('mafia-heal', ({ room, targetId }) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    const targetPlayer = game.players.find(p => p.id === targetId);
+    if (!targetPlayer) return;
+
+    targetPlayer.lives = Math.min(3, targetPlayer.lives + 1);
+    targetPlayer.isAlive = targetPlayer.lives > 0;
+
+    io.to(room).emit('mafia-update', {
+      type: 'heal',
+      data: { targetId, player: targetPlayer }
+    });
+
+    // 다시 낮으로
+    game.phase = 'day';
+    game.voteUsed = false; // 새로운 날이 시작되면 투표 사용 가능
+  });
+
+  // 마피아 게임 종료 체크
+  const checkMafiaGameEnd = (room) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    const alivePlayers = game.players.filter(p => p.isAlive);
+    const aliveMafia = alivePlayers.filter(p => p.role === 'mafia');
+    const aliveCitizens = alivePlayers.filter(p => p.role !== 'mafia');
+
+    if (aliveMafia.length === 0) {
+      io.to(room).emit('mafia-update', {
+        type: 'game-over',
+        data: { winner: 'citizens', message: '모든 마피아가 제거되었습니다! 시민의 승리입니다!' }
+      });
+    } else if (aliveCitizens.length === 0) {
+      io.to(room).emit('mafia-update', {
+        type: 'game-over',
+        data: { winner: 'mafia', message: '모든 시민이 사망했습니다! 마피아의 승리입니다!' }
+      });
+    }
+  };
 
   // 메시지 전송
   socket.on('sendMessage', (messageData) => {
@@ -146,21 +309,34 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const user = connectedUsers.get(socket.id);
     if (user) {
-      socket.to(user.room).emit('userLeft', {
-        username: user.username,
-        message: `${user.username}님이 퇴장하셨습니다.`,
-        timestamp: new Date().toISOString()
-      });
+      // 마피아 게임인 경우
+      if (user.gameType === 'mafia') {
+        const game = mafiaGames.get(user.room);
+        if (game) {
+          game.players = game.players.filter(p => p.id !== socket.id);
+          
+          io.to(user.room).emit('mafia-update', {
+            type: 'leave',
+            data: { playerId: socket.id }
+          });
+        }
+      } else {
+        // 일반 채팅방
+        socket.to(user.room).emit('userLeft', {
+          username: user.username,
+          message: `${user.username}님이 퇴장하셨습니다.`,
+          timestamp: new Date().toISOString()
+        });
+        
+        // 사용자 목록 업데이트
+        const roomUsers = Array.from(connectedUsers.values())
+          .filter(u => u.room === user.room)
+          .map(u => u.username);
+        
+        io.to(user.room).emit('userList', roomUsers);
+      }
       
       connectedUsers.delete(socket.id);
-      
-      // 사용자 목록 업데이트
-      const roomUsers = Array.from(connectedUsers.values())
-        .filter(u => u.room === user.room)
-        .map(u => u.username);
-      
-      io.to(user.room).emit('userList', roomUsers);
-      
       console.log(`${user.username}님이 연결을 해제했습니다.`);
     }
   });

@@ -29,6 +29,107 @@
   font-size: 1rem;
 }
 
+/* 게임 선택 화면 스타일 */
+.game-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.game-option:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.game-option.catchmind:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+}
+
+.game-option.mafia:hover {
+  border-color: #ef4444;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+}
+
+.game-icon {
+  font-size: 2rem;
+  min-width: 48px;
+}
+
+.game-info h3 {
+  margin: 0 0 4px 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.game-info p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* 게임 헤더 스타일 */
+.game-header {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: none;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.back-button:hover {
+  color: #5a67d8;
+}
+
+/* 마피아 게임 화면 스타일 */
+.mafia-game {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.mafia-game h2 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 1.75rem;
+}
+
+.mafia-game p {
+  margin: 0 0 24px 0;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
 .join-form {
   display: flex;
   flex-direction: column;
@@ -94,5 +195,14 @@
   
   .join-container h1 {
     font-size: 1.75rem;
+  }
+  
+  .game-option {
+    padding: 16px;
+  }
+  
+  .game-icon {
+    font-size: 1.5rem;
+    min-width: 40px;
   }
 }
