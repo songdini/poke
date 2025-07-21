@@ -474,7 +474,9 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
               {gameState.messages.map(message => (
                 <div key={message.id} className={`message ${message.type}`}>
                   <span className="timestamp">
-                    {message.timestamp.toLocaleTimeString()}
+                    {typeof message.timestamp === 'string'
+                      ? new Date(message.timestamp).toLocaleTimeString()
+                      : message.timestamp.toLocaleTimeString()}
                   </span>
                   {message.player && <span className="player">{message.player}: </span>}
                   <span className="content">{message.content}</span>
