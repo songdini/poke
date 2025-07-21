@@ -136,8 +136,8 @@ io.on('connection', (socket) => {
         data: { winner: 'joker', message: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!` }
       });
     } else {
-      targetPlayer.isAlive = false;
-      targetPlayer.lives = 0;
+      targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
+      targetPlayer.isAlive = targetPlayer.lives > 0;
       game.voteUsed = true; // 투표 사용됨
 
       io.to(room).emit('mafia-update', {
