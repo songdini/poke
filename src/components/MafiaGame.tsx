@@ -47,6 +47,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [attackedId, setAttackedId] = useState<string | null>(null); // 공격 애니메이션용
 
   // Socket.IO 연결
   useEffect(() => {
@@ -78,6 +79,35 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.messages]);
+
+  // 타이머 관리
+  useEffect(() => {
+    if (!gameState.gameStarted) return;
+    if (gameState.phase !== 'day' && gameState.phase !== 'night') return;
+    if (gameState.timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setGameState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState.gameStarted, gameState.phase, gameState.timeLeft]);
+
+  // 낮(대화) 시간 90초로 단축
+  // 낮 종료 시 자동 밤 전환
+  useEffect(() => {
+    if (gameState.phase === 'day' && gameState.timeLeft === 0) {
+      setGameState(prev => ({
+        ...prev,
+        phase: 'night',
+        timeLeft: 30,
+        messages: [...prev.messages, {
+          id: Date.now().toString(),
+          type: 'system',
+          content: '밤이 되었습니다. 마피아가 공격할 플레이어를 선택하세요.',
+          timestamp: new Date()
+        }]
+      }));
+    }
+  }, [gameState.phase, gameState.timeLeft]);
 
   // Socket.IO 메시지 처리
   const handleSocketMessage = (message: any) => {
@@ -127,15 +157,15 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
           players,
           gameStarted: true,
           phase: 'day',
+          timeLeft: 90, // 낮 1분 30초
           voteUsed: false, // 새로운 날이 시작되면 투표 사용 가능
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'system',
-            content: '게임이 시작되었습니다! 2분간 대화 후 밤이 됩니다.',
+            content: '게임이 시작되었습니다! 1분 30초간 대화 후 밤이 됩니다.',
             timestamp: new Date()
           }]
         }));
-
         // 2분 후 밤으로 전환
         setTimeout(() => {
           setGameState(prev => ({
@@ -194,7 +224,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       case 'attack':
         const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
         if (!attackedPlayer) return;
-
+        setAttackedId(data.targetId); // 애니메이션용
         const updatedPlayersAfterAttack = gameState.players.map(p =>
           p.id === data.targetId
             ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
@@ -212,6 +242,23 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             timestamp: new Date()
           }]
         }));
+        // 공격 애니메이션 1초 후 해제
+        setTimeout(() => setAttackedId(null), 1000);
+        // 공격 끝 알림 후 낮 안내
+        setTimeout(() => {
+          setGameState(prev => ({
+            ...prev,
+            phase: 'day',
+            timeLeft: 90,
+            voteUsed: false,
+            messages: [...prev.messages, {
+              id: Date.now().toString(),
+              type: 'system',
+              content: '공격이 끝났습니다. 낮이 되었습니다! 1분 30초간 대화하세요.',
+              timestamp: new Date()
+            }]
+          }));
+        }, 2000);
         break;
       
       case 'heal':
@@ -419,7 +466,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                   onClick={() => selectPlayer(player.id)}
                 >
                   <div className="player-name">{player.username}</div>
-                  <div className="player-lives">❤️ {player.lives}</div>
+                  <div className={`player-lives${attackedId === player.id ? ' attacked' : ''}`}>❤️ {player.lives}</div>
                   {player.username === username && (
                     <div className="player-role">역할: {player.role}</div>
                   )}

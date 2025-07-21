@@ -216,6 +216,20 @@
   margin-bottom: 8px;
 }
 
+.player-lives.attacked {
+  animation: heart-blink 0.8s ease-in-out 2;
+  color: #ef4444;
+  font-weight: 900;
+  font-size: 1.3rem;
+}
+
+@keyframes heart-blink {
+  0% { transform: scale(1); color: #ef4444; }
+  30% { transform: scale(1.4); color: #f87171; }
+  60% { transform: scale(0.9); color: #ef4444; }
+  100% { transform: scale(1); color: #ef4444; }
+}
+
 .player-role {
   font-size: 0.8rem;
   color: #6b7280;
