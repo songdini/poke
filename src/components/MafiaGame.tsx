@@ -49,7 +49,9 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   // Socket.IO 연결
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_CHAT_SERVER_URL);
+    const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
+    console.log('서버 주소:', serverUrl);
+    const socket = io(serverUrl);
     socketRef.current = socket;
 
     socket.on('connect', () => {
