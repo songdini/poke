@@ -333,3 +333,25 @@ body, .app, .chat-container {
     max-width: 85%;
   }
 } 
+
+.emoji-btn {
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  background: #fff;
+  color: #fbbf24;
+  border: 2px solid #fbbf24;
+  border-radius: 50%;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  transition: background 0.2s, color 0.2s, border 0.2s, transform 0.15s;
+}
+.emoji-btn:hover {
+  background: #fbbf24;
+  color: #fff;
+  border-color: #fbbf24;
+  transform: scale(1.12);
+} 
