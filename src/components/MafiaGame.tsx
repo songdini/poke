@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './MafiaGame.css';
 
@@ -46,6 +46,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Socket.IO 연결
   useEffect(() => {
@@ -72,6 +73,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       socket.disconnect();
     };
   }, [username, room]);
+
+  // 메시지 자동 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [gameState.messages]);
 
   // Socket.IO 메시지 처리
   const handleSocketMessage = (message: any) => {
@@ -163,8 +169,10 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             }]
           }));
         } else {
-          const updatedPlayers = gameState.players.map(p => 
-            p.id === data.targetId ? { ...p, isAlive: false, lives: 0 } : p
+          const updatedPlayers = gameState.players.map(p =>
+            p.id === data.targetId
+              ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+              : p
           );
 
           setGameState(prev => ({
@@ -174,7 +182,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             messages: [...prev.messages, {
               id: Date.now().toString(),
               type: 'vote',
-              content: `${targetPlayer.username}이(가) 투표받아 사망했습니다.`,
+              content: `${targetPlayer.username}이(가) 투표받아 생명이 1 감소했습니다.`,
               timestamp: new Date()
             }]
           }));
@@ -187,13 +195,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
         if (!attackedPlayer) return;
 
-        const updatedPlayersAfterAttack = gameState.players.map(p => {
-          if (p.id === data.targetId) {
-            const newLives = Math.max(0, p.lives - 1);
-            return { ...p, lives: newLives, isAlive: newLives > 0 };
-          }
-          return p;
-        });
+        const updatedPlayersAfterAttack = gameState.players.map(p =>
+          p.id === data.targetId
+            ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+            : p
+        );
 
         setGameState(prev => ({
           ...prev,
@@ -212,13 +218,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         const healedPlayer = gameState.players.find(p => p.id === data.targetId);
         if (!healedPlayer) return;
 
-        const updatedPlayersAfterHeal = gameState.players.map(p => {
-          if (p.id === data.targetId) {
-            const newLives = Math.min(3, p.lives + 1);
-            return { ...p, lives: newLives, isAlive: newLives > 0 };
-          }
-          return p;
-        });
+        const updatedPlayersAfterHeal = gameState.players.map(p =>
+          p.id === data.targetId
+            ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+            : p
+        );
 
         setGameState(prev => ({
           ...prev,
@@ -482,6 +486,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                   <span className="content">{message.content}</span>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
             <div className="message-input">
               <input
