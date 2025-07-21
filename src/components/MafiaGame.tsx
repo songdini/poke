@@ -48,6 +48,9 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   const socketRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attackedId, setAttackedId] = useState<string | null>(null); // 공격 애니메이션용
+  const [showVotePopup, setShowVotePopup] = useState(false);
+  const [voteTarget, setVoteTarget] = useState<string | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   // Socket.IO 연결
   useEffect(() => {
@@ -108,6 +111,35 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       }));
     }
   }, [gameState.phase, gameState.timeLeft]);
+
+  // 투표 팝업 서버 이벤트 수신
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    const handleVotePopup = () => {
+      setShowVotePopup(true);
+      setVoteTarget(null);
+    };
+    socket.on('mafia-vote-popup', handleVotePopup);
+    return () => {
+      socket.off('mafia-vote-popup', handleVotePopup);
+    };
+  }, []);
+
+  // 투표 시작 (모든 클라이언트에 팝업 띄우기)
+  const startVote = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('mafia-vote-start', { room });
+    }
+  };
+
+  // 투표 팝업에서 투표 실행
+  const submitVote = () => {
+    if (socketRef.current && voteTarget) {
+      socketRef.current.emit('mafia-vote', { room, targetId: voteTarget, voterId: username });
+      setShowVotePopup(false);
+    }
+  };
 
   // Socket.IO 메시지 처리
   const handleSocketMessage = (message: any) => {
@@ -222,6 +254,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         break;
       
       case 'attack':
+        console.log('클라이언트 attack 메시지 수신:', data);
         const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
         if (!attackedPlayer) return;
         setAttackedId(data.targetId); // 애니메이션용
@@ -361,12 +394,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }));
   };
 
-  // 마피아 공격
+  // 마피아 공격 진단용 로그
   const executeMafiaAttack = () => {
     if (!gameState.selectedPlayer || !socketRef.current) return;
-
+    console.log('마피아 공격 emit:', gameState.selectedPlayer);
     socketRef.current.emit('mafia-attack', { room, targetId: gameState.selectedPlayer });
-
     setGameState(prev => ({
       ...prev,
       selectedPlayer: null
@@ -412,6 +444,20 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   // 현재 플레이어의 역할 확인
   const currentPlayerRole = gameState.players.find(p => p.username === username)?.role;
+
+  // 자동 스크롤 useEffect 제거
+  // 대신 스크롤 위치 감지해서 버튼 표시
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
+      setShowScrollBtn(true);
+    } else {
+      setShowScrollBtn(false);
+    }
+  };
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="mafia-game-container">
@@ -477,10 +523,10 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             <div className="action-area">
               {gameState.phase === 'day' && (
                 <div className="day-actions">
-                  <p>2분간 대화 후 투표를 진행합니다.</p>
+                  <p>1분 30초간 대화 후 투표를 진행합니다.</p>
                   <button 
-                    onClick={() => setGameState(prev => ({ ...prev, phase: 'voting' }))}
-                    disabled={gameState.voteUsed} // 투표를 이미 사용했으면 비활성화
+                    onClick={startVote}
+                    disabled={gameState.voteUsed}
                     className={gameState.voteUsed ? 'disabled' : ''}
                   >
                     {gameState.voteUsed ? '투표 완료' : '투표 시작'}
@@ -488,6 +534,21 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                   {gameState.voteUsed && (
                     <p className="vote-notice">오늘은 이미 투표를 완료했습니다.</p>
                   )}
+                </div>
+              )}
+              {/* 투표 팝업 */}
+              {showVotePopup && (
+                <div className="vote-popup" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
+                    <h3 style={{ color: '#fbbf24', marginBottom: 16 }}>투표</h3>
+                    <div style={{ marginBottom: 16 }}>지목할 플레이어를 선택하세요.</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                      {gameState.players.filter(p => p.isAlive).map(p => (
+                        <button key={p.id} onClick={() => setVoteTarget(p.id)} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: 'pointer' }}>{p.username}</button>
+                      ))}
+                    </div>
+                    <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
+                  </div>
                 </div>
               )}
 
@@ -521,7 +582,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
           </div>
 
           <div className="chat-area">
-            <div className="messages">
+            <div className="messages" onScroll={handleScroll} style={{ position: 'relative' }}>
               {gameState.messages.map(message => (
                 <div key={message.id} className={`message ${message.type}`}>
                   <span className="timestamp">
@@ -534,6 +595,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                 </div>
               ))}
               <div ref={messagesEndRef} />
+              {showScrollBtn && (
+                <button onClick={scrollToBottom} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 10, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '8px 18px', fontWeight: 700, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', cursor: 'pointer' }}>
+                  맨 아래로
+                </button>
+              )}
             </div>
             <div className="message-input">
               <input

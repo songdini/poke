@@ -348,6 +348,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // 투표 시작: 모든 클라이언트에 팝업 띄우기
+  socket.on('mafia-vote-start', ({ room }) => {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+    game.votes = [];
+    io.to(room).emit('mafia-vote-popup');
+  });
+
   // 연결 해제
   socket.on('disconnect', () => {
     const user = connectedUsers.get(socket.id);
