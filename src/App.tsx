@@ -77,7 +77,7 @@ function App() {
               ← 뒤로가기
             </button>
             <h1>
-              {selectedGame === 'catchmind' ? '🎨 캐치마인드' : '🕵️ 마피아 게임'}
+              {selectedGame === 'catchmind' ? '🎨 캐치마인드' : '🕵️'}
             </h1>
             <p>
               {selectedGame === 'catchmind' 

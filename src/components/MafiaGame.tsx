@@ -49,7 +49,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   // Socket.IO 연결
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001');
+    const socket = io('http://43.200.176.211:3001');
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -363,7 +363,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   return (
     <div className="mafia-game-container">
       <div className="game-header">
-        <h2>🕵️ 마피아 게임</h2>
+        <h2>🕵️</h2>
         <div className="game-info">
           <span className="phase">{gameState.phase === 'day' ? '☀️ 낮' : '🌙 밤'}</span>
           <span className="timer">⏰ {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}</span>
