@@ -494,6 +494,12 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  
+  const startVote = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('mafia-vote-start', { room });
+    }
+  };
 
   return (
     <div className="mafia-game-container">
