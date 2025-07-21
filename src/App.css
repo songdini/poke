@@ -87,6 +87,8 @@
 .game-header {
   position: relative;
   margin-bottom: 32px;
+  padding-top: 50px; /* 뒤로가기 버튼을 위한 충분한 공간 */
+  text-align: center; /* 전체 중앙 정렬 */
 }
 
 .back-button {
@@ -101,10 +103,26 @@
   padding: 8px 0;
   font-size: 0.9rem;
   transition: color 0.2s;
+  z-index: 10;
 }
 
 .back-button:hover {
   color: #5a67d8;
+}
+
+/* 게임 헤더 내부 요소들 */
+.game-header h1 {
+  margin: 0 0 8px 0;
+  color: #1f2937;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.game-header p {
+  margin: 0 0 32px 0;
+  color: #6b7280;
+  font-size: 1rem;
+  text-align: center;
 }
 
 /* 마피아 게임 화면 스타일 */
@@ -204,5 +222,23 @@
   .game-icon {
     font-size: 1.5rem;
     min-width: 40px;
+  }
+  
+  /* 모바일에서 게임 헤더 조정 */
+  .game-header {
+    padding-top: 60px; /* 모바일에서 더 많은 공간 */
+  }
+  
+  .game-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .game-header p {
+    font-size: 0.9rem;
+  }
+  
+  .back-button {
+    font-size: 0.8rem;
+    padding: 6px 0;
   }
 }
