@@ -53,6 +53,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   const [voteSubmitted, setVoteSubmitted] = useState(false);
   const [voteTimeLeft, setVoteTimeLeft] = useState(20);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [voteResultMsg, setVoteResultMsg] = useState<string | null>(null);
 
   // Socket.IO 연결
   useEffect(() => {
@@ -276,6 +277,10 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
           checkGameEnd();
         }
+        if (data.resultMsg) {
+          setVoteResultMsg(data.resultMsg);
+          setTimeout(() => setVoteResultMsg(null), 3000);
+        }
         break;
       
       case 'attack':
@@ -299,8 +304,8 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
             : p
         );
-        // 혹시 players가 비어있으면 fallback으로 data.player만 표시
-        const finalPlayers = updatedPlayersAfterAttack.length > 0 ? updatedPlayersAfterAttack : [data.player];
+        // players가 비어있을 때만 fallback, 그렇지 않으면 업데이트된 배열 사용
+        const finalPlayers = gameState.players.length === 0 ? [data.player] : updatedPlayersAfterAttack;
         console.log('players 상태:', finalPlayers);
         setGameState(prev => ({
           ...prev,
@@ -503,6 +508,16 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   return (
     <div className="mafia-game-container">
+      {/* 투표 결과 안내 메시지 */}
+      {voteResultMsg && (
+        <div style={{
+          position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
+          background: '#23272f', color: '#fbbf24', padding: '16px 32px', borderRadius: 12,
+          fontWeight: 700, fontSize: 18, zIndex: 9999, boxShadow: '0 2px 12px rgba(0,0,0,0.18)'
+        }}>
+          {voteResultMsg}
+        </div>
+      )}
       <div className="game-header">
         <h2>🕵️</h2>
         <div className="game-info">
@@ -565,7 +580,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             <div className="action-area">
               {gameState.phase === 'day' && (
                 <div className="day-actions">
-                  <p>1분 30초간 대화 후 투표를 진행합니다.</p>
+                  <p>1분 30초간 대화 후 밤이 됩니다.</p>
                   <button 
                     onClick={startVote}
                     disabled={gameState.voteUsed}
