@@ -50,6 +50,8 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   const [attackedId, setAttackedId] = useState<string | null>(null); // 공격 애니메이션용
   const [showVotePopup, setShowVotePopup] = useState(false);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
+  const [voteSubmitted, setVoteSubmitted] = useState(false);
+  const [voteTimeLeft, setVoteTimeLeft] = useState(20);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   // Socket.IO 연결
@@ -119,6 +121,8 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     const handleVotePopup = () => {
       setShowVotePopup(true);
       setVoteTarget(null);
+      setVoteSubmitted(false);
+      setVoteTimeLeft(20);
     };
     socket.on('mafia-vote-popup', handleVotePopup);
     return () => {
@@ -126,20 +130,41 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     };
   }, []);
 
-  // 투표 시작 (모든 클라이언트에 팝업 띄우기)
-  const startVote = () => {
-    if (socketRef.current) {
-      socketRef.current.emit('mafia-vote-start', { room });
+  // 투표 타이머
+  useEffect(() => {
+    if (!showVotePopup || voteSubmitted) return;
+    if (voteTimeLeft <= 0) {
+      setShowVotePopup(false);
+      setVoteSubmitted(false);
+      setVoteTarget(null);
+      return;
     }
-  };
+    const timer = setTimeout(() => setVoteTimeLeft(voteTimeLeft - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [showVotePopup, voteTimeLeft, voteSubmitted]);
 
   // 투표 팝업에서 투표 실행
   const submitVote = () => {
     if (socketRef.current && voteTarget) {
       socketRef.current.emit('mafia-vote', { room, targetId: voteTarget, voterId: username });
-      setShowVotePopup(false);
+      setVoteSubmitted(true);
     }
   };
+
+  // 서버에서 투표 집계 완료 메시지 오면 팝업 닫기
+  useEffect(() => {
+    if (!socketRef.current) return;
+    const socket = socketRef.current;
+    const handleVoteResult = () => {
+      setShowVotePopup(false);
+      setVoteSubmitted(false);
+      setVoteTarget(null);
+    };
+    socket.on('mafia-vote-result', handleVoteResult);
+    return () => {
+      socket.off('mafia-vote-result', handleVoteResult);
+    };
+  }, []);
 
   // Socket.IO 메시지 처리
   const handleSocketMessage = (message: any) => {
@@ -255,7 +280,15 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       
       case 'attack':
         console.log('클라이언트 attack 메시지 수신:', data);
-        const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
+        let attackedPlayer = gameState.players.find(p => p.id === data.targetId);
+        if (!attackedPlayer && data.player) {
+          // fallback: 서버에서 온 player 정보 사용
+          attackedPlayer = data.player;
+          setGameState(prev => ({
+            ...prev,
+            players: [...prev.players, data.player], // 없으면 추가
+          }));
+        }
         if (!attackedPlayer) {
           console.log('공격 대상 없음:', data.targetId, gameState.players.map(p => p.id));
           return;
@@ -266,10 +299,12 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
             : p
         );
-        console.log('players 상태:', updatedPlayersAfterAttack);
+        // 혹시 players가 비어있으면 fallback으로 data.player만 표시
+        const finalPlayers = updatedPlayersAfterAttack.length > 0 ? updatedPlayersAfterAttack : [data.player];
+        console.log('players 상태:', finalPlayers);
         setGameState(prev => ({
           ...prev,
-          players: updatedPlayersAfterAttack,
+          players: finalPlayers,
           phase: 'doctor-healing',
           messages: [...prev.messages, {
             id: Date.now().toString(),
@@ -540,15 +575,20 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
               {/* 투표 팝업 */}
               {showVotePopup && (
                 <div className="vote-popup" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
+                  <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff', position: 'relative' }}>
                     <h3 style={{ color: '#fbbf24', marginBottom: 16 }}>투표</h3>
                     <div style={{ marginBottom: 16 }}>지목할 플레이어를 선택하세요.</div>
+                    <div style={{ fontSize: 15, color: '#fbbf24', marginBottom: 8 }}>남은 시간: {voteTimeLeft}초</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
                       {gameState.players.filter(p => p.isAlive).map(p => (
-                        <button key={p.id} onClick={() => setVoteTarget(p.id)} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: 'pointer' }}>{p.username}</button>
+                        <button key={p.id} onClick={() => setVoteTarget(p.id)} disabled={voteSubmitted} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: voteSubmitted ? 'not-allowed' : 'pointer', opacity: voteSubmitted ? 0.5 : 1 }}>{p.username}</button>
                       ))}
                     </div>
-                    <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
+                    {!voteSubmitted ? (
+                      <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
+                    ) : (
+                      <div style={{ color: '#fbbf24', fontWeight: 600, marginTop: 12 }}>다른 사람 투표를 기다리는 중...</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -597,7 +637,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
               ))}
               <div ref={messagesEndRef} />
               {showScrollBtn && (
-                <button onClick={scrollToBottom} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 10, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '8px 18px', fontWeight: 700, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', cursor: 'pointer' }}>
+                <button onClick={scrollToBottom} style={{ position: 'fixed', right: 32, bottom: 32, zIndex: 10000, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '12px 24px', fontWeight: 700, fontSize: 17, boxShadow: '0 2px 8px rgba(0,0,0,0.18)', cursor: 'pointer' }}>
                   맨 아래로
                 </button>
               )}

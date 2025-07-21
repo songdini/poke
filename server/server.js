@@ -43,7 +43,8 @@ io.on('connection', (socket) => {
           players: [],
           gameStarted: false,
           phase: 'waiting',
-          voteUsed: false // 투표 사용 여부 추가
+          voteUsed: false, // 투표 사용 여부 추가
+          voteTimeout: null // 투표 타이머 추가
         });
       }
       
@@ -137,59 +138,15 @@ io.on('connection', (socket) => {
     const game = mafiaGames.get(room);
     if (!game) return;
     if (game.voteUsed) return;
-
-    // 투표 집계용 votes 배열 추가
     if (!game.votes) game.votes = [];
-    game.votes.push(targetId);
-
-    // 모든 생존자 투표 시 집계
+    if (!game.voteVoters) game.voteVoters = [];
+    if (!game.voteVoters.includes(voterId)) {
+      game.votes.push(targetId);
+      game.voteVoters.push(voterId);
+    }
     const aliveCount = game.players.filter(p => p.isAlive).length;
     if (game.votes.length >= aliveCount) {
-      // 집계
-      const voteCount = {};
-      for (const v of game.votes) {
-        if (!voteCount[v]) voteCount[v] = 0;
-        voteCount[v]++;
-      }
-      // 최다 득표자 찾기
-      let max = 0, maxIds = [];
-      for (const id in voteCount) {
-        if (voteCount[id] > max) {
-          max = voteCount[id];
-          maxIds = [id];
-        } else if (voteCount[id] === max) {
-          maxIds.push(id);
-        }
-      }
-      let resultMsg = '';
-      if (maxIds.length === 1 && voteCount[maxIds[0]] > 1) {
-        // 다수 득표자 1명
-        const targetPlayer = game.players.find(p => p.id === maxIds[0]);
-        if (targetPlayer.role === 'joker') {
-          io.to(room).emit('mafia-update', {
-            type: 'game-over',
-            data: { winner: 'joker', message: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!` }
-          });
-        } else {
-          targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
-          targetPlayer.isAlive = targetPlayer.lives > 0;
-          game.voteUsed = true;
-          resultMsg = `${targetPlayer.username}님의 생명이 1 감소했습니다.`;
-          io.to(room).emit('mafia-update', {
-            type: 'vote',
-            data: { targetId: targetPlayer.id, player: targetPlayer, resultMsg }
-          });
-          checkMafiaGameEnd(room);
-        }
-      } else {
-        // 동점 또는 모두 1표씩
-        resultMsg = `투표 결과: 아무도 지목되지 않았습니다. 투표가 스킵됩니다.`;
-        io.to(room).emit('mafia-update', {
-          type: 'vote',
-          data: { targetId: null, player: null, resultMsg }
-        });
-      }
-      game.votes = [];
+      finishVote(room);
     }
   });
 
@@ -348,13 +305,81 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 투표 시작: 모든 클라이언트에 팝업 띄우기
+  // 투표 시작: 모든 클라이언트에 팝업 띄우기 + 20초 타이머
   socket.on('mafia-vote-start', ({ room }) => {
     const game = mafiaGames.get(room);
     if (!game) return;
     game.votes = [];
+    game.voteVoters = [];
     io.to(room).emit('mafia-vote-popup');
+    // 20초 후 미투표자 무효표 처리 및 집계
+    if (game.voteTimeout) clearTimeout(game.voteTimeout);
+    game.voteTimeout = setTimeout(() => {
+      const alivePlayers = game.players.filter(p => p.isAlive);
+      // 미투표자는 무효표(null)로 추가
+      alivePlayers.forEach(p => {
+        if (!game.voteVoters.includes(p.id)) {
+          game.votes.push(null);
+        }
+      });
+      finishVote(room);
+    }, 20000);
   });
+
+  // 투표 집계 및 결과 전송 함수
+  function finishVote(room) {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+    const aliveCount = game.players.filter(p => p.isAlive).length;
+    const voteCount = {};
+    for (const v of game.votes) {
+      if (!v) continue;
+      if (!voteCount[v]) voteCount[v] = 0;
+      voteCount[v]++;
+    }
+    let max = 0, maxIds = [];
+    for (const id in voteCount) {
+      if (voteCount[id] > max) {
+        max = voteCount[id];
+        maxIds = [id];
+      } else if (voteCount[id] === max) {
+        maxIds.push(id);
+      }
+    }
+    let resultMsg = '';
+    if (maxIds.length === 1 && voteCount[maxIds[0]] > 1) {
+      // 다수 득표자 1명
+      const targetPlayer = game.players.find(p => p.id === maxIds[0]);
+      if (targetPlayer.role === 'joker') {
+        io.to(room).emit('mafia-update', {
+          type: 'game-over',
+          data: { winner: 'joker', message: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!` }
+        });
+      } else {
+        targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
+        targetPlayer.isAlive = targetPlayer.lives > 0;
+        game.voteUsed = true;
+        resultMsg = `${targetPlayer.username}님의 생명이 1 감소했습니다.`;
+        io.to(room).emit('mafia-update', {
+          type: 'vote',
+          data: { targetId: targetPlayer.id, player: targetPlayer, resultMsg }
+        });
+        checkMafiaGameEnd(room);
+      }
+    } else {
+      // 동점 또는 모두 1표씩
+      resultMsg = `투표 결과: 아무도 지목되지 않았습니다. 투표가 스킵됩니다.`;
+      io.to(room).emit('mafia-update', {
+        type: 'vote',
+        data: { targetId: null, player: null, resultMsg }
+      });
+    }
+    io.to(room).emit('mafia-vote-result');
+    game.votes = [];
+    game.voteVoters = [];
+    if (game.voteTimeout) clearTimeout(game.voteTimeout);
+    game.voteTimeout = null;
+  }
 
   // 연결 해제
   socket.on('disconnect', () => {
