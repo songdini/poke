@@ -112,7 +112,7 @@ io.on('connection', (socket) => {
       } else if (!jokerAssigned) {
         player.role = 'joker';
         jokerAssigned = true;
-      } else if (!doctorAssigned && shuffled.length >= 4) {
+      } else if (!doctorAssigned) {
         player.role = 'doctor';
         doctorAssigned = true;
       } else {
