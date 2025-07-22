@@ -7,13 +7,13 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://13.124.224.38"], // 실제 도메인 추가
+    origin: ["http://localhost:5173", "http://54.180.147.213"], // 실제 도메인 추가
     methods: ["GET", "POST"]
   }
 });
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://13.124.224.38"]
+  origin: ["http://localhost:5173", "http://54.180.147.213"]
 }));
 app.use(express.json());
 
