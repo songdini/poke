@@ -20,7 +20,7 @@ interface GameState {
   selectedPlayer: string | null;
   messages: GameMessage[];
   winner: string | null;
-  voteUsed: boolean; // 하루에 한 번만 투표할 수 있도록 추가
+  voteUsed: boolean;
 }
 
 interface GameMessage {
@@ -37,17 +37,17 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     players: [],
     currentPlayer: username,
     gameStarted: false,
-    timeLeft: 120, // 2분
+    timeLeft: 120,
     selectedPlayer: null,
     messages: [],
     winner: null,
-    voteUsed: false // 투표 사용 여부
+    voteUsed: false
   });
 
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [attackedId, setAttackedId] = useState<string | null>(null); // 공격 애니메이션용
+  const [attackedId, setAttackedId] = useState<string | null>(null);
   const [showVotePopup, setShowVotePopup] = useState(false);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -61,7 +61,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
     socket.on('connect', () => {
       console.log('Socket.IO 연결됨');
-      // 게임방 입장
       socket.emit('join', { username, room, gameType: 'mafia' });
     });
 
@@ -94,7 +93,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     return () => clearInterval(timer);
   }, [gameState.gameStarted, gameState.phase, gameState.timeLeft]);
 
-  // 낮(대화) 시간 90초로 단축
   // 낮 종료 시 자동 밤 전환
   useEffect(() => {
     if (gameState.phase === 'day' && gameState.timeLeft === 0) {
@@ -141,10 +139,10 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }
   };
 
-  // Socket.IO 메시지 처리
+  // Socket.IO 메시지 처리 - 수정된 부분
   const handleSocketMessage = (message: any) => {
     const { type, data } = message;
-    
+
     switch (type) {
       case 'join':
         setGameState(prev => ({
@@ -152,45 +150,29 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
           players: [...prev.players, data.player]
         }));
         break;
-      
+
       case 'leave':
         setGameState(prev => ({
           ...prev,
           players: prev.players.filter(p => p.id !== data.playerId)
         }));
         break;
-      
+
       case 'message':
         setGameState(prev => ({
           ...prev,
           messages: [...prev.messages, data]
         }));
         break;
-      
-      case 'game-start':
-        const players = data.players.map((player: any, index: number) => {
-          let role: Player['role'] = 'citizen';
-          
-          if (index === 0) role = 'mafia';
-          else if (index === 1 && data.players.length >= 4) role = 'doctor';
-          else if (index === 2) role = 'joker';
-          
-          return {
-            ...player,
-            role,
-            isAlive: true,
-            lives: 3,
-            isProtected: false
-          };
-        });
 
+      case 'game-start':
         setGameState(prev => ({
           ...prev,
-          players,
+          players: data.players,
           gameStarted: true,
           phase: 'day',
-          timeLeft: 90, // 낮 1분 30초
-          voteUsed: false, // 새로운 날이 시작되면 투표 사용 가능
+          timeLeft: 90,
+          voteUsed: false,
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'system',
@@ -198,142 +180,77 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
             timestamp: new Date()
           }]
         }));
-        // 2분 후 밤으로 전환
-        setTimeout(() => {
-          setGameState(prev => ({
-            ...prev,
-            phase: 'night',
-            timeLeft: 30,
-            messages: [...prev.messages, {
-              id: Date.now().toString(),
-              type: 'system',
-              content: '밤이 되었습니다. 마피아가 공격할 플레이어를 선택하세요.',
-              timestamp: new Date()
-            }]
-          }));
-        }, 120000);
         break;
-      
+
       case 'vote':
-        const targetPlayer = gameState.players.find(p => p.id === data.targetId);
-        if (!targetPlayer) return;
+      case 'vote-skip':
+        setGameState(prev => ({
+          ...prev,
+          voteUsed: true,
+          messages: [...prev.messages, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: data.message,
+            timestamp: new Date()
+          }]
+        }));
 
-        if (targetPlayer.role === 'joker') {
+        // 서버에서 업데이트된 플레이어 정보가 있다면 반영
+        if (data.player) {
           setGameState(prev => ({
             ...prev,
-            phase: 'game-over',
-            winner: 'joker',
-            messages: [...prev.messages, {
-              id: Date.now().toString(),
-              type: 'system',
-              content: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!`,
-              timestamp: new Date()
-            }]
+            players: prev.players.map(p =>
+                p.id === data.targetId ? { ...p, ...data.player } : p
+            )
           }));
-        } else {
-          const updatedPlayers = gameState.players.map(p =>
-            p.id === data.targetId
-              ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
-              : p
-          );
-
-          setGameState(prev => ({
-            ...prev,
-            players: updatedPlayers,
-            voteUsed: true, // 투표 사용됨
-            messages: [...prev.messages, {
-              id: Date.now().toString(),
-              type: 'vote',
-              content: `${targetPlayer.username}이(가) 투표받아 생명이 1 감소했습니다.`,
-              timestamp: new Date()
-            }]
-          }));
-
-          checkGameEnd();
         }
         break;
-      
+
       case 'attack':
         console.log('클라이언트 attack 메시지 수신:', data);
-        const attackedPlayer = gameState.players.find(p => p.id === data.targetId);
-        if (!attackedPlayer) return;
-        setAttackedId(data.targetId); // 애니메이션용
-        const updatedPlayersAfterAttack = gameState.players.map(p =>
-          p.id === data.targetId
-            ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
-            : p
-        );
+
+        setAttackedId(data.targetId);
 
         setGameState(prev => ({
           ...prev,
-          players: updatedPlayersAfterAttack,
+          players: prev.players.map(p =>
+              p.id === data.targetId
+                  ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+                  : p
+          ),
           phase: 'doctor-healing',
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'attack',
-            content: `${attackedPlayer.username}이(가) 마피아의 공격을 받았습니다.`,
+            content: data.message,
             timestamp: new Date()
           }]
         }));
+
         // 공격 애니메이션 1초 후 해제
         setTimeout(() => setAttackedId(null), 1000);
-        // 공격 끝 알림 후 낮 안내
-        setTimeout(() => {
-          setGameState(prev => ({
-            ...prev,
-            phase: 'day',
-            timeLeft: 90,
-            voteUsed: false,
-            messages: [...prev.messages, {
-              id: Date.now().toString(),
-              type: 'system',
-              content: '공격이 끝났습니다. 낮이 되었습니다! 1분 30초간 대화하세요.',
-              timestamp: new Date()
-            }]
-          }));
-        }, 2000);
         break;
-      
+
       case 'heal':
-        const healedPlayer = gameState.players.find(p => p.id === data.targetId);
-        if (!healedPlayer) return;
-
-        const updatedPlayersAfterHeal = gameState.players.map(p =>
-          p.id === data.targetId
-            ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
-            : p
-        );
-
         setGameState(prev => ({
           ...prev,
-          players: updatedPlayersAfterHeal,
+          players: prev.players.map(p =>
+              p.id === data.targetId
+                  ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+                  : p
+          ),
           phase: 'day',
-          timeLeft: 120,
-          voteUsed: false, // 새로운 날이 시작되면 투표 사용 가능
+          timeLeft: 90,
+          voteUsed: false,
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'heal',
-            content: `${healedPlayer.username}이(가) 의사에 의해 치료되었습니다.`,
+            content: data.message,
             timestamp: new Date()
           }]
         }));
-
-        // 2분 후 다시 밤으로
-        setTimeout(() => {
-          setGameState(prev => ({
-            ...prev,
-            phase: 'night',
-            timeLeft: 30,
-            messages: [...prev.messages, {
-              id: Date.now().toString(),
-              type: 'system',
-              content: '밤이 되었습니다. 마피아가 공격할 플레이어를 선택하세요.',
-              timestamp: new Date()
-            }]
-          }));
-        }, 120000);
         break;
-      
+
       case 'game-over':
         setGameState(prev => ({
           ...prev,
@@ -394,7 +311,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }));
   };
 
-  // 마피아 공격 진단용 로그
+  // 마피아 공격
   const executeMafiaAttack = () => {
     if (!gameState.selectedPlayer || !socketRef.current) return;
     console.log('마피아 공격 emit:', gameState.selectedPlayer);
@@ -417,36 +334,10 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }));
   };
 
-  // 게임 종료 체크
-  const checkGameEnd = () => {
-    const alivePlayers = gameState.players.filter(p => p.isAlive);
-    const aliveMafia = alivePlayers.filter(p => p.role === 'mafia');
-    const aliveCitizens = alivePlayers.filter(p => p.role !== 'mafia');
-
-    if (aliveMafia.length === 0) {
-      if (socketRef.current) {
-        socketRef.current.emit('mafia-game-over', { 
-          room, 
-          winner: 'citizens',
-          message: '모든 마피아가 제거되었습니다! 시민의 승리입니다!'
-        });
-      }
-    } else if (aliveCitizens.length === 0) {
-      if (socketRef.current) {
-        socketRef.current.emit('mafia-game-over', { 
-          room, 
-          winner: 'mafia',
-          message: '모든 시민이 사망했습니다! 마피아의 승리입니다!'
-        });
-      }
-    }
-  };
-
   // 현재 플레이어의 역할 확인
   const currentPlayerRole = gameState.players.find(p => p.username === username)?.role;
 
-  // 자동 스크롤 useEffect 제거
-  // 대신 스크롤 위치 감지해서 버튼 표시
+  // 스크롤 위치 감지해서 버튼 표시
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
@@ -455,167 +346,169 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       setShowScrollBtn(false);
     }
   };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="mafia-game-container">
-      <div className="game-header">
-        <h2>🕵️</h2>
-        <div className="game-info">
-          <span className="phase">{gameState.phase === 'day' ? '☀️ 낮' : '🌙 밤'}</span>
-          <span className="timer">⏰ {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}</span>
-        </div>
-      </div>
-
-      {!gameState.gameStarted ? (
-        <div className="waiting-room">
-          <h3>대기실</h3>
-          <div className="player-list">
-            {gameState.players.map(player => (
-              <div key={player.id} className="player-item">
-                {player.username}
-              </div>
-            ))}
-          </div>
-          <button onClick={startGame} className="start-button">
-            게임 시작
-          </button>
-        </div>
-      ) : gameState.phase === 'game-over' ? (
-        <div className="game-over">
-          <h3>게임 종료!</h3>
-          <p className="winner">
-            {gameState.winner === 'joker' ? '🎭 조커의 승리!' :
-             gameState.winner === 'citizens' ? '👥 시민의 승리!' :
-             gameState.winner === 'mafia' ? '🕵️ 마피아의 승리!' : ''}
-          </p>
-          <div className="final-players">
-            {gameState.players.map(player => (
-              <div key={player.id} className={`player-item ${!player.isAlive ? 'dead' : ''}`}>
-                <span>{player.username}</span>
-                <span className="role">{player.role}</span>
-                <span className="lives">❤️ {player.lives}</span>
-              </div>
-            ))}
+      <div className="mafia-game-container">
+        <div className="game-header">
+          <h2>🕵️</h2>
+          <div className="game-info">
+            <span className="phase">{gameState.phase === 'day' ? '☀️ 낮' : '🌙 밤'}</span>
+            <span className="timer">⏰ {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}</span>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="game-area">
-            <div className="player-grid">
-              {gameState.players.map(player => (
-                <div 
-                  key={player.id} 
-                  className={`player-card ${!player.isAlive ? 'dead' : ''} ${gameState.selectedPlayer === player.id ? 'selected' : ''}`}
-                  onClick={() => selectPlayer(player.id)}
-                >
-                  <div className="player-name">{player.username}</div>
-                  <div className={`player-lives${attackedId === player.id ? ' attacked' : ''}`}>❤️ {player.lives}</div>
-                  {player.username === username && (
-                    <div className="player-role">역할: {player.role}</div>
-                  )}
-                </div>
-              ))}
-            </div>
 
-            <div className="action-area">
-              {gameState.phase === 'day' && (
-                <div className="day-actions">
-                  <p>1분 30초간 대화 후 투표를 진행합니다.</p>
-                  <button 
-                    onClick={startVote}
-                    disabled={gameState.voteUsed}
-                    className={gameState.voteUsed ? 'disabled' : ''}
-                  >
-                    {gameState.voteUsed ? '투표 완료' : '투표 시작'}
-                  </button>
-                  {gameState.voteUsed && (
-                    <p className="vote-notice">오늘은 이미 투표를 완료했습니다.</p>
-                  )}
-                </div>
-              )}
-              {/* 투표 팝업 */}
-              {showVotePopup && (
-                <div className="vote-popup" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
-                    <h3 style={{ color: '#fbbf24', marginBottom: 16 }}>투표</h3>
-                    <div style={{ marginBottom: 16 }}>지목할 플레이어를 선택하세요.</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                      {gameState.players.filter(p => p.isAlive).map(p => (
-                        <button key={p.id} onClick={() => setVoteTarget(p.id)} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: 'pointer' }}>{p.username}</button>
-                      ))}
+        {!gameState.gameStarted ? (
+            <div className="waiting-room">
+              <h3>대기실</h3>
+              <div className="player-list">
+                {gameState.players.map(player => (
+                    <div key={player.id} className="player-item">
+                      {player.username}
                     </div>
-                    <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
-                  </div>
-                </div>
-              )}
-
-              {gameState.phase === 'voting' && (
-                <div className="voting-actions">
-                  <p>투표할 플레이어를 선택하세요.</p>
-                  <button onClick={executeVote} disabled={!gameState.selectedPlayer}>
-                    투표 실행
-                  </button>
-                </div>
-              )}
-
-              {gameState.phase === 'night' && currentPlayerRole === 'mafia' && (
-                <div className="mafia-actions">
-                  <p>공격할 플레이어를 선택하세요.</p>
-                  <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer}>
-                    공격 실행
-                  </button>
-                </div>
-              )}
-
-              {gameState.phase === 'doctor-healing' && currentPlayerRole === 'doctor' && (
-                <div className="doctor-actions">
-                  <p>치료할 플레이어를 선택하세요.</p>
-                  <button onClick={executeDoctorHeal} disabled={!gameState.selectedPlayer}>
-                    치료 실행
-                  </button>
-                </div>
-              )}
+                ))}
+              </div>
+              <button onClick={startGame} className="start-button">
+                게임 시작
+              </button>
             </div>
-          </div>
+        ) : gameState.phase === 'game-over' ? (
+            <div className="game-over">
+              <h3>게임 종료!</h3>
+              <p className="winner">
+                {gameState.winner === 'joker' ? '🎭 조커의 승리!' :
+                    gameState.winner === 'citizens' ? '👥 시민의 승리!' :
+                        gameState.winner === 'mafia' ? '🕵️ 마피아의 승리!' : ''}
+              </p>
+              <div className="final-players">
+                {gameState.players.map(player => (
+                    <div key={player.id} className={`player-item ${!player.isAlive ? 'dead' : ''}`}>
+                      <span>{player.username}</span>
+                      <span className="role">{player.role}</span>
+                      <span className="lives">❤️ {player.lives}</span>
+                    </div>
+                ))}
+              </div>
+            </div>
+        ) : (
+            <>
+              <div className="game-area">
+                <div className="player-grid">
+                  {gameState.players.map(player => (
+                      <div
+                          key={player.id}
+                          className={`player-card ${!player.isAlive ? 'dead' : ''} ${gameState.selectedPlayer === player.id ? 'selected' : ''}`}
+                          onClick={() => selectPlayer(player.id)}
+                      >
+                        <div className="player-name">{player.username}</div>
+                        <div className={`player-lives${attackedId === player.id ? ' attacked' : ''}`}>❤️ {player.lives}</div>
+                        {player.username === username && (
+                            <div className="player-role">역할: {player.role}</div>
+                        )}
+                      </div>
+                  ))}
+                </div>
 
-          <div className="chat-area">
-            <div className="messages" onScroll={handleScroll} style={{ position: 'relative' }}>
-              {gameState.messages.map(message => (
-                <div key={message.id} className={`message ${message.type}`}>
+                <div className="action-area">
+                  {gameState.phase === 'day' && (
+                      <div className="day-actions">
+                        <p>1분 30초간 대화 후 투표를 진행합니다.</p>
+                        <button
+                            onClick={startVote}
+                            disabled={gameState.voteUsed}
+                            className={gameState.voteUsed ? 'disabled' : ''}
+                        >
+                          {gameState.voteUsed ? '투표 완료' : '투표 시작'}
+                        </button>
+                        {gameState.voteUsed && (
+                            <p className="vote-notice">오늘은 이미 투표를 완료했습니다.</p>
+                        )}
+                      </div>
+                  )}
+
+                  {/* 투표 팝업 */}
+                  {showVotePopup && (
+                      <div className="vote-popup" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
+                          <h3 style={{ color: '#fbbf24', marginBottom: 16 }}>투표</h3>
+                          <div style={{ marginBottom: 16 }}>지목할 플레이어를 선택하세요.</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                            {gameState.players.filter(p => p.isAlive).map(p => (
+                                <button key={p.id} onClick={() => setVoteTarget(p.id)} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: 'pointer' }}>{p.username}</button>
+                            ))}
+                          </div>
+                          <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
+                        </div>
+                      </div>
+                  )}
+
+                  {gameState.phase === 'voting' && (
+                      <div className="voting-actions">
+                        <p>투표할 플레이어를 선택하세요.</p>
+                        <button onClick={executeVote} disabled={!gameState.selectedPlayer}>
+                          투표 실행
+                        </button>
+                      </div>
+                  )}
+
+                  {gameState.phase === 'night' && currentPlayerRole === 'mafia' && (
+                      <div className="mafia-actions">
+                        <p>공격할 플레이어를 선택하세요.</p>
+                        <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer}>
+                          공격 실행
+                        </button>
+                      </div>
+                  )}
+
+                  {gameState.phase === 'doctor-healing' && currentPlayerRole === 'doctor' && (
+                      <div className="doctor-actions">
+                        <p>치료할 플레이어를 선택하세요.</p>
+                        <button onClick={executeDoctorHeal} disabled={!gameState.selectedPlayer}>
+                          치료 실행
+                        </button>
+                      </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="chat-area">
+                <div className="messages" onScroll={handleScroll} style={{ position: 'relative' }}>
+                  {gameState.messages.map(message => (
+                      <div key={message.id} className={`message ${message.type}`}>
                   <span className="timestamp">
                     {typeof message.timestamp === 'string'
-                      ? new Date(message.timestamp).toLocaleTimeString()
-                      : message.timestamp.toLocaleTimeString()}
+                        ? new Date(message.timestamp).toLocaleTimeString()
+                        : message.timestamp.toLocaleTimeString()}
                   </span>
-                  {message.player && <span className="player">{message.player}: </span>}
-                  <span className="content">{message.content}</span>
+                        {message.player && <span className="player">{message.player}: </span>}
+                        <span className="content">{message.content}</span>
+                      </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                  {showScrollBtn && (
+                      <button onClick={scrollToBottom} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 10, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '8px 18px', fontWeight: 700, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', cursor: 'pointer' }}>
+                        맨 아래로
+                      </button>
+                  )}
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-              {showScrollBtn && (
-                <button onClick={scrollToBottom} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 10, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '8px 18px', fontWeight: 700, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', cursor: 'pointer' }}>
-                  맨 아래로
-                </button>
-              )}
-            </div>
-            <div className="message-input">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="메시지를 입력하세요..."
-              />
-              <button onClick={sendMessage}>전송</button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+                <div className="message-input">
+                  <input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      placeholder="메시지를 입력하세요..."
+                  />
+                  <button onClick={sendMessage}>전송</button>
+                </div>
+              </div>
+            </>
+        )}
+      </div>
   );
 };
 
-export default MafiaGame; 
+export default MafiaGame;

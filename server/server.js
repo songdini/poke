@@ -32,10 +32,10 @@ io.on('connection', (socket) => {
   // 사용자 입장
   socket.on('join', (userData) => {
     const { username, room, gameType } = userData;
-    
+
     socket.join(room);
     connectedUsers.set(socket.id, { username, room, gameType });
-    
+
     // 마피아 게임인 경우
     if (gameType === 'mafia') {
       if (!mafiaGames.has(room)) {
@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
           voteUsed: false // 투표 사용 여부 추가
         });
       }
-      
+
       const game = mafiaGames.get(room);
       const player = {
         id: socket.id,
@@ -56,9 +56,9 @@ io.on('connection', (socket) => {
         lives: 3,
         isProtected: false
       };
-      
+
       game.players.push(player);
-      
+
       // 모든 클라이언트에게 플레이어 목록 업데이트
       io.to(room).emit('mafia-update', {
         type: 'join',
@@ -71,15 +71,15 @@ io.on('connection', (socket) => {
         message: `${username}님이 입장하셨습니다.`,
         timestamp: new Date().toISOString()
       });
-      
+
       // 현재 방의 사용자 목록 전송
       const roomUsers = Array.from(connectedUsers.values())
-        .filter(user => user.room === room)
-        .map(user => user.username);
-      
+          .filter(user => user.room === room)
+          .map(user => user.username);
+
       io.to(room).emit('userList', roomUsers);
     }
-    
+
     console.log(`${username}님이 ${room}방에 입장했습니다.`);
   });
 
@@ -87,7 +87,7 @@ io.on('connection', (socket) => {
   socket.on('mafia-message', (messageData) => {
     const { room, message } = messageData;
     const user = connectedUsers.get(socket.id);
-    
+
     if (user && user.gameType === 'mafia') {
       io.to(room).emit('mafia-update', {
         type: 'message',
@@ -104,6 +104,7 @@ io.on('connection', (socket) => {
     // 역할 배정: 마피아 1명, 조커 1명, 의사 1명(4명 이상일 때만), 나머지 시민
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
     let mafiaAssigned = false, jokerAssigned = false, doctorAssigned = false;
+
     shuffled.forEach((player, idx) => {
       if (!mafiaAssigned) {
         player.role = 'mafia';
@@ -132,25 +133,46 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 투표 시작: 모든 클라이언트에 팝업 띄우기
+  socket.on('mafia-vote-start', ({ room }) => {
+    const game = mafiaGames.get(room);
+    if (!game || game.voteUsed) return;
+
+    game.votes = [];
+    io.to(room).emit('mafia-vote-popup');
+  });
+
   // 마피아 투표 (집계)
   socket.on('mafia-vote', ({ room, targetId, voterId }) => {
     const game = mafiaGames.get(room);
-    if (!game) return;
-    if (game.voteUsed) return;
+    if (!game || game.voteUsed) return;
+
+    console.log(`투표 수신: ${voterId} -> ${targetId}`);
 
     // 투표 집계용 votes 배열 추가
     if (!game.votes) game.votes = [];
-    game.votes.push(targetId);
+
+    // 중복 투표 방지
+    const alreadyVoted = game.votes.find(vote => vote.voterId === voterId);
+    if (alreadyVoted) {
+      console.log(`${voterId}는 이미 투표했습니다.`);
+      return;
+    }
+
+    game.votes.push({ targetId, voterId });
 
     // 모든 생존자 투표 시 집계
     const aliveCount = game.players.filter(p => p.isAlive).length;
+    console.log(`현재 투표 수: ${game.votes.length}, 생존자 수: ${aliveCount}`);
+
     if (game.votes.length >= aliveCount) {
       // 집계
       const voteCount = {};
-      for (const v of game.votes) {
-        if (!voteCount[v]) voteCount[v] = 0;
-        voteCount[v]++;
+      for (const vote of game.votes) {
+        if (!voteCount[vote.targetId]) voteCount[vote.targetId] = 0;
+        voteCount[vote.targetId]++;
       }
+
       // 최다 득표자 찾기
       let max = 0, maxIds = [];
       for (const id in voteCount) {
@@ -161,11 +183,14 @@ io.on('connection', (socket) => {
           maxIds.push(id);
         }
       }
-      let resultMsg = '';
-      if (maxIds.length === 1 && voteCount[maxIds[0]] > 1) {
+
+      console.log('투표 집계 결과:', voteCount, '최다 득표:', maxIds, '득표수:', max);
+
+      if (maxIds.length === 1 && max > 1) {
         // 다수 득표자 1명
         const targetPlayer = game.players.find(p => p.id === maxIds[0]);
         if (targetPlayer.role === 'joker') {
+          game.phase = 'game-over';
           io.to(room).emit('mafia-update', {
             type: 'game-over',
             data: { winner: 'joker', message: `${targetPlayer.username}이(가) 투표받았습니다! 조커의 승리입니다!` }
@@ -174,64 +199,104 @@ io.on('connection', (socket) => {
           targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
           targetPlayer.isAlive = targetPlayer.lives > 0;
           game.voteUsed = true;
-          resultMsg = `${targetPlayer.username}님의 생명이 1 감소했습니다.`;
+
           io.to(room).emit('mafia-update', {
             type: 'vote',
-            data: { targetId: targetPlayer.id, player: targetPlayer, resultMsg }
+            data: {
+              targetId: targetPlayer.id,
+              player: targetPlayer,
+              message: `${targetPlayer.username}이(가) 투표받아 생명이 1 감소했습니다.`
+            }
           });
+
           checkMafiaGameEnd(room);
         }
       } else {
         // 동점 또는 모두 1표씩
-        resultMsg = `투표 결과: 아무도 지목되지 않았습니다. 투표가 스킵됩니다.`;
+        game.voteUsed = true;
         io.to(room).emit('mafia-update', {
-          type: 'vote',
-          data: { targetId: null, player: null, resultMsg }
+          type: 'vote-skip',
+          data: { message: '투표 결과: 아무도 지목되지 않았습니다.' }
         });
       }
+
       game.votes = [];
     }
   });
 
   // 마피아 공격
   socket.on('mafia-attack', ({ room, targetId }) => {
+    console.log('마피아 공격 수신:', { room, targetId });
     const game = mafiaGames.get(room);
-    if (!game) return;
+    if (!game) {
+      console.log('게임을 찾을 수 없음');
+      return;
+    }
 
     const targetPlayer = game.players.find(p => p.id === targetId);
-    if (!targetPlayer) return;
+    if (!targetPlayer) {
+      console.log('타겟 플레이어를 찾을 수 없음');
+      return;
+    }
 
+    console.log('공격 전 플레이어 상태:', targetPlayer);
+
+    // 생명 감소
     targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
     targetPlayer.isAlive = targetPlayer.lives > 0;
 
+    console.log('공격 후 플레이어 상태:', targetPlayer);
+
+    // 게임 상태 업데이트
+    game.phase = 'doctor-healing';
+
+    // 모든 클라이언트에게 공격 결과 전송
     io.to(room).emit('mafia-update', {
       type: 'attack',
-      data: { targetId, player: targetPlayer }
+      data: {
+        targetId,
+        player: targetPlayer,
+        message: `${targetPlayer.username}이(가) 마피아의 공격을 받았습니다.`
+      }
     });
 
-    // 의사 치료 단계로
-    game.phase = 'doctor-healing';
+    console.log('공격 완료, 의사 치료 단계로 전환');
+
+    // 게임 종료 체크
+    setTimeout(() => {
+      checkMafiaGameEnd(room);
+    }, 1000);
   });
 
   // 의사 치료
   socket.on('mafia-heal', ({ room, targetId }) => {
+    console.log('의사 치료 수신:', { room, targetId });
     const game = mafiaGames.get(room);
     if (!game) return;
 
     const targetPlayer = game.players.find(p => p.id === targetId);
     if (!targetPlayer) return;
 
+    // 생명 회복 (최대 3까지)
     targetPlayer.lives = Math.min(3, targetPlayer.lives + 1);
     targetPlayer.isAlive = targetPlayer.lives > 0;
 
-    io.to(room).emit('mafia-update', {
-      type: 'heal',
-      data: { targetId, player: targetPlayer }
-    });
+    console.log('치료 후 플레이어 상태:', targetPlayer);
 
     // 다시 낮으로
     game.phase = 'day';
     game.voteUsed = false; // 새로운 날이 시작되면 투표 사용 가능
+
+    io.to(room).emit('mafia-update', {
+      type: 'heal',
+      data: {
+        targetId,
+        player: targetPlayer,
+        message: `${targetPlayer.username}이(가) 의사에 의해 치료되었습니다.`
+      }
+    });
+
+    console.log('치료 완료, 낮으로 전환');
   });
 
   // 마피아 게임 종료 체크
@@ -243,12 +308,20 @@ io.on('connection', (socket) => {
     const aliveMafia = alivePlayers.filter(p => p.role === 'mafia');
     const aliveCitizens = alivePlayers.filter(p => p.role !== 'mafia');
 
+    console.log('게임 종료 체크:', {
+      전체생존자: alivePlayers.length,
+      생존마피아: aliveMafia.length,
+      생존시민: aliveCitizens.length
+    });
+
     if (aliveMafia.length === 0) {
+      game.phase = 'game-over';
       io.to(room).emit('mafia-update', {
         type: 'game-over',
         data: { winner: 'citizens', message: '모든 마피아가 제거되었습니다! 시민의 승리입니다!' }
       });
     } else if (aliveCitizens.length === 0) {
+      game.phase = 'game-over';
       io.to(room).emit('mafia-update', {
         type: 'game-over',
         data: { winner: 'mafia', message: '모든 시민이 사망했습니다! 마피아의 승리입니다!' }
@@ -260,7 +333,7 @@ io.on('connection', (socket) => {
   socket.on('sendMessage', (messageData) => {
     const { message, room, isImage } = messageData;
     const user = connectedUsers.get(socket.id);
-    
+
     if (user) {
       const messageObj = {
         username: user.username,
@@ -269,7 +342,7 @@ io.on('connection', (socket) => {
         id: socket.id,
         isImage: !!isImage
       };
-      
+
       io.to(room).emit('newMessage', messageObj);
       console.log(`${user.username}: ${isImage ? '[이미지]' : message}`);
     }
@@ -348,14 +421,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 투표 시작: 모든 클라이언트에 팝업 띄우기
-  socket.on('mafia-vote-start', ({ room }) => {
-    const game = mafiaGames.get(room);
-    if (!game) return;
-    game.votes = [];
-    io.to(room).emit('mafia-vote-popup');
-  });
-
   // 연결 해제
   socket.on('disconnect', () => {
     const user = connectedUsers.get(socket.id);
@@ -365,7 +430,7 @@ io.on('connection', (socket) => {
         const game = mafiaGames.get(user.room);
         if (game) {
           game.players = game.players.filter(p => p.id !== socket.id);
-          
+
           io.to(user.room).emit('mafia-update', {
             type: 'leave',
             data: { playerId: socket.id }
@@ -378,15 +443,15 @@ io.on('connection', (socket) => {
           message: `${user.username}님이 퇴장하셨습니다.`,
           timestamp: new Date().toISOString()
         });
-        
+
         // 사용자 목록 업데이트
         const roomUsers = Array.from(connectedUsers.values())
-          .filter(u => u.room === user.room)
-          .map(u => u.username);
-        
+            .filter(u => u.room === user.room)
+            .map(u => u.username);
+
         io.to(user.room).emit('userList', roomUsers);
       }
-      
+
       connectedUsers.delete(socket.id);
       console.log(`${user.username}님이 연결을 해제했습니다.`);
     }
@@ -397,4 +462,4 @@ const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
   console.log(`채팅 서버가 포트 ${PORT}에서 실행 중입니다.`);
-}); 
+});
