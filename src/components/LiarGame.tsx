@@ -716,7 +716,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
 
       {/* 헤더 */}
       <div className="game-header">
-        <h2>🤥 라이어 게임</h2>
+        <h2>🤥 라이어 </h2>
         <div className="room-info">
           <span>방: <strong>{room}</strong></span>
           <span>닉네임: <strong>{username}</strong></span>

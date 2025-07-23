@@ -486,7 +486,8 @@ socket.on('join', (userData) => {
       data: { 
         players: game.players,
         phase: game.phase,
-        host: game.host
+        host: game.host,
+        wordProvider: game.wordProvider // 항상 포함
       }
     });
 
