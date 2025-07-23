@@ -821,7 +821,7 @@ const checkMafiaGameEnd = (room) => {
 // 기존 서버 코드에 추가할 라이어 게임 로직
 
 // 라이어 게임 상태 저장
-const liarGames = new Map();
+// (800줄 이후 중복 선언 삭제)
 
 // 기존 join 이벤트에 추가할 부분
 socket.on('join', (userData) => {
