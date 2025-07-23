@@ -795,16 +795,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
                     className="word-input"
                   />
                 </div>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    value={liarWord}
-                    onChange={(e) => setLiarWord(e.target.value)}
-                    placeholder="라이어용 다른 제시어 (선택사항)"
-                    className="word-input"
-                  />
-                  <small>라이어에게 다른 제시어를 주고 싶다면 입력하세요. 비워두면 라이어는 제시어를 받지 않습니다.</small>
-                </div>
                 <button className="primary-btn" onClick={handleWordSubmit}>
                   제시어 확정
                 </button>
