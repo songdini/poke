@@ -244,6 +244,21 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
           }]
         }));
         break;
+
+      case 'phase-change':
+        setGameState(prev => ({
+          ...prev,
+          phase: data.phase,
+          timeLeft: data.phase === 'day' ? 90 : prev.timeLeft,
+          voteUsed: false,
+          messages: [...prev.messages, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: data.message,
+            timestamp: new Date()
+          }]
+        }));
+        break;
     }
   };
 

@@ -260,7 +260,19 @@ io.on('connection', (socket) => {
         }
       });
     }
+
+    // 밤이 끝나고 낮으로 전환
+    game.phase = 'day';
+    game.voteUsed = false;
+
     setTimeout(() => {
+      io.to(room).emit('mafia-update', {
+        type: 'phase-change',
+        data: {
+          phase: 'day',
+          message: '밤이 끝나고 낮이 되었습니다! 모두 대화하고 투표하세요.'
+        }
+      });
       checkMafiaGameEnd(room);
     }, 1000);
   });
