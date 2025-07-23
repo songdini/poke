@@ -86,7 +86,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
         case 'join':
         case 'leave':
         case 'restart':
-          setPlayers(payload.players);
+          setPlayers(payload.players || []);
           setPhase(payload.phase);
           setWordProvider(payload.wordProvider);
           break;

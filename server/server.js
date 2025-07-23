@@ -771,8 +771,9 @@ socket.on('liar-game-restart', ({ room }) => {
     type: 'restart',
     data: {
       phase: 'waiting',
-      players: game.players,
-      host: game.host
+      players: game.players, // 반드시 포함
+      host: game.host,
+      wordProvider: game.wordProvider // 일관성 위해 포함
     }
   });
 });
