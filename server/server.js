@@ -54,7 +54,8 @@ io.on('connection', (socket) => {
         role: 'citizen', // 나중에 배정
         isAlive: true,
         lives: 3,
-        isProtected: false
+        isProtected: false,
+        jokerAttacked: false // 조커 공격 당한 상태 추가
       };
 
       game.players.push(player);
@@ -101,9 +102,9 @@ io.on('connection', (socket) => {
     const game = mafiaGames.get(room);
     if (!game) return;
 
-    // 역할 배정: 마피아 1명, 조커 1명, 의사 1명(4명 이상일 때만), 나머지 시민
+    // 역할 배정: 마피아 1명, 조커 1명, 나머지 시민
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
-    let mafiaAssigned = false, jokerAssigned = false, doctorAssigned = false;
+    let mafiaAssigned = false, jokerAssigned = false;
 
     shuffled.forEach((player, idx) => {
       if (!mafiaAssigned) {
@@ -112,15 +113,13 @@ io.on('connection', (socket) => {
       } else if (!jokerAssigned) {
         player.role = 'joker';
         jokerAssigned = true;
-      } else if (!doctorAssigned) {
-        player.role = 'doctor';
-        doctorAssigned = true;
       } else {
         player.role = 'citizen';
       }
       player.isAlive = true;
       player.lives = 3;
       player.isProtected = false;
+      player.jokerAttacked = false; // 조커 공격 당한 상태 초기화
     });
 
     game.gameStarted = true;
@@ -226,108 +225,45 @@ io.on('connection', (socket) => {
 
   // 마피아 공격
   socket.on('mafia-attack', ({ room, targetId }) => {
-    console.log('마피아 공격 수신:', { room, targetId });
     const game = mafiaGames.get(room);
-    if (!game) {
-      console.log('게임을 찾을 수 없음');
-      return;
-    }
-
+    if (!game) return;
     const targetPlayer = game.players.find(p => p.id === targetId);
-    if (!targetPlayer) {
-      console.log('타겟 플레이어를 찾을 수 없음');
-      return;
-    }
+    if (!targetPlayer) return;
 
-    console.log('공격 전 플레이어 상태:', targetPlayer);
-
-    // 생명 감소
-    targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
-    targetPlayer.isAlive = targetPlayer.lives > 0;
-
-    console.log('공격 후 플레이어 상태:', targetPlayer);
-
-    // 게임 상태 업데이트
-    game.phase = 'doctor-healing';
-
-    // 모든 클라이언트에게 공격 결과 전송
-    io.to(room).emit('mafia-update', {
-      type: 'attack',
-      data: {
-        targetId,
-        player: targetPlayer,
-        message: `${targetPlayer.username}이(가) 마피아의 공격을 받았습니다.`
+    // 조커가 처음 공격당하는 경우
+    if (targetPlayer.role === 'joker' && !targetPlayer.jokerAttacked) {
+      // 조커는 죽지 않고, 마피아 중 한 명이 피해를 입음
+      targetPlayer.jokerAttacked = true;
+      const mafia = game.players.find(p => p.role === 'mafia' && p.isAlive);
+      if (mafia) {
+        mafia.lives = Math.max(0, mafia.lives - 1);
+        mafia.isAlive = mafia.lives > 0;
       }
-    });
-
-    console.log('공격 완료, 의사 치료 단계로 전환');
-
-    // 게임 종료 체크
+      io.to(room).emit('mafia-update', {
+        type: 'attack',
+        data: {
+          targetId: mafia ? mafia.id : null,
+          player: mafia,
+          message: `조커가 마피아에게 공격당했지만, 오히려 마피아가 피해를 입었습니다!`
+        }
+      });
+    } else {
+      // 일반 공격 로직
+      targetPlayer.lives = Math.max(0, targetPlayer.lives - 1);
+      targetPlayer.isAlive = targetPlayer.lives > 0;
+      io.to(room).emit('mafia-update', {
+        type: 'attack',
+        data: {
+          targetId,
+          player: targetPlayer,
+          message: `${targetPlayer.username}이(가) 마피아의 공격을 받았습니다.`
+        }
+      });
+    }
     setTimeout(() => {
       checkMafiaGameEnd(room);
     }, 1000);
   });
-
-  // 의사 치료
-  socket.on('mafia-heal', ({ room, targetId }) => {
-    console.log('의사 치료 수신:', { room, targetId });
-    const game = mafiaGames.get(room);
-    if (!game) return;
-
-    const targetPlayer = game.players.find(p => p.id === targetId);
-    if (!targetPlayer) return;
-
-    // 생명 회복 (최대 3까지)
-    targetPlayer.lives = Math.min(3, targetPlayer.lives + 1);
-    targetPlayer.isAlive = targetPlayer.lives > 0;
-
-    console.log('치료 후 플레이어 상태:', targetPlayer);
-
-    // 다시 낮으로
-    game.phase = 'day';
-    game.voteUsed = false; // 새로운 날이 시작되면 투표 사용 가능
-
-    io.to(room).emit('mafia-update', {
-      type: 'heal',
-      data: {
-        targetId,
-        player: targetPlayer,
-        message: `${targetPlayer.username}이(가) 의사에 의해 치료되었습니다.`
-      }
-    });
-
-    console.log('치료 완료, 낮으로 전환');
-  });
-
-  // 마피아 게임 종료 체크
-  const checkMafiaGameEnd = (room) => {
-    const game = mafiaGames.get(room);
-    if (!game) return;
-
-    const alivePlayers = game.players.filter(p => p.isAlive);
-    const aliveMafia = alivePlayers.filter(p => p.role === 'mafia');
-    const aliveCitizens = alivePlayers.filter(p => p.role !== 'mafia');
-
-    console.log('게임 종료 체크:', {
-      전체생존자: alivePlayers.length,
-      생존마피아: aliveMafia.length,
-      생존시민: aliveCitizens.length
-    });
-
-    if (aliveMafia.length === 0) {
-      game.phase = 'game-over';
-      io.to(room).emit('mafia-update', {
-        type: 'game-over',
-        data: { winner: 'citizens', message: '모든 마피아가 제거되었습니다! 시민의 승리입니다!' }
-      });
-    } else if (aliveCitizens.length === 0) {
-      game.phase = 'game-over';
-      io.to(room).emit('mafia-update', {
-        type: 'game-over',
-        data: { winner: 'mafia', message: '모든 시민이 사망했습니다! 마피아의 승리입니다!' }
-      });
-    }
-  };
 
   // 메시지 전송
   socket.on('sendMessage', (messageData) => {
@@ -463,3 +399,25 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`채팅 서버가 포트 ${PORT}에서 실행 중입니다.`);
 });
+
+// 마피아 게임 종료 체크
+const checkMafiaGameEnd = (room) => {
+  const game = mafiaGames.get(room);
+  if (!game) return;
+  const alivePlayers = game.players.filter(p => p.isAlive);
+  const aliveMafia = alivePlayers.filter(p => p.role === 'mafia');
+  const aliveCitizens = alivePlayers.filter(p => p.role === 'citizen' || p.role === 'joker');
+  if (aliveMafia.length === 0) {
+    game.phase = 'game-over';
+    io.to(room).emit('mafia-update', {
+      type: 'game-over',
+      data: { winner: 'citizens', message: '모든 마피아가 제거되었습니다! 시민과 조커의 승리입니다!' }
+    });
+  } else if (aliveCitizens.length === 0) {
+    game.phase = 'game-over';
+    io.to(room).emit('mafia-update', {
+      type: 'game-over',
+      data: { winner: 'mafia', message: '모든 시민과 조커가 사망했습니다! 마피아의 승리입니다!' }
+    });
+  }
+};

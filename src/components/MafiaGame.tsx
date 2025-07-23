@@ -5,14 +5,14 @@ import './MafiaGame.css';
 interface Player {
   id: string;
   username: string;
-  role: 'mafia' | 'doctor' | 'citizen' | 'joker';
+  role: 'mafia' | 'citizen' | 'joker';
   isAlive: boolean;
   lives: number;
   isProtected: boolean;
 }
 
 interface GameState {
-  phase: 'waiting' | 'day' | 'night' | 'voting' | 'mafia-voting' | 'doctor-healing' | 'game-over';
+  phase: 'waiting' | 'day' | 'night' | 'voting' | 'mafia-voting' | 'game-over';
   players: Player[];
   currentPlayer: string;
   gameStarted: boolean;
@@ -218,7 +218,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                   ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
                   : p
           ),
-          phase: 'doctor-healing',
+          phase: 'night', // 공격 후 밤으로 전환
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'attack',
@@ -229,26 +229,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
         // 공격 애니메이션 1초 후 해제
         setTimeout(() => setAttackedId(null), 1000);
-        break;
-
-      case 'heal':
-        setGameState(prev => ({
-          ...prev,
-          players: prev.players.map(p =>
-              p.id === data.targetId
-                  ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
-                  : p
-          ),
-          phase: 'day',
-          timeLeft: 90,
-          voteUsed: false,
-          messages: [...prev.messages, {
-            id: Date.now().toString(),
-            type: 'heal',
-            content: data.message,
-            timestamp: new Date()
-          }]
-        }));
         break;
 
       case 'game-over':
@@ -291,7 +271,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     setInputMessage('');
   };
 
-  // 플레이어 선택 (투표/공격/치료)
+  // 플레이어 선택 (투표/공격)
   const selectPlayer = (playerId: string) => {
     setGameState(prev => ({
       ...prev,
@@ -316,18 +296,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     if (!gameState.selectedPlayer || !socketRef.current) return;
     console.log('마피아 공격 emit:', gameState.selectedPlayer);
     socketRef.current.emit('mafia-attack', { room, targetId: gameState.selectedPlayer });
-    setGameState(prev => ({
-      ...prev,
-      selectedPlayer: null
-    }));
-  };
-
-  // 의사 치료
-  const executeDoctorHeal = () => {
-    if (!gameState.selectedPlayer || !socketRef.current) return;
-
-    socketRef.current.emit('mafia-heal', { room, targetId: gameState.selectedPlayer });
-
     setGameState(prev => ({
       ...prev,
       selectedPlayer: null
@@ -459,15 +427,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                         <p>공격할 플레이어를 선택하세요.</p>
                         <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer}>
                           공격 실행
-                        </button>
-                      </div>
-                  )}
-
-                  {gameState.phase === 'doctor-healing' && currentPlayerRole === 'doctor' && (
-                      <div className="doctor-actions">
-                        <p>치료할 플레이어를 선택하세요.</p>
-                        <button onClick={executeDoctorHeal} disabled={!gameState.selectedPlayer}>
-                          치료 실행
                         </button>
                       </div>
                   )}
