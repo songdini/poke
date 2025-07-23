@@ -2,18 +2,19 @@ import { useState } from 'react'
 import './App.css'
 import Chat from './components/Chat'
 import MafiaGame from './components/MafiaGame'
+import LiarGame from './components/LiarGame';
 
 interface UserData {
   username: string;
   room: string;
-  gameType: 'catchmind' | 'mafia';
+  gameType: 'catchmind' | 'mafia' | 'liar';
 }
 
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [selectedGame, setSelectedGame] = useState<'catchmind' | 'mafia' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<'catchmind' | 'mafia' | 'liar' | null>(null);
 
-  const handleGameSelection = (gameType: 'catchmind' | 'mafia') => {
+  const handleGameSelection = (gameType: 'catchmind' | 'mafia' | 'liar') => {
     setSelectedGame(gameType);
   };
 
@@ -62,6 +63,17 @@ function App() {
                 <p>마피아를 찾아내는 게임</p>
               </div>
             </button>
+
+            <button
+              className="game-option liar"
+              onClick={() => handleGameSelection('liar')}
+            >
+              <div className="game-icon">🤥</div>
+              <div className="game-info">
+                <h3>라이어 게임</h3>
+                <p>한 명만 다른 제시어! 라이어를 찾아라</p>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -77,12 +89,14 @@ function App() {
               ← 뒤로가기
             </button>
             <h1>
-              {selectedGame === 'catchmind' ? '🎨 캐치마인드' : '🕵️'}
+              {selectedGame === 'catchmind' ? '🎨 캐치마인드' : selectedGame === 'mafia' ? '🕵️ 마피아 게임' : '🤥 라이어 게임'}
             </h1>
             <p>
-              {selectedGame === 'catchmind' 
-                ? '그림을 그리고 맞추는 게임에 참여하세요.' 
-                : '마피아를 찾아내는 게임에 참여하세요.'}
+              {selectedGame === 'catchmind'
+                ? '그림을 그리고 맞추는 게임에 참여하세요.'
+                : selectedGame === 'mafia'
+                  ? '마피아를 찾아내는 게임에 참여하세요.'
+                  : '라이어를 찾아내는 게임에 참여하세요.'}
             </p>
           </div>
           
@@ -126,8 +140,10 @@ function App() {
     <div className="app">
       {userData.gameType === 'catchmind' ? (
         <Chat username={userData.username} room={userData.room} />
-      ) : (
+      ) : userData.gameType === 'mafia' ? (
         <MafiaGame username={userData.username} room={userData.room} />
+      ) : (
+        <LiarGame username={userData.username} room={userData.room} />
       )}
     </div>
   );

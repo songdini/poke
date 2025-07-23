@@ -218,7 +218,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                   ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
                   : p
           ),
-          phase: 'night', // 공격 후 밤으로 전환
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'attack',
