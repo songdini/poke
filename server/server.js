@@ -38,100 +38,71 @@ const mafiaGames = new Map();
 // 라이어 게임 상태 저장
 const liarGames = new Map();
 
-// 국립국어원 API 관련 함수들
-const getRandomWords = async (count = 10) => {
-  try {
-    const API_KEY = process.env.KOREAN_DICT_API_KEY;
-    if (!API_KEY) {
-      console.error('KOREAN_DICT_API_KEY가 설정되지 않았습니다.');
-      return getDefaultWords();
-    }
-
-    // 한글 자음으로 검색 (ㄱ, ㄴ, ㄷ 등)
-    const consonants = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
-    
-    const url = `https://stdict.korean.go.kr/api/search.do`;
-    const params = {
-      key: API_KEY,
-      type_search: 'search',
-      q: randomConsonant,
-      req_type: 'json',
-      part: 'word',
-      sort: 'dict',
-      start: 1,
-      num: count * 2 // 더 많이 가져와서 필터링
-    };
-
-    const response = await axios.get(url, { params });
-    
-    console.log(response, ' api');
-    if (response.data && response.data.channel && response.data.channel.item) {
-      const items = Array.isArray(response.data.channel.item) 
-        ? response.data.channel.item 
-        : [response.data.channel.item];
-      
-      // 적절한 길이의 단어들만 필터링 (2-6글자)
-      const filteredWords = items
-        .map(item => item.word)
-        .filter(word => word && word.length >= 2 && word.length <= 6)
-        .filter(word => /^[가-힣]+$/.test(word)) // 한글만
-        .slice(0, count);
-      
-      if (filteredWords.length > 0) {
-        return filteredWords;
-      }
-    }
-    
-    // API에서 적절한 단어를 못 가져온 경우 기본 단어 사용
-    return getDefaultWords();
-    
-  } catch (error) {
-    console.error('국립국어원 API 호출 실패:', error.message);
-    return getDefaultWords();
+/**
+ * 국립국어원 API에서 라이어 게임용 단어 두 개를 가져옵니다.
+ * @returns {Promise<{citizenWord: string, liarWord: string}>}
+ */
+const getLiarGameWords = async () => {
+  const API_KEY = process.env.KOREAN_DICT_API_KEY;
+  if (!API_KEY) {
+    console.error('KOREAN_DICT_API_KEY가 설정되지 않았습니다.');
+    return { citizenWord: '사과', liarWord: '오렌지' };
   }
-};
 
-const getDefaultWords = () => {
-  const defaultWords = [
-    '사과', '바나나', '책상', '의자', '컴퓨터', '휴대폰', '자동차', '비행기',
-    '고양이', '강아지', '나무', '꽃', '구름', '별', '달', '태양',
-    '학교', '병원', '은행', '카페', '영화관', '도서관', '공원', '바다',
-    '음악', '그림', '운동', '요리', '독서', '영화', '게임', '여행'
-  ];
-  return defaultWords.sort(() => Math.random() - 0.5).slice(0, 10);
-};
+  const MAX_ATTEMPTS = 10;
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    let randomCat = 0;
+    try {
+      randomCat = Math.floor(Math.random() * 68); // 0 to 67
+      console.log(`[LiarGame] API 호출 시도 (${i + 1}/${MAX_ATTEMPTS}): cat=${randomCat}`);
 
-const selectRandomWord = async () => {
-  const words = await getRandomWords(20);
-  return words[Math.floor(Math.random() * words.length)];
-};
+      const response = await axios.get('https://stdict.korean.go.kr/api/search.do', {
+        params: {
+          key: API_KEY,
+          req_type: 'json',
+          target: 1, // 단어
+          pos: 1,    // 명사
+          cat: randomCat,
+          num: 100,  // 충분히 가져오기
+          start: 1,
+          advanced: 'y'
+        }
+      });
 
-const generateSimilarWord = (originalWord) => {
-  // 간단한 유사 단어 생성 로직
-  // 실제로는 더 정교한 로직이 필요할 수 있음
-  const similarWords = {
-    '사과': '배',
-    '바나나': '포도',
-    '고양이': '강아지',
-    '강아지': '고양이',
-    '자동차': '버스',
-    '컴퓨터': '노트북',
-    '휴대폰': '전화기',
-    '학교': '학원',
-    '병원': '약국',
-    '카페': '식당',
-    '음악': '노래',
-    '영화': '드라마',
-    '책': '소설',
-    '나무': '식물',
-    '꽃': '장미',
-    '바다': '강',
-    '산': '언덕',
-    '집': '아파트'
-  };
-  
-  return similarWords[originalWord] || originalWord;
+      const items = response.data?.channel?.item;
+      if (!items || !Array.isArray(items) || items.length < 2) {
+        continue; // 이 카테고리에는 단어가 없거나 부족합니다.
+      }
+
+      // 2~4글자, 한글로만 된 단어 필터링
+      const validWords = items
+        .map(item => item.word.replace(/\^/g, ''))
+        .filter(word => 
+          word.length >= 2 && 
+          word.length <= 4 && 
+          /^[가-힣]+$/.test(word)
+        );
+      
+      if (validWords.length >= 2) {
+        const shuffled = validWords.sort(() => 0.5 - Math.random());
+        const word1 = shuffled[0];
+        const word2 = shuffled[1];
+
+        console.log(`[LiarGame] 단어 선택 성공: [cat:${randomCat}] ${word1}, ${word2}`);
+        
+        // 시민/라이어 단어 랜덤 배정
+        return Math.random() > 0.5
+          ? { citizenWord: word1, liarWord: word2 }
+          : { citizenWord: word2, liarWord: word1 };
+      }
+    } catch (error) {
+      console.error(`[LiarGame] API 호출 오류 (cat: ${randomCat}):`, error.message);
+    }
+  }
+
+  // Fallback
+  console.warn('[LiarGame] API 단어 가져오기 실패. 폴백 단어를 사용합니다.');
+  return { citizenWord: '사과', liarWord: '오렌지' };
 };
 
 io.on('connection', (socket) => {
@@ -444,12 +415,12 @@ io.on('connection', (socket) => {
       return;
     }
 
-    try {
-      // 국립국어원 API에서 제시어 자동 선택
-      const selectedWord = await selectRandomWord();
-      const liarWord = generateSimilarWord(selectedWord);
+    console.log(`[LiarGame] '${room}' 방에서 게임 시작 요청...`);
 
-      game.word = selectedWord;
+    try {
+      const { citizenWord, liarWord } = await getLiarGameWords();
+
+      game.word = citizenWord;
       game.liarWord = liarWord;
 
       // 라이어를 랜덤으로 선정
@@ -460,9 +431,9 @@ io.on('connection', (socket) => {
       game.players.forEach(player => {
         if (player.id === game.liar) {
           player.isLiar = true;
-          player.word = game.liarWord; // 라이어는 유사한 단어
+          player.word = game.liarWord;
         } else {
-          player.word = game.word; // 일반 플레이어들은 실제 제시어
+          player.word = game.word;
         }
       });
 
@@ -481,7 +452,7 @@ io.on('connection', (socket) => {
         });
       });
 
-      console.log(`라이어 게임 시작: 제시어=${selectedWord}, 라이어 제시어=${liarWord}`);
+      console.log(`라이어 게임 시작: 제시어=${citizenWord}, 라이어 제시어=${liarWord}`);
 
       // 3초 후 대화 단계로 전환
       setTimeout(() => {
