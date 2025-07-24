@@ -184,7 +184,7 @@ io.on('connection', (socket) => {
           word: '',
           liarWord: '',
           liar: null,
-          timer: 120,
+          timer: 180,
           votes: {},
           timerInterval: null
         });
@@ -499,7 +499,7 @@ io.on('connection', (socket) => {
     if (!game) return;
 
     game.phase = 'talk';
-    game.timer = 120; // 2분
+    game.timer = 180; // 3분
 
     io.to(room).emit('liar-update', {
       type: 'talk-start',
@@ -665,7 +665,7 @@ io.on('connection', (socket) => {
     game.word = '';
     game.liarWord = '';
     game.liar = null;
-    game.timer = 120;
+    game.timer = 180;
     game.votes = {};
     game.timerInterval = null;
 

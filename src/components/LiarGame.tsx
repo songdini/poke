@@ -46,7 +46,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   // 대화 관련
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [timer, setTimer] = useState(120);
+  const [timer, setTimer] = useState(180);
   
   // 투표 관련
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
@@ -62,6 +62,20 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   const socketRef = useRef<any>(null);
 
   // 소켓 연결 및 이벤트 처리
+  const resetLiarGameState = () => {
+    setMyWord(null);
+    setShowMyWord(false);
+    setMessages([]);
+    setCurrentMessage('');
+    setTimer(180);
+    setVoteTarget(null);
+    setVoteCount({});
+    setVotedCount(0);
+    setHasVoted(false);
+    setResult(null);
+    setError('');
+  };
+
   useEffect(() => {
     const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
     const socket = io(serverUrl);
@@ -78,9 +92,13 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
       switch (type) {
         case 'join':
         case 'leave':
+          setPlayers(payload.players || []);
+          setPhase(payload.phase);
+          break;
         case 'restart':
           setPlayers(payload.players || []);
           setPhase(payload.phase);
+          resetLiarGameState();
           break;
         case 'game-start':
           setPhase('word-input');
@@ -163,18 +181,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
 
   const handleRestart = () => {
     socketRef.current?.emit('liar-game-restart', { room });
-    
-    setMyWord(null);
-    setShowMyWord(false);
-    setMessages([]);
-    setCurrentMessage('');
-    setTimer(120);
-    setVoteTarget(null);
-    setVoteCount({});
-    setVotedCount(0);
-    setHasVoted(false);
-    setResult(null);
-    setError('');
   };
 
   const myPlayer = players.find(p => p.username === username);
@@ -872,15 +878,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
                 </div>
               ))}
             </div>
-            {result && (
-              <div className="result-message">
-                <h4>{result.winner === 'liar' ? '라이어 승리!' : '시민 승리!'}</h4>
-                <p>{result.message}</p>
-                <p>라이어: {result.liar}</p>
-                <p>제시어: {result.word}</p>
-                <p>라이어 제시어: {result.liarWord}</p>
-              </div>
-            )}
             <button className="primary-btn" onClick={handleRestart}>
               게임 다시 시작
             </button>

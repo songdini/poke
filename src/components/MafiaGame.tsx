@@ -37,7 +37,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     players: [],
     currentPlayer: username,
     gameStarted: false,
-    timeLeft: 120,
+    timeLeft: 180,
     selectedPlayer: null,
     messages: [],
     winner: null,
