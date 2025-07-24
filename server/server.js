@@ -53,7 +53,7 @@ const generateRandomKoreanWord = (length = 3) => {
   const jongsung = [
     '', 'ㄱ', 'ㄲ',  'ㄴ', 'ㄷ', 'ㄹ',
      'ㅁ', 'ㅂ', 'ㅅ',
-    'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+     'ㅇ', 'ㅈ'
   ];
 
   let word = '';
@@ -119,7 +119,7 @@ const getLiarGameWords = async () => {
 
       const items = response.data?.channel?.item;
       if (!items || !Array.isArray(items) || items.length < 2) {
-        console.log(response,' / ', params, '  이 카테고리에는 단어가 없거나 부족합니다.');
+        console.log(response,' / ', API_KEY, '  이 카테고리에는 단어가 없거나 부족합니다.',randomWord);
         continue; // 이 카테고리에는 단어가 없거나 부족합니다.
       }
 

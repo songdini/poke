@@ -50,3 +50,4 @@ replay_pid*
 
 # Vite
 .vite
+.env
