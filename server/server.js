@@ -65,6 +65,7 @@ const getRandomWords = async (count = 10) => {
 
     const response = await axios.get(url, { params });
     
+    console.log(response, ' api');
     if (response.data && response.data.channel && response.data.channel.item) {
       const items = Array.isArray(response.data.channel.item) 
         ? response.data.channel.item 
