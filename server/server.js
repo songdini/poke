@@ -94,7 +94,7 @@ const getLiarGameWords = async () => {
     return { citizenWord: '사과', liarWord: '오렌지' };
   }
 
-  const MAX_ATTEMPTS = 15;
+  const MAX_ATTEMPTS = 20;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     let randomCat = 0;
     let randomWord = '';
