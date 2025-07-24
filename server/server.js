@@ -3,7 +3,6 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import axios from 'axios';
-import xml2js from 'xml2js';
 
 const app = express();
 const server = createServer(app);
