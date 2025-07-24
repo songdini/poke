@@ -46,28 +46,33 @@ const generateRandomKoreanWord = (length = 3) => {
   ];
   
   const jungsung = [
-    'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
-    'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'
+    'ㅏ', 'ㅐ', 'ㅑ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
+    'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'
   ];
   
   const jongsung = [
-    '', 'ㄱ', 'ㄲ',  'ㄴ', 'ㄷ', 'ㄹ',
+    '', 'ㄱ', 'ㄴ', 'ㄷ', 'ㄹ',
      'ㅁ', 'ㅂ', 'ㅅ',
      'ㅇ', 'ㅈ'
   ];
+
+  // 실제 유니코드 인덱스로 매핑
+  const jungsungUnicodeIndex = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20];
+  // 실제 유니코드 종성 인덱스로 매핑
+  const jongsungUnicodeIndex = [0, 1, 4, 7, 8, 16, 17, 19, 21, 22];
 
   let word = '';
   
   for (let i = 0; i < length; i++) {
     // 랜덤하게 초성, 중성, 종성 선택
     const cho = chosung[Math.floor(Math.random() * chosung.length)];
-    const jung = jungsung[Math.floor(Math.random() * jungsung.length)];
-    const jong = jongsung[Math.floor(Math.random() * jongsung.length)];
-    
+    const jungIndex = Math.floor(Math.random() * jungsung.length);
+    const jongIndex = Math.floor(Math.random() * jongsung.length);
+
     // 유니코드 계산하여 한글 조합
     const chosungIndex = chosung.indexOf(cho);
-    const jungsungIndex = jungsung.indexOf(jung);
-    const jongsungIndex = jongsung.indexOf(jong);
+    const jungsungIndex = jungsungUnicodeIndex[jungIndex]; // 매핑된 인덱스 사용
+    const jongsungIndex = jongsungUnicodeIndex[jongIndex]; // 매핑된 인덱스 사용
     
     const unicode = 0xAC00 + (chosungIndex * 588) + (jungsungIndex * 28) + jongsungIndex;
     word += String.fromCharCode(unicode);
@@ -89,7 +94,7 @@ const getLiarGameWords = async () => {
     return { citizenWord: '사과', liarWord: '오렌지' };
   }
 
-  const MAX_ATTEMPTS = 10;
+  const MAX_ATTEMPTS = 15;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     let randomCat = 0;
     let randomWord = '';
