@@ -102,7 +102,7 @@ const getLiarGameWords = async () => {
       randomCat = Math.floor(Math.random() * 68); // 0 to 67
       randomWord = generateRandomKoreanWord(1);
     
-      console.log(`[LiarGame] API 호출 시도 (${i + 1}/${MAX_ATTEMPTS}): cat=${randomCat}`);
+      console.log(`[LiarGame] API 호출 시도 (${i + 1}/${MAX_ATTEMPTS}): cat=${randomCat} q=${randomWord}`);
 
       const response = await axios.get('https://opendict.korean.go.kr/api/search', {
         params: {
@@ -124,7 +124,6 @@ const getLiarGameWords = async () => {
 
       const items = response.data?.channel?.item;
       if (!items || !Array.isArray(items) || items.length < 2) {
-        console.log(response,' / ', API_KEY, '  이 카테고리에는 단어가 없거나 부족합니다.',randomWord);
         continue; // 이 카테고리에는 단어가 없거나 부족합니다.
       }
 
