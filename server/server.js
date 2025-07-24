@@ -113,7 +113,7 @@ const getLiarGameWords = async () => {
           part: 'word',
           sort:'dict',
           letter_s:2,
-          method:include,
+          method:'include',
         }
       });
 
