@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.0",
     "emoji-picker-react": "^4.13.2",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",

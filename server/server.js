@@ -2,6 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import axios from 'axios';
+import xml2js from 'xml2js';
 
 const app = express();
 const server = createServer(app);
@@ -28,6 +30,101 @@ const mafiaGames = new Map();
 
 // 라이어 게임 상태 저장
 const liarGames = new Map();
+
+// 국립국어원 API 관련 함수들
+const getRandomWords = async (count = 10) => {
+  try {
+    const API_KEY = process.env.KOREAN_DICT_API_KEY;
+    if (!API_KEY) {
+      console.error('KOREAN_DICT_API_KEY가 설정되지 않았습니다.');
+      return getDefaultWords();
+    }
+
+    // 한글 자음으로 검색 (ㄱ, ㄴ, ㄷ 등)
+    const consonants = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+    const randomConsonant = consonants[Math.floor(Math.random() * consonants.length)];
+    
+    const url = `https://stdict.korean.go.kr/api/search.do`;
+    const params = {
+      key: API_KEY,
+      type_search: 'search',
+      q: randomConsonant,
+      req_type: 'json',
+      part: 'word',
+      sort: 'dict',
+      start: 1,
+      num: count * 2 // 더 많이 가져와서 필터링
+    };
+
+    const response = await axios.get(url, { params });
+    
+    if (response.data && response.data.channel && response.data.channel.item) {
+      const items = Array.isArray(response.data.channel.item) 
+        ? response.data.channel.item 
+        : [response.data.channel.item];
+      
+      // 적절한 길이의 단어들만 필터링 (2-6글자)
+      const filteredWords = items
+        .map(item => item.word)
+        .filter(word => word && word.length >= 2 && word.length <= 6)
+        .filter(word => /^[가-힣]+$/.test(word)) // 한글만
+        .slice(0, count);
+      
+      if (filteredWords.length > 0) {
+        return filteredWords;
+      }
+    }
+    
+    // API에서 적절한 단어를 못 가져온 경우 기본 단어 사용
+    return getDefaultWords();
+    
+  } catch (error) {
+    console.error('국립국어원 API 호출 실패:', error.message);
+    return getDefaultWords();
+  }
+};
+
+const getDefaultWords = () => {
+  const defaultWords = [
+    '사과', '바나나', '책상', '의자', '컴퓨터', '휴대폰', '자동차', '비행기',
+    '고양이', '강아지', '나무', '꽃', '구름', '별', '달', '태양',
+    '학교', '병원', '은행', '카페', '영화관', '도서관', '공원', '바다',
+    '음악', '그림', '운동', '요리', '독서', '영화', '게임', '여행'
+  ];
+  return defaultWords.sort(() => Math.random() - 0.5).slice(0, 10);
+};
+
+const selectRandomWord = async () => {
+  const words = await getRandomWords(20);
+  return words[Math.floor(Math.random() * words.length)];
+};
+
+const generateSimilarWord = (originalWord) => {
+  // 간단한 유사 단어 생성 로직
+  // 실제로는 더 정교한 로직이 필요할 수 있음
+  const similarWords = {
+    '사과': '배',
+    '바나나': '포도',
+    '고양이': '강아지',
+    '강아지': '고양이',
+    '자동차': '버스',
+    '컴퓨터': '노트북',
+    '휴대폰': '전화기',
+    '학교': '학원',
+    '병원': '약국',
+    '카페': '식당',
+    '음악': '노래',
+    '영화': '드라마',
+    '책': '소설',
+    '나무': '식물',
+    '꽃': '장미',
+    '바다': '강',
+    '산': '언덕',
+    '집': '아파트'
+  };
+  
+  return similarWords[originalWord] || originalWord;
+};
 
 io.on('connection', (socket) => {
   console.log('사용자가 연결되었습니다:', socket.id);
@@ -68,6 +165,52 @@ io.on('connection', (socket) => {
         type: 'join',
         data: { player }
       });
+    } else if (gameType === 'liar') {
+      // 라이어 게임인 경우
+      if (!liarGames.has(room)) {
+        liarGames.set(room, {
+          players: [],
+          gameStarted: false,
+          phase: 'waiting',
+          host: null,
+          wordProvider: null,
+          word: '',
+          liarWord: '',
+          liar: null,
+          timer: 120,
+          votes: {},
+          timerInterval: null
+        });
+      }
+
+      const game = liarGames.get(room);
+      const player = {
+        id: socket.id,
+        username,
+        isHost: game.players.length === 0, // 첫 번째 플레이어가 방장
+        isLiar: false,
+        word: null,
+        voted: false
+      };
+
+      game.players.push(player);
+      
+      if (player.isHost) {
+        game.host = socket.id;
+      }
+
+      // 모든 클라이언트에게 플레이어 목록 업데이트
+      io.to(room).emit('liar-update', {
+        type: 'join',
+        data: { 
+          players: game.players,
+          phase: game.phase,
+          host: game.host,
+          wordProvider: game.wordProvider
+        }
+      });
+
+      console.log(`${username}님이 라이어 게임 ${room}방에 입장했습니다.`);
     } else {
       // 일반 채팅방
       socket.to(room).emit('userJoined', {
@@ -280,195 +423,8 @@ io.on('connection', (socket) => {
     }, 1000);
   });
 
-  // 메시지 전송
-  socket.on('sendMessage', (messageData) => {
-    const { message, room, isImage } = messageData;
-    const user = connectedUsers.get(socket.id);
-
-    if (user) {
-      const messageObj = {
-        username: user.username,
-        message,
-        timestamp: new Date().toISOString(),
-        id: socket.id,
-        isImage: !!isImage
-      };
-
-      io.to(room).emit('newMessage', messageObj);
-      console.log(`${user.username}: ${isImage ? '[이미지]' : message}`);
-    }
-  });
-
-  // 타이핑 상태
-  socket.on('typing', (data) => {
-    const user = connectedUsers.get(socket.id);
-    if (user) {
-      socket.to(data.room).emit('userTyping', {
-        username: user.username,
-        isTyping: data.isTyping
-      });
-    }
-  });
-
-  // 강퇴 투표 요청
-  socket.on('kickVoteRequest', ({ targetUsername, room }) => {
-    if (!kickVotes[room]) kickVotes[room] = {};
-    if (!kickVotes[room][targetUsername]) {
-      kickVotes[room][targetUsername] = { votes: {}, total: 0 };
-    }
-    // 투표 초기화
-    kickVotes[room][targetUsername] = { votes: {}, total: 0 };
-    // 방 전체에 투표 요청
-    io.to(room).emit('kickVoteStart', { targetUsername });
-  });
-
-  // 강퇴 투표 응답
-  socket.on('kickVote', ({ targetUsername, room, agree, username }) => {
-    if (!kickVotes[room] || !kickVotes[room][targetUsername]) return;
-    kickVotes[room][targetUsername].votes[username] = agree;
-    kickVotes[room][targetUsername].total++;
-    // 방의 전체 인원 수
-    const roomUsers = Array.from(connectedUsers.values()).filter(u => u.room === room);
-    // 투표 결과 집계
-    const agreeCount = Object.values(kickVotes[room][targetUsername].votes).filter(v => v).length;
-    const totalCount = roomUsers.length;
-    // 실시간 투표 현황 브로드캐스트
-    io.to(room).emit('kickVoteUpdate', {
-      targetUsername,
-      agreeCount,
-      totalCount,
-      voted: Object.keys(kickVotes[room][targetUsername].votes)
-    });
-    // 모든 인원이 투표를 마치면 결과 처리
-    if (Object.keys(kickVotes[room][targetUsername].votes).length >= totalCount - 1) { // 본인 제외
-      if (agreeCount > (totalCount - 1) / 2) {
-        // 과반수 찬성 → 강퇴
-        for (const [id, user] of connectedUsers.entries()) {
-          if (user.username === targetUsername && user.room === room) {
-            io.to(id).emit('kicked');
-            io.to(room).emit('kickVoteResult', { targetUsername, result: 'kicked' });
-            io.sockets.sockets.get(id)?.disconnect();
-            break;
-          }
-        }
-      } else {
-        // 강퇴 실패
-        io.to(room).emit('kickVoteResult', { targetUsername, result: 'not_kicked' });
-      }
-      // 투표 상태 초기화
-      delete kickVotes[room][targetUsername];
-    }
-  });
-
-  // 강퇴 이벤트 처리
-  socket.on('kick', ({ targetUsername, room }) => {
-    // 해당 방의 소켓들 중에서 username이 targetUsername인 소켓을 찾음
-    for (const [id, user] of connectedUsers.entries()) {
-      if (user.username === targetUsername && user.room === room) {
-        io.to(id).emit('kicked');
-        io.sockets.sockets.get(id)?.disconnect();
-        break;
-      }
-    }
-  });
-
-  // 연결 해제
-  socket.on('disconnect', () => {
-    const user = connectedUsers.get(socket.id);
-    if (user) {
-      // 마피아 게임인 경우
-      if (user.gameType === 'mafia') {
-        const game = mafiaGames.get(user.room);
-        if (game) {
-          game.players = game.players.filter(p => p.id !== socket.id);
-
-          io.to(user.room).emit('mafia-update', {
-            type: 'leave',
-            data: { playerId: socket.id }
-          });
-        }
-      } else {
-        // 일반 채팅방
-        socket.to(user.room).emit('userLeft', {
-          username: user.username,
-          message: `${user.username}님이 퇴장하셨습니다.`,
-          timestamp: new Date().toISOString()
-        });
-
-        // 사용자 목록 업데이트
-        const roomUsers = Array.from(connectedUsers.values())
-            .filter(u => u.room === user.room)
-            .map(u => u.username);
-
-        io.to(user.room).emit('userList', roomUsers);
-      }
-
-      connectedUsers.delete(socket.id);
-      console.log(`${user.username}님이 연결을 해제했습니다.`);
-    }
-  });
-
-  // 라이어 게임 상태 저장
-  // (liarGames 선언은 io.on 바깥에 있어도 됨)
-
-  // 기존 join 이벤트에 추가할 부분
-  socket.on('join', (userData) => {
-    const { username, room, gameType } = userData;
-
-    socket.join(room);
-    connectedUsers.set(socket.id, { username, room, gameType });
-
-    // 라이어 게임인 경우 추가
-    if (gameType === 'liar') {
-      if (!liarGames.has(room)) {
-        liarGames.set(room, {
-          players: [],
-          gameStarted: false,
-          phase: 'waiting',
-          host: null,
-          wordProvider: null,
-          word: '',
-          liarWord: '',
-          liar: null,
-          timer: 120,
-          votes: {},
-          timerInterval: null
-        });
-      }
-
-      const game = liarGames.get(room);
-      const player = {
-        id: socket.id,
-        username,
-        isHost: game.players.length === 0, // 첫 번째 플레이어가 방장
-        isLiar: false,
-        word: null,
-        voted: false
-      };
-
-      game.players.push(player);
-      
-      if (player.isHost) {
-        game.host = socket.id;
-      }
-
-      // 모든 클라이언트에게 플레이어 목록 업데이트
-      io.to(room).emit('liar-update', {
-        type: 'join',
-        data: { 
-          players: game.players,
-          phase: game.phase,
-          host: game.host,
-          wordProvider: game.wordProvider // 항상 포함
-        }
-      });
-
-      console.log(`${username}님이 라이어 게임 ${room}방에 입장했습니다.`);
-    }
-  });
-
   // 라이어 게임 시작
-  socket.on('liar-game-start', ({ room }) => {
+  socket.on('liar-game-start', async ({ room }) => {
     const game = liarGames.get(room);
     if (!game || game.gameStarted) return;
 
@@ -480,76 +436,54 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // 제시어 입력자를 랜덤으로 선정 (방장 제외)
-    const nonHostPlayers = game.players.filter(p => p.id !== game.host);
-    const randomProvider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
-    game.wordProvider = randomProvider.id;
+    try {
+      // 국립국어원 API에서 제시어 자동 선택
+      const selectedWord = await selectRandomWord();
+      const liarWord = generateSimilarWord(selectedWord);
 
-    game.gameStarted = true;
-    game.phase = 'word-input';
+      game.word = selectedWord;
+      game.liarWord = liarWord;
 
-    io.to(room).emit('liar-update', {
-      type: 'game-start',
-      data: {
-        phase: 'word-input',
-        wordProvider: game.wordProvider,
-        players: game.players
-      }
-    });
-  });
+      // 라이어를 랜덤으로 선정
+      const randomLiar = game.players[Math.floor(Math.random() * game.players.length)];
+      game.liar = randomLiar.id;
 
-  // 제시어 입력
-  socket.on('liar-word-submit', ({ room, word, liarWord }) => {
-    const game = liarGames.get(room);
-    if (!game || game.phase !== 'word-input') return;
-
-    const user = connectedUsers.get(socket.id);
-    if (!user || game.wordProvider !== socket.id) return; // 지정된 플레이어만 입력 가능
-
-    if (!word || word.trim() === '') {
-      socket.emit('liar-error', { message: '제시어를 입력해주세요.' });
-      return;
-    }
-
-    game.word = word.trim();
-    game.liarWord = liarWord && liarWord.trim() !== '' ? liarWord.trim() : '';
-
-    // 라이어를 랜덤으로 선정 (제시어 입력자 제외)
-    const eligiblePlayers = game.players.filter(p => p.id !== game.wordProvider);
-    const randomLiar = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
-    game.liar = randomLiar.id;
-
-    // 각 플레이어에게 제시어 배분
-    game.players.forEach(player => {
-      if (player.id === game.liar) {
-        player.isLiar = true;
-        player.word = game.liarWord || null; // 라이어용 제시어가 있으면 사용, 없으면 null
-      } else if (player.id === game.wordProvider) {
-        player.word = game.word; // 제시어 입력자는 본인이 입력한 제시어
-      } else {
-        player.word = game.word; // 일반 플레이어들은 실제 제시어
-      }
-    });
-
-    game.phase = 'word-distribute';
-
-    // 각 플레이어에게 개별적으로 제시어 전송
-    game.players.forEach(player => {
-      io.to(player.id).emit('liar-update', {
-        type: 'word-distribute',
-        data: {
-          phase: 'word-distribute',
-          myWord: player.word,
-          isLiar: player.isLiar,
-          isWordProvider: player.id === game.wordProvider
+      // 각 플레이어에게 제시어 배분
+      game.players.forEach(player => {
+        if (player.id === game.liar) {
+          player.isLiar = true;
+          player.word = game.liarWord; // 라이어는 유사한 단어
+        } else {
+          player.word = game.word; // 일반 플레이어들은 실제 제시어
         }
       });
-    });
 
-    // 3초 후 대화 단계로 전환
-    setTimeout(() => {
-      startTalkPhase(room);
-    }, 3000);
+      game.gameStarted = true;
+      game.phase = 'word-distribute';
+
+      // 각 플레이어에게 개별적으로 제시어 전송
+      game.players.forEach(player => {
+        io.to(player.id).emit('liar-update', {
+          type: 'word-distribute',
+          data: {
+            phase: 'word-distribute',
+            myWord: player.word,
+            isLiar: player.isLiar
+          }
+        });
+      });
+
+      console.log(`라이어 게임 시작: 제시어=${selectedWord}, 라이어 제시어=${liarWord}`);
+
+      // 3초 후 대화 단계로 전환
+      setTimeout(() => {
+        startTalkPhase(room);
+      }, 3000);
+
+    } catch (error) {
+      console.error('라이어 게임 시작 실패:', error);
+      socket.emit('liar-error', { message: '게임 시작 중 오류가 발생했습니다.' });
+    }
   });
 
   // 대화 단계 시작
@@ -676,7 +610,6 @@ io.on('connection', (socket) => {
 
     const liarPlayer = game.players.find(p => p.id === game.liar);
     const mostVotedPlayer = game.players.find(p => p.id === mostVotedId);
-    const wordProviderPlayer = game.players.find(p => p.id === game.wordProvider);
 
     let winner = '';
     let message = '';
@@ -701,7 +634,6 @@ io.on('connection', (socket) => {
         mostVoted: mostVotedPlayer?.username,
         word: game.word,
         liarWord: game.liarWord,
-        wordProvider: wordProviderPlayer?.username,
         voteCount
       }
     });
@@ -741,19 +673,122 @@ io.on('connection', (socket) => {
       type: 'restart',
       data: {
         phase: 'waiting',
-        players: game.players, // 반드시 포함
+        players: game.players,
         host: game.host,
-        wordProvider: game.wordProvider // 일관성 위해 포함
+        wordProvider: game.wordProvider
       }
     });
   });
 
-  // disconnect 이벤트에 라이어 게임 처리 추가
+  // 메시지 전송
+  socket.on('sendMessage', (messageData) => {
+    const { message, room, isImage } = messageData;
+    const user = connectedUsers.get(socket.id);
+
+    if (user) {
+      const messageObj = {
+        username: user.username,
+        message,
+        timestamp: new Date().toISOString(),
+        id: socket.id,
+        isImage: !!isImage
+      };
+
+      io.to(room).emit('newMessage', messageObj);
+      console.log(`${user.username}: ${isImage ? '[이미지]' : message}`);
+    }
+  });
+
+  // 타이핑 상태
+  socket.on('typing', (data) => {
+    const user = connectedUsers.get(socket.id);
+    if (user) {
+      socket.to(data.room).emit('userTyping', {
+        username: user.username,
+        isTyping: data.isTyping
+      });
+    }
+  });
+
+  // 강퇴 투표 요청
+  socket.on('kickVoteRequest', ({ targetUsername, room }) => {
+    if (!kickVotes[room]) kickVotes[room] = {};
+    if (!kickVotes[room][targetUsername]) {
+      kickVotes[room][targetUsername] = { votes: {}, total: 0 };
+    }
+    // 투표 초기화
+    kickVotes[room][targetUsername] = { votes: {}, total: 0 };
+    // 방 전체에 투표 요청
+    io.to(room).emit('kickVoteStart', { targetUsername });
+  });
+
+  // 강퇴 투표 응답
+  socket.on('kickVote', ({ targetUsername, room, agree, username }) => {
+    if (!kickVotes[room] || !kickVotes[room][targetUsername]) return;
+    kickVotes[room][targetUsername].votes[username] = agree;
+    kickVotes[room][targetUsername].total++;
+    // 방의 전체 인원 수
+    const roomUsers = Array.from(connectedUsers.values()).filter(u => u.room === room);
+    // 투표 결과 집계
+    const agreeCount = Object.values(kickVotes[room][targetUsername].votes).filter(v => v).length;
+    const totalCount = roomUsers.length;
+    // 실시간 투표 현황 브로드캐스트
+    io.to(room).emit('kickVoteUpdate', {
+      targetUsername,
+      agreeCount,
+      totalCount,
+      voted: Object.keys(kickVotes[room][targetUsername].votes)
+    });
+    // 모든 인원이 투표를 마치면 결과 처리
+    if (Object.keys(kickVotes[room][targetUsername].votes).length >= totalCount - 1) { // 본인 제외
+      if (agreeCount > (totalCount - 1) / 2) {
+        // 과반수 찬성 → 강퇴
+        for (const [id, user] of connectedUsers.entries()) {
+          if (user.username === targetUsername && user.room === room) {
+            io.to(id).emit('kicked');
+            io.to(room).emit('kickVoteResult', { targetUsername, result: 'kicked' });
+            io.sockets.sockets.get(id)?.disconnect();
+            break;
+          }
+        }
+      } else {
+        // 강퇴 실패
+        io.to(room).emit('kickVoteResult', { targetUsername, result: 'not_kicked' });
+      }
+      // 투표 상태 초기화
+      delete kickVotes[room][targetUsername];
+    }
+  });
+
+  // 강퇴 이벤트 처리
+  socket.on('kick', ({ targetUsername, room }) => {
+    // 해당 방의 소켓들 중에서 username이 targetUsername인 소켓을 찾음
+    for (const [id, user] of connectedUsers.entries()) {
+      if (user.username === targetUsername && user.room === room) {
+        io.to(id).emit('kicked');
+        io.sockets.sockets.get(id)?.disconnect();
+        break;
+      }
+    }
+  });
+
+  // 연결 해제
   socket.on('disconnect', () => {
     const user = connectedUsers.get(socket.id);
     if (user) {
-      // 라이어 게임인 경우 추가
-      if (user.gameType === 'liar') {
+      // 마피아 게임인 경우
+      if (user.gameType === 'mafia') {
+        const game = mafiaGames.get(user.room);
+        if (game) {
+          game.players = game.players.filter(p => p.id !== socket.id);
+
+          io.to(user.room).emit('mafia-update', {
+            type: 'leave',
+            data: { playerId: socket.id }
+          });
+        }
+      } else if (user.gameType === 'liar') {
+        // 라이어 게임인 경우
         const game = liarGames.get(user.room);
         if (game) {
           // 타이머 정리
@@ -783,9 +818,24 @@ io.on('connection', (socket) => {
             liarGames.delete(user.room);
           }
         }
+      } else {
+        // 일반 채팅방
+        socket.to(user.room).emit('userLeft', {
+          username: user.username,
+          message: `${user.username}님이 퇴장하셨습니다.`,
+          timestamp: new Date().toISOString()
+        });
+
+        // 사용자 목록 업데이트
+        const roomUsers = Array.from(connectedUsers.values())
+            .filter(u => u.room === user.room)
+            .map(u => u.username);
+
+        io.to(user.room).emit('userList', roomUsers);
       }
-      
-      // ... 기존 코드
+
+      connectedUsers.delete(socket.id);
+      console.log(`${user.username}님이 연결을 해제했습니다.`);
     }
   });
 });

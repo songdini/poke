@@ -42,10 +42,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<'waiting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result'>('waiting');
   const [wordProvider, setWordProvider] = useState<string | null>(null);
-  
-  // 제시어 관련
-  const [word, setWord] = useState('');
-  const [liarWord, setLiarWord] = useState('');
   const [myWord, setMyWord] = useState<string | null>(null);
   const [isLiar, setIsLiar] = useState(false);
   const [showMyWord, setShowMyWord] = useState(false);
@@ -148,19 +144,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
     socketRef.current?.emit('liar-game-start', { room });
   };
 
-  const handleWordSubmit = () => {
-    if (!word.trim()) {
-      setError('제시어를 입력해주세요.');
-      return;
-    }
-    
-    socketRef.current?.emit('liar-word-submit', {
-      room,
-      word: word.trim(),
-      liarWord: liarWord.trim()
-    });
-  };
-
   const handleSendMessage = () => {
     if (!currentMessage.trim()) return;
     
@@ -187,9 +170,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   const handleRestart = () => {
     socketRef.current?.emit('liar-game-restart', { room });
     
-    // 상태 초기화
-    setWord('');
-    setLiarWord('');
     setMyWord(null);
     setIsLiar(false);
     setShowMyWord(false);
@@ -783,27 +763,11 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
         <div className="phase-section">
           <div className="word-input-content">
             <h3>제시어 입력</h3>
-            {amWordProvider ? (
+            {isHost ? (
+              <p className="phase-description">게임 시작 버튼을 누르면 서버에서 자동으로 제시어를 가져옵니다.</p>
+            ) : ( 
               <div>
-                <p className="phase-description">당신이 제시어를 입력해야 합니다!</p>
-                <div className="input-group">
-                  <input
-                    type="text"
-                    value={word}
-                    onChange={(e) => setWord(e.target.value)}
-                    placeholder="제시어를 입력하세요"
-                    className="word-input"
-                  />
-                </div>
-                <button className="primary-btn" onClick={handleWordSubmit}>
-                  제시어 확정
-                </button>
-              </div>
-            ) : (
-              <div>
-                <p className="phase-description">
-                  {players.find(p => p.id === wordProvider)?.username}님이 제시어를 입력 중입니다...
-                </p>
+                <p className="phase-description">방장이 게임을 시작하면 서버에서 자동으로 제시어를 가져옵니다...</p>
               </div>
             )}
           </div>
@@ -818,43 +782,17 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
             <div className="my-word-section">
               <div className="word-reveal">
                 <div className="word-info">
-                  {isLiar && !myWord && (
-                    <div className="liar-notice">
-                      <h4>🎭 당신은 라이어입니다!</h4>
-                      <p>제시어를 받지 못했습니다. 다른 사람들의 대화를 들으며 제시어를 추측해보세요!</p>
+                  <div className="citizen-notice">
+                    <h4>내 제시어 확인</h4>
+                    <p>다른 사람에게 들키지 않게 조심하세요!</p>
+                    <div className="my-word-display">
+                      <button className="word-toggle-btn" onClick={() => setShowMyWord(!showMyWord)}>
+                        {showMyWord ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showMyWord ? '제시어 숨기기' : '내 제시어 보기'}
+                      </button>
+                      {showMyWord && <div className="word-display">{myWord}</div>}
                     </div>
-                  )}
-                  {isLiar && myWord && (
-                    <div className="liar-notice">
-                      <h4>🎭 당신은 라이어입니다!</h4>
-                      <p>당신만 다른 제시어를 받았습니다.</p>
-                      <div className="my-word-display">
-                        <button
-                          className="word-toggle-btn"
-                          onClick={() => setShowMyWord(!showMyWord)}
-                        >
-                          {showMyWord ? <EyeOff size={16} /> : <Eye size={16} />}
-                          {showMyWord ? '제시어 숨기기' : '내 제시어 보기'}
-                        </button>
-                        {showMyWord && <div className="word-display">{myWord}</div>}
-                      </div>
-                    </div>
-                  )}
-                  {!isLiar && (
-                    <div className="citizen-notice">
-                      <h4>👥 당신은 시민입니다!</h4>
-                      <div className="my-word-display">
-                        <button
-                          className="word-toggle-btn"
-                          onClick={() => setShowMyWord(!showMyWord)}
-                        >
-                          {showMyWord ? <EyeOff size={16} /> : <Eye size={16} />}
-                          {showMyWord ? '제시어 숨기기' : '내 제시어 보기'}
-                        </button>
-                        {showMyWord && <div className="word-display">{myWord}</div>}
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
