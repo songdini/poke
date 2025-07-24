@@ -119,6 +119,7 @@ const getLiarGameWords = async () => {
 
       const items = response.data?.channel?.item;
       if (!items || !Array.isArray(items) || items.length < 2) {
+        console.log(response,' / ', params, '  이 카테고리에는 단어가 없거나 부족합니다.');
         continue; // 이 카테고리에는 단어가 없거나 부족합니다.
       }
 
