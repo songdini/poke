@@ -38,6 +38,46 @@ const mafiaGames = new Map();
 // 라이어 게임 상태 저장
 const liarGames = new Map();
 
+const generateRandomKoreanWord = (length = 3) => {
+  // 한글 초성, 중성, 종성 배열
+  const chosung = [
+    'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 
+    'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+  ];
+  
+  const jungsung = [
+    'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ',
+    'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'
+  ];
+  
+  const jongsung = [
+    '', 'ㄱ', 'ㄲ',  'ㄴ', 'ㄷ', 'ㄹ',
+     'ㅁ', 'ㅂ', 'ㅅ',
+    'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'
+  ];
+
+  let word = '';
+  
+  for (let i = 0; i < length; i++) {
+    // 랜덤하게 초성, 중성, 종성 선택
+    const cho = chosung[Math.floor(Math.random() * chosung.length)];
+    const jung = jungsung[Math.floor(Math.random() * jungsung.length)];
+    const jong = jongsung[Math.floor(Math.random() * jongsung.length)];
+    
+    // 유니코드 계산하여 한글 조합
+    const chosungIndex = chosung.indexOf(cho);
+    const jungsungIndex = jungsung.indexOf(jung);
+    const jongsungIndex = jongsung.indexOf(jong);
+    
+    const unicode = 0xAC00 + (chosungIndex * 588) + (jungsungIndex * 28) + jongsungIndex;
+    word += String.fromCharCode(unicode);
+  }
+  
+  return word;
+};
+
+
+
 /**
  * 국립국어원 API에서 라이어 게임용 단어 두 개를 가져옵니다.
  * @returns {Promise<{citizenWord: string, liarWord: string}>}
@@ -52,20 +92,28 @@ const getLiarGameWords = async () => {
   const MAX_ATTEMPTS = 10;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     let randomCat = 0;
+    let randomWord = '';
     try {
       randomCat = Math.floor(Math.random() * 68); // 0 to 67
+      randomWord = generateRandomKoreanWord(1);
+    
       console.log(`[LiarGame] API 호출 시도 (${i + 1}/${MAX_ATTEMPTS}): cat=${randomCat}`);
 
-      const response = await axios.get('https://stdict.korean.go.kr/api/search.do', {
+      const response = await axios.get('https://opendict.korean.go.kr/api/search', {
         params: {
           key: API_KEY,
           req_type: 'json',
+          type1: 'word', //어휘
           target: 1, // 단어
-          pos: 1,    // 명사
           cat: randomCat,
-          num: 100,  // 충분히 가져오기
+          num: 300,  // 충분히 가져오기
           start: 1,
-          advanced: 'y'
+          advanced: 'y',
+          q:randomWord,
+          part: 'word',
+          sort:'dict',
+          letter_s:2,
+          method:include,
         }
       });
 
