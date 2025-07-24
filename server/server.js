@@ -106,7 +106,7 @@ const getLiarGameWords = async () => {
           type1: 'word', //어휘
           target: 1, // 단어
           cat: randomCat,
-          num: 300,  // 충분히 가져오기
+          num: 100,  // 충분히 가져오기
           start: 1,
           advanced: 'y',
           q:randomWord,
