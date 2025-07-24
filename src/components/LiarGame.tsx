@@ -28,7 +28,6 @@ interface GameResult {
   mostVoted: string;
   word: string;
   liarWord: string;
-  wordProvider: string;
   voteCount: VoteCount;
 }
 
@@ -41,9 +40,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   // 게임 상태
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<'waiting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result'>('waiting');
-  const [wordProvider, setWordProvider] = useState<string | null>(null);
   const [myWord, setMyWord] = useState<string | null>(null);
-  const [isLiar, setIsLiar] = useState(false);
   const [showMyWord, setShowMyWord] = useState(false);
   
   // 대화 관련
@@ -84,16 +81,13 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
         case 'restart':
           setPlayers(payload.players || []);
           setPhase(payload.phase);
-          setWordProvider(payload.wordProvider);
           break;
         case 'game-start':
           setPhase('word-input');
-          setWordProvider(payload.wordProvider);
           break;
         case 'word-distribute':
           setPhase('word-distribute');
           setMyWord(payload.myWord);
-          setIsLiar(payload.isLiar);
           break;
         case 'talk-start':
           setPhase('talk');
@@ -171,7 +165,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
     socketRef.current?.emit('liar-game-restart', { room });
     
     setMyWord(null);
-    setIsLiar(false);
     setShowMyWord(false);
     setMessages([]);
     setCurrentMessage('');
@@ -186,7 +179,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
 
   const myPlayer = players.find(p => p.username === username);
   const isHost = myPlayer?.isHost || false;
-  const amWordProvider = wordProvider && players.find(p => p.id === wordProvider)?.username === username;
 
   return (
     <div className="liar-game">
@@ -887,7 +879,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
                 <p>라이어: {result.liar}</p>
                 <p>제시어: {result.word}</p>
                 <p>라이어 제시어: {result.liarWord}</p>
-                <p>제시어 제공자: {result.wordProvider}</p>
               </div>
             )}
             <button className="primary-btn" onClick={handleRestart}>
@@ -908,7 +899,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
               <p>라이어: {result?.liar}</p>
               <p>제시어: {result?.word}</p>
               <p>라이어 제시어: {result?.liarWord}</p>
-              <p>제시어 제공자: {result?.wordProvider}</p>
             </div>
             <button className="primary-btn" onClick={handleRestart}>
               게임 다시 시작
