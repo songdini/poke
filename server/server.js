@@ -3,6 +3,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import axios from 'axios';
+import 'dotenv/config';
+
 
 const app = express();
 const server = createServer(app);
