@@ -66,6 +66,11 @@
   box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
 }
 
+.game-option.telestrations:hover {
+  border-color: #2dd4bf; /* A teal color */
+  box-shadow: 0 8px 25px rgba(45, 212, 191, 0.15);
+}
+
 .game-icon {
   font-size: 2rem;
   min-width: 48px;

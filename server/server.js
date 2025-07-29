@@ -38,6 +38,9 @@ const mafiaGames = new Map();
 // 라이어 게임 상태 저장
 const liarGames = new Map();
 
+// 텔레스트레이션 게임 상태 저장
+const telestrationsGames = new Map();
+
 const generateRandomKoreanWord = (length = 3) => {
   // 한글 초성, 중성, 종성 배열
   const chosung = [
@@ -164,8 +167,32 @@ io.on('connection', (socket) => {
     socket.join(room);
     connectedUsers.set(socket.id, { username, room, gameType });
 
-    // 마피아 게임인 경우
-    if (gameType === 'mafia') {
+    if (gameType === 'telestrations') {
+      if (!telestrationsGames.has(room)) {
+        telestrationsGames.set(room, {
+          players: [],
+          hostId: null,
+          phase: 'waiting', // waiting, word-input, drawing, guessing, results
+          gameBooks: [],
+          turnSubmissions: new Map(),
+          currentRound: 0,
+        });
+      }
+      const game = telestrationsGames.get(room);
+      const player = { id: socket.id, username };
+      game.players.push(player);
+
+      if (!game.hostId) {
+        game.hostId = socket.id;
+      }
+
+      io.to(room).emit('telestrations-update', {
+        players: game.players,
+        hostId: game.hostId,
+        phase: game.phase,
+      });
+      console.log(`${username}님이 텔레스트레이션 ${room}방에 입장했습니다.`);
+    } else if (gameType === 'mafia') {
       if (!mafiaGames.has(room)) {
         mafiaGames.set(room, {
           players: [],
@@ -256,6 +283,112 @@ io.on('connection', (socket) => {
     }
 
     console.log(`${username}님이 ${room}방에 입장했습니다.`);
+  });
+
+  // 텔레스트레이션 게임 시작
+  socket.on('telestrations-game-start', ({ room }) => {
+    const game = telestrationsGames.get(room);
+    if (!game || game.hostId !== socket.id) return;
+
+    if (game.players.length < 3) {
+      return socket.emit('telestrations-error', { message: '최소 3명 이상이어야 시작할 수 있습니다.' });
+    }
+
+    game.phase = 'word-input';
+    game.currentRound = 1;
+    game.turnSubmissions.clear();
+    game.gameBooks = game.players.map((p, index) => ({
+      owner: p.username,
+      ownerId: p.id,
+      pages: [],
+      originalIndex: index
+    }));
+
+    io.to(room).emit('telestrations-update', { phase: 'word-input' });
+  });
+
+  // 텔레스트레이션 턴 제출
+  socket.on('telestrations-submit-turn', ({ room, data }) => {
+    const game = telestrationsGames.get(room);
+    if (!game || game.turnSubmissions.has(socket.id)) return;
+
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    game.turnSubmissions.set(socket.id, data);
+
+    // 모든 플레이어가 제출했는지 확인
+    if (game.turnSubmissions.size === game.players.length) {
+      const numPlayers = game.players.length;
+
+      // 제출된 내용으로 게임북 업데이트
+      game.players.forEach((p, playerIndex) => {
+        const submission = game.turnSubmissions.get(p.id);
+        // 현재 라운드에서 플레이어가 작업한 책의 원래 주인 인덱스
+        const bookOriginalOwnerIndex = (playerIndex - (game.currentRound - 1) + numPlayers) % numPlayers;
+        const book = game.gameBooks.find(b => b.originalIndex === bookOriginalOwnerIndex);
+
+        if (book) {
+          book.pages.push({
+            type: (game.phase === 'word-input' || game.phase === 'guessing') ? 'word' : 'drawing',
+            author: p.username,
+            data: submission,
+          });
+        }
+      });
+
+      game.turnSubmissions.clear();
+      game.currentRound++;
+
+      // 게임 종료 조건 확인
+      if (game.currentRound > numPlayers) {
+        game.phase = 'results';
+        io.to(room).emit('telestrations-update', {
+          phase: 'results',
+          results: game.gameBooks
+        });
+      } else {
+        // 다음 라운드 준비
+        const nextPhase = game.currentRound % 2 === 0 ? 'drawing' : 'guessing';
+        game.phase = nextPhase;
+
+        // 각 플레이어에게 다음 작업 전달
+        game.players.forEach((p, playerIndex) => {
+          // 다음 라운드에서 플레이어가 받을 책의 원래 주인 인덱스
+          const bookSourcePlayerIndex = (playerIndex - (game.currentRound - 1) + numPlayers) % numPlayers;
+          const book = game.gameBooks.find(b => b.originalIndex === bookSourcePlayerIndex);
+
+          if (book && book.pages.length > 0) {
+            const lastPage = book.pages[book.pages.length - 1];
+            io.to(p.id).emit('telestrations-update', {
+              phase: game.phase,
+              currentBookPage: lastPage,
+            });
+          }
+        });
+        // 방 전체에 phase 변경 알림 (isSubmitted 상태 해제를 위해)
+        io.to(room).emit('telestrations-update', { phase: game.phase });
+      }
+    }
+  });
+
+  // 텔레스트레이션 게임 재시작
+  socket.on('telestrations-game-restart', ({ room }) => {
+    const game = telestrationsGames.get(room);
+    if (!game || game.hostId !== socket.id) return;
+
+    game.phase = 'waiting';
+    game.gameBooks = [];
+    game.turnSubmissions.clear();
+    game.currentRound = 0;
+
+    io.to(room).emit('telestrations-update', {
+      phase: 'waiting',
+      players: game.players,
+      hostId: game.hostId,
+      results: null,
+      currentBookPage: null,
+    });
   });
 
   // 마피아 게임 메시지 처리
@@ -804,8 +937,37 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const user = connectedUsers.get(socket.id);
     if (user) {
-      // 마피아 게임인 경우
-      if (user.gameType === 'mafia') {
+      if (user.gameType === 'telestrations') {
+        const game = telestrationsGames.get(user.room);
+        if (game) {
+          const wasHost = game.hostId === socket.id;
+          game.players = game.players.filter(p => p.id !== socket.id);
+
+          if (game.players.length === 0) {
+            telestrationsGames.delete(user.room);
+          } else {
+            // 게임 진행 중이었다면 게임 종료
+            if (game.phase !== 'waiting') {
+              game.phase = 'waiting';
+              game.gameBooks = [];
+              game.turnSubmissions.clear();
+              game.currentRound = 0;
+              io.to(user.room).emit('telestrations-error', { message: '플레이어가 나가서 게임이 종료되었습니다.' });
+            }
+
+            // 나간 사람이 방장이었다면 새로운 방장 지정
+            if (wasHost) {
+              game.hostId = game.players[0].id;
+            }
+
+            io.to(user.room).emit('telestrations-update', {
+              players: game.players,
+              hostId: game.hostId,
+              phase: game.phase,
+            });
+          }
+        }
+      } else if (user.gameType === 'mafia') {
         const game = mafiaGames.get(user.room);
         if (game) {
           game.players = game.players.filter(p => p.id !== socket.id);

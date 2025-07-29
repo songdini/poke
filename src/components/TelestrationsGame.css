@@ -1,0 +1,167 @@
+.telestrations-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #2c2f33;
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.telestrations-header {
+  text-align: center;
+  border-bottom: 1px solid #4f545c;
+  padding-bottom: 15px;
+}
+
+.telestrations-header h1 {
+  margin: 0;
+  color: #7289da;
+}
+
+.telestrations-main {
+  background-color: #23272a;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+/* Waiting Room */
+.telestrations-waiting-room h2 {
+  color: #7289da;
+}
+
+.telestrations-waiting-room .player-list ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.telestrations-waiting-room .player-list li {
+  background-color: #40444b;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* Common Button Style */
+.telestrations-container button {
+  background-color: #7289da;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.telestrations-container button:hover:not(:disabled) {
+  background-color: #677bc4;
+}
+
+.telestrations-container button:disabled {
+  background-color: #4f545c;
+  cursor: not-allowed;
+}
+
+/* Game Phase Container */
+.telestrations-phase-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.telestrations-phase-container h3 {
+  margin: 0;
+  color: #7289da;
+}
+
+.telestrations-phase-container input[type="text"] {
+  width: 80%;
+  max-width: 400px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #4f545c;
+  background-color: #40444b;
+  color: white;
+  font-size: 16px;
+}
+
+/* Drawing Phase */
+.canvas-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.telestrations-phase-container canvas {
+  background-color: white;
+  border-radius: 8px;
+  cursor: crosshair;
+  border: 2px solid #7289da;
+}
+
+/* Guessing Phase */
+.guess-image {
+  max-width: 100%;
+  max-height: 300px;
+  border: 2px solid #4f545c;
+  border-radius: 8px;
+  background-color: white;
+}
+
+/* Waiting for Turn */
+.telestrations-waiting-turn {
+  text-align: center;
+  padding: 50px;
+}
+
+/* Results */
+.telestrations-results h2 {
+  text-align: center;
+  color: #7289da;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.result-book {
+  background-color: #2c2f33;
+  border: 1px solid #4f545c;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.result-page {
+  border-bottom: 1px dashed #4f545c;
+  padding: 10px 0;
+}
+.result-page:last-child {
+  border-bottom: none;
+}
+.result-page .author {
+  font-size: 0.9em;
+  color: #99aab5;
+  margin: 0 0 5px;
+}
+.result-page .word-data {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+}
+.result-page img {
+  width: 100%;
+  border-radius: 5px;
+}
