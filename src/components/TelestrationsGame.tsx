@@ -25,6 +25,18 @@ interface TelestrationsGameProps {
   room: string;
 }
 
+interface TelestrationsUpdatePayload {
+  players?: Player[];
+  hostId?: string;
+  phase?: GamePhase;
+  results?: GameBook[] | null;
+  currentBookPage?: GameBookPage | null;
+}
+
+interface TelestrationsErrorPayload {
+  message: string;
+}
+
 const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room }) => {
   const [socket, setSocket] = useState<any>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -54,7 +66,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
       newSocket.emit('join', { username, room, gameType: 'telestrations' });
     });
 
-    newSocket.on('telestrations-update', (data) => {
+    newSocket.on('telestrations-update', (data: TelestrationsUpdatePayload) => {
       if (data.players) setPlayers(data.players);
       if (data.hostId) setIsHost(newSocket.id === data.hostId);
       if (data.phase) {
@@ -62,7 +74,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
         setIsSubmitted(false);
         setInputValue('');
         if (data.phase === 'results') {
-          setResults(data.results);
+          setResults(data.results ?? null);
         } else {
           setResults(null);
         }
@@ -72,7 +84,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
       }
     });
 
-    newSocket.on('telestrations-error', (data) => {
+    newSocket.on('telestrations-error', (data: TelestrationsErrorPayload) => {
       setError(data.message);
       setTimeout(() => setError(''), 3000);
     });
