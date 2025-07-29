@@ -272,7 +272,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
   return (
     <div className="telestrations-container">
       <div className="telestrations-header">
-        <h1>📝 텔레스트레이션</h1>
+        <h1>📝</h1>
         <p>'{room}' 방 - {username}님</p>
       </div>
       <div className="telestrations-main">
