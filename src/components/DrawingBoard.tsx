@@ -5,7 +5,19 @@ interface DrawingBoardProps {
   onClose: () => void;
 }
 
-const COLORS = ['#222', '#39ff14', '#e11d48', '#2563eb', '#facc15', '#10b981', '#fff'];
+const COLORS = [
+  '#222222', // Black
+  '#e11d48', // Red
+  '#f97316', // Orange
+  '#facc15', // Yellow
+  '#4ade80', // Green
+  '#38bdf8', // Light Blue
+  '#3b82f6', // Blue
+  '#8b5cf6', // Purple
+  '#ec4899', // Pink
+  '#a16207', // Brown
+  '#ffffff', // White
+];
 const SIZES = [2, 4, 8, 14];
 
 type Path = {
@@ -172,8 +184,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
       <div style={{ background: '#23272f', borderRadius: 12, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
         <h3 style={{ margin: 0, marginBottom: 12, color: '#39ff14', fontFamily: 'Fira Mono, Consolas, monospace' }}>🖌️ 그림 그리기</h3>
         <div style={{ display: 'flex', gap: 16, marginBottom: 12, alignItems: 'center', justifyContent: 'center' }}>
-          {/* 색상 선택 */}
-          <div style={{ display: 'flex', gap: 6 }}>
+          {/* 색상 선택 (프리셋 + 커스텀) */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {COLORS.map((c) => (
               <button
                 key={c}
@@ -193,6 +205,24 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
                 title={c}
               />
             ))}
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => {
+                setColor(e.target.value);
+                setIsEraser(false);
+              }}
+              style={{
+                width: 32,
+                height: 32,
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                marginLeft: 4,
+                padding: 0,
+              }}
+              title="색상 선택"
+            />
           </div>
           {/* 굵기 선택 */}
           <div style={{ display: 'flex', gap: 6 }}>
