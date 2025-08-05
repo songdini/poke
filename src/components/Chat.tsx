@@ -432,6 +432,14 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
           </button>
         </div>
       </div>
+      {selectedImage && (
+        <div className="image-modal-overlay" onClick={() => setSelectedImage(null)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <img src={selectedImage} alt="확대된 그림" />
+            <button className="close-modal-btn" onClick={() => setSelectedImage(null)}>×</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
