@@ -158,6 +158,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     if (!drawingContext) return;
+    e.preventDefault();
     saveHistory();
     const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
     drawingContext.beginPath();
@@ -167,6 +168,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !drawingContext) return;
+    e.preventDefault();
     const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
     drawingContext.strokeStyle = drawColor;
     drawingContext.lineWidth = 3;

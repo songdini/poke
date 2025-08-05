@@ -265,7 +265,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
           ref={canvasRef}
           width={320}
           height={240}
-          style={{ border: '1px solid #333', borderRadius: 8, background: '#fff', touchAction: 'none', display: 'block', margin: '0 auto' }}
+          style={{ border: '1px solid #333', borderRadius: 8, background: '#fff', touchAction: 'none', display: 'block', margin: '0 auto', userSelect: 'none', WebkitUserSelect: 'none' }}
           onMouseDown={startDrawing}
           onMouseUp={endDrawing}
           onMouseOut={endDrawing}
