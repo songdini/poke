@@ -42,12 +42,14 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<GamePhase>('waiting');
   const [isHost, setIsHost] = useState(false);
+  const [hostId, setHostId] = useState('');
   const [myId, setMyId] = useState('');
 
   const [currentBookPage, setCurrentBookPage] = useState<GameBookPage | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [results, setResults] = useState<GameBook[] | null>(null);
   const [error, setError] = useState('');
+  const [visiblePages, setVisiblePages] = useState(1);
 
   const [inputValue, setInputValue] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -68,13 +70,17 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
 
     newSocket.on('telestrations-update', (data: TelestrationsUpdatePayload) => {
       if (data.players) setPlayers(data.players);
-      if (data.hostId) setIsHost(newSocket.id === data.hostId);
+      if (data.hostId) {
+        setHostId(data.hostId);
+        setIsHost(newSocket.id === data.hostId);
+      }
       if (data.phase) {
         setPhase(data.phase);
         setIsSubmitted(false);
         setInputValue('');
         if (data.phase === 'results') {
           setResults(data.results ?? null);
+          setVisiblePages(1);
         } else {
           setResults(null);
         }
@@ -132,22 +138,40 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
   };
 
   // --- Drawing Canvas Logic ---
-  const startDrawing = ({ nativeEvent }: React.MouseEvent | React.TouchEvent) => {
-    if (!drawingContext) return;
-    const { offsetX, offsetY } = nativeEvent as MouseEvent;
-    drawingContext.beginPath();
-    drawingContext.moveTo(offsetX, offsetY);
-    setIsDrawing(true);
-    saveHistory();
+  const getPos = (nativeEvent: MouseEvent | TouchEvent) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+
+    if (window.TouchEvent && nativeEvent instanceof TouchEvent && nativeEvent.touches.length > 0) {
+      return {
+        x: nativeEvent.touches[0].clientX - rect.left,
+        y: nativeEvent.touches[0].clientY - rect.top,
+      };
+    } else if (nativeEvent instanceof MouseEvent) {
+      return {
+        x: nativeEvent.clientX - rect.left,
+        y: nativeEvent.clientY - rect.top,
+      };
+    }
+    return { x: 0, y: 0 };
   };
 
-  const draw = ({ nativeEvent }: React.MouseEvent | React.TouchEvent) => {
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!drawingContext) return;
+    saveHistory();
+    const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
+    drawingContext.beginPath();
+    drawingContext.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !drawingContext) return;
-    const { offsetX, offsetY } = nativeEvent as MouseEvent;
+    const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
     drawingContext.strokeStyle = drawColor;
     drawingContext.lineWidth = 3;
     drawingContext.lineCap = 'round';
-    drawingContext.lineTo(offsetX, offsetY);
+    drawingContext.lineTo(x, y);
     drawingContext.stroke();
   };
 
@@ -189,7 +213,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
       <div className="player-list">
         <h3>참가자 ({players.length}명)</h3>
         <ul>
-          {players.map(p => <li key={p.id}>{p.username} {p.id === myId ? '(나)' : ''} {isHost && p.id === myId ? '👑' : ''}</li>)}
+          {players.map(p => <li key={p.id}>{p.username} {p.id === myId ? '(나)' : ''} {p.id === hostId ? '👑' : ''}</li>)}
         </ul>
       </div>
       {isHost && <button onClick={handleStartGame} disabled={players.length < 3}>게임 시작</button>}
@@ -228,6 +252,10 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            onTouchCancel={stopDrawing}
           />
           <button onClick={handleSubmitTurn}>그림 제출</button>
         </div>;
@@ -245,29 +273,42 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
     }
   };
 
-  const renderResults = () => (
-    <div className="telestrations-results">
-      <h2>결과 확인!</h2>
-      <div className="results-grid">
-        {results?.map((book, index) => (
-          <div key={index} className="result-book">
-            <h3>{book.owner}의 게임북</h3>
-            {book.pages.map((page, pageIndex) => (
-              <div key={pageIndex} className="result-page">
-                <p className="author">{page.author}님의 {page.type === 'word' ? '제시어' : '그림'}:</p>
-                {page.type === 'word' ? (
-                  <p className="word-data">{page.data}</p>
-                ) : (
-                  <img src={page.data} alt="결과 그림" />
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
+  const renderResults = () => {
+    const maxPages = results?.[0]?.pages.length || 0;
+
+    const handleShowNext = () => {
+      setVisiblePages(prev => Math.min(prev + 1, maxPages));
+    };
+
+    return (
+      <div className="telestrations-results">
+        <h2>결과 확인!</h2>
+        <div className="results-grid">
+          {results?.map((book, index) => (
+            <div key={index} className="result-book">
+              <h3>{book.owner}의 게임북</h3>
+              {book.pages.slice(0, visiblePages).map((page, pageIndex) => (
+                <div key={pageIndex} className={`result-page ${pageIndex === visiblePages - 1 ? 'reveal' : ''}`}>
+                  <p className="author">{page.author}님의 {page.type === 'word' ? '제시어' : '그림'}:</p>
+                  {page.type === 'word' ? (
+                    <p className="word-data">{page.data}</p>
+                  ) : (
+                    <img src={page.data} alt="결과 그림" />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="results-controls">
+          {visiblePages < maxPages && (
+            <button onClick={handleShowNext} className="next-page-btn">다음 내용 보기</button>
+          )}
+          {isHost && <button onClick={handleRestartGame}>다시하기</button>}
+        </div>
       </div>
-      {isHost && <button onClick={handleRestartGame}>다시하기</button>}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="telestrations-container">

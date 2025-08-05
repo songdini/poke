@@ -40,6 +40,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [kicked, setKicked] = useState(false);
   const [showDrawing, setShowDrawing] = useState(false);
   const [kickVote, setKickVote] = useState<KickVoteState | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     // 환경에 따라 서버 URL 설정
@@ -323,7 +324,12 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
               </div>
               <div className="message-content">
                 {msg.isImage ? (
-                  <img src={msg.message} alt="그림 메시지" style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, border: '1px solid #eee' }} />
+                  <img
+                    src={msg.message}
+                    alt="그림 메시지"
+                    style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, border: '1px solid #eee', cursor: 'pointer' }}
+                    onClick={() => setSelectedImage(msg.message)}
+                  />
                 ) : (
                   isOnlyEmojis(msg.message)
                     ? msg.message
