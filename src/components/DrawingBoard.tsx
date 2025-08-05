@@ -26,6 +26,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   const [currentPath, setCurrentPath] = useState<Path | null>(null);
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     setDrawing(true);
     const pos = getPos(e);
     setLastPos(pos);
@@ -48,6 +49,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!drawing || !canvasRef.current) return;
+    e.preventDefault();
     const pos = getPos(e);
     if (lastPos && currentPath) {
       // 캔버스에 바로 그림
