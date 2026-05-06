@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, Clock, Crown, Eye, EyeOff } from 'lucide-react';
-import io from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
+import { getChatServerUrl } from '../socketUrl';
 import './LiarGame.css';
 
 interface Player {
@@ -35,6 +36,23 @@ interface GameResult {
 interface LiarGameProps {
   username: string;
   room: string;
+}
+
+type LiarPhase = 'waiting' | 'starting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result';
+
+type LiarUpdate =
+  | { type: 'join' | 'leave' | 'restart'; data: { players: Player[]; phase: LiarPhase; host?: string | null; wordProvider?: string | null } }
+  | { type: 'game-start'; data?: Record<string, never> }
+  | { type: 'word-distribute'; data: { myWord: string | null; isLiar?: boolean; phase?: LiarPhase } }
+  | { type: 'talk-start'; data: { phase?: LiarPhase; timer: number } }
+  | { type: 'timer-update'; data: { timer: number } }
+  | { type: 'message'; data: Message }
+  | { type: 'vote-start'; data: { phase?: LiarPhase; players: Player[] } }
+  | { type: 'vote-update'; data: { votedCount: number; totalCount?: number; voteCount: VoteCount } }
+  | { type: 'result'; data: GameResult };
+
+interface LiarErrorPayload {
+  message: string;
 }
 
 // 로딩 컴포넌트
@@ -101,7 +119,7 @@ const LiarGameLoading: React.FC = () => {
 const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   // 게임 상태
   const [players, setPlayers] = useState<Player[]>([]);
-  const [phase, setPhase] = useState<'waiting' | 'starting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result'>('waiting');
+  const [phase, setPhase] = useState<LiarPhase>('waiting');
   const [myWord, setMyWord] = useState<string | null>(null);
   const [showMyWord, setShowMyWord] = useState(false);
 
@@ -121,7 +139,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   const [error, setError] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<any>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   // 소켓 연결 및 이벤트 처리
   const resetLiarGameState = () => {
@@ -140,7 +158,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   };
 
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
+    const serverUrl = getChatServerUrl();
     const socket = io(serverUrl);
     socketRef.current = socket;
 
@@ -150,17 +168,16 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
       gameType: 'liar'
     });
 
-    socket.on('liar-update', (data: any) => {
-      const { type, data: payload } = data;
-      switch (type) {
+    socket.on('liar-update', (update: LiarUpdate) => {
+      switch (update.type) {
         case 'join':
         case 'leave':
-          setPlayers(payload.players || []);
-          setPhase(payload.phase);
+          setPlayers(update.data.players || []);
+          setPhase(update.data.phase);
           break;
         case 'restart':
-          setPlayers(payload.players || []);
-          setPhase(payload.phase);
+          setPlayers(update.data.players || []);
+          setPhase(update.data.phase);
           resetLiarGameState();
           break;
         case 'game-start':
@@ -168,38 +185,38 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
           break;
         case 'word-distribute':
           setPhase('word-distribute');
-          setMyWord(payload.myWord);
+          setMyWord(update.data.myWord);
           break;
         case 'talk-start':
           setPhase('talk');
-          setTimer(payload.timer);
+          setTimer(update.data.timer);
           break;
         case 'timer-update':
-          setTimer(payload.timer);
+          setTimer(update.data.timer);
           break;
         case 'message':
           setMessages(prev => [...prev, {
-            username: payload.username,
-            message: payload.message,
-            timestamp: payload.timestamp
+            username: update.data.username,
+            message: update.data.message,
+            timestamp: update.data.timestamp
           }]);
           break;
         case 'vote-start':
           setPhase('vote');
-          setPlayers(payload.players);
+          setPlayers(update.data.players);
           break;
         case 'vote-update':
-          setVotedCount(payload.votedCount);
-          setVoteCount(payload.voteCount);
+          setVotedCount(update.data.votedCount);
+          setVoteCount(update.data.voteCount);
           break;
         case 'result':
           setPhase('result');
-          setResult(payload);
+          setResult(update.data);
           break;
       }
     });
 
-    socket.on('liar-error', (data: any) => {
+    socket.on('liar-error', (data: LiarErrorPayload) => {
       setError(data.message);
       setTimeout(() => setError(''), 3000);
     });

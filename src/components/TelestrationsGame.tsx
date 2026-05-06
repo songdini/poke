@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
+import { getChatServerUrl } from '../socketUrl';
 import './TelestrationsGame.css';
 
 interface Player {
@@ -38,7 +39,7 @@ interface TelestrationsErrorPayload {
 }
 
 const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room }) => {
-  const [socket, setSocket] = useState<any>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<GamePhase>('waiting');
   const [isHost, setIsHost] = useState(false);
@@ -59,12 +60,12 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
   const [drawHistory, setDrawHistory] = useState<ImageData[]>([]);
 
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
+    const serverUrl = getChatServerUrl();
     const newSocket = io(serverUrl);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      setMyId(newSocket.id);
+      setMyId(newSocket.id ?? '');
       newSocket.emit('join', { username, room, gameType: 'telestrations' });
     });
 

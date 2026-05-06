@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
+import { getChatServerUrl } from '../socketUrl';
 import './MafiaGame.css';
 
 interface Player {
@@ -31,6 +32,17 @@ interface GameMessage {
   player?: string;
 }
 
+type MafiaUpdateMessage =
+  | { type: 'join'; data: { player: Player } }
+  | { type: 'leave'; data: { playerId: string } }
+  | { type: 'message'; data: GameMessage }
+  | { type: 'game-start'; data: { players: Player[] } }
+  | { type: 'vote'; data: { targetId: string; player?: Partial<Player>; message: string } }
+  | { type: 'vote-skip'; data: { message: string } }
+  | { type: 'attack'; data: { targetId: string | null; player?: Partial<Player> | null; message: string } }
+  | { type: 'game-over'; data: { winner: string; message: string } }
+  | { type: 'phase-change'; data: { phase: GameState['phase']; message: string } };
+
 const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, room }) => {
   const [gameState, setGameState] = useState<GameState>({
     phase: 'waiting',
@@ -45,7 +57,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   });
 
   const [inputMessage, setInputMessage] = useState('');
-  const socketRef = useRef<any>(null);
+  const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attackedId, setAttackedId] = useState<string | null>(null);
   const [showVotePopup, setShowVotePopup] = useState(false);
@@ -54,7 +66,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
   // Socket.IO 연결
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
+    const serverUrl = getChatServerUrl();
     console.log('서버 주소:', serverUrl);
     const socket = io(serverUrl);
     socketRef.current = socket;
@@ -64,7 +76,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
       socket.emit('join', { username, room, gameType: 'mafia' });
     });
 
-    socket.on('mafia-update', (message: any) => {
+    socket.on('mafia-update', (message: MafiaUpdateMessage) => {
       handleSocketMessage(message);
     });
 
@@ -140,7 +152,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   };
 
   // Socket.IO 메시지 처리 - 수정된 부분
-  const handleSocketMessage = (message: any) => {
+  const handleSocketMessage = (message: MafiaUpdateMessage) => {
     const { type, data } = message;
 
     switch (type) {
@@ -183,7 +195,6 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         break;
 
       case 'vote':
-      case 'vote-skip':
         setGameState(prev => ({
           ...prev,
           voteUsed: true,
@@ -206,16 +217,30 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         }
         break;
 
-      case 'attack':
+      case 'vote-skip':
+        setGameState(prev => ({
+          ...prev,
+          voteUsed: true,
+          messages: [...prev.messages, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: data.message,
+            timestamp: new Date()
+          }]
+        }));
+        break;
+
+      case 'attack': {
         console.log('클라이언트 attack 메시지 수신:', data);
 
         setAttackedId(data.targetId);
+        const attackedPlayer = data.player;
 
         setGameState(prev => ({
           ...prev,
           players: prev.players.map(p =>
-              p.id === data.targetId
-                  ? { ...p, lives: data.player.lives, isAlive: data.player.isAlive }
+              data.targetId && attackedPlayer && p.id === data.targetId
+                  ? { ...p, lives: attackedPlayer.lives ?? p.lives, isAlive: attackedPlayer.isAlive ?? p.isAlive }
                   : p
           ),
           messages: [...prev.messages, {
@@ -229,6 +254,7 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         // 공격 애니메이션 1초 후 해제
         setTimeout(() => setAttackedId(null), 1000);
         break;
+      }
 
       case 'game-over':
         setGameState(prev => ({

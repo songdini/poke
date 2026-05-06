@@ -1,6 +1,10 @@
-body, .app, .chat-container {
-  background: #18181b !important;
-  color: #d1fae7 !important;
+body {
+  background: #18181b;
+}
+
+.chat-container,
+.chat-container * {
+  box-sizing: border-box;
 }
 
 .chat-container {
@@ -10,6 +14,7 @@ body, .app, .chat-container {
   display: flex;
   flex-direction: column;
   background: #23272f;
+  color: #d1fae7;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   overflow: hidden;
@@ -79,7 +84,7 @@ body, .app, .chat-container {
 }
 
 /* 메시지 박스 개선 */
-.message {
+.chat-container .message {
   margin-bottom: 16px;
   padding: 12px 16px;
   border-radius: 8px;
@@ -95,7 +100,7 @@ body, .app, .chat-container {
 
 /* PC에서만 메시지 최대 너비 제한 */
 @media (min-width: 769px) {
-  .message {
+  .chat-container .message {
     max-width: 70%;
   }
 }
@@ -119,7 +124,7 @@ body, .app, .chat-container {
     max-height: 40vh;
     min-height: 200px;
   }
-  .message {
+  .chat-container .message {
     max-width: 95vw;
     font-size: 1rem;
   }
@@ -127,16 +132,42 @@ body, .app, .chat-container {
     flex-direction: column;
     gap: 8px;
   }
+  .chat-input-row {
+    flex-wrap: wrap;
+  }
+  .chat-input textarea {
+    flex-basis: 100%;
+    order: 2;
+  }
+  .chat-input-row > button:last-child {
+    flex: 1;
+    order: 3;
+  }
 }
 
-.message.own-message {
+.chat-container .message.own-message {
   margin-left: auto;
-  background: #18181b;
-  color: #39ff14;
-  border-left: 4px solid #fff;
+  background: #f8fafc;
+  color: #111827;
+  border-left: none;
+  border-right: 4px solid #22c55e;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.22);
 }
 
-.message-header {
+.chat-container .message.emoji-message {
+  background: none;
+  box-shadow: none;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 0;
+  font-size: 4rem;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.chat-container .message-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -145,27 +176,37 @@ body, .app, .chat-container {
   color: #a3e635;
 }
 
-.username {
+.chat-container .username {
   font-weight: 600;
   color: #39ff14;
 }
 
-.own-message .username {
-  color: #fff;
+.chat-container .own-message .username {
+  color: #047857;
 }
 
-.timestamp {
+.chat-container .timestamp {
   color: #64748b;
   font-size: 0.75rem;
 }
 
-.own-message .timestamp {
-  color: #a3e635;
+.chat-container .own-message .timestamp {
+  color: #475569;
 }
 
-.message-content {
+.chat-container .message-content {
   line-height: 1.5;
   word-wrap: break-word;
+}
+
+.chat-container .message-link {
+  color: #60a5fa;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.chat-container .own-message .message-link {
+  color: #1d4ed8;
 }
 
 .typing-indicator {
@@ -198,6 +239,7 @@ body, .app, .chat-container {
 .user-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
   background: #18181b;
@@ -205,6 +247,23 @@ body, .app, .chat-container {
   font-size: 0.9rem;
   color: #d1fae7;
   font-family: inherit;
+}
+
+.user-name,
+.user-actions {
+  display: flex;
+  align-items: center;
+}
+
+.user-name {
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.user-actions {
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .user-dot {
@@ -221,6 +280,7 @@ body, .app, .chat-container {
   border: none;
   cursor: pointer;
   font-size: 18px;
+  margin-left: 4px;
 }
 
 .chat-input {
@@ -230,6 +290,14 @@ body, .app, .chat-container {
   display: flex;
   gap: 12px;
   align-items: flex-end;
+  position: relative;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
 }
 
 .chat-input textarea {
@@ -258,7 +326,7 @@ body, .app, .chat-container {
   color: #64748b;
 }
 
-.chat-input button, .emoji-btn, .draw-btn {
+.chat-input button, .emoji-btn, .draw-btn, .image-upload-btn {
   padding: 12px 16px;
   background: #23272f;
   color: #39ff14;
@@ -268,10 +336,14 @@ body, .app, .chat-container {
   cursor: pointer;
   font-family: inherit;
   font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   transition: background 0.2s, color 0.2s, border 0.2s;
 }
 
-.chat-input button:hover, .emoji-btn:hover, .draw-btn:hover {
+.chat-input button:hover, .emoji-btn:hover, .draw-btn:hover, .image-upload-btn:hover {
   background: #39ff14;
   color: #18181b;
   border-color: #39ff14;
@@ -284,14 +356,158 @@ body, .app, .chat-container {
   border-color: #333;
 }
 
+.image-upload-btn input {
+  display: none;
+}
+
+.kicked-notice {
+  padding: 40px;
+  text-align: center;
+  color: #f87171;
+  font-weight: 600;
+}
+
+.kick-vote-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.kick-vote-dialog {
+  background: #23272f;
+  border-radius: 12px;
+  padding: 32px;
+  min-width: min(320px, 100%);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  text-align: center;
+  color: #fff;
+}
+
+.kick-vote-dialog h3 {
+  color: #39ff14;
+  margin: 0 0 16px;
+}
+
+.kick-vote-question {
+  margin-bottom: 16px;
+}
+
+.kick-vote-question b {
+  color: #f87171;
+}
+
+.kick-vote-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.kick-vote-actions button {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kick-vote-yes {
+  background: #39ff14;
+  color: #18181b;
+}
+
+.kick-vote-no {
+  background: #f87171;
+  color: #fff;
+}
+
+.kick-vote-result {
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.kick-vote-result.kicked {
+  color: #39ff14;
+}
+
+.kick-vote-result.not_kicked {
+  color: #f87171;
+}
+
+.kick-vote-status {
+  color: #a3e635;
+  font-size: 0.95rem;
+}
+
+.kick-vote-voters {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin-top: 8px;
+}
+
 /* 그림 메시지 스타일 */
-.message-content img {
+.message-image {
   background: #23272f;
   border: 1px solid #333;
   border-radius: 8px;
   max-width: 200px;
   max-height: 150px;
   margin-top: 4px;
+  cursor: pointer;
+}
+
+.image-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: min(92vw, 960px);
+  max-height: 88vh;
+}
+
+.image-modal-content img {
+  display: block;
+  max-width: 100%;
+  max-height: 88vh;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.emoji-picker-popover {
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  z-index: 10;
 }
 
 /* 스크롤바 스타일 */
@@ -329,7 +545,7 @@ body, .app, .chat-container {
     border-top: 1px solid #333;
   }
   
-  .message {
+  .chat-container .message {
     max-width: 85%;
   }
 } 
@@ -346,7 +562,6 @@ body, .app, .chat-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 8px;
   transition: background 0.2s, color 0.2s, border 0.2s, transform 0.15s;
 }
 .emoji-btn:hover {
@@ -354,4 +569,4 @@ body, .app, .chat-container {
   color: #fff;
   border-color: #fbbf24;
   transform: scale(1.12);
-} 
+}

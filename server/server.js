@@ -14,16 +14,26 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const server = createServer(app);
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://43.201.67.160'
+]);
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  return allowedOrigins.has(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+};
+const corsOptions = {
+  origin: (origin, callback) => {
+    callback(isAllowedOrigin(origin) ? null : new Error(`Origin not allowed by CORS: ${origin}`), isAllowedOrigin(origin));
+  },
+  methods: ['GET', 'POST']
+};
 const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:5173", "http://43.201.67.160"], // 실제 도메인 추가
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions
 });
 
-app.use(cors({
-  origin: ["http://localhost:5173", "http://43.201.67.160"]
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // 연결된 사용자들을 저장

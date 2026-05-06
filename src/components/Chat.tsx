@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import DrawingBoard from './DrawingBoard';
+import { getChatServerUrl } from '../socketUrl';
 import './Chat.css';
 
 interface Message {
@@ -10,7 +11,7 @@ interface Message {
   username: string;
   message: string;
   timestamp: string;
-  isImage?: boolean; // Added isImage property
+  isImage?: boolean;
 }
 
 interface ChatProps {
@@ -27,8 +28,18 @@ interface KickVoteState {
   result?: 'kicked' | 'not_kicked';
 }
 
+type KickVoteUpdatePayload = Pick<KickVoteState, 'targetUsername' | 'agreeCount' | 'totalCount' | 'voted'>;
+
+interface KickVoteResultPayload {
+  targetUsername: string;
+  result: NonNullable<KickVoteState['result']>;
+}
+
+const URL_REGEX = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
+const URL_MATCH_REGEX = /^(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)$/i;
+
 const Chat: React.FC<ChatProps> = ({ username, room }) => {
-  const [socket, setSocket] = useState<any>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [users, setUsers] = useState<string[]>([]);
@@ -44,7 +55,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
 
   useEffect(() => {
     // 환경에 따라 서버 URL 설정
-    const serverUrl = import.meta.env.VITE_CHAT_SERVER_URL || 'http://localhost:3001';
+    const serverUrl = getChatServerUrl();
     const newSocket = io(serverUrl);
     setSocket(newSocket);
 
@@ -104,11 +115,11 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       setKickVote({ voting: true, targetUsername, agreeCount: 0, totalCount: 0, voted: [] });
     };
     // 투표 현황
-    const handleKickVoteUpdate = (data: any) => {
+    const handleKickVoteUpdate = (data: KickVoteUpdatePayload) => {
       setKickVote((prev) => prev ? { ...prev, ...data, voting: true } : { ...data, voting: true });
     };
     // 투표 결과
-    const handleKickVoteResult = ({ targetUsername, result }: any) => {
+    const handleKickVoteResult = ({ targetUsername, result }: KickVoteResultPayload) => {
       setKickVote((prev) => prev && prev.targetUsername === targetUsername ? { ...prev, result, voting: false } : prev);
       setTimeout(() => setKickVote(null), 2000);
     };
@@ -191,8 +202,10 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   }, [messages]);
 
   const sendMessage = () => {
-    if (messageInput.trim() && socket) {
-      socket.emit('sendMessage', { message: messageInput, room });
+    const message = messageInput.trim();
+
+    if (message && socket) {
+      socket.emit('sendMessage', { message, room });
       setMessageInput('');
     }
   };
@@ -211,7 +224,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -232,18 +245,17 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
 
   // 이모지로만 이루어진 메시지 판별 (1개 이상)
   const isOnlyEmojis = (text: string) => {
-    // 유니코드 이모지 정규식 (여러 개 연속 허용)
-    const emojiRegex = /^\s*(?:[\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+)\s*$/u;
+    // 유니코드 이모지, variation selector, ZWJ sequence를 허용한다.
+    const emojiRegex = /^\s*(?:\p{Emoji_Presentation}|\p{Emoji}\ufe0f|\u200d|\ufe0f)+\s*$/u;
     return emojiRegex.test(text);
   };
 
   // 메시지 내 URL을 하이퍼링크로 변환
   const linkify = (text: string) => {
-    const urlRegex = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
-    return text.split(urlRegex).map((part, i) => {
-      if (urlRegex.test(part)) {
+    return text.split(URL_REGEX).map((part, i) => {
+      if (URL_MATCH_REGEX.test(part)) {
         const href = part.startsWith('http') ? part : `http://${part}`;
-        return <a key={i} href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'underline', wordBreak: 'break-all' }}>{part}</a>;
+        return <a key={i} className="message-link" href={href} target="_blank" rel="noopener noreferrer">{part}</a>;
       }
       return part;
     });
@@ -253,7 +265,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     return (
       <div className="chat-container">
         <div className="chat-header"><h2>💬 실시간 채팅</h2></div>
-        <div style={{ padding: 40, textAlign: 'center', color: '#f87171', fontWeight: 600 }}>
+        <div className="kicked-notice">
           강퇴되었습니다. 2초 후 퇴장합니다.
         </div>
       </div>
@@ -264,28 +276,28 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     <div className="chat-container">
       {/* 투표 UI */}
       {kickVote && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
-            <h3 style={{ color: '#39ff14', marginBottom: 16 }}>강퇴 투표</h3>
-            <div style={{ marginBottom: 16 }}>
-              <b style={{ color: '#f87171' }}>{kickVote.targetUsername}</b> 님을 강퇴하시겠습니까?
+        <div className="kick-vote-overlay">
+          <div className="kick-vote-dialog">
+            <h3>강퇴 투표</h3>
+            <div className="kick-vote-question">
+              <b>{kickVote.targetUsername}</b> 님을 강퇴하시겠습니까?
             </div>
             {kickVote.result ? (
-              <div style={{ color: kickVote.result === 'kicked' ? '#39ff14' : '#f87171', fontWeight: 600, fontSize: 18 }}>
+              <div className={`kick-vote-result ${kickVote.result}`}>
                 {kickVote.result === 'kicked' ? '강퇴 성공!' : '강퇴 실패'}
               </div>
             ) : (
               <>
                 {!kickVote.voted.includes(username) && (
-                  <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 12 }}>
-                    <button onClick={() => sendKickVote(true)} style={{ background: '#39ff14', color: '#18181b', padding: '8px 24px', border: 'none', borderRadius: 6, fontWeight: 600 }}>찬성</button>
-                    <button onClick={() => sendKickVote(false)} style={{ background: '#f87171', color: '#fff', padding: '8px 24px', border: 'none', borderRadius: 6, fontWeight: 600 }}>반대</button>
+                  <div className="kick-vote-actions">
+                    <button className="kick-vote-yes" onClick={() => sendKickVote(true)}>찬성</button>
+                    <button className="kick-vote-no" onClick={() => sendKickVote(false)}>반대</button>
                   </div>
                 )}
-                <div style={{ color: '#a3e635', fontSize: 15 }}>
+                <div className="kick-vote-status">
                   투표 현황: {kickVote.agreeCount} / {kickVote.totalCount - 1} (본인 제외)
                 </div>
-                <div style={{ color: '#64748b', fontSize: 13, marginTop: 8 }}>
+                <div className="kick-vote-voters">
                   {kickVote.voted.length > 0 && `투표함: ${kickVote.voted.join(', ')}`}
                 </div>
               </>
@@ -294,7 +306,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
         </div>
       )}
       <div className="chat-header">
-        <h2>💬 Add File... (7/21)</h2>
+        <h2>🎨 캐치마인드</h2>
         <div className="connection-status">
           <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
           {isConnected ? '연결됨' : '연결 중...'}
@@ -303,41 +315,38 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       
       <div className="chat-main">
         <div className="chat-messages">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`message ${msg.username === username ? 'own-message' : ''}`}
-              style={isOnlyEmojis(msg.message) && !msg.isImage ? {
-                background: 'none',
-                boxShadow: 'none',
-                border: 'none',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '24px 0',
-                fontSize: 64,
-                color: '#fff',
-                lineHeight: 1.1
-              } : {}}
-            >
-              <div className="message-header" style={isOnlyEmojis(msg.message) && !msg.isImage ? { display: 'none' } : {}}>
-                <span className="username">{msg.username}</span>
-                <span className="timestamp">{formatTime(msg.timestamp)}</span>
-              </div>
-              <div className="message-content">
-                {msg.isImage ? (
-                  <img
-                    src={msg.message}
-                    alt="그림 메시지"
-                    style={{ maxWidth: 200, maxHeight: 150, borderRadius: 8, border: '1px solid #eee', cursor: 'pointer' }}
-                    onClick={() => setSelectedImage(msg.message)}
-                  />
-                ) : (
-                  isOnlyEmojis(msg.message)
-                    ? msg.message
-                    : linkify(msg.message)
+          {messages.map((msg) => {
+            const isOwnMessage = msg.username === username;
+            const isEmojiMessage = isOnlyEmojis(msg.message) && !msg.isImage;
+
+            return (
+              <div
+                key={msg.id}
+                className={`message ${isOwnMessage ? 'own-message' : ''} ${isEmojiMessage ? 'emoji-message' : ''}`}
+              >
+                {!isEmojiMessage && (
+                  <div className="message-header">
+                    <span className="username">{msg.username}</span>
+                    <span className="timestamp">{formatTime(msg.timestamp)}</span>
+                  </div>
                 )}
+                <div className="message-content">
+                  {msg.isImage ? (
+                    <img
+                      src={msg.message}
+                      alt="그림 메시지"
+                      className="message-image"
+                      onClick={() => setSelectedImage(msg.message)}
+                    />
+                  ) : (
+                    isEmojiMessage
+                      ? msg.message
+                      : linkify(msg.message)
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {isTyping && (
             <div className="typing-indicator">
               {isTyping}님이 입력 중...
@@ -350,18 +359,17 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
           <h3>👥 참여자 ({users.length})</h3>
           <div className="users-list">
             {users.map((user, index) => (
-              <div key={index} className="user-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div key={index} className="user-item">
+                <span className="user-name">
                   <span className="user-dot"></span>
                   {user}
                 </span>
                 {user !== username && (
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div className="user-actions">
                     <button
                       className="kick-btn"
                       title="투표로 강퇴"
                       onClick={() => requestKickVote(user)}
-                      style={{ marginLeft: 4, background: 'none', border: 'none', color: '#a3e635', cursor: 'pointer', fontSize: 18 }}
                     >
                       🗳️
                     </button>
@@ -380,12 +388,11 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
         />
       )}
       <div className="chat-input">
-        <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%' }}>
+        <div className="chat-input-row">
           <button
             type="button"
             className="emoji-btn"
             onClick={() => setShowEmojiPicker((v) => !v)}
-            style={{ marginRight: 8 }}
           >
             😊
           </button>
@@ -393,16 +400,14 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             type="button"
             className="draw-btn"
             onClick={() => setShowDrawing(true)}
-            style={{ marginRight: 8 }}
           >
             🖌️
           </button>
           {/* 이미지 첨부 버튼 */}
-          <label style={{ marginRight: 8, cursor: 'pointer' }}>
+          <label className="image-upload-btn">
             <input
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
               onChange={e => {
                 if (e.target.files && e.target.files[0]) {
                   sendImageFile(e.target.files[0]);
@@ -413,18 +418,17 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             <span role="img" aria-label="이미지">📎</span>
           </label>
           {showEmojiPicker && (
-            <div style={{ position: 'absolute', bottom: 70, left: 20, zIndex: 10 }}>
+            <div className="emoji-picker-popover">
               <EmojiPicker onEmojiClick={addEmoji} autoFocusSearch={false} height={350} width={300} />
             </div>
           )}
           <textarea
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             onInput={handleTyping}
             placeholder="메시지를 입력하세요..."
             disabled={!isConnected}
-            style={{ flex: 1 }}
             onPaste={handlePaste}
           />
           <button onClick={sendMessage} disabled={!isConnected || !messageInput.trim()}>
@@ -444,4 +448,4 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   );
 };
 
-export default Chat; 
+export default Chat;
