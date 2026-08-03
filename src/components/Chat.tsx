@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, type Socket } from 'socket.io-client';
+import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import DrawingBoard from './DrawingBoard';
-import { getChatServerUrl } from '../socketUrl';
+import { getChatServerUrl, resolveImageUrl, getSessionToken } from '../socketUrl';
+import { useSocket } from '../context/SocketContext';
 import './Chat.css';
 
 interface Message {
@@ -39,12 +40,11 @@ const URL_REGEX = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[
 const URL_MATCH_REGEX = /^(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)$/i;
 
 const Chat: React.FC<ChatProps> = ({ username, room }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket, isConnected } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [users, setUsers] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState<string>('');
-  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -54,58 +54,62 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    // 환경에 따라 서버 URL 설정
-    const serverUrl = getChatServerUrl();
-    const newSocket = io(serverUrl);
-    setSocket(newSocket);
+    if (!socket) return;
 
-    newSocket.on('connect', () => {
-      setIsConnected(true);
-      newSocket.emit('join', { username, room });
-    });
+    const joinRoom = () => {
+      socket.emit('join', { username, room, sessionToken: getSessionToken() });
+    };
 
-    newSocket.on('disconnect', () => {
-      setIsConnected(false);
-    });
+    if (socket.connected) {
+      joinRoom();
+    }
 
-    newSocket.on('newMessage', (message: Message) => {
+    const handleNewMessage = (message: Message) => {
       setMessages(prev => [...prev, message]);
-    });
+    };
 
-    newSocket.on('userJoined', (data: { username: string; message: string; timestamp: string }) => {
+    const handleUserJoined = (data: { username: string; message: string; timestamp: string }) => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         username: 'System',
         message: data.message,
         timestamp: data.timestamp
       }]);
-    });
+    };
 
-    newSocket.on('userLeft', (data: { username: string; message: string; timestamp: string }) => {
+    const handleUserLeft = (data: { username: string; message: string; timestamp: string }) => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         username: 'System',
         message: data.message,
         timestamp: data.timestamp
       }]);
-    });
+    };
 
-    newSocket.on('userList', (userList: string[]) => {
+    const handleUserList = (userList: string[]) => {
       setUsers(userList);
-    });
+    };
 
-    newSocket.on('userTyping', (data: { username: string; isTyping: boolean }) => {
-      if (data.isTyping) {
-        setIsTyping(data.username);
-      } else {
-        setIsTyping('');
-      }
-    });
+    const handleUserTyping = (data: { username: string; isTyping: boolean }) => {
+      setIsTyping(data.isTyping ? data.username : '');
+    };
+
+    socket.on('connect', joinRoom);
+    socket.on('newMessage', handleNewMessage);
+    socket.on('userJoined', handleUserJoined);
+    socket.on('userLeft', handleUserLeft);
+    socket.on('userList', handleUserList);
+    socket.on('userTyping', handleUserTyping);
 
     return () => {
-      newSocket.close();
+      socket.off('connect', joinRoom);
+      socket.off('newMessage', handleNewMessage);
+      socket.off('userJoined', handleUserJoined);
+      socket.off('userLeft', handleUserLeft);
+      socket.off('userList', handleUserList);
+      socket.off('userTyping', handleUserTyping);
     };
-  }, [username, room]);
+  }, [socket, username, room]);
 
   // 강퇴 투표 관련 소켓 이벤트 처리
   useEffect(() => {
@@ -148,20 +152,34 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
     };
   }, [socket]);
 
-  // 그림 메시지 전송
-  const sendDrawing = (dataUrl: string) => {
-    if (socket) {
-      socket.emit('sendMessage', { message: dataUrl, room, isImage: true });
+  // 그림 메시지 전송 (REST API업로드 후 소켓 전송)
+  const sendDrawing = async (dataUrl: string) => {
+    try {
+      const serverUrl = getChatServerUrl();
+      const res = await axios.post(`${serverUrl}/api/upload`, { image: dataUrl });
+      if (socket && res.data.url) {
+        socket.emit('sendMessage', { message: res.data.url, room, isImage: true });
+      }
+    } catch (err) {
+      console.error('그림 전송 실패:', err);
     }
   };
 
-  // 이미지 파일 전송
+  // 이미지 파일 전송 (REST API업로드 후 소켓 전송)
   const sendImageFile = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
-      if (socket && dataUrl) {
-        socket.emit('sendMessage', { message: dataUrl, room, isImage: true });
+      if (dataUrl) {
+        try {
+          const serverUrl = getChatServerUrl();
+          const res = await axios.post(`${serverUrl}/api/upload`, { image: dataUrl });
+          if (socket && res.data.url) {
+            socket.emit('sendMessage', { message: res.data.url, room, isImage: true });
+          }
+        } catch (err) {
+          console.error('이미지 업로드 실패:', err);
+        }
       }
     };
     reader.readAsDataURL(file);
@@ -333,10 +351,10 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
                 <div className="message-content">
                   {msg.isImage ? (
                     <img
-                      src={msg.message}
+                      src={resolveImageUrl(msg.message)}
                       alt="그림 메시지"
                       className="message-image"
-                      onClick={() => setSelectedImage(msg.message)}
+                      onClick={() => setSelectedImage(resolveImageUrl(msg.message))}
                     />
                   ) : (
                     isEmojiMessage

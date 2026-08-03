@@ -4,16 +4,13 @@ import Chat from './components/Chat'
 import MafiaGame from './components/MafiaGame'
 import LiarGame from './components/LiarGame'
 import TelestrationsGame from './components/TelestrationsGame';
-
-interface UserData {
-  username: string;
-  room: string;
-  gameType: 'catchmind' | 'mafia' | 'liar' | 'telestrations';
-}
+import { SocketProvider } from './context/SocketContext';
+import type { UserData } from './types/game';
 
 function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [selectedGame, setSelectedGame] = useState<'catchmind' | 'mafia' | 'liar' | 'telestrations' | null>(null);
+  const [activeTab, setActiveTab] = useState('Home');
 
   const handleGameSelection = (gameType: 'catchmind' | 'mafia' | 'liar' | 'telestrations') => {
     setSelectedGame(gameType);
@@ -35,97 +32,97 @@ function App() {
     setUserData(null);
   };
 
-  if (!selectedGame) {
-    return (
-      <div className="app">
-        <div className="join-container">
-          <h1>🎮</h1>
-          <p>선택</p>
+  const renderContent = () => {
+    if (!selectedGame) {
+      return (
+        <div className="excel-sheet-content">
+          <div className="excel-banner">
+            <h2>📊 Q3_Quarterly_Financial_Report_2026.xlsx</h2>
+            <p>Worksheet: Select Task Module / Data Table to Execute</p>
+          </div>
           
           <div className="game-selection">
             <button 
               className="game-option catchmind"
               onClick={() => handleGameSelection('catchmind')}
             >
-              <div className="game-icon">🎨</div>
+              <div className="game-icon">📊</div>
               <div className="game-info">
-                <h3>캐치마인드</h3>
-                <p>그림을 그리고 맞추기</p>
+                <h3>Table 01: Catchmind_Draw_Analytics.csv</h3>
+                <p>Drawing Canvas & Visual Matcher | Status: Ready</p>
               </div>
+              <span className="excel-cell-tag">MOD_01</span>
             </button>
             
             <button 
               className="game-option mafia"
               onClick={() => handleGameSelection('mafia')}
             >
-              <div className="game-icon">🕵️</div>
+              <div className="game-icon">📋</div>
               <div className="game-info">
-                <h3>마피아</h3>
-                <p>마피아 찾기</p>
+                <h3>Table 02: Mafia_Role_Audit_Log.xlsx</h3>
+                <p>Confidential Role Verification & Elimination Log | Status: Ready</p>
               </div>
+              <span className="excel-cell-tag">MOD_02</span>
             </button>
 
             <button
               className="game-option liar"
               onClick={() => handleGameSelection('liar')}
             >
-              <div className="game-icon">🤥</div>
+              <div className="game-icon">📈</div>
               <div className="game-info">
-                <h3>라이어</h3>
-                <p>한 명만 다른 제시어! 라이어를 찾아라</p>
+                <h3>Table 03: Liar_Keyword_CrossCheck.xlsx</h3>
+                <p>Anomalous Value Detector & Interrogation Sheet | Status: Ready</p>
               </div>
+              <span className="excel-cell-tag">MOD_03</span>
             </button>
 
             <button
               className="game-option telestrations"
               onClick={() => handleGameSelection('telestrations')}
             >
-              <div className="game-icon">📝</div>
+              <div className="game-icon">📑</div>
               <div className="game-info">
-                <h3>텔레스트레이션</h3>
-                <p>단어와 그림이 돌고 돌아!</p>
+                <h3>Table 04: Telestrations_Sequence_Map.xlsx</h3>
+                <p>Sequential Data Propagation & Image Chain | Status: Ready</p>
               </div>
+              <span className="excel-cell-tag">MOD_04</span>
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!userData) {
-    return (
-      <div className="app">
-        <div className="join-container">
+    if (!userData) {
+      return (
+        <div className="excel-sheet-content">
           <div className="game-header">
             <button className="back-button" onClick={handleBackToGameSelection}>
-              ← 뒤로가기
+              ◀ Return to Main Sheet (Ctrl+Z)
             </button>
             <h1>
               {selectedGame === 'catchmind'
-                ? '🎨 캐치마인드'
+                ? '📊 Catchmind_Draw_Analytics.csv'
                 : selectedGame === 'mafia'
-                ? '🕵️ 마피아'
+                ? '📋 Mafia_Role_Audit_Log.xlsx'
                 : selectedGame === 'liar'
-                ? '🤥 라이어'
-                : '📝 텔레스트레이션'}
+                ? '📈 Liar_Keyword_CrossCheck.xlsx'
+                : '📑 Telestrations_Sequence_Map.xlsx'}
             </h1>
-            <p>
-              {selectedGame === 'catchmind'
-                ? '그림을 그리고 맞추세요.'
-                : selectedGame === 'mafia'
-                  ? '마피아를 찾아내세요.'
-                  : selectedGame === 'liar' ? '라이어를 찾아내세요.' : '단어와 그림이 돌고 도세요.'}
+            <p className="excel-subtext">
+              Enter User Credentials and Workgroup Session Key to Load Cell Data:
             </p>
           </div>
           
           <form onSubmit={handleJoinChat} className="join-form">
             <div className="form-group">
-              <label htmlFor="username">사용자 이름</label>
+              <label htmlFor="username">User_ID (Cell B2)</label>
               <input
                 type="text"
                 id="username"
                 name="username"
-                placeholder="사용자 이름을 입력하세요"
+                placeholder="e.g. Employee_1042"
                 required
                 minLength={2}
                 maxLength={20}
@@ -133,12 +130,12 @@ function App() {
             </div>
             
             <div className="form-group">
-              <label htmlFor="room">방</label>
+              <label htmlFor="room">Workgroup_ID / Room_Code (Cell B3)</label>
               <input
                 type="text"
                 id="room"
                 name="room"
-                placeholder="방 이름을 입력하세요"
+                placeholder="e.g. FIN_DEPT_01"
                 required
                 minLength={2}
                 maxLength={20}
@@ -146,26 +143,190 @@ function App() {
             </div>
             
             <button type="submit" className="join-button">
-              입장
+              ▶ Load Worksheet Data (Enter)
             </button>
           </form>
         </div>
+      );
+    }
+
+    return (
+      <div className="excel-game-viewport">
+        {userData.gameType === 'catchmind' ? (
+          <Chat username={userData.username} room={userData.room} />
+        ) : userData.gameType === 'mafia' ? (
+          <MafiaGame username={userData.username} room={userData.room} />
+        ) : userData.gameType === 'liar' ? (
+          <LiarGame username={userData.username} room={userData.room} />
+        ) : (
+          <TelestrationsGame username={userData.username} room={userData.room} />
+        )}
       </div>
     );
-  }
+  };
 
   return (
-    <div className="app">
-      {userData.gameType === 'catchmind' ? (
-        <Chat username={userData.username} room={userData.room} />
-      ) : userData.gameType === 'mafia' ? (
-        <MafiaGame username={userData.username} room={userData.room} />
-      ) : userData.gameType === 'liar' ? (
-        <LiarGame username={userData.username} room={userData.room} />
-      ) : (
-        <TelestrationsGame username={userData.username} room={userData.room} />
-      )}
-    </div>
+    <SocketProvider>
+      <div className="excel-app-window">
+        {/* Excel Top Title Bar */}
+        <div className="excel-title-bar">
+          <div className="excel-title-left">
+            <span className="excel-app-icon">📊</span>
+            <span className="excel-doc-title">Q3_Quarterly_Financial_Report_2026.xlsx - Excel</span>
+            <span className="excel-autosave">AutoSave <span className="excel-toggle-on">ON</span></span>
+          </div>
+          <div className="excel-title-center">
+            <div className="excel-search-box">
+              <span>🔍 Search (Alt+Q)</span>
+            </div>
+          </div>
+          <div className="excel-title-right">
+            <span className="excel-user-profile">👤 KIMSJ (Corp)</span>
+            <div className="excel-window-controls">
+              <span>─</span>
+              <span>🗖</span>
+              <span className="close-btn">✕</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Excel Ribbon Tabs */}
+        <div className="excel-ribbon-tabs">
+          {['File', 'Home', 'Insert', 'Page Layout', 'Formulas', 'Data', 'Review', 'View', 'Automate', 'Help'].map((tab) => (
+            <button
+              key={tab}
+              className={`ribbon-tab ${activeTab === tab ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Excel Ribbon Toolbar Icons */}
+        <div className="excel-ribbon-toolbar">
+          <div className="toolbar-group">
+            <span className="toolbar-btn">📋 Paste</span>
+            <span className="toolbar-btn">✂️ Cut</span>
+            <span className="toolbar-btn">📄 Copy</span>
+          </div>
+          <div className="toolbar-separator" />
+          <div className="toolbar-group">
+            <select className="excel-font-select" defaultValue="Segoe UI">
+              <option value="Segoe UI">Segoe UI</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Aptos">Aptos</option>
+              <option value="Arial">Arial</option>
+            </select>
+            <select className="excel-size-select" defaultValue="11">
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <button className="toolbar-tool-btn bold">B</button>
+            <button className="toolbar-tool-btn italic">I</button>
+            <button className="toolbar-tool-btn underline">U</button>
+            <button className="toolbar-tool-btn fill">🪣</button>
+            <button className="toolbar-tool-btn color">🎨</button>
+          </div>
+          <div className="toolbar-separator" />
+          <div className="toolbar-group">
+            <button className="toolbar-tool-btn">≡</button>
+            <button className="toolbar-tool-btn">equiv;</button>
+            <button className="toolbar-tool-btn">Merge & Center ▾</button>
+          </div>
+          <div className="toolbar-separator" />
+          <div className="toolbar-group">
+            <span className="toolbar-btn">📊 Conditional Formatting</span>
+            <span className="toolbar-btn">▦ Format as Table</span>
+          </div>
+        </div>
+
+        {/* Excel Formula Bar */}
+        <div className="excel-formula-bar">
+          <div className="excel-name-box">B4</div>
+          <div className="excel-fx-btn">fx</div>
+          <div className="excel-formula-input">
+            {selectedGame
+              ? `=VLOOKUP("${selectedGame.toUpperCase()}", WORKGROUP_DATA, 2, FALSE)`
+              : `=SUM(A1:B100)`}
+          </div>
+        </div>
+
+        {/* Excel Sheet Body Container */}
+        <div className="excel-body-container">
+          {/* Column Header Row */}
+          <div className="excel-col-headers">
+            <div className="col-header-corner"></div>
+            {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'].map((col) => (
+              <div key={col} className="col-header-cell">{col}</div>
+            ))}
+          </div>
+
+          {/* Main Grid View */}
+          <div className="excel-grid-workspace">
+            <div className="excel-row-numbers">
+              {Array.from({ length: 25 }, (_, i) => (
+                <div key={i} className="row-number-cell">{i + 1}</div>
+              ))}
+            </div>
+            <div className="excel-main-content-cell">
+              {renderContent()}
+            </div>
+          </div>
+        </div>
+
+        {/* Excel Sheet Tabs Footer */}
+        <div className="excel-sheet-footer">
+          <div className="excel-sheet-tabs">
+            <button
+              className={`sheet-tab ${!selectedGame ? 'active' : ''}`}
+              onClick={handleBackToGameSelection}
+            >
+              📊 Sheet1 - Summary
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'catchmind' ? 'active' : ''}`}
+              onClick={() => handleGameSelection('catchmind')}
+            >
+              🎨 Sheet2 - Catchmind_Draw
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'mafia' ? 'active' : ''}`}
+              onClick={() => handleGameSelection('mafia')}
+            >
+              🕵️ Sheet3 - Mafia_Audit
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'liar' ? 'active' : ''}`}
+              onClick={() => handleGameSelection('liar')}
+            >
+              🤥 Sheet4 - Liar_Check
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'telestrations' ? 'active' : ''}`}
+              onClick={() => handleGameSelection('telestrations')}
+            >
+              📝 Sheet5 - Telestrations
+            </button>
+            <span className="new-sheet-btn">➕</span>
+          </div>
+
+          <div className="excel-status-bar">
+            <span className="status-item">Ready</span>
+            <span className="status-item">⚡ Calculation: Automatic</span>
+            <span className="status-item">AVERAGE: 4,892.10</span>
+            <span className="status-item">COUNT: 14</span>
+            <span className="status-item">SUM: $128,450.00</span>
+            <div className="zoom-slider">
+              <span>100%</span>
+              <input type="range" min="50" max="200" defaultValue="100" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </SocketProvider>
   );
 }
 

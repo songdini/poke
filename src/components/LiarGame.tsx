@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, Clock, Crown, Eye, EyeOff } from 'lucide-react';
-import { io, type Socket } from 'socket.io-client';
-import { getChatServerUrl } from '../socketUrl';
+import { type Socket } from 'socket.io-client';
+import { getSessionToken } from '../socketUrl';
+import { useSocket } from '../context/SocketContext';
 import './LiarGame.css';
 
 interface Player {
@@ -41,6 +42,7 @@ interface LiarGameProps {
 type LiarPhase = 'waiting' | 'starting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result';
 
 type LiarUpdate =
+  | { type: 'reconnect-sync'; data: { phase?: LiarPhase; players?: Player[]; myWord?: string | null; isLiar?: boolean } }
   | { type: 'join' | 'leave' | 'restart'; data: { players: Player[]; phase: LiarPhase; host?: string | null; wordProvider?: string | null } }
   | { type: 'game-start'; data?: Record<string, never> }
   | { type: 'word-distribute'; data: { myWord: string | null; isLiar?: boolean; phase?: LiarPhase } }
@@ -73,7 +75,7 @@ const LiarGameLoading: React.FC = () => {
         if (prev >= 2) return 0;
         return prev + 1;
       });
-    }, 800);
+    }, 1000);
 
     return () => {
       clearInterval(dotsInterval);
@@ -82,14 +84,14 @@ const LiarGameLoading: React.FC = () => {
   }, []);
 
   const steps = [
-    { icon: '📝', text: '제시어 선정 중' },
-    { icon: '🎲', text: '라이어 선정 중' },
-    { icon: '📤', text: '제시어 배분 중' }
+    { icon: '📝', text: '단어 사전 데이터베이스 연결 중' },
+    { icon: '🔍', text: '카테고리별 단어 무작위 조합 중' },
+    { icon: '🎭', text: '라이어 플레이어 비밀리에 추첨 중' }
   ];
 
   return (
-      <div className="loading-overlay">
-        <div className="loading-container">
+      <div className="liar-loading-overlay">
+        <div className="liar-loading-container">
           <div className="loading-spinner">
             <div className="spinner-ring"></div>
             <div className="spinner-ring delay-1"></div>
@@ -117,6 +119,7 @@ const LiarGameLoading: React.FC = () => {
 };
 
 const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
+  const { socket } = useSocket();
   // 게임 상태
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<LiarPhase>('waiting');
@@ -133,15 +136,13 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   const [voteCount, setVoteCount] = useState<VoteCount>({});
   const [votedCount, setVotedCount] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
-
-  // 결과
   const [result, setResult] = useState<GameResult | null>(null);
-  const [error, setError] = useState<string>('');
 
+  // 기타 UI
+  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(socket);
 
-  // 소켓 연결 및 이벤트 처리
   const resetLiarGameState = () => {
     setMyWord(null);
     setShowMyWord(false);
@@ -158,18 +159,31 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
   };
 
   useEffect(() => {
-    const serverUrl = getChatServerUrl();
-    const socket = io(serverUrl);
     socketRef.current = socket;
+    if (!socket) return;
 
-    socket.emit('join', {
-      username,
-      room,
-      gameType: 'liar'
-    });
+    const joinRoom = () => {
+      socket.emit('join', {
+        username,
+        room,
+        gameType: 'liar',
+        sessionToken: getSessionToken()
+      });
+    };
 
-    socket.on('liar-update', (update: LiarUpdate) => {
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    const handleLiarUpdate = (update: LiarUpdate) => {
       switch (update.type) {
+        case 'reconnect-sync':
+          if (update.data) {
+            if (update.data.phase) setPhase(update.data.phase);
+            if (update.data.players) setPlayers(update.data.players);
+            if (update.data.myWord !== undefined) setMyWord(update.data.myWord);
+          }
+          break;
         case 'join':
         case 'leave':
           setPlayers(update.data.players || []);
@@ -214,17 +228,23 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
           setResult(update.data);
           break;
       }
-    });
+    };
 
-    socket.on('liar-error', (data: LiarErrorPayload) => {
+    const handleLiarError = (data: LiarErrorPayload) => {
       setError(data.message);
       setTimeout(() => setError(''), 3000);
-    });
+    };
+
+    socket.on('connect', joinRoom);
+    socket.on('liar-update', handleLiarUpdate);
+    socket.on('liar-error', handleLiarError);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', joinRoom);
+      socket.off('liar-update', handleLiarUpdate);
+      socket.off('liar-error', handleLiarError);
     };
-  }, [username, room]);
+  }, [socket, username, room]);
 
   // 메시지 스크롤
   useEffect(() => {

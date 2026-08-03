@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, type Socket } from 'socket.io-client';
-import { getChatServerUrl } from '../socketUrl';
+import axios from 'axios';
+import { getChatServerUrl, resolveImageUrl, getSessionToken } from '../socketUrl';
+import { useSocket } from '../context/SocketContext';
 import './TelestrationsGame.css';
 
 interface Player {
@@ -39,7 +40,7 @@ interface TelestrationsErrorPayload {
 }
 
 const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const { socket } = useSocket();
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<GamePhase>('waiting');
   const [isHost, setIsHost] = useState(false);
@@ -60,20 +61,24 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
   const [drawHistory, setDrawHistory] = useState<ImageData[]>([]);
 
   useEffect(() => {
-    const serverUrl = getChatServerUrl();
-    const newSocket = io(serverUrl);
-    setSocket(newSocket);
+    if (!socket) return;
 
-    newSocket.on('connect', () => {
-      setMyId(newSocket.id ?? '');
-      newSocket.emit('join', { username, room, gameType: 'telestrations' });
-    });
+    setMyId(socket.id ?? '');
 
-    newSocket.on('telestrations-update', (data: TelestrationsUpdatePayload) => {
+    const joinRoom = () => {
+      setMyId(socket.id ?? '');
+      socket.emit('join', { username, room, gameType: 'telestrations', sessionToken: getSessionToken() });
+    };
+
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    const handleUpdate = (data: TelestrationsUpdatePayload) => {
       if (data.players) setPlayers(data.players);
       if (data.hostId) {
         setHostId(data.hostId);
-        setIsHost(newSocket.id === data.hostId);
+        setIsHost(socket.id === data.hostId);
       }
       if (data.phase) {
         setPhase(data.phase);
@@ -89,17 +94,23 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
       if (data.currentBookPage) {
         setCurrentBookPage(data.currentBookPage);
       }
-    });
+    };
 
-    newSocket.on('telestrations-error', (data: TelestrationsErrorPayload) => {
+    const handleError = (data: TelestrationsErrorPayload) => {
       setError(data.message);
       setTimeout(() => setError(''), 3000);
-    });
+    };
+
+    socket.on('connect', joinRoom);
+    socket.on('telestrations-update', handleUpdate);
+    socket.on('telestrations-error', handleError);
 
     return () => {
-      newSocket.disconnect();
+      socket.off('connect', joinRoom);
+      socket.off('telestrations-update', handleUpdate);
+      socket.off('telestrations-error', handleError);
     };
-  }, [username, room]);
+  }, [socket, username, room]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -116,12 +127,27 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
     socket?.emit('telestrations-game-start', { room });
   };
 
-  const handleSubmitTurn = () => {
+  const handleSubmitTurn = async () => {
     let data = '';
     if (phase === 'word-input' || phase === 'guessing') {
       data = inputValue;
     } else if (phase === 'drawing') {
-      data = canvasRef.current?.toDataURL() || '';
+      const rawData = canvasRef.current?.toDataURL() || '';
+      if (!rawData) {
+        setError('그림을 그려주세요.');
+        setTimeout(() => setError(''), 2000);
+        return;
+      }
+      try {
+        const serverUrl = getChatServerUrl();
+        const res = await axios.post(`${serverUrl}/api/upload`, { image: rawData });
+        data = res.data.url;
+      } catch (err) {
+        console.error('그림 업로드 실패:', err);
+        setError('그림 업로드 중 오류가 발생했습니다.');
+        setTimeout(() => setError(''), 2000);
+        return;
+      }
     }
 
     if (data.trim() === '') {
@@ -267,7 +293,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
         return <div className="telestrations-phase-container">
           <h3>그림 보고 단어 맞히기</h3>
           <p>아래 그림이 무엇인지 맞춰보세요.</p>
-          <img src={currentBookPage?.data} alt="그림" className="guess-image" />
+          <img src={resolveImageUrl(currentBookPage?.data || '')} alt="그림" className="guess-image" />
           <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} maxLength={20} />
           <button onClick={handleSubmitTurn}>추측 제출</button>
         </div>;
@@ -296,7 +322,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
                   {page.type === 'word' ? (
                     <p className="word-data">{page.data}</p>
                   ) : (
-                    <img src={page.data} alt="결과 그림" />
+                    <img src={resolveImageUrl(page.data)} alt="결과 그림" />
                   )}
                 </div>
               ))}

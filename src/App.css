@@ -1,249 +1,545 @@
-.app {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 📊 Microsoft Excel Theme Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
+
+:root {
+  --excel-green: #107c41;
+  --excel-green-dark: #0b5a2f;
+  --excel-green-light: #e6f2eb;
+  --excel-header-bg: #f3f2f1;
+  --excel-border: #d4d4d4;
+  --excel-grid-line: #e1dfdd;
+  --excel-text: #201f1e;
+  --excel-text-muted: #605e5c;
+  --excel-white: #ffffff;
 }
 
-.join-container {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  width: 100%;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Calibri, Aptos, Arial, sans-serif;
+  background-color: #201f1e;
+  color: var(--excel-text);
+  overflow-x: hidden;
+}
+
+/* App Window Container */
+.excel-app-window {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--excel-white);
+  box-sizing: border-box;
+  user-select: none;
+}
+
+/* 1. Title Bar */
+.excel-title-bar {
+  background-color: var(--excel-green);
+  color: var(--excel-white);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.excel-title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.excel-app-icon {
+  font-size: 16px;
+}
+
+.excel-doc-title {
+  letter-spacing: 0.2px;
+}
+
+.excel-autosave {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.excel-toggle-on {
+  color: #86efac;
+  font-weight: 700;
+}
+
+.excel-search-box {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 24px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #f3f2f1;
+  width: 260px;
   text-align: center;
 }
 
-.join-container h1 {
-  margin: 0 0 8px 0;
-  color: #1f2937;
-  font-size: 2rem;
+.excel-title-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.join-container p {
-  margin: 0 0 32px 0;
-  color: #6b7280;
-  font-size: 1rem;
+.excel-user-profile {
+  font-size: 12px;
 }
 
-/* 게임 선택 화면 스타일 */
+.excel-window-controls {
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.excel-window-controls span:hover {
+  opacity: 0.8;
+}
+
+.excel-window-controls .close-btn:hover {
+  color: #f87171;
+}
+
+/* 2. Ribbon Tabs */
+.excel-ribbon-tabs {
+  background-color: var(--excel-header-bg);
+  border-bottom: 1px solid var(--excel-border);
+  display: flex;
+  padding-left: 8px;
+  height: 32px;
+  align-items: flex-end;
+}
+
+.ribbon-tab {
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--excel-text);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  font-family: inherit;
+}
+
+.ribbon-tab:hover {
+  background-color: #e1dfdd;
+}
+
+.ribbon-tab.active {
+  background-color: var(--excel-white);
+  border-bottom: 3px solid var(--excel-green);
+  color: var(--excel-green);
+  font-weight: 600;
+}
+
+/* 3. Ribbon Toolbar */
+.excel-ribbon-toolbar {
+  background-color: var(--excel-white);
+  border-bottom: 1px solid var(--excel-border);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  height: 42px;
+  overflow-x: auto;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-btn {
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--excel-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-btn:hover {
+  background-color: var(--excel-header-bg);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background-color: var(--excel-border);
+}
+
+.excel-font-select,
+.excel-size-select {
+  border: 1px solid var(--excel-border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 12px;
+  background: white;
+}
+
+.toolbar-tool-btn {
+  background: white;
+  border: 1px solid var(--excel-border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.toolbar-tool-btn:hover {
+  background-color: var(--excel-header-bg);
+}
+
+/* 4. Formula Bar */
+.excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--excel-white);
+  border-bottom: 1px solid var(--excel-border);
+  height: 28px;
+  font-size: 13px;
+}
+
+.excel-name-box {
+  width: 60px;
+  text-align: center;
+  border-right: 1px solid var(--excel-border);
+  font-weight: 600;
+  color: var(--excel-text-muted);
+  line-height: 28px;
+}
+
+.excel-fx-btn {
+  width: 32px;
+  text-align: center;
+  border-right: 1px solid var(--excel-border);
+  font-style: italic;
+  font-weight: bold;
+  color: var(--excel-text-muted);
+  line-height: 28px;
+  font-family: 'Times New Roman', serif;
+}
+
+.excel-formula-input {
+  flex: 1;
+  padding: 0 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #0b5a2f;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+/* 5. Body Workspace */
+.excel-body-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--excel-header-bg);
+}
+
+/* Column Headers */
+.excel-col-headers {
+  display: flex;
+  background-color: var(--excel-header-bg);
+  border-bottom: 1px solid var(--excel-border);
+  height: 24px;
+}
+
+.col-header-corner {
+  width: 40px;
+  border-right: 1px solid var(--excel-border);
+  background-color: #e1dfdd;
+}
+
+.col-header-cell {
+  flex: 1;
+  min-width: 60px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 24px;
+  color: var(--excel-text-muted);
+  border-right: 1px solid var(--excel-border);
+  font-weight: 600;
+}
+
+/* Grid Area */
+.excel-grid-workspace {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  background: white;
+}
+
+.excel-row-numbers {
+  width: 40px;
+  background-color: var(--excel-header-bg);
+  border-right: 1px solid var(--excel-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.row-number-cell {
+  height: 32px;
+  text-align: center;
+  line-height: 32px;
+  font-size: 12px;
+  color: var(--excel-text-muted);
+  border-bottom: 1px solid var(--excel-border);
+  font-weight: 600;
+}
+
+.excel-main-content-cell {
+  flex: 1;
+  padding: 20px;
+  background-color: var(--excel-white);
+  overflow-y: auto;
+  position: relative;
+  background-image: 
+    linear-gradient(to right, var(--excel-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--excel-grid-line) 1px, transparent 1px);
+  background-size: 120px 32px;
+}
+
+/* Excel Content Sheet Wrapper */
+.excel-sheet-content {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  border: 2px solid var(--excel-green);
+  border-radius: 4px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.excel-banner h2 {
+  margin: 0 0 4px 0;
+  color: var(--excel-green);
+  font-size: 1.4rem;
+}
+
+.excel-banner p {
+  margin: 0 0 20px 0;
+  color: var(--excel-text-muted);
+  font-size: 0.9rem;
+}
+
 .game-selection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .game-option {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  background: white;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--excel-border);
+  border-radius: 4px;
+  background: #fafafa;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   text-align: left;
-  width: 100%;
 }
 
 .game-option:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
-}
-
-.game-option.catchmind:hover {
-  border-color: #f59e0b;
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
-}
-
-.game-option.mafia:hover {
-  border-color: #ef4444;
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
-}
-
-.game-option.telestrations:hover {
-  border-color: #2dd4bf; /* A teal color */
-  box-shadow: 0 8px 25px rgba(45, 212, 191, 0.15);
+  border-color: var(--excel-green);
+  background: var(--excel-green-light);
+  transform: translateX(4px);
 }
 
 .game-icon {
-  font-size: 2rem;
-  min-width: 48px;
+  font-size: 1.6rem;
+  margin-right: 16px;
+}
+
+.game-info {
+  flex: 1;
 }
 
 .game-info h3 {
   margin: 0 0 4px 0;
-  color: #1f2937;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  color: var(--excel-text);
 }
 
 .game-info p {
   margin: 0;
-  color: #6b7280;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--excel-text-muted);
 }
 
-/* 게임 헤더 스타일 */
-.game-header {
-  position: relative;
-  margin-bottom: 32px;
-  padding-top: 50px; /* 뒤로가기 버튼을 위한 충분한 공간 */
-  text-align: center; /* 전체 중앙 정렬 */
+.excel-cell-tag {
+  font-family: monospace;
+  font-size: 11px;
+  background: #e1dfdd;
+  color: #323130;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-weight: bold;
 }
 
-.back-button {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: none;
-  border: none;
-  color: #667eea;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 0;
-  font-size: 0.9rem;
-  transition: color 0.2s;
-  z-index: 10;
-}
-
-.back-button:hover {
-  color: #5a67d8;
-}
-
-/* 게임 헤더 내부 요소들 */
-.game-header h1 {
-  margin: 0 0 8px 0;
-  color: #1f2937;
-  font-size: 2rem;
-  text-align: center;
-}
-
-.game-header p {
-  margin: 0 0 32px 0;
-  color: #6b7280;
-  font-size: 1rem;
-  text-align: center;
-}
-
-/* 마피아 게임 화면 스타일 */
-.mafia-game {
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  width: 100%;
-  text-align: center;
-}
-
-.mafia-game h2 {
-  margin: 0 0 16px 0;
-  color: #1f2937;
-  font-size: 1.75rem;
-}
-
-.mafia-game p {
-  margin: 0 0 24px 0;
-  color: #6b7280;
-  font-size: 1rem;
-}
-
+/* Forms in Excel Style */
 .join-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
 }
 
 .form-group label {
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
-  font-size: 0.9rem;
+  color: var(--excel-text);
 }
 
 .form-group input {
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  padding: 10px 12px;
+  border: 1px solid var(--excel-border);
+  border-radius: 3px;
+  font-size: 0.95rem;
+  font-family: inherit;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--excel-green);
+  box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.2);
 }
 
-.join-button {
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.join-button, .primary-btn {
+  background-color: var(--excel-green);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 3px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
   font-weight: 600;
-  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: background-color 0.15s;
 }
 
-.join-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+.join-button:hover, .primary-btn:hover {
+  background-color: var(--excel-green-dark);
 }
 
-.join-button:active {
-  transform: translateY(0);
+.back-button {
+  background: white;
+  border: 1px solid var(--excel-border);
+  color: var(--excel-green);
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 12px;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 480px) {
-  .app {
-    padding: 10px;
-  }
-  
-  .join-container {
-    padding: 30px 20px;
-  }
-  
-  .join-container h1 {
-    font-size: 1.75rem;
-  }
-  
-  .game-option {
-    padding: 16px;
-  }
-  
-  .game-icon {
-    font-size: 1.5rem;
-    min-width: 40px;
-  }
-  
-  /* 모바일에서 게임 헤더 조정 */
-  .game-header {
-    padding-top: 60px; /* 모바일에서 더 많은 공간 */
-  }
-  
-  .game-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .game-header p {
-    font-size: 0.9rem;
-  }
-  
-  .back-button {
-    font-size: 0.8rem;
-    padding: 6px 0;
-  }
+.back-button:hover {
+  background: var(--excel-green-light);
+}
+
+/* 6. Footer & Sheet Tabs */
+.excel-sheet-footer {
+  background-color: var(--excel-header-bg);
+  border-top: 1px solid var(--excel-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.excel-sheet-tabs {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  height: 30px;
+  border-bottom: 1px solid var(--excel-border);
+  overflow-x: auto;
+}
+
+.sheet-tab {
+  background: none;
+  border: 1px solid transparent;
+  border-top: 2px solid transparent;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--excel-text-muted);
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  margin-right: 2px;
+}
+
+.sheet-tab:hover {
+  background-color: #e1dfdd;
+}
+
+.sheet-tab.active {
+  background-color: var(--excel-white);
+  border-color: var(--excel-border);
+  border-top: 3px solid var(--excel-green);
+  color: var(--excel-green);
+  font-weight: 600;
+}
+
+.new-sheet-btn {
+  padding: 2px 8px;
+  cursor: pointer;
+  color: var(--excel-text-muted);
+  font-size: 14px;
+}
+
+/* Status Bar */
+.excel-status-bar {
+  height: 24px;
+  background-color: var(--excel-green);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 11px;
+}
+
+.status-item {
+  margin-right: 16px;
+}
+
+.zoom-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-slider input[type="range"] {
+  width: 80px;
+  accent-color: white;
+}
+
+/* Active Game Component Viewport Overrides */
+.excel-game-viewport {
+  background: white;
+  border: 2px solid var(--excel-green);
+  border-radius: 4px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }

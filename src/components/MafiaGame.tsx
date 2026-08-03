@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, type Socket } from 'socket.io-client';
-import { getChatServerUrl } from '../socketUrl';
+import { type Socket } from 'socket.io-client';
+import { getSessionToken } from '../socketUrl';
+import { useSocket } from '../context/SocketContext';
 import './MafiaGame.css';
 
 interface Player {
@@ -33,7 +34,8 @@ interface GameMessage {
 }
 
 type MafiaUpdateMessage =
-  | { type: 'join'; data: { player: Player } }
+  | { type: 'join'; data: { player?: Player; players?: Player[] } }
+  | { type: 'reconnect-sync'; data: { players: Player[]; phase: GameState['phase']; gameStarted: boolean } }
   | { type: 'leave'; data: { playerId: string } }
   | { type: 'message'; data: GameMessage }
   | { type: 'game-start'; data: { players: Player[] } }
@@ -44,6 +46,7 @@ type MafiaUpdateMessage =
   | { type: 'phase-change'; data: { phase: GameState['phase']; message: string } };
 
 const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, room }) => {
+  const { socket } = useSocket();
   const [gameState, setGameState] = useState<GameState>({
     phase: 'waiting',
     players: [],
@@ -57,37 +60,37 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   });
 
   const [inputMessage, setInputMessage] = useState('');
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(socket);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attackedId, setAttackedId] = useState<string | null>(null);
   const [showVotePopup, setShowVotePopup] = useState(false);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
-  // Socket.IO 연결
   useEffect(() => {
-    const serverUrl = getChatServerUrl();
-    console.log('서버 주소:', serverUrl);
-    const socket = io(serverUrl);
     socketRef.current = socket;
+    if (!socket) return;
 
-    socket.on('connect', () => {
-      console.log('Socket.IO 연결됨');
-      socket.emit('join', { username, room, gameType: 'mafia' });
-    });
+    const joinRoom = () => {
+      socket.emit('join', { username, room, gameType: 'mafia', sessionToken: getSessionToken() });
+    };
 
-    socket.on('mafia-update', (message: MafiaUpdateMessage) => {
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    const handleUpdate = (message: MafiaUpdateMessage) => {
       handleSocketMessage(message);
-    });
+    };
 
-    socket.on('disconnect', () => {
-      console.log('Socket.IO 연결 종료');
-    });
+    socket.on('connect', joinRoom);
+    socket.on('mafia-update', handleUpdate);
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', joinRoom);
+      socket.off('mafia-update', handleUpdate);
     };
-  }, [username, room]);
+  }, [socket, username, room]);
 
   // 메시지 자동 스크롤
   useEffect(() => {
@@ -156,11 +159,24 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     const { type, data } = message;
 
     switch (type) {
-      case 'join':
+      case 'reconnect-sync':
         setGameState(prev => ({
           ...prev,
-          players: [...prev.players, data.player]
+          players: data.players || prev.players,
+          phase: data.phase || prev.phase,
+          gameStarted: data.gameStarted ?? prev.gameStarted
         }));
+        break;
+
+      case 'join':
+        if (data.player) {
+          setGameState(prev => ({
+            ...prev,
+            players: prev.players.some(p => p.username === data.player!.username)
+              ? prev.players.map(p => p.username === data.player!.username ? data.player! : p)
+              : [...prev.players, data.player!]
+          }));
+        }
         break;
 
       case 'leave':
