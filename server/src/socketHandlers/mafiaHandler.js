@@ -293,6 +293,35 @@ export function registerMafiaHandlers(io, socket) {
     }, 4000);
   }
 
+  // 🚪 마피아 게임 방 나가기 이벤트
+  socket.on('mafia-leave', ({ room }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user || user.room !== room) return;
+
+    const game = mafiaGames.get(room);
+    if (game) {
+      const wasHost = game.hostId === socket.id;
+      game.players = game.players.filter(p => p.id !== socket.id);
+
+      if (game.players.length === 0) {
+        mafiaGames.delete(room);
+      } else {
+        if (wasHost && game.players.length > 0) {
+          game.hostId = game.players[0].id;
+        }
+        io.to(room).emit('mafia-update', {
+          type: 'leave',
+          data: { playerId: socket.id }
+        });
+        if (game.gameStarted) {
+          checkMafiaGameEnd(io, room);
+        }
+      }
+    }
+
+    socket.leave(room);
+  });
+
   // 🤖 AI 봇 낮 대화 멘트 발송
   function triggerAiDayChat(io, room) {
     const game = mafiaGames.get(room);
@@ -311,10 +340,18 @@ export function registerMafiaHandlers(io, socket) {
 
         const target = aliveOtherPlayers[Math.floor(Math.random() * aliveOtherPlayers.length)];
         const aiPhrases = [
-          `로그 분석 결과, ${target.username}님의 패턴이 다소 의심스럽습니다.`,
-          `저는 무고한 데이터 검증 봇입니다! 꼼꼼히 확인해봅시다.`,
-          `밤 사이 공격 로그가 감지되었습니다. 이번 표결에서는 ${target.username}님을 지목해보는 것을 추천합니다.`,
-          `시스템 감시 결과 이상 징후가 포착되었습니다.`
+          `📊 로그 데이터를 종합 분석해보니 ${target.username}님의 반응 속도와 말투가 다소 수상합니다.`,
+          `🔍 이상 패턴 감지! ${target.username}님이 너무 조용하시거나, 반대로 시선을 맞추려 하고 있습니다.`,
+          `📈 제 알고리즘 예측 수치상 ${target.username}님이 마피아일 확률이 78.4%로 계산되었습니다.`,
+          `🤖 솔직히 말씀드리면 ${target.username}님의 언행에 결함(Bug)이 존재하는 것 같습니다.`,
+          `🛡️ 저는 회사의 명을 받아 파견된 순수한 데이터 검증 봇입니다! 마피아가 아닙니다.`,
+          `⚙️ 저를 의심하시면 시민 진영의 수치 분석력이 떨어지게 됩니다. 신중히 결정해 주세요.`,
+          `🚨 경보! 밤 사이 마피아의 비인가 접근 공격 흔적이 감지되었습니다!`,
+          `📂 피해 기록 확인 완료. 마피아의 흔적을 추적하고 있습니다.`,
+          `📑 VLOOKUP 함수로 검색해본 결과, ${target.username}님의 열 수치가 정상 범위를 벗어났습니다.`,
+          `☕ 아메리카노 한 잔 하면서 천천히 짚어보죠. 제 데이터 직감은 ${target.username}님을 가리킵니다.`,
+          `💡 이상 탐지 모듈 구동 중... ${target.username}님, 해명하실 시간입니다.`,
+          `🧐 모두 침착하세요. 데이터를 논리적으로 짚어가다 보면 마피아의 가면이 벗겨질 것입니다.`
         ];
         const phrase = aiPhrases[Math.floor(Math.random() * aiPhrases.length)];
 

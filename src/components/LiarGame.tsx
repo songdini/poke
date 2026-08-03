@@ -37,6 +37,7 @@ interface GameResult {
 interface LiarGameProps {
   username: string;
   room: string;
+  onLeaveRoom?: () => void;
 }
 
 type LiarPhase = 'waiting' | 'starting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result';
@@ -118,7 +119,7 @@ const LiarGameLoading: React.FC = () => {
   );
 };
 
-const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
+const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
   // 게임 상태
   const [players, setPlayers] = useState<Player[]>([]);
@@ -291,10 +292,15 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room }) => {
       <div className="liar-game">
         {/* 헤더 */}
         <div className="game-header">
-          <h2>🤥 라이어 게임</h2>
-          <div className="room-info">
+          <h2>🤥 Liar_Check</h2>
+          <div className="room-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span>방: <strong>{room}</strong></span>
             <span>닉네임: <strong>{username}</strong></span>
+            {onLeaveRoom && (
+              <button onClick={onLeaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                🚪 방 나가기
+              </button>
+            )}
           </div>
         </div>
 

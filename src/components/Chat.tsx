@@ -18,6 +18,7 @@ interface Message {
 interface ChatProps {
   username: string;
   room: string;
+  onLeaveRoom?: () => void;
 }
 
 interface KickVoteState {
@@ -39,7 +40,7 @@ interface KickVoteResultPayload {
 const URL_REGEX = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
 const URL_MATCH_REGEX = /^(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)$/i;
 
-const Chat: React.FC<ChatProps> = ({ username, room }) => {
+const Chat: React.FC<ChatProps> = ({ username, room, onLeaveRoom }) => {
   const { socket, isConnected } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
@@ -113,12 +114,19 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       setIsTyping(data.isTyping ? data.username : '');
     };
 
+    const handleChatHistory = (history: Message[]) => {
+      if (Array.isArray(history) && history.length > 0) {
+        setMessages(history);
+      }
+    };
+
     socket.on('connect', joinRoom);
     socket.on('newMessage', handleNewMessage);
     socket.on('userJoined', handleUserJoined);
     socket.on('userLeft', handleUserLeft);
     socket.on('userList', handleUserList);
     socket.on('userTyping', handleUserTyping);
+    socket.on('chatHistory', handleChatHistory);
 
     return () => {
       socket.off('connect', joinRoom);
@@ -127,6 +135,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       socket.off('userLeft', handleUserLeft);
       socket.off('userList', handleUserList);
       socket.off('userTyping', handleUserTyping);
+      socket.off('chatHistory', handleChatHistory);
     };
   }, [socket, username, room]);
 
@@ -353,9 +362,14 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       )}
       <div className="chat-header">
         <h2>📊 Sheet: CatchMind</h2>
-        <div className="connection-status">
+        <div className="connection-status" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
           {isConnected ? 'LIVE' : 'Connecting...'}
+          {onLeaveRoom && (
+            <button onClick={onLeaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+              🚪 방 나가기
+            </button>
+          )}
         </div>
       </div>
       

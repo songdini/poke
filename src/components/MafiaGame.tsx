@@ -45,7 +45,7 @@ type MafiaUpdateMessage =
   | { type: 'game-over'; data: { winner: string; message: string } }
   | { type: 'phase-change'; data: { phase: GameState['phase']; message: string } };
 
-const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, room }) => {
+const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => void }> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
   const [gameState, setGameState] = useState<GameState>({
     phase: 'waiting',
@@ -161,6 +161,16 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }
   };
 
+  // 방 나가기 함수
+  const leaveRoom = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('mafia-leave', { room });
+    }
+    if (onLeaveRoom) {
+      onLeaveRoom();
+    }
+  };
+
   // Socket.IO 메시지 처리 - 수정된 부분
   const handleSocketMessage = (message: MafiaUpdateMessage) => {
     const { type, data } = message;
@@ -176,14 +186,14 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
         break;
 
       case 'join':
-        if (data.player) {
-          setGameState(prev => ({
-            ...prev,
-            players: prev.players.some(p => p.username === data.player!.username)
-              ? prev.players.map(p => p.username === data.player!.username ? data.player! : p)
-              : [...prev.players, data.player!]
-          }));
-        }
+        setGameState(prev => ({
+          ...prev,
+          players: data.players || (data.player
+            ? (prev.players.some(p => p.username === data.player!.username)
+                ? prev.players.map(p => p.username === data.player!.username ? data.player! : p)
+                : [...prev.players, data.player!])
+            : prev.players)
+        }));
         break;
 
       case 'leave':
@@ -385,10 +395,15 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
   return (
       <div className="mafia-game-container">
         <div className="game-header">
-          <h2>🕵️</h2>
-          <div className="game-info">
+          <h2>🕵️ Mafia_Audit</h2>
+          <div className="game-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span className="phase">{gameState.phase === 'day' ? '☀️ 낮' : '🌙 밤'}</span>
             <span className="timer">⏰ {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}</span>
+            {onLeaveRoom && (
+              <button onClick={leaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                🚪 방 나가기
+              </button>
+            )}
           </div>
         </div>
 
@@ -409,6 +424,11 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
                 <button onClick={startGame} className="start-button">
                   게임 시작
                 </button>
+                {onLeaveRoom && (
+                  <button onClick={leaveRoom} style={{ background: '#64748b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
+                    🚪 대기실 나가기
+                  </button>
+                )}
               </div>
             </div>
         ) : gameState.phase === 'game-over' ? (

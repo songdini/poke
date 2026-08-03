@@ -42,6 +42,13 @@ function App() {
     }
   };
 
+  const handleLeaveGame = (gameKey: GameKey) => {
+    setGameSessions(prev => ({
+      ...prev,
+      [gameKey]: null
+    }));
+  };
+
   const handleBackToMainSheet = () => {
     setSelectedGame(null);
   };
@@ -170,22 +177,22 @@ function App() {
       <div className="excel-game-viewport">
         <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.catchmind && (
-            <Chat username={gameSessions.catchmind.username} room={gameSessions.catchmind.room} />
+            <Chat username={gameSessions.catchmind.username} room={gameSessions.catchmind.room} onLeaveRoom={() => handleLeaveGame('catchmind')} />
           )}
         </div>
         <div style={{ display: selectedGame === 'mafia' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.mafia && (
-            <MafiaGame username={gameSessions.mafia.username} room={gameSessions.mafia.room} />
+            <MafiaGame username={gameSessions.mafia.username} room={gameSessions.mafia.room} onLeaveRoom={() => handleLeaveGame('mafia')} />
           )}
         </div>
         <div style={{ display: selectedGame === 'liar' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.liar && (
-            <LiarGame username={gameSessions.liar.username} room={gameSessions.liar.room} />
+            <LiarGame username={gameSessions.liar.username} room={gameSessions.liar.room} onLeaveRoom={() => handleLeaveGame('liar')} />
           )}
         </div>
         <div style={{ display: selectedGame === 'telestrations' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.telestrations && (
-            <TelestrationsGame username={gameSessions.telestrations.username} room={gameSessions.telestrations.room} />
+            <TelestrationsGame username={gameSessions.telestrations.username} room={gameSessions.telestrations.room} onLeaveRoom={() => handleLeaveGame('telestrations')} />
           )}
         </div>
       </div>

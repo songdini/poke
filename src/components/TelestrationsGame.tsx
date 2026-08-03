@@ -25,6 +25,7 @@ type GamePhase = 'waiting' | 'word-input' | 'drawing' | 'guessing' | 'results';
 interface TelestrationsGameProps {
   username: string;
   room: string;
+  onLeaveRoom?: () => void;
 }
 
 interface TelestrationsUpdatePayload {
@@ -39,7 +40,7 @@ interface TelestrationsErrorPayload {
   message: string;
 }
 
-const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room }) => {
+const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<GamePhase>('waiting');
@@ -237,6 +238,14 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room })
 
   const renderWaitingRoom = () => (
     <div className="telestrations-waiting-room">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2>📑 Telestrations_Sequence</h2>
+        {onLeaveRoom && (
+          <button onClick={onLeaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
+            🚪 방 나가기
+          </button>
+        )}
+      </div>
       <h2>대기 중...</h2>
       <p>플레이어가 모두 모이면 방장이 게임을 시작합니다. (최소 3명)</p>
       <div className="player-list">

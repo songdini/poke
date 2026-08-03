@@ -1,4 +1,4 @@
-import { connectedUsers, sessions, mafiaGames, liarGames, telestrationsGames, checkMafiaGameEnd } from '../gameManager.js';
+import { connectedUsers, sessions, mafiaGames, liarGames, telestrationsGames, checkMafiaGameEnd, roomMessages } from '../gameManager.js';
 import { sanitizeString } from '../utils/sanitize.js';
 
 export function registerJoinDisconnectHandlers(io, socket) {
@@ -169,9 +169,16 @@ export function registerJoinDisconnectHandlers(io, socket) {
         });
       }
 
+      const joinedPlayer = existingPlayer || game.players[game.players.length - 1];
+
       io.to(room).emit('mafia-update', {
         type: 'join',
-        data: { players: game.players }
+        data: { player: joinedPlayer, players: game.players }
+      });
+
+      socket.emit('mafia-update', {
+        type: 'reconnect-sync',
+        data: { players: game.players, phase: game.phase, gameStarted: game.gameStarted }
       });
     } else if (gameType === 'liar') {
       if (!liarGames.has(room)) {
@@ -227,6 +234,10 @@ export function registerJoinDisconnectHandlers(io, socket) {
         .map(user => user.username);
 
       io.to(room).emit('userList', roomUsers);
+
+      if (roomMessages.has(room)) {
+        socket.emit('chatHistory', roomMessages.get(room));
+      }
     }
   });
 

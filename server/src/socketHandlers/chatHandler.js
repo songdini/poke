@@ -1,4 +1,4 @@
-import { connectedUsers, kickVotes } from '../gameManager.js';
+import { connectedUsers, kickVotes, roomMessages } from '../gameManager.js';
 import { sanitizeChatMessage } from '../utils/sanitize.js';
 
 export function registerChatHandlers(io, socket) {
@@ -15,9 +15,18 @@ export function registerChatHandlers(io, socket) {
         username: user.username,
         message,
         timestamp: new Date().toISOString(),
-        id: socket.id,
+        id: socket.id + '_' + Date.now(),
         isImage: !!isImage
       };
+
+      if (!roomMessages.has(room)) {
+        roomMessages.set(room, []);
+      }
+      const history = roomMessages.get(room);
+      history.push(messageObj);
+      if (history.length > 100) {
+        history.shift();
+      }
 
       io.to(room).emit('newMessage', messageObj);
     }
