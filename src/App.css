@@ -501,6 +501,23 @@ body {
   font-weight: 600;
 }
 
+.sheet-tab.has-session {
+  font-weight: 600;
+}
+
+.tab-live-dot {
+  color: var(--excel-green);
+  font-size: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .new-sheet-btn {
   padding: 2px 8px;
   cursor: pointer;

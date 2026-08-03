@@ -324,10 +324,10 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
         </div>
       )}
       <div className="chat-header">
-        <h2>🎨 캐치마인드</h2>
+        <h2>📊 Sheet: CatchMind</h2>
         <div className="connection-status">
           <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
-          {isConnected ? '연결됨' : '연결 중...'}
+          {isConnected ? 'LIVE' : 'Connecting...'}
         </div>
       </div>
       

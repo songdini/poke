@@ -5,31 +5,45 @@ import MafiaGame from './components/MafiaGame'
 import LiarGame from './components/LiarGame'
 import TelestrationsGame from './components/TelestrationsGame';
 import { SocketProvider } from './context/SocketContext';
-import type { UserData } from './types/game';
+
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations';
+
+interface GameSession {
+  username: string;
+  room: string;
+  gameType: GameKey;
+}
 
 function App() {
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [selectedGame, setSelectedGame] = useState<'catchmind' | 'mafia' | 'liar' | 'telestrations' | null>(null);
+  const [selectedGame, setSelectedGame] = useState<GameKey | null>(null);
   const [activeTab, setActiveTab] = useState('Home');
+  const [gameSessions, setGameSessions] = useState<Record<GameKey, GameSession | null>>({
+    catchmind: null,
+    mafia: null,
+    liar: null,
+    telestrations: null
+  });
 
-  const handleGameSelection = (gameType: 'catchmind' | 'mafia' | 'liar' | 'telestrations') => {
+  const handleGameSelection = (gameType: GameKey) => {
     setSelectedGame(gameType);
   };
 
   const handleJoinChat = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const username = formData.get('username') as string;
-    const room = formData.get('room') as string;
+    const username = (formData.get('username') as string).trim();
+    const room = (formData.get('room') as string).trim();
     
-    if (username.trim() && room.trim() && selectedGame) {
-      setUserData({ username: username.trim(), room: room.trim(), gameType: selectedGame });
+    if (username && room && selectedGame) {
+      setGameSessions(prev => ({
+        ...prev,
+        [selectedGame]: { username, room, gameType: selectedGame }
+      }));
     }
   };
 
-  const handleBackToGameSelection = () => {
+  const handleBackToMainSheet = () => {
     setSelectedGame(null);
-    setUserData(null);
   };
 
   const renderContent = () => {
@@ -43,62 +57,64 @@ function App() {
           
           <div className="game-selection">
             <button 
-              className="game-option catchmind"
+              className={`game-option catchmind ${gameSessions.catchmind ? 'has-active-session' : ''}`}
               onClick={() => handleGameSelection('catchmind')}
             >
               <div className="game-icon">📊</div>
               <div className="game-info">
                 <h3>Table 01: Catchmind_Draw_Analytics.csv</h3>
-                <p>Drawing Canvas & Visual Matcher | Status: Ready</p>
+                <p>Drawing Canvas & Visual Matcher | Status: {gameSessions.catchmind ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
               </div>
-              <span className="excel-cell-tag">MOD_01</span>
+              <span className="excel-cell-tag">{gameSessions.catchmind ? 'ACTIVE' : 'MOD_01'}</span>
             </button>
             
             <button 
-              className="game-option mafia"
+              className={`game-option mafia ${gameSessions.mafia ? 'has-active-session' : ''}`}
               onClick={() => handleGameSelection('mafia')}
             >
               <div className="game-icon">📋</div>
               <div className="game-info">
                 <h3>Table 02: Mafia_Role_Audit_Log.xlsx</h3>
-                <p>Confidential Role Verification & Elimination Log | Status: Ready</p>
+                <p>Confidential Role Verification & Elimination Log | Status: {gameSessions.mafia ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
               </div>
-              <span className="excel-cell-tag">MOD_02</span>
+              <span className="excel-cell-tag">{gameSessions.mafia ? 'ACTIVE' : 'MOD_02'}</span>
             </button>
 
             <button
-              className="game-option liar"
+              className={`game-option liar ${gameSessions.liar ? 'has-active-session' : ''}`}
               onClick={() => handleGameSelection('liar')}
             >
               <div className="game-icon">📈</div>
               <div className="game-info">
                 <h3>Table 03: Liar_Keyword_CrossCheck.xlsx</h3>
-                <p>Anomalous Value Detector & Interrogation Sheet | Status: Ready</p>
+                <p>Anomalous Value Detector & Interrogation Sheet | Status: {gameSessions.liar ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
               </div>
-              <span className="excel-cell-tag">MOD_03</span>
+              <span className="excel-cell-tag">{gameSessions.liar ? 'ACTIVE' : 'MOD_03'}</span>
             </button>
 
             <button
-              className="game-option telestrations"
+              className={`game-option telestrations ${gameSessions.telestrations ? 'has-active-session' : ''}`}
               onClick={() => handleGameSelection('telestrations')}
             >
               <div className="game-icon">📑</div>
               <div className="game-info">
                 <h3>Table 04: Telestrations_Sequence_Map.xlsx</h3>
-                <p>Sequential Data Propagation & Image Chain | Status: Ready</p>
+                <p>Sequential Data Propagation & Image Chain | Status: {gameSessions.telestrations ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
               </div>
-              <span className="excel-cell-tag">MOD_04</span>
+              <span className="excel-cell-tag">{gameSessions.telestrations ? 'ACTIVE' : 'MOD_04'}</span>
             </button>
           </div>
         </div>
       );
     }
 
-    if (!userData) {
+    const currentSession = gameSessions[selectedGame];
+
+    if (!currentSession) {
       return (
         <div className="excel-sheet-content">
           <div className="game-header">
-            <button className="back-button" onClick={handleBackToGameSelection}>
+            <button className="back-button" onClick={handleBackToMainSheet}>
               ◀ Return to Main Sheet (Ctrl+Z)
             </button>
             <h1>
@@ -152,15 +168,26 @@ function App() {
 
     return (
       <div className="excel-game-viewport">
-        {userData.gameType === 'catchmind' ? (
-          <Chat username={userData.username} room={userData.room} />
-        ) : userData.gameType === 'mafia' ? (
-          <MafiaGame username={userData.username} room={userData.room} />
-        ) : userData.gameType === 'liar' ? (
-          <LiarGame username={userData.username} room={userData.room} />
-        ) : (
-          <TelestrationsGame username={userData.username} room={userData.room} />
-        )}
+        <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.catchmind && (
+            <Chat username={gameSessions.catchmind.username} room={gameSessions.catchmind.room} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'mafia' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.mafia && (
+            <MafiaGame username={gameSessions.mafia.username} room={gameSessions.mafia.room} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'liar' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.liar && (
+            <LiarGame username={gameSessions.liar.username} room={gameSessions.liar.room} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'telestrations' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.telestrations && (
+            <TelestrationsGame username={gameSessions.telestrations.username} room={gameSessions.telestrations.room} />
+          )}
+        </div>
       </div>
     );
   };
@@ -282,33 +309,33 @@ function App() {
           <div className="excel-sheet-tabs">
             <button
               className={`sheet-tab ${!selectedGame ? 'active' : ''}`}
-              onClick={handleBackToGameSelection}
+              onClick={handleBackToMainSheet}
             >
               📊 Sheet1 - Summary
             </button>
             <button
-              className={`sheet-tab ${selectedGame === 'catchmind' ? 'active' : ''}`}
+              className={`sheet-tab ${selectedGame === 'catchmind' ? 'active' : ''} ${gameSessions.catchmind ? 'has-session' : ''}`}
               onClick={() => handleGameSelection('catchmind')}
             >
-              🎨 Sheet2 - Catchmind_Draw
+              🎨 Sheet2 - Catchmind {gameSessions.catchmind && <span className="tab-live-dot">●</span>}
             </button>
             <button
-              className={`sheet-tab ${selectedGame === 'mafia' ? 'active' : ''}`}
+              className={`sheet-tab ${selectedGame === 'mafia' ? 'active' : ''} ${gameSessions.mafia ? 'has-session' : ''}`}
               onClick={() => handleGameSelection('mafia')}
             >
-              🕵️ Sheet3 - Mafia_Audit
+              🕵️ Sheet3 - Mafia {gameSessions.mafia && <span className="tab-live-dot">●</span>}
             </button>
             <button
-              className={`sheet-tab ${selectedGame === 'liar' ? 'active' : ''}`}
+              className={`sheet-tab ${selectedGame === 'liar' ? 'active' : ''} ${gameSessions.liar ? 'has-session' : ''}`}
               onClick={() => handleGameSelection('liar')}
             >
-              🤥 Sheet4 - Liar_Check
+              🤥 Sheet4 - Liar {gameSessions.liar && <span className="tab-live-dot">●</span>}
             </button>
             <button
-              className={`sheet-tab ${selectedGame === 'telestrations' ? 'active' : ''}`}
+              className={`sheet-tab ${selectedGame === 'telestrations' ? 'active' : ''} ${gameSessions.telestrations ? 'has-session' : ''}`}
               onClick={() => handleGameSelection('telestrations')}
             >
-              📝 Sheet5 - Telestrations
+              📝 Sheet5 - Telestrations {gameSessions.telestrations && <span className="tab-live-dot">●</span>}
             </button>
             <span className="new-sheet-btn">➕</span>
           </div>
