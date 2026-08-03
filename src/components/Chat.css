@@ -69,31 +69,200 @@
   overflow: hidden;
 }
 
-/* 채팅 메시지 영역 개선 */
+/* 📊 MS Excel Worksheet Data Grid Styles */
 .chat-messages {
   flex: 1;
-  padding: 16px;
+  padding: 0;
   overflow-y: auto;
-  background: #fcfcfc;
+  background: #ffffff;
   min-height: 0;
   max-height: 55vh;
   word-break: break-all;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Segoe UI', Calibri, sans-serif;
+  border-right: 1px solid #e1dfdd;
 }
 
-/* 메시지 박스 개선 */
-.chat-container .message {
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  border-radius: 4px;
+/* 엑셀 그리드 헤더 (A, B, C 열) */
+.excel-grid-header {
+  display: flex;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #605e5c;
+  user-select: none;
+}
+
+.excel-col-head {
+  padding: 5px 8px;
+  border-right: 1px solid #d4d4d4;
+  text-align: center;
+  background: #f3f2f1;
+}
+
+.excel-col-head.row-idx { width: 36px; min-width: 36px; }
+.excel-col-head.col-user { width: 120px; min-width: 100px; text-align: left; }
+.excel-col-head.col-time { width: 90px; min-width: 80px; text-align: center; }
+.excel-col-head.col-msg { flex: 1; text-align: left; }
+
+/* 엑셀 행(Row) 셀 메시지 레코드 */
+.chat-container .message.excel-row-cell {
+  display: flex;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
   background: #ffffff;
-  border: 1px solid #e1dfdd;
-  border-left: 4px solid #107c41;
-  max-width: 90vw;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  border: none;
+  border-bottom: 1px solid #e1dfdd;
+  box-shadow: none;
+  font-size: 0.85rem;
   color: #201f1e;
-  font-family: inherit;
+  transition: background-color 0.15s;
+}
+
+.chat-container .message.excel-row-cell:hover {
+  background-color: #f8f9fa;
+}
+
+.chat-container .message.excel-row-cell.own-message {
+  background-color: #e6f4ea;
+}
+
+.cell-row-num {
+  width: 36px;
+  min-width: 36px;
+  background: #f3f2f1;
+  border-right: 1px solid #d4d4d4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: #605e5c;
+  font-weight: 500;
+  user-select: none;
+}
+
+.cell-col {
+  padding: 6px 10px;
+  border-right: 1px solid #e1dfdd;
+  display: flex;
+  align-items: center;
+}
+
+.cell-col.col-user {
+  width: 120px;
+  min-width: 100px;
+  font-weight: 600;
+  color: #107c41;
+}
+
+.chat-container .own-message .cell-col.col-user {
+  color: #0b5a2f;
+}
+
+.cell-col.col-time {
+  width: 90px;
+  min-width: 80px;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #605e5c;
+}
+
+.cell-col.col-msg {
+  flex: 1;
+  border-right: none;
+  word-break: break-word;
+}
+
+/* 📐 엑셀 수식 입력줄 (Formula Bar) Style Chat Input */
+.chat-input.excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background: #fcfcfc;
+  padding: 6px 10px;
+  border-top: 1px solid #d4d4d4;
+  gap: 8px;
+}
+
+.excel-fx-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #c8c6c4;
+  border-radius: 2px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.excel-fx-label .cell-ref {
+  font-weight: 600;
+  color: #323130;
+  font-family: 'Consolas', monospace;
+}
+
+.excel-fx-label .fx-symbol {
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: 'Georgia', serif;
+}
+
+.chat-input-row {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-input-row textarea {
+  flex: 1;
+  height: 36px;
+  min-height: 36px;
+  max-height: 80px;
+  background: #ffffff;
+  color: #201f1e;
+  border: 1px solid #107c41;
+  border-radius: 2px;
+  padding: 6px 10px;
+  font-family: 'Consolas', 'Segoe UI', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  resize: none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.chat-input-row textarea:focus {
+  border-color: #0b5a2f;
+  box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.2);
+}
+
+.excel-send-btn {
+  background: #107c41;
+  color: #ffffff;
+  border: none;
+  border-radius: 2px;
+  padding: 0 14px;
+  height: 36px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.excel-send-btn:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.excel-send-btn:disabled {
+  background: #a19f9d;
+  cursor: not-allowed;
 }
 
 /* PC에서만 메시지 최대 너비 제한 */

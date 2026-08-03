@@ -333,22 +333,29 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       
       <div className="chat-main">
         <div className="chat-messages">
-          {messages.map((msg) => {
+          <div className="excel-grid-header">
+            <div className="excel-col-head row-idx">#</div>
+            <div className="excel-col-head col-user">A (USER_ID)</div>
+            <div className="excel-col-head col-time">B (TIMESTAMP)</div>
+            <div className="excel-col-head col-msg">C (CELL_VALUE)</div>
+          </div>
+          {messages.map((msg, index) => {
             const isOwnMessage = msg.username === username;
             const isEmojiMessage = isOnlyEmojis(msg.message) && !msg.isImage;
 
             return (
               <div
                 key={msg.id}
-                className={`message ${isOwnMessage ? 'own-message' : ''} ${isEmojiMessage ? 'emoji-message' : ''}`}
+                className={`message excel-row-cell ${isOwnMessage ? 'own-message' : ''} ${isEmojiMessage ? 'emoji-message' : ''}`}
               >
-                {!isEmojiMessage && (
-                  <div className="message-header">
-                    <span className="username">{msg.username}</span>
-                    <span className="timestamp">{formatTime(msg.timestamp)}</span>
-                  </div>
-                )}
-                <div className="message-content">
+                <div className="cell-row-num">{index + 1}</div>
+                <div className="cell-col col-user">
+                  <span className="username">{msg.username}</span>
+                </div>
+                <div className="cell-col col-time">
+                  <span className="timestamp">{formatTime(msg.timestamp)}</span>
+                </div>
+                <div className="cell-col col-msg message-content">
                   {msg.isImage ? (
                     <img
                       src={resolveImageUrl(msg.message)}
@@ -367,14 +374,14 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
           })}
           {isTyping && (
             <div className="typing-indicator">
-              {isTyping}님이 입력 중...
+              ⚡ {isTyping}님이 셀 입력 중...
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
         
         <div className="chat-sidebar">
-          <h3>👥 참여자 ({users.length})</h3>
+          <h3>📊 Workgroup ({users.length})</h3>
           <div className="users-list">
             {users.map((user, index) => (
               <div key={index} className="user-item">
@@ -405,12 +412,17 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
           onClose={() => setShowDrawing(false)}
         />
       )}
-      <div className="chat-input">
+      <div className="chat-input excel-formula-bar">
+        <div className="excel-fx-label">
+          <span className="cell-ref">C{messages.length + 1}</span>
+          <span className="fx-symbol">fx</span>
+        </div>
         <div className="chat-input-row">
           <button
             type="button"
             className="emoji-btn"
             onClick={() => setShowEmojiPicker((v) => !v)}
+            title="이모지 삽입"
           >
             😊
           </button>
@@ -418,11 +430,12 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             type="button"
             className="draw-btn"
             onClick={() => setShowDrawing(true)}
+            title="그림 그리기"
           >
             🖌️
           </button>
           {/* 이미지 첨부 버튼 */}
-          <label className="image-upload-btn">
+          <label className="image-upload-btn" title="이미지 첨부">
             <input
               type="file"
               accept="image/*"
@@ -445,12 +458,12 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onInput={handleTyping}
-            placeholder="메시지를 입력하세요..."
+            placeholder='=STRING_INPUT("메시지를 입력하세요...")'
             disabled={!isConnected}
             onPaste={handlePaste}
           />
-          <button onClick={sendMessage} disabled={!isConnected || !messageInput.trim()}>
-            전송
+          <button className="excel-send-btn" onClick={sendMessage} disabled={!isConnected || !messageInput.trim()}>
+            입력 (↵)
           </button>
         </div>
       </div>
