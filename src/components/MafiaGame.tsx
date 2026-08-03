@@ -154,6 +154,13 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
     }
   };
 
+  // AI 봇 추가 함수
+  const addBot = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('mafia-add-bot', { room });
+    }
+  };
+
   // Socket.IO 메시지 처리 - 수정된 부분
   const handleSocketMessage = (message: MafiaUpdateMessage) => {
     const { type, data } = message;
@@ -387,17 +394,22 @@ const MafiaGame: React.FC<{ username: string; room: string }> = ({ username, roo
 
         {!gameState.gameStarted ? (
             <div className="waiting-room">
-              <h3>대기실</h3>
+              <h3>대기실 (참여자: {gameState.players.length}/6)</h3>
               <div className="player-list">
                 {gameState.players.map(player => (
                     <div key={player.id} className="player-item">
-                      {player.username}
+                      {player.username.startsWith('AI_') ? '🤖 ' : ''}{player.username}
                     </div>
                 ))}
               </div>
-              <button onClick={startGame} className="start-button">
-                게임 시작
-              </button>
+              <div className="waiting-room-actions" style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button onClick={addBot} className="add-bot-button" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
+                  🤖 AI 봇 추가 (+1 Bot)
+                </button>
+                <button onClick={startGame} className="start-button">
+                  게임 시작
+                </button>
+              </div>
             </div>
         ) : gameState.phase === 'game-over' ? (
             <div className="game-over">

@@ -46,12 +46,31 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   const [users, setUsers] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [kicked, setKicked] = useState(false);
   const [showDrawing, setShowDrawing] = useState(false);
   const [kickVote, setKickVote] = useState<KickVoteState | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [hasUnreadBelow, setHasUnreadBelow] = useState(false);
+
+  const handleScroll = () => {
+    if (!chatMessagesRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight <= 80;
+    setIsUserScrolledUp(!isAtBottom);
+    if (isAtBottom) {
+      setHasUnreadBelow(false);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setHasUnreadBelow(false);
+    setIsUserScrolledUp(false);
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -216,7 +235,16 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!chatMessagesRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight <= 100;
+
+    if (isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setHasUnreadBelow(false);
+    } else {
+      setHasUnreadBelow(true);
+    }
   }, [messages]);
 
   const sendMessage = () => {
@@ -332,7 +360,7 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
       </div>
       
       <div className="chat-main">
-        <div className="chat-messages">
+        <div className="chat-messages" ref={chatMessagesRef} onScroll={handleScroll}>
           <div className="excel-grid-header">
             <div className="excel-col-head row-idx">#</div>
             <div className="excel-col-head col-user">A (USER_ID)</div>
@@ -378,6 +406,17 @@ const Chat: React.FC<ChatProps> = ({ username, room }) => {
             </div>
           )}
           <div ref={messagesEndRef} />
+
+          {(isUserScrolledUp || hasUnreadBelow) && (
+            <button
+              type="button"
+              className="scroll-to-bottom-btn"
+              onClick={scrollToBottom}
+              title="최신 대화로 이동"
+            >
+              ⬇ 최신 대화로 이동 {hasUnreadBelow && <span className="unread-dot">●</span>}
+            </button>
+          )}
         </div>
         
         <div className="chat-sidebar">
