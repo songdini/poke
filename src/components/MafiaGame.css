@@ -1,449 +1,774 @@
-.mafia-game-container {
+/* 📊 Microsoft Excel Incognito Theme for Mafia Game */
+
+.mafia-game-container.excel-stealth-theme {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
   height: 80vh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-border;
+  overflow: hidden;
+  border-radius: 4px;
 }
 
-.game-header {
+/* 📊 Excel Formula Bar */
+.excel-formula-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
-  margin-bottom: 20px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
 }
 
-.game-header h2 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 1.75rem;
-}
-
-.game-info {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.phase, .timer {
-  padding: 8px 16px;
-  border-radius: 20px;
+.excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
   font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.phase {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  color: white;
-}
-
-.timer {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-}
-
-/* 대기실 스타일 */
-.waiting-room {
+  min-width: 130px;
+  color: #201f1e;
   text-align: center;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  font-size: 0.8rem;
 }
 
-.waiting-room h3 {
-  margin: 0 0 20px 0;
-  color: #1f2937;
-  font-size: 1.5rem;
-}
-
-.player-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 30px;
-  justify-content: center;
-}
-
-.player-item {
-  padding: 12px 20px;
-  background: #f3f4f6;
-  border-radius: 8px;
-  color: #374151;
-  font-weight: 500;
-}
-
-.start-button {
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.start-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-}
-
-/* 게임 종료 화면 */
-.game-over {
-  text-align: center;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.game-over h3 {
-  margin: 0 0 16px 0;
-  color: #1f2937;
-  font-size: 2rem;
-}
-
-.winner {
-  font-size: 1.5rem;
+.excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
   font-weight: 700;
-  margin: 0 0 30px 0;
-  padding: 16px 32px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: white;
+  color: #605e5c;
+  font-family: Georgia, serif;
 }
 
-.final-players {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  width: 100%;
-  max-width: 600px;
+.excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.final-players .player-item {
+/* 📋 Sheet Header Bar */
+.mafia-game-container .game-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 2px solid #e2e8f0;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  margin-bottom: 0;
 }
 
-.final-players .player-item.dead {
-  opacity: 0.5;
-  background: #f3f4f6;
+.sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.final-players .role {
+.sheet-title-info .sheet-icon {
+  font-size: 1.1rem;
+}
+
+.mafia-game-container .game-header h2 {
+  margin: 0;
+  color: #201f1e;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #667eea;
+  font-family: inherit;
 }
 
-.final-players .lives {
-  color: #ef4444;
+.mafia-game-container .game-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-/* 게임 영역 */
+.excel-cell-badge {
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  color: #201f1e;
+}
+
+.excel-cell-badge.phase {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+.excel-cell-badge.timer {
+  background: #ffffff;
+  border-color: #d4d4d4;
+  color: #605e5c;
+}
+
+/* 🔘 Excel Ribbon Buttons */
+.excel-btn {
+  padding: 6px 14px;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.excel-btn:hover:not(:disabled) {
+  background: #e1dfdd;
+  border-color: #a19f9d;
+}
+
+.excel-btn.primary {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.excel-btn.primary:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.excel-btn.secondary {
+  background: #ffffff;
+  color: #201f1e;
+  border-color: #d4d4d4;
+}
+
+.excel-btn.danger {
+  background: #a80000;
+  color: #ffffff;
+  border-color: #780000;
+}
+
+.excel-btn.danger:hover:not(:disabled) {
+  background: #780000;
+}
+
+.excel-btn.close {
+  background: #f3f2f1;
+  color: #a80000;
+  border-color: #d4d4d4;
+}
+
+.excel-btn.disabled,
+.excel-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f3f2f1;
+  color: #a19f9d;
+  border-color: #e1dfdd;
+}
+
+/* 🏢 Waiting Room Table Grid */
+.waiting-room {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #ffffff;
+}
+
+.waiting-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  color: #201f1e;
+}
+
+.excel-subtext {
+  font-size: 0.8rem;
+  color: #605e5c;
+  margin: 0;
+}
+
+.excel-table-wrapper {
+  border: 1px solid #d4d4d4;
+  overflow: hidden;
+}
+
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.excel-grid-table th {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 6px 12px;
+  font-weight: 600;
+  text-align: left;
+  color: #605e5c;
+}
+
+.excel-grid-table td {
+  border: 1px solid #e1dfdd;
+  padding: 6px 12px;
+  color: #201f1e;
+  background: #ffffff;
+}
+
+.excel-row-num-col,
+.excel-row-num {
+  width: 40px;
+  text-align: center !important;
+  background: #f3f2f1 !important;
+  color: #605e5c !important;
+  font-weight: 600;
+  user-select: none;
+}
+
+.excel-cell-name {
+  font-weight: 600;
+}
+
+.excel-status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.excel-status-tag.active {
+  background: #e6f2eb;
+  color: #107c41;
+  border: 1px solid #107c41;
+}
+
+.excel-status-tag.terminated {
+  background: #fde7e9;
+  color: #a80000;
+  border: 1px solid #a80000;
+}
+
+.waiting-room-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* 🕹️ Game Area Layout */
 .game-area {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 20px;
+  gap: 16px;
+  padding: 12px 16px;
   flex: 1;
   min-height: 0;
 }
 
+.player-grid-section {
+  border: 1px solid #d4d4d4;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.excel-grid-column-header {
+  display: flex;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #605e5c;
+  padding: 4px 8px;
+  user-select: none;
+}
+
+.excel-col-head {
+  padding: 2px 6px;
+}
+
+.excel-col-head.row-num {
+  width: 32px;
+  text-align: center;
+}
+
+.excel-col-head.flex-1 {
+  flex: 1;
+}
+
+.excel-col-head.flex-2 {
+  flex: 2;
+}
+
 .player-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  padding: 10px;
   overflow-y: auto;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 12px;
+  background: #ffffff;
+  flex: 1;
 }
 
 .player-card {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 8px 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   position: relative;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .player-card:hover {
-  border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-color: #107c41;
+  background: #f3f2f1;
 }
 
 .player-card.selected {
-  border-color: #f59e0b;
-  background: #fef3c7;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  border: 2px solid #107c41;
+  background: #e6f2eb;
+  box-shadow: inset 0 0 0 1px #107c41;
 }
 
 .player-card.dead {
-  opacity: 0.5;
-  background: #f3f4f6;
+  opacity: 0.6;
+  background: #f3f2f1;
+  border-color: #e1dfdd;
   cursor: not-allowed;
 }
 
-.player-name {
+.player-row-index {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.7rem;
+  color: #a19f9d;
   font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 8px;
-  font-size: 1rem;
+}
+
+.player-card .player-name {
+  font-weight: 600;
+  color: #201f1e;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.dead-tag {
+  font-size: 0.75rem;
+  color: #a80000;
+  margin-left: 4px;
+  font-weight: normal;
 }
 
 .player-lives {
-  color: #ef4444;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: #605e5c;
+  font-weight: 500;
 }
 
 .player-lives.attacked {
-  animation: heart-blink 0.8s ease-in-out 2;
-  color: #ef4444;
-  font-weight: 900;
-  font-size: 1.3rem;
+  color: #a80000;
+  font-weight: 700;
+  animation: cell-blink 0.4s ease-in-out 3;
 }
 
-@keyframes heart-blink {
-  0% { transform: scale(1); color: #ef4444; }
-  30% { transform: scale(1.4); color: #f87171; }
-  60% { transform: scale(0.9); color: #ef4444; }
-  100% { transform: scale(1); color: #ef4444; }
+@keyframes cell-blink {
+  0% { background: #fde7e9; color: #a80000; }
+  50% { background: #ffffff; color: #201f1e; }
+  100% { background: #fde7e9; color: #a80000; }
 }
 
-.player-role {
-  font-size: 0.8rem;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-top: 8px;
+.role-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  display: inline-block;
 }
 
-/* 액션 영역 */
+.role-badge.mafia {
+  background: #fde7e9;
+  color: #a80000;
+  border: 1px solid #a80000;
+  font-weight: 600;
+}
+
+.role-badge.citizen {
+  background: #e6f2eb;
+  color: #107c41;
+  border: 1px solid #107c41;
+  font-weight: 600;
+}
+
+.role-badge.joker {
+  background: #fff4ce;
+  color: #795e00;
+  border: 1px solid #795e00;
+  font-weight: 600;
+}
+
+.role-badge.confidential {
+  background: #f3f2f1;
+  color: #605e5c;
+  border: 1px solid #d4d4d4;
+}
+
+/* ⚡ Action Control Area */
 .action-area {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 20px;
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
+  gap: 8px;
 }
 
-.action-area p {
-  margin: 0 0 16px 0;
-  color: #374151;
-  font-size: 1rem;
-}
-
-.action-area button {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.action-area button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
-}
-
-.action-area button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-area button.disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-
-.action-area button.disabled:hover {
-  transform: none;
-  box-shadow: none;
+.excel-control-desc {
+  font-size: 0.85rem;
+  color: #201f1e;
+  margin: 0 0 8px 0;
 }
 
 .vote-notice {
-  margin-top: 8px;
-  font-size: 0.9rem;
-  color: #ef4444;
-  font-weight: 600;
+  font-size: 0.78rem;
+  color: #a80000;
+  margin-top: 4px;
 }
 
-/* 채팅 영역 */
-.chat-area {
-  margin-top: 20px;
-  border-top: 2px solid #e2e8f0;
-  padding-top: 20px;
+/* 🪟 Microsoft Excel Vote Prompt Dialog */
+.excel-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.excel-dialog-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 400px;
+  max-width: 90vw;
+  border-radius: 2px;
+  font-family: 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+.excel-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 8px 12px;
+}
+
+.excel-dialog-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #201f1e;
+}
+
+.excel-dialog-close {
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #605e5c;
+  padding: 2px 6px;
+}
+
+.excel-dialog-close:hover {
+  background: #e1dfdd;
+  color: #a80000;
+}
+
+.excel-dialog-body {
+  padding: 16px;
+}
+
+.excel-dialog-desc {
+  font-size: 0.85rem;
+  color: #201f1e;
+  margin: 0 0 12px 0;
+}
+
+.excel-dialog-options {
   display: flex;
   flex-direction: column;
-  height: 300px;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
-.messages {
+.excel-dialog-opt {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #201f1e;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.excel-dialog-opt:hover {
+  border-color: #107c41;
+  background: #f3f2f1;
+}
+
+.excel-dialog-opt.selected {
+  border: 2px solid #107c41;
+  background: #e6f2eb;
+  font-weight: 600;
+}
+
+.excel-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f3f2f1;
+  border-top: 1px solid #d4d4d4;
+}
+
+/* 📝 Excel Log & Communication Grid */
+.mafia-game-container .chat-area {
+  padding: 0 16px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+  margin-top: 0;
+  border-top: none;
+}
+
+.excel-log-header {
+  display: flex;
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #605e5c;
+  user-select: none;
+}
+
+.excel-log-header .col-ts {
+  width: 90px;
+}
+
+.excel-log-header .col-user {
+  width: 120px;
+}
+
+.excel-log-header .col-msg {
+  flex: 1;
+}
+
+.mafia-game-container .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  border-radius: 0;
 }
 
-.message {
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.message.system {
-  background: #dbeafe;
-  color: #1e40af;
-  font-weight: 600;
-}
-
-.message.player {
-  background: white;
-  color: #374151;
-}
-
-.message.vote {
-  background: #fef3c7;
-  color: #92400e;
-  font-weight: 600;
-}
-
-.message.attack {
-  background: #fee2e2;
-  color: #991b1b;
-  font-weight: 600;
-}
-
-.message.heal {
-  background: #dcfce7;
-  color: #166534;
-  font-weight: 600;
-}
-
-.message .timestamp {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-right: 8px;
-}
-
-.message .player {
-  font-weight: 600;
-  color: #667eea;
-}
-
-.message .content {
-  margin-left: 4px;
-}
-
-.message-input {
+.mafia-game-container .message {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #e1dfdd;
+  margin-bottom: 0;
+  border-radius: 0;
+  font-size: 0.82rem;
 }
 
-.message-input input {
+.mafia-game-container .message .timestamp {
+  font-size: 0.75rem;
+  color: #605e5c;
+  width: 80px;
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.mafia-game-container .message .player {
+  font-weight: 600;
+  color: #201f1e;
+  width: 110px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mafia-game-container .message .player.sys-tag {
+  color: #0b5a2f;
+}
+
+.mafia-game-container .message .content {
   flex: 1;
-  padding: 12px 16px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  color: #201f1e;
 }
 
-.message-input input:focus {
-  outline: none;
-  border-color: #667eea;
+.mafia-game-container .message.system {
+  background: #e6f2eb;
+  color: #0b5a2f;
 }
 
-.message-input button {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  border-radius: 8px;
+.mafia-game-container .message.attack {
+  background: #fde7e9;
+  color: #a80000;
+}
+
+.mafia-game-container .message.vote {
+  background: #fff4ce;
+  color: #795e00;
+}
+
+.excel-scroll-btn {
+  position: absolute;
+  right: 24px;
+  bottom: 60px;
+  z-index: 10;
+  background: #f3f2f1;
+  color: #201f1e;
+  border: 1px solid #d4d4d4;
+  padding: 4px 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.message-input button:hover {
-  transform: translateY(-2px);
+.mafia-game-container .message-input {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
-/* 반응형 디자인 */
+.input-prefix {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 5px 10px;
+  font-weight: bold;
+  font-style: italic;
+  color: #605e5c;
+  font-size: 0.85rem;
+  font-family: Georgia, serif;
+}
+
+.mafia-game-container .message-input input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  font-family: 'Segoe UI', sans-serif;
+  outline: none;
+}
+
+.mafia-game-container .message-input input:focus {
+  border-color: #107c41;
+}
+
+/* 📊 Summary Screen */
+.game-over {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.excel-summary-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #201f1e;
+}
+
+.winner-banner {
+  padding: 8px 16px;
+  background: #107c41;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.excel-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  border: 1px solid #d4d4d4;
+}
+
+.excel-summary-table th {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 6px 12px;
+  text-align: left;
+  color: #605e5c;
+  font-weight: 600;
+}
+
+.excel-summary-table td {
+  border: 1px solid #e1dfdd;
+  padding: 6px 12px;
+  color: #201f1e;
+}
+
+.excel-summary-table tr.inactive-row td {
+  background: #f3f2f1;
+  color: #a19f9d;
+}
+
+/* 📱 Responsive */
 @media (max-width: 768px) {
-  .mafia-game-container {
-    height: 90vh;
-    padding: 16px;
-  }
-
-  .game-header {
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
-  }
-
   .game-area {
     grid-template-columns: 1fr;
-    gap: 16px;
   }
-
-  .player-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .chat-area {
-    height: 250px;
+  .excel-formula-bar {
+    display: none;
   }
 }
-
-@media (max-width: 480px) {
-  .game-info {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .player-card {
-    padding: 12px;
-  }
-
-  .player-name {
-    font-size: 0.9rem;
-  }
-
-  .action-area {
-    padding: 16px;
-  }
-  .player-grid {
-    grid-template-columns: 1fr;
-  }
-} 

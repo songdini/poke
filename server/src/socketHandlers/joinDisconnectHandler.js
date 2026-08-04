@@ -64,7 +64,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
 
             socket.emit('mafia-update', {
               type: 'reconnect-sync',
-              data: { players: game.players, phase: game.phase, gameStarted: game.gameStarted }
+              data: { players: game.players, phase: game.phase, gameStarted: game.gameStarted, timeLeft: game.timeLeft, voteUsed: game.voteUsed }
             });
           }
         } else if (gameType === 'liar') {
@@ -178,7 +178,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
 
       socket.emit('mafia-update', {
         type: 'reconnect-sync',
-        data: { players: game.players, phase: game.phase, gameStarted: game.gameStarted }
+        data: { players: game.players, phase: game.phase, gameStarted: game.gameStarted, timeLeft: game.timeLeft, voteUsed: game.voteUsed }
       });
     } else if (gameType === 'liar') {
       if (!liarGames.has(room)) {

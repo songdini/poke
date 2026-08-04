@@ -35,15 +35,16 @@ interface GameMessage {
 
 type MafiaUpdateMessage =
   | { type: 'join'; data: { player?: Player; players?: Player[] } }
-  | { type: 'reconnect-sync'; data: { players: Player[]; phase: GameState['phase']; gameStarted: boolean } }
+  | { type: 'reconnect-sync'; data: { players: Player[]; phase: GameState['phase']; gameStarted: boolean; timeLeft?: number; voteUsed?: boolean } }
   | { type: 'leave'; data: { playerId: string } }
   | { type: 'message'; data: GameMessage }
-  | { type: 'game-start'; data: { players: Player[] } }
+  | { type: 'game-start'; data: { players: Player[]; phase?: GameState['phase']; timeLeft?: number } }
   | { type: 'vote'; data: { targetId: string; player?: Partial<Player>; message: string } }
   | { type: 'vote-skip'; data: { message: string } }
   | { type: 'attack'; data: { targetId: string | null; player?: Partial<Player> | null; message: string } }
   | { type: 'game-over'; data: { winner: string; message: string } }
-  | { type: 'phase-change'; data: { phase: GameState['phase']; message: string } };
+  | { type: 'phase-change'; data: { phase: GameState['phase']; message: string; timeLeft?: number } }
+  | { type: 'timer-tick'; data: { timeLeft: number } };
 
 const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => void }> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
@@ -97,34 +98,6 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.messages]);
 
-  // 타이머 관리
-  useEffect(() => {
-    if (!gameState.gameStarted) return;
-    if (gameState.phase !== 'day' && gameState.phase !== 'night') return;
-    if (gameState.timeLeft <= 0) return;
-    const timer = setInterval(() => {
-      setGameState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [gameState.gameStarted, gameState.phase, gameState.timeLeft]);
-
-  // 낮 종료 시 자동 밤 전환
-  useEffect(() => {
-    if (gameState.phase === 'day' && gameState.timeLeft === 0) {
-      setGameState(prev => ({
-        ...prev,
-        phase: 'night',
-        timeLeft: 30,
-        messages: [...prev.messages, {
-          id: Date.now().toString(),
-          type: 'system',
-          content: '밤이 되었습니다. 마피아가 공격할 플레이어를 선택하세요.',
-          timestamp: new Date()
-        }]
-      }));
-    }
-  }, [gameState.phase, gameState.timeLeft]);
-
   // 투표 팝업 서버 이벤트 수신
   useEffect(() => {
     if (!socketRef.current) return;
@@ -139,14 +112,14 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     };
   }, []);
 
-  // 투표 시작 (모든 클라이언트에 팝업 띄우기)
+  // 투표 시작
   const startVote = () => {
     if (socketRef.current) {
       socketRef.current.emit('mafia-vote-start', { room });
     }
   };
 
-  // 투표 팝업에서 투표 실행
+  // 투표 제출
   const submitVote = () => {
     if (socketRef.current && voteTarget) {
       socketRef.current.emit('mafia-vote', { room, targetId: voteTarget, voterId: username });
@@ -154,14 +127,14 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }
   };
 
-  // AI 봇 추가 함수
+  // AI 봇 추가
   const addBot = () => {
     if (socketRef.current) {
       socketRef.current.emit('mafia-add-bot', { room });
     }
   };
 
-  // 방 나가기 함수
+  // 방 나가기
   const leaveRoom = () => {
     if (socketRef.current) {
       socketRef.current.emit('mafia-leave', { room });
@@ -171,17 +144,26 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }
   };
 
-  // Socket.IO 메시지 처리 - 수정된 부분
+  // Socket.IO 메시지 처리
   const handleSocketMessage = (message: MafiaUpdateMessage) => {
     const { type, data } = message;
 
     switch (type) {
+      case 'timer-tick':
+        setGameState(prev => ({
+          ...prev,
+          timeLeft: data.timeLeft
+        }));
+        break;
+
       case 'reconnect-sync':
         setGameState(prev => ({
           ...prev,
           players: data.players || prev.players,
           phase: data.phase || prev.phase,
-          gameStarted: data.gameStarted ?? prev.gameStarted
+          gameStarted: data.gameStarted ?? prev.gameStarted,
+          timeLeft: data.timeLeft ?? prev.timeLeft,
+          voteUsed: data.voteUsed ?? prev.voteUsed
         }));
         break;
 
@@ -215,13 +197,13 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
           ...prev,
           players: data.players,
           gameStarted: true,
-          phase: 'day',
-          timeLeft: 90,
+          phase: data.phase || 'day',
+          timeLeft: data.timeLeft ?? 90,
           voteUsed: false,
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'system',
-            content: '게임이 시작되었습니다! 1분 30초간 대화 후 밤이 됩니다.',
+            content: '[SYS_START] 감사 세션이 시작되었습니다. 1분 30초간 라운드 토의 후 검증을 진행합니다.',
             timestamp: new Date()
           }]
         }));
@@ -239,7 +221,6 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
           }]
         }));
 
-        // 서버에서 업데이트된 플레이어 정보가 있다면 반영
         if (data.player) {
           setGameState(prev => ({
             ...prev,
@@ -264,8 +245,6 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
         break;
 
       case 'attack': {
-        console.log('클라이언트 attack 메시지 수신:', data);
-
         setAttackedId(data.targetId);
         const attackedPlayer = data.player;
 
@@ -284,7 +263,6 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
           }]
         }));
 
-        // 공격 애니메이션 1초 후 해제
         setTimeout(() => setAttackedId(null), 1000);
         break;
       }
@@ -307,8 +285,8 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
         setGameState(prev => ({
           ...prev,
           phase: data.phase,
-          timeLeft: data.phase === 'day' ? 90 : prev.timeLeft,
-          voteUsed: false,
+          timeLeft: data.timeLeft ?? (data.phase === 'day' ? 90 : data.phase === 'voting' ? 20 : 30),
+          voteUsed: data.phase === 'day' ? false : prev.voteUsed,
           messages: [...prev.messages, {
             id: Date.now().toString(),
             type: 'system',
@@ -320,14 +298,12 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }
   };
 
-  // 게임 시작
   const startGame = () => {
     if (socketRef.current) {
       socketRef.current.emit('mafia-game-start', { room });
     }
   };
 
-  // 메시지 전송
   const sendMessage = () => {
     if (!inputMessage.trim() || !socketRef.current) return;
 
@@ -340,11 +316,9 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     };
 
     socketRef.current.emit('mafia-message', { room, message: newMessage });
-
     setInputMessage('');
   };
 
-  // 플레이어 선택 (투표/공격)
   const selectPlayer = (playerId: string) => {
     setGameState(prev => ({
       ...prev,
@@ -352,22 +326,17 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }));
   };
 
-  // 투표 실행
   const executeVote = () => {
     if (!gameState.selectedPlayer || !socketRef.current) return;
-
     socketRef.current.emit('mafia-vote', { room, targetId: gameState.selectedPlayer });
-
     setGameState(prev => ({
       ...prev,
       selectedPlayer: null
     }));
   };
 
-  // 마피아 공격
   const executeMafiaAttack = () => {
     if (!gameState.selectedPlayer || !socketRef.current) return;
-    console.log('마피아 공격 emit:', gameState.selectedPlayer);
     socketRef.current.emit('mafia-attack', { room, targetId: gameState.selectedPlayer });
     setGameState(prev => ({
       ...prev,
@@ -375,10 +344,9 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }));
   };
 
-  // 현재 플레이어의 역할 확인
   const currentPlayerRole = gameState.players.find(p => p.username === username)?.role;
+  const selectedPlayerData = gameState.players.find(p => p.id === gameState.selectedPlayer);
 
-  // 스크롤 위치 감지해서 버튼 표시
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
@@ -393,169 +361,283 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
   };
 
   return (
-      <div className="mafia-game-container">
-        <div className="game-header">
-          <h2>🕵️ Mafia_Audit</h2>
-          <div className="game-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span className="phase">{gameState.phase === 'day' ? '☀️ 낮' : '🌙 밤'}</span>
-            <span className="timer">⏰ {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}</span>
+    <div className="mafia-game-container excel-stealth-theme">
+      {/* 📊 Excel Formula Bar */}
+      <div className="excel-formula-bar">
+        <div className="excel-name-box">
+          {selectedPlayerData ? `CELL_${selectedPlayerData.username.substring(0, 6)}` : 'A1: AUDIT_SUMMARY'}
+        </div>
+        <div className="excel-fx-icon">fx</div>
+        <div className="excel-formula-input">
+          =MAFIA_AUDIT.LOG(Phase="{gameState.phase.toUpperCase()}", Workgroup="{room}", Active_Nodes={gameState.players.filter(p => p.isAlive).length})
+        </div>
+      </div>
+
+      {/* 📋 Sheet Header Bar */}
+      <div className="game-header">
+        <div className="sheet-title-info">
+          <span className="sheet-icon">📋</span>
+          <h2>Table 02: Mafia_Role_Audit_Log.xlsx</h2>
+        </div>
+        <div className="game-info">
+          <span className="excel-cell-badge phase">
+            Status: {gameState.phase === 'day' ? '☀️ DAY_SHIFT' : gameState.phase === 'night' ? '🌙 NIGHT_AUDIT' : gameState.phase === 'voting' ? '⚖️ VOTE_VERIFICATION' : 'READY'}
+          </span>
+          <span className="excel-cell-badge timer">
+            ⏱️ Time: {Math.floor(gameState.timeLeft / 60)}:{(gameState.timeLeft % 60).toString().padStart(2, '0')}
+          </span>
+          {onLeaveRoom && (
+            <button onClick={leaveRoom} className="excel-btn leave-room-btn">
+              ✖ Close Sheet
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!gameState.gameStarted ? (
+        <div className="waiting-room">
+          <div className="waiting-header">
+            <h3>Workgroup Audit Session Initialization (Connected Nodes: {gameState.players.length}/6)</h3>
+            <p className="excel-subtext">Review connected employee IDs before initiating security audit sequence.</p>
+          </div>
+
+          <div className="excel-table-wrapper">
+            <table className="excel-grid-table">
+              <thead>
+                <tr>
+                  <th className="excel-row-num-col">#</th>
+                  <th>Col A: Employee_ID</th>
+                  <th>Col B: System_Node_Type</th>
+                  <th>Col C: Connection_Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gameState.players.map((player, index) => (
+                  <tr key={player.id}>
+                    <td className="excel-row-num">{index + 1}</td>
+                    <td className="excel-cell-name">
+                      {player.username} {player.username === username ? '(You)' : ''}
+                    </td>
+                    <td>{player.username.startsWith('AI_') ? 'AUTOMATED_BOT' : 'WORKSTATION_CLIENT'}</td>
+                    <td><span className="excel-status-tag active">ONLINE</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="waiting-room-actions">
+            <button onClick={addBot} className="excel-btn secondary">
+              ➕ Insert AI_Worker Node (+1 Bot)
+            </button>
+            <button onClick={startGame} className="excel-btn primary">
+              ▶ Execute Audit Session (F5)
+            </button>
             {onLeaveRoom && (
-              <button onClick={leaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
-                🚪 방 나가기
+              <button onClick={leaveRoom} className="excel-btn close">
+                ✖ Disconnect Workgroup
               </button>
             )}
           </div>
         </div>
+      ) : gameState.phase === 'game-over' ? (
+        <div className="game-over">
+          <div className="excel-summary-header">
+            <h3>📊 Audit Execution Summary - Final Status Report</h3>
+            <div className="winner-banner">
+              RESULT: {gameState.winner === 'joker' ? 'JOKER_ANOMALY_VICTORY' : gameState.winner === 'citizens' ? 'CITIZEN_AUDITORS_VICTORY' : 'MAFIA_SECURITY_OVERRIDE_VICTORY'}
+            </div>
+          </div>
 
-        {!gameState.gameStarted ? (
-            <div className="waiting-room">
-              <h3>대기실 (참여자: {gameState.players.length}/6)</h3>
-              <div className="player-list">
-                {gameState.players.map(player => (
-                    <div key={player.id} className="player-item">
-                      {player.username.startsWith('AI_') ? '🤖 ' : ''}{player.username}
+          <div className="excel-table-wrapper">
+            <table className="excel-summary-table">
+              <thead>
+                <tr>
+                  <th className="excel-row-num-col">#</th>
+                  <th>Col A: Employee_ID</th>
+                  <th>Col B: Security_Clearance</th>
+                  <th>Col C: Final_Audit_Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gameState.players.map((player, idx) => (
+                  <tr key={player.id} className={!player.isAlive ? 'inactive-row' : ''}>
+                    <td className="excel-row-num">{idx + 1}</td>
+                    <td className="excel-cell-name">{player.username}</td>
+                    <td className="role-cell">{player.role.toUpperCase()}</td>
+                    <td>
+                      {player.isAlive ? (
+                        <span className="excel-status-tag active">SURVIVED ({player.lives} HP)</span>
+                      ) : (
+                        <span className="excel-status-tag terminated">TERMINATED</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="game-area">
+            {/* 📊 Player Cells Data Grid */}
+            <div className="player-grid-section">
+              <div className="excel-grid-column-header">
+                <span className="excel-col-head row-num">#</span>
+                <span className="excel-col-head flex-2">Col A: Employee_ID</span>
+                <span className="excel-col-head flex-1">Col B: Health_Score</span>
+                <span className="excel-col-head flex-1">Col C: Clearance</span>
+              </div>
+              <div className="player-grid">
+                {gameState.players.map((player, idx) => (
+                  <div
+                    key={player.id}
+                    className={`player-card ${!player.isAlive ? 'dead' : ''} ${gameState.selectedPlayer === player.id ? 'selected' : ''}`}
+                    onClick={() => selectPlayer(player.id)}
+                  >
+                    <span className="player-row-index">{idx + 1}</span>
+                    <div className="player-name">
+                      {player.username}
+                      {!player.isAlive && <span className="dead-tag">[INACTIVE]</span>}
                     </div>
+                    <div className={`player-lives ${attackedId === player.id ? 'attacked' : ''}`}>
+                      Score: {player.lives}/3
+                    </div>
+                    <div className="player-role">
+                      {player.username === username ? (
+                        <span className={`role-badge ${player.role}`}>Clearance: {player.role.toUpperCase()}</span>
+                      ) : (
+                        <span className="role-badge confidential">Confidential</span>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
-              <div className="waiting-room-actions" style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                <button onClick={addBot} className="add-bot-button" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
-                  🤖 AI 봇 추가 (+1 Bot)
-                </button>
-                <button onClick={startGame} className="start-button">
-                  게임 시작
-                </button>
-                {onLeaveRoom && (
-                  <button onClick={leaveRoom} style={{ background: '#64748b', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
-                    🚪 대기실 나가기
+            </div>
+
+            {/* ⚡ Excel Control / Action Section */}
+            <div className="action-area">
+              {gameState.phase === 'day' && (
+                <div className="day-actions">
+                  <p className="excel-control-desc">1분 30초간 토의 후 검증 투표를 진행합니다.</p>
+                  <button
+                    onClick={startVote}
+                    disabled={gameState.voteUsed}
+                    className={`excel-btn ${gameState.voteUsed ? 'disabled' : 'primary'}`}
+                  >
+                    {gameState.voteUsed ? '검증 완료' : '▶ 검증 투표 시작'}
                   </button>
-                )}
-              </div>
-            </div>
-        ) : gameState.phase === 'game-over' ? (
-            <div className="game-over">
-              <h3>게임 종료!</h3>
-              <p className="winner">
-                {gameState.winner === 'joker' ? '🎭 조커의 승리!' :
-                    gameState.winner === 'citizens' ? '👥 시민의 승리!' :
-                        gameState.winner === 'mafia' ? '🕵️ 마피아의 승리!' : ''}
-              </p>
-              <div className="final-players">
-                {gameState.players.map(player => (
-                    <div key={player.id} className={`player-item ${!player.isAlive ? 'dead' : ''}`}>
-                      <span>{player.username}</span>
-                      <span className="role">{player.role}</span>
-                      <span className="lives">❤️ {player.lives}</span>
+                  {gameState.voteUsed && (
+                    <p className="vote-notice">[Notice] 해당 주기에 이미 검증 투표를 실행했습니다.</p>
+                  )}
+                </div>
+              )}
+
+              {/* 🪟 Microsoft Excel Vote Prompt Dialog */}
+              {showVotePopup && (
+                <div className="excel-modal-overlay">
+                  <div className="excel-dialog-box">
+                    <div className="excel-dialog-header">
+                      <span className="excel-dialog-title">Microsoft Excel - Verification Prompt</span>
+                      <button className="excel-dialog-close" onClick={() => setShowVotePopup(false)}>✕</button>
                     </div>
-                ))}
-              </div>
+                    <div className="excel-dialog-body">
+                      <p className="excel-dialog-desc">검증을 진행할 대상 Employee ID Cell을 선택하세요:</p>
+                      <div className="excel-dialog-options">
+                        {gameState.players.filter(p => p.isAlive).map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => setVoteTarget(p.id)}
+                            className={`excel-dialog-opt ${voteTarget === p.id ? 'selected' : ''}`}
+                          >
+                            Cell: {p.username}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="excel-dialog-footer">
+                      <button onClick={submitVote} disabled={!voteTarget} className="excel-btn primary">
+                        OK (Submit)
+                      </button>
+                      <button onClick={() => setShowVotePopup(false)} className="excel-btn secondary">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {gameState.phase === 'voting' && (
+                <div className="voting-actions">
+                  <p className="excel-control-desc">검증할 Target Cell을 선택한 후 실행하십시오.</p>
+                  <button onClick={executeVote} disabled={!gameState.selectedPlayer} className="excel-btn primary">
+                    ▶ Execute Verification Vote
+                  </button>
+                </div>
+              )}
+
+              {gameState.phase === 'night' && currentPlayerRole === 'mafia' && (
+                <div className="mafia-actions">
+                  <p className="excel-control-desc">보안 차단(공격)할 Target Cell을 선택하십시오.</p>
+                  <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer} className="excel-btn primary danger">
+                    ▶ Execute Security Override
+                  </button>
+                </div>
+              )}
             </div>
-        ) : (
-            <>
-              <div className="game-area">
-                <div className="player-grid">
-                  {gameState.players.map(player => (
-                      <div
-                          key={player.id}
-                          className={`player-card ${!player.isAlive ? 'dead' : ''} ${gameState.selectedPlayer === player.id ? 'selected' : ''}`}
-                          onClick={() => selectPlayer(player.id)}
-                      >
-                        <div className="player-name">{player.username}</div>
-                        <div className={`player-lives${attackedId === player.id ? ' attacked' : ''}`}>❤️ {player.lives}</div>
-                        {player.username === username && (
-                            <div className="player-role">역할: {player.role}</div>
-                        )}
-                      </div>
-                  ))}
-                </div>
+          </div>
 
-                <div className="action-area">
-                  {gameState.phase === 'day' && (
-                      <div className="day-actions">
-                        <p>1분 30초간 대화 후 투표를 진행합니다.</p>
-                        <button
-                            onClick={startVote}
-                            disabled={gameState.voteUsed}
-                            className={gameState.voteUsed ? 'disabled' : ''}
-                        >
-                          {gameState.voteUsed ? '투표 완료' : '투표 시작'}
-                        </button>
-                        {gameState.voteUsed && (
-                            <p className="vote-notice">오늘은 이미 투표를 완료했습니다.</p>
-                        )}
-                      </div>
-                  )}
-
-                  {/* 투표 팝업 */}
-                  {showVotePopup && (
-                      <div className="vote-popup" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ background: '#23272f', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.25)', textAlign: 'center', color: '#fff' }}>
-                          <h3 style={{ color: '#fbbf24', marginBottom: 16 }}>투표</h3>
-                          <div style={{ marginBottom: 16 }}>지목할 플레이어를 선택하세요.</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                            {gameState.players.filter(p => p.isAlive).map(p => (
-                                <button key={p.id} onClick={() => setVoteTarget(p.id)} style={{ padding: 10, borderRadius: 8, border: voteTarget === p.id ? '2px solid #fbbf24' : '1px solid #333', background: voteTarget === p.id ? '#fbbf24' : '#23272f', color: voteTarget === p.id ? '#23272f' : '#fff', fontWeight: 600, cursor: 'pointer' }}>{p.username}</button>
-                            ))}
-                          </div>
-                          <button onClick={submitVote} disabled={!voteTarget} style={{ padding: '10px 24px', background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 16, cursor: voteTarget ? 'pointer' : 'not-allowed', opacity: voteTarget ? 1 : 0.5 }}>투표</button>
-                        </div>
-                      </div>
-                  )}
-
-                  {gameState.phase === 'voting' && (
-                      <div className="voting-actions">
-                        <p>투표할 플레이어를 선택하세요.</p>
-                        <button onClick={executeVote} disabled={!gameState.selectedPlayer}>
-                          투표 실행
-                        </button>
-                      </div>
-                  )}
-
-                  {gameState.phase === 'night' && currentPlayerRole === 'mafia' && (
-                      <div className="mafia-actions">
-                        <p>공격할 플레이어를 선택하세요.</p>
-                        <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer}>
-                          공격 실행
-                        </button>
-                      </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="chat-area">
-                <div className="messages" onScroll={handleScroll} style={{ position: 'relative' }}>
-                  {gameState.messages.map(message => (
-                      <div key={message.id} className={`message ${message.type}`}>
+          {/* 📝 Excel Log & Communication Grid */}
+          <div className="chat-area">
+            <div className="excel-log-header">
+              <span className="col-ts">A: Time</span>
+              <span className="col-user">B: User_ID</span>
+              <span className="col-msg">C: Audit Log Record</span>
+            </div>
+            <div className="messages" onScroll={handleScroll}>
+              {gameState.messages.map(message => (
+                <div key={message.id} className={`message ${message.type}`}>
                   <span className="timestamp">
                     {typeof message.timestamp === 'string'
-                        ? new Date(message.timestamp).toLocaleTimeString()
-                        : message.timestamp.toLocaleTimeString()}
+                      ? new Date(message.timestamp).toLocaleTimeString()
+                      : message.timestamp.toLocaleTimeString()}
                   </span>
-                        {message.player && <span className="player">{message.player}: </span>}
-                        <span className="content">{message.content}</span>
-                      </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                  {showScrollBtn && (
-                      <button onClick={scrollToBottom} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 10, background: '#fbbf24', color: '#23272f', border: 'none', borderRadius: 20, padding: '8px 18px', fontWeight: 700, fontSize: 15, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', cursor: 'pointer' }}>
-                        맨 아래로
-                      </button>
+                  {message.player ? (
+                    <span className="player">{message.player}: </span>
+                  ) : (
+                    <span className="player sys-tag">[SYS_LOG]: </span>
                   )}
+                  <span className="content">{message.content}</span>
                 </div>
-                <div className="message-input">
-                  <input
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="메시지를 입력하세요..."
-                  />
-                  <button onClick={sendMessage}>전송</button>
-                </div>
-              </div>
-            </>
-        )}
-      </div>
+              ))}
+              <div ref={messagesEndRef} />
+              {showScrollBtn && (
+                <button onClick={scrollToBottom} className="excel-scroll-btn">
+                  ⬇ Bottom Cell
+                </button>
+              )}
+            </div>
+
+            <div className="message-input">
+              <span className="input-prefix">fx</span>
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                placeholder="Enter audit comment or message... (Enter)"
+              />
+              <button onClick={sendMessage} className="excel-btn primary">
+                Insert Log
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
 export default MafiaGame;
+
