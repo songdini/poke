@@ -1,0 +1,360 @@
+/* 📊 Microsoft Excel Incognito Theme for Number Baseball Game */
+
+.number-baseball-container.excel-stealth-theme {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 📊 Formula Bar */
+.number-baseball-container .excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
+}
+
+.number-baseball-container .excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-weight: 600;
+  min-width: 130px;
+  color: #201f1e;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.number-baseball-container .excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: Georgia, serif;
+}
+
+.number-baseball-container .excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+}
+
+/* 📋 Header */
+.number-baseball-container .game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+.sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-title-info h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #201f1e;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excel-cell-badge {
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+}
+
+.excel-cell-badge.phase {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+/* 🎮 Waiting Room */
+.baseball-waiting-room {
+  padding: 24px;
+  text-align: center;
+}
+
+.baseball-waiting-room h3 {
+  margin: 0 0 8px 0;
+  color: #107c41;
+}
+
+.excel-desc {
+  font-size: 0.85rem;
+  color: #605e5c;
+  margin-bottom: 20px;
+}
+
+.mode-selection-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.mode-selection-grid .excel-btn {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+}
+
+.mode-selection-grid .sub-desc {
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.player-list-section {
+  background: #f9f9f9;
+  border: 1px solid #e1dfdd;
+  padding: 12px 16px;
+  border-radius: 4px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.player-list-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: #605e5c;
+}
+
+.player-chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.player-chip {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.player-chip.me {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+/* 🔑 Secret Setting */
+.baseball-secret-section, .baseball-waiting-opponent {
+  padding: 30px;
+  text-align: center;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.excel-input {
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  font-family: 'Consolas', monospace;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* ⚾ Game Body */
+.baseball-game-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f3f2f1;
+  padding: 8px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  font-size: 0.85rem;
+}
+
+.turn-badge {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.turn-badge.my-turn {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+.guess-input-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f9f9f9;
+  border: 1px solid #d4d4d4;
+  padding: 10px 14px;
+  border-radius: 2px;
+}
+
+.guess-input-section .prefix {
+  font-weight: 700;
+  color: #107c41;
+  font-family: 'Consolas', monospace;
+}
+
+.guess-input-section .excel-input {
+  width: 240px;
+}
+
+/* 📊 Table Grid */
+.excel-table-container {
+  overflow-x: auto;
+  border: 1px solid #d4d4d4;
+}
+
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.excel-grid-table th {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 8px 12px;
+  font-weight: 600;
+  text-align: left;
+  color: #605e5c;
+}
+
+.excel-grid-table td {
+  border: 1px solid #e1dfdd;
+  padding: 8px 12px;
+}
+
+.excel-grid-table tr:nth-child(even) {
+  background: #fdfdfd;
+}
+
+.row-num {
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  color: #a19f9d;
+}
+
+.guess-col {
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 3px;
+  color: #107c41;
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: #f3f2f1;
+  color: #a19f9d;
+  border: 1px solid #d4d4d4;
+}
+
+.badge.strike.active {
+  background: #e6f2eb;
+  color: #107c41;
+  border-color: #107c41;
+}
+
+.badge.ball.active {
+  background: #fff4ce;
+  color: #795e00;
+  border-color: #795e00;
+}
+
+.status-tag.win {
+  color: #107c41;
+  font-weight: 700;
+}
+
+.status-tag.out {
+  color: #a80000;
+  font-weight: 600;
+}
+
+/* 🏆 Game Over */
+.game-over-box {
+  background: #e6f2eb;
+  border: 2px solid #107c41;
+  padding: 20px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.game-over-box h3 {
+  margin: 0 0 6px 0;
+  color: #0b5a2f;
+}
+
+.secret-reveal {
+  font-size: 1.1rem;
+  margin: 10px 0 16px 0;
+}
+
+.error-alert {
+  color: #a80000;
+  background: #fde7e9;
+  border: 1px solid #a80000;
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 10px;
+}

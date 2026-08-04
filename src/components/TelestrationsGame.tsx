@@ -32,6 +32,7 @@ interface TelestrationsUpdatePayload {
   players?: Player[];
   hostId?: string;
   phase?: GamePhase;
+  mode?: 'standard' | 'copy-chain';
   results?: GameBook[] | null;
   currentBookPage?: GameBookPage | null;
 }
@@ -44,6 +45,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
   const { socket } = useSocket();
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<GamePhase>('waiting');
+  const [mode, setMode] = useState<'standard' | 'copy-chain'>('standard');
   const [isHost, setIsHost] = useState(false);
   const [hostId, setHostId] = useState('');
   const [myId, setMyId] = useState('');
@@ -53,12 +55,14 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
   const [results, setResults] = useState<GameBook[] | null>(null);
   const [error, setError] = useState('');
   const [visiblePages, setVisiblePages] = useState(1);
+  const [activeBookIndex, setActiveBookIndex] = useState(0);
 
   const [inputValue, setInputValue] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawingContext, setDrawingContext] = useState<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawColor, setDrawColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(4);
   const [drawHistory, setDrawHistory] = useState<ImageData[]>([]);
 
   useEffect(() => {
@@ -81,6 +85,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
         setHostId(data.hostId);
         setIsHost(socket.id === data.hostId);
       }
+      if (data.mode) setMode(data.mode);
       if (data.phase) {
         setPhase(data.phase);
         setIsSubmitted(false);
@@ -120,12 +125,23 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
       if (ctx) {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
       }
+      setDrawHistory([]);
     }
   }, [phase]);
 
   const handleStartGame = () => {
     socket?.emit('telestrations-game-start', { room });
+  };
+
+  const handleChangeMode = (newMode: 'standard' | 'copy-chain') => {
+    if (isHost && phase === 'waiting') {
+      socket?.emit('telestrations-change-mode', { room, mode: newMode });
+    }
   };
 
   const handleSubmitTurn = async () => {
@@ -199,8 +215,9 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
     e.preventDefault();
     const { x, y } = getPos(e.nativeEvent as MouseEvent | TouchEvent);
     drawingContext.strokeStyle = drawColor;
-    drawingContext.lineWidth = 3;
+    drawingContext.lineWidth = brushSize;
     drawingContext.lineCap = 'round';
+    drawingContext.lineJoin = 'round';
     drawingContext.lineTo(x, y);
     drawingContext.stroke();
   };
@@ -246,6 +263,36 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
           </button>
         )}
       </div>
+
+      <div className="telestrations-mode-selector" style={{ background: '#f8f9fa', border: '1px solid #d4d4d4', padding: '12px 16px', borderRadius: '4px', marginBottom: '16px' }}>
+        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: '#201f1e' }}>🎮 게임 진행 모드 선택 {isHost ? '(방장 전용)' : ''}</h4>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => handleChangeMode('standard')}
+            disabled={!isHost}
+            className={`excel-btn ${mode === 'standard' ? 'primary' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: '4px', cursor: isHost ? 'pointer' : 'default', textAlign: 'left' }}
+          >
+            🔄 기본 릴레이 모드
+            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, opacity: 0.85, marginTop: '2px' }}>
+              (단어 ➔ 그림 ➔ 추측 ➔ 그림 교대 진행)
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleChangeMode('copy-chain')}
+            disabled={!isHost}
+            className={`excel-btn ${mode === 'copy-chain' ? 'primary' : ''}`}
+            style={{ padding: '8px 14px', borderRadius: '4px', cursor: isHost ? 'pointer' : 'default', textAlign: 'left' }}
+          >
+            🖼️ 그림 따라그리기 모드
+            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, opacity: 0.85, marginTop: '2px' }}>
+              (단어 ➔ 그림 ➔ 그림 ➔ 그림 ... ➔ 최종 추측)
+            </span>
+          </button>
+        </div>
+      </div>
+
       <h2>대기 중...</h2>
       <p>플레이어가 모두 모이면 방장이 게임을 시작합니다. (최소 3명)</p>
       <div className="player-list">
@@ -274,13 +321,63 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
         </div>;
 
       case 'drawing':
+        const isCopyMode = currentBookPage?.type === 'drawing';
         return <div className="telestrations-phase-container">
-          <h3>그림 그리기</h3>
-          <p>제시 단어: <strong>{currentBookPage?.data}</strong></p>
-          <div className="canvas-toolbar">
-            <input type="color" value={drawColor} onChange={e => setDrawColor(e.target.value)} />
-            <button onClick={handleUndo}>되돌리기</button>
-            <button onClick={clearCanvas}>전체 삭제</button>
+          <h3>{isCopyMode ? '🖼️ 그림 보고 따라 그리기' : '🎨 그림 그리기'}</h3>
+          {isCopyMode ? (
+            <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 6px 0', fontWeight: 600, color: '#107c41' }}>
+                앞 사람이 그린 아래 그림을 똑같이 따라 그려주세요!
+              </p>
+              <img
+                src={resolveImageUrl(currentBookPage?.data || '')}
+                alt="앞 사람 그림"
+                style={{ maxWidth: '280px', maxHeight: '180px', border: '1px solid #d4d4d4', borderRadius: '4px', background: '#fff' }}
+              />
+            </div>
+          ) : (
+            <p>제시 단어: <strong>{currentBookPage?.data}</strong></p>
+          )}
+
+          <div className="canvas-toolbar" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', margin: '8px 0' }}>
+            {/* 🎨 Quick Color Palette */}
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f3f2f1', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
+              {['#000000', '#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#ffffff'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => setDrawColor(color)}
+                  title={color === '#ffffff' ? '지우개' : color}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: color,
+                    border: drawColor === color ? '2px solid #107c41' : '1px solid #d4d4d4',
+                    padding: 0,
+                    cursor: 'pointer',
+                    boxShadow: drawColor === color ? '0 0 0 2px #fff' : 'none'
+                  }}
+                />
+              ))}
+              <input type="color" value={drawColor} onChange={e => setDrawColor(e.target.value)} style={{ width: '24px', height: '24px', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
+            </div>
+
+            {/* ✏️ Brush Thickness Selector */}
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f3f2f1', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
+              {[2, 5, 10, 18].map(size => (
+                <button
+                  key={size}
+                  onClick={() => setBrushSize(size)}
+                  className={`excel-btn ${brushSize === size ? 'primary' : ''}`}
+                  style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                >
+                  {size === 2 ? '얇게' : size === 5 ? '보통' : size === 10 ? '두껍게' : '펜슬'}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={handleUndo} className="excel-btn">되돌리기</button>
+            <button onClick={clearCanvas} className="excel-btn close">전체 삭제</button>
           </div>
           <canvas
             ref={canvasRef}
@@ -313,36 +410,102 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
 
   const renderResults = () => {
     const maxPages = results?.[0]?.pages.length || 0;
+    const currentBook = results?.[activeBookIndex] || results?.[0];
 
     const handleShowNext = () => {
       setVisiblePages(prev => Math.min(prev + 1, maxPages));
     };
 
+    const handleShowAll = () => {
+      setVisiblePages(maxPages);
+    };
+
     return (
-      <div className="telestrations-results">
-        <h2>결과 확인!</h2>
-        <div className="results-grid">
-          {results?.map((book, index) => (
-            <div key={index} className="result-book">
-              <h3>{book.owner}의 게임북</h3>
-              {book.pages.slice(0, visiblePages).map((page, pageIndex) => (
-                <div key={pageIndex} className={`result-page ${pageIndex === visiblePages - 1 ? 'reveal' : ''}`}>
-                  <p className="author">{page.author}님의 {page.type === 'word' ? '제시어' : '그림'}:</p>
-                  {page.type === 'word' ? (
-                    <p className="word-data">{page.data}</p>
-                  ) : (
-                    <img src={resolveImageUrl(page.data)} alt="결과 그림" />
-                  )}
+      <div className="telestrations-results excel-results-theme">
+        <div className="excel-results-header">
+          <h2>📊 Telestrations_Audit_Chain_Results</h2>
+          <p>각 플레이어 스케치북의 릴레이 흐름을 셀 순서대로 검수하십시오.</p>
+        </div>
+
+        {/* 📘 Book Switcher Sheet Tabs */}
+        <div className="excel-book-tabs">
+          {results?.map((book, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveBookIndex(idx)}
+              className={`excel-tab-btn ${activeBookIndex === idx ? 'active' : ''}`}
+            >
+              📘 Sheet_{idx + 1} ({book.owner})
+            </button>
+          ))}
+        </div>
+
+        {/* 📜 Active Book Sequence Log Chain */}
+        {currentBook && (
+          <div className="excel-book-timeline">
+            <div className="timeline-title-bar">
+              <span className="owner-tag">Sheet Owner: <strong>{currentBook.owner}</strong></span>
+              <span className="step-progress">
+                공개 진행도: <strong>{Math.min(visiblePages, maxPages)} / {maxPages}</strong>
+              </span>
+            </div>
+
+            <div className="timeline-sequence-list">
+              {currentBook.pages.slice(0, visiblePages).map((page, pageIndex) => (
+                <div
+                  key={pageIndex}
+                  className={`timeline-item ${pageIndex === visiblePages - 1 ? 'reveal' : ''} ${page.type}`}
+                >
+                  <div className="cell-address-badge">
+                    Row_{pageIndex + 1}
+                  </div>
+                  <div className="timeline-content-card">
+                    <div className="item-meta">
+                      <span className="author-name">👤 {page.author}님</span>
+                      <span className="step-badge">
+                        {pageIndex === 0
+                          ? '🎯 최초 제시어'
+                          : page.type === 'word'
+                          ? '🔍 추측 단어 제출'
+                          : '🎨 그림 릴레이 제출'}
+                      </span>
+                    </div>
+
+                    <div className="item-body">
+                      {page.type === 'word' ? (
+                        <div className="word-box">
+                          <span className="word-text">"{page.data}"</span>
+                        </div>
+                      ) : (
+                        <div className="drawing-box">
+                          <img src={resolveImageUrl(page.data)} alt="릴레이 그림" className="result-drawing-img" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* 🔘 Controls */}
         <div className="results-controls">
           {visiblePages < maxPages && (
-            <button onClick={handleShowNext} className="next-page-btn">다음 내용 보기</button>
+            <>
+              <button onClick={handleShowNext} className="excel-btn primary">
+                ▶ 다음 릴레이 단계 공개 (+1)
+              </button>
+              <button onClick={handleShowAll} className="excel-btn secondary">
+                ⏩ 전체 체인 한눈에 펼치기
+              </button>
+            </>
           )}
-          {isHost && <button onClick={handleRestartGame}>다시하기</button>}
+          {isHost && (
+            <button onClick={handleRestartGame} className="excel-btn close">
+              🔄 대기실로 돌아가기
+            </button>
+          )}
         </div>
       </div>
     );

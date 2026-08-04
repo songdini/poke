@@ -120,6 +120,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
           players: [],
           hostId: null,
           phase: 'waiting',
+          mode: 'standard',
           gameBooks: [],
           turnSubmissions: new Map(),
           currentRound: 0,
@@ -139,6 +140,38 @@ export function registerJoinDisconnectHandlers(io, socket) {
         players: game.players,
         hostId: game.hostId,
         phase: game.phase,
+        mode: game.mode || 'standard',
+      });
+    } else if (gameType === 'baseball') {
+      if (!baseballGames.has(room)) {
+        baseballGames.set(room, {
+          players: [],
+          hostId: socket.id,
+          mode: 'single',
+          phase: 'waiting',
+          history: [],
+          secretNumbers: {},
+          currentTurnIndex: 0,
+          winner: null,
+        });
+      }
+
+      const game = baseballGames.get(room);
+      const existingPlayer = game.players.find(p => p.username === username);
+      if (existingPlayer) {
+        existingPlayer.id = socket.id;
+      } else {
+        game.players.push({ id: socket.id, username });
+      }
+
+      if (!game.hostId) game.hostId = socket.id;
+
+      io.to(room).emit('baseball-update', {
+        players: game.players,
+        hostId: game.hostId,
+        phase: game.phase,
+        mode: game.mode || 'single',
+        history: game.history || [],
       });
     } else if (gameType === 'mafia') {
       if (!mafiaGames.has(room)) {
@@ -296,6 +329,27 @@ function executePermanentDisconnectCleanup(io, socketId, user) {
           players: game.players,
           hostId: game.hostId,
           phase: game.phase,
+        });
+      }
+    }
+  } else if (user.gameType === 'baseball') {
+    const game = baseballGames.get(user.room);
+    if (game) {
+      const wasHost = game.hostId === socketId;
+      game.players = game.players.filter(p => p.id !== socketId && p.username !== user.username);
+      if (game.secretNumbers) delete game.secretNumbers[socketId];
+
+      if (game.players.length === 0) {
+        baseballGames.delete(user.room);
+      } else {
+        if (wasHost && game.players.length > 0) {
+          game.hostId = game.players[0].id;
+        }
+        io.to(user.room).emit('baseball-update', {
+          players: game.players,
+          hostId: game.hostId,
+          phase: game.phase,
+          mode: game.mode || 'single',
         });
       }
     }

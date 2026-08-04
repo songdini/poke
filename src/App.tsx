@@ -4,9 +4,10 @@ import Chat from './components/Chat'
 import MafiaGame from './components/MafiaGame'
 import LiarGame from './components/LiarGame'
 import TelestrationsGame from './components/TelestrationsGame';
+import NumberBaseballGame from './components/NumberBaseballGame';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations';
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball';
 
 interface GameSession {
   username: string;
@@ -21,7 +22,8 @@ function App() {
     catchmind: null,
     mafia: null,
     liar: null,
-    telestrations: null
+    telestrations: null,
+    numberbaseball: null
   });
 
   const handleGameSelection = (gameType: GameKey) => {
@@ -110,6 +112,18 @@ function App() {
               </div>
               <span className="excel-cell-tag">{gameSessions.telestrations ? 'ACTIVE' : 'MOD_04'}</span>
             </button>
+
+            <button
+              className={`game-option numberbaseball ${gameSessions.numberbaseball ? 'has-active-session' : ''}`}
+              onClick={() => handleGameSelection('numberbaseball')}
+            >
+              <div className="game-icon">⚾</div>
+              <div className="game-info">
+                <h3>Table 05: NumberBaseball_BullsCows_Audit.xlsx</h3>
+                <p>3-Digit Deductive Math & Logic Audit | Status: {gameSessions.numberbaseball ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+              </div>
+              <span className="excel-cell-tag">{gameSessions.numberbaseball ? 'ACTIVE' : 'MOD_05'}</span>
+            </button>
           </div>
         </div>
       );
@@ -131,7 +145,9 @@ function App() {
                 ? '📋 Mafia_Role_Audit_Log.xlsx'
                 : selectedGame === 'liar'
                 ? '📈 Liar_Keyword_CrossCheck.xlsx'
-                : '📑 Telestrations_Sequence_Map.xlsx'}
+                : selectedGame === 'telestrations'
+                ? '📑 Telestrations_Sequence_Map.xlsx'
+                : '⚾ NumberBaseball_BullsCows_Audit.xlsx'}
             </h1>
             <p className="excel-subtext">
               Enter User Credentials and Workgroup Session Key to Load Cell Data:
@@ -193,6 +209,11 @@ function App() {
         <div style={{ display: selectedGame === 'telestrations' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.telestrations && (
             <TelestrationsGame username={gameSessions.telestrations.username} room={gameSessions.telestrations.room} onLeaveRoom={() => handleLeaveGame('telestrations')} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'numberbaseball' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.numberbaseball && (
+            <NumberBaseballGame username={gameSessions.numberbaseball.username} room={gameSessions.numberbaseball.room} onLeaveRoom={() => handleLeaveGame('numberbaseball')} />
           )}
         </div>
       </div>
@@ -343,6 +364,12 @@ function App() {
               onClick={() => handleGameSelection('telestrations')}
             >
               📝 Sheet5 - Telestrations {gameSessions.telestrations && <span className="tab-live-dot">●</span>}
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'numberbaseball' ? 'active' : ''} ${gameSessions.numberbaseball ? 'has-session' : ''}`}
+              onClick={() => handleGameSelection('numberbaseball')}
+            >
+              ⚾ Sheet6 - 숫자야구 {gameSessions.numberbaseball && <span className="tab-live-dot">●</span>}
             </button>
             <span className="new-sheet-btn">➕</span>
           </div>

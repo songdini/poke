@@ -12,6 +12,7 @@ export const kickVotes = {};
 export const mafiaGames = new Map();
 export const liarGames = new Map();
 export const telestrationsGames = new Map();
+export const baseballGames = new Map();
 export const roomMessages = new Map();
 
 export function checkMafiaGameEnd(io, room) {

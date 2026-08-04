@@ -13,6 +13,7 @@ import { registerChatHandlers } from './src/socketHandlers/chatHandler.js';
 import { registerMafiaHandlers } from './src/socketHandlers/mafiaHandler.js';
 import { registerLiarHandlers } from './src/socketHandlers/liarHandler.js';
 import { registerTelestrationsHandlers } from './src/socketHandlers/telestrationsHandler.js';
+import { registerNumberBaseballHandlers } from './src/socketHandlers/numberBaseballHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,6 +87,7 @@ io.on('connection', (socket) => {
   registerMafiaHandlers(io, socket);
   registerLiarHandlers(io, socket);
   registerTelestrationsHandlers(io, socket);
+  registerNumberBaseballHandlers(io, socket);
 });
 
 // 주기적 서버 메모리 가비지 컬렉터 구동
