@@ -91,8 +91,8 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
   };
 
   const handleSetSecret = () => {
-    if (!/^\d{3}$/.test(secretInput) || new Set(secretInput).size !== 3) {
-      setError('중복 없는 3자리 숫자를 입력해야 합니다 (예: 382).');
+    if (!/^\d{4}$/.test(secretInput) || new Set(secretInput).size !== 4) {
+      setError('중복 없는 4자리 숫자를 입력해야 합니다 (예: 3824).');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -101,8 +101,8 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
   };
 
   const handleGuessSubmit = () => {
-    if (!/^\d{3}$/.test(guessInput) || new Set(guessInput).size !== 3) {
-      setError('중복 없는 3자리 숫자를 입력해야 합니다 (예: 719).');
+    if (!/^\d{4}$/.test(guessInput) || new Set(guessInput).size !== 4) {
+      setError('중복 없는 4자리 숫자를 입력해야 합니다 (예: 7192).');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -147,7 +147,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       {phase === 'waiting' && (
         <div className="baseball-waiting-room">
           <h3>🎮 숫자야구 모드 선택</h3>
-          <p className="excel-desc">3자리 중복 없는 숫자를 맞추는 뇌풀기 추리 게임입니다.</p>
+          <p className="excel-desc">4자리 중복 없는 숫자를 맞추는 뇌풀기 추리 게임입니다.</p>
 
           <div className="mode-selection-grid">
             <button onClick={() => handleStartGame('single')} className="excel-btn primary">
@@ -183,14 +183,14 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       {phase === 'set-secret' && (
         <div className="baseball-secret-section">
           <h3>🔑 비밀 숫자 설정</h3>
-          <p>상대방이 맞추어야 할 <strong>중복 없는 3자리 숫자</strong>를 입력하세요 (예: 382).</p>
+          <p>상대방이 맞추어야 할 <strong>중복 없는 4자리 숫자</strong>를 입력하세요 (예: 3824).</p>
           <div className="input-group">
             <input
               type="text"
-              maxLength={3}
+              maxLength={4}
               value={secretInput}
               onChange={e => setSecretInput(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="3자리 숫자 입력"
+              placeholder="4자리 숫자 입력"
               className="excel-input"
             />
             <button onClick={handleSetSecret} className="excel-btn primary">
@@ -226,11 +226,11 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               <span className="prefix">Input =</span>
               <input
                 type="text"
-                maxLength={3}
+                maxLength={4}
                 value={guessInput}
                 onChange={e => setGuessInput(e.target.value.replace(/[^0-9]/g, ''))}
                 onKeyPress={e => e.key === 'Enter' && handleGuessSubmit()}
-                placeholder="3자리 추측 숫자 입력 (Enter)"
+                placeholder="4자리 추측 숫자 입력 (Enter)"
                 className="excel-input"
               />
               <button onClick={handleGuessSubmit} className="excel-btn primary">
@@ -258,12 +258,12 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
                 {history.length === 0 ? (
                   <tr>
                     <td colSpan={mode === 'battle' ? 6 : 5} style={{ textAlign: 'center', color: '#a19f9d', padding: '20px' }}>
-                      아직 추측 기록이 없습니다. 3자리 숫자를 입력해보세요!
+                      아직 추측 기록이 없습니다. 4자리 숫자를 입력해보세요!
                     </td>
                   </tr>
                 ) : (
                   history.slice().reverse().map((record) => (
-                    <tr key={record.id} className={record.strike === 3 ? 'win-row' : ''}>
+                    <tr key={record.id} className={record.strike === 4 ? 'win-row' : ''}>
                       <td className="row-num">#{record.attempt}</td>
                       {mode === 'battle' && <td className="user-col">{record.guesser}</td>}
                       <td className="guess-col">{record.guess}</td>
@@ -278,8 +278,8 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
                         </span>
                       </td>
                       <td>
-                        {record.strike === 3 ? (
-                          <span className="status-tag win">🏆 PERFECT 3S (승리)</span>
+                        {record.strike === 4 ? (
+                          <span className="status-tag win">🏆 PERFECT 4S (승리)</span>
                         ) : record.isOut ? (
                           <span className="status-tag out">🚫 OUT</span>
                         ) : (

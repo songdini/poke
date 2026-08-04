@@ -1,10 +1,10 @@
 import { baseballGames, connectedUsers } from '../gameManager.js';
 
-// 🎲 중복 없는 3자리 랜덤 숫자 생성 (예: "382")
+// 🎲 중복 없는 4자리 랜덤 숫자 생성 (예: "3824")
 function generateSecretNumber() {
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   const result = [];
-  while (result.length < 3) {
+  while (result.length < 4) {
     const randIdx = Math.floor(Math.random() * digits.length);
     const digit = digits.splice(randIdx, 1)[0];
     if (result.length === 0 && digit === 0) {
@@ -20,7 +20,7 @@ function generateSecretNumber() {
 function calculateStrikeBall(secret, guess) {
   let strike = 0;
   let ball = 0;
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     if (guess[i] === secret[i]) {
       strike++;
     } else if (secret.includes(guess[i])) {
@@ -63,7 +63,7 @@ export function registerNumberBaseballHandlers(io, socket) {
         phase: 'playing',
         mode: 'single',
         history: [],
-        message: '🎲 3자리 비밀 숫자가 생성되었습니다! 추측값을 입력하세요.'
+        message: '🎲 4자리 비밀 숫자가 생성되었습니다! 추측값을 입력하세요.'
       });
     } else {
       // 1v1 배틀 모드: 방의 플레이어들에게 비밀 숫자 입력 안내
@@ -71,7 +71,7 @@ export function registerNumberBaseballHandlers(io, socket) {
         phase: 'set-secret',
         mode: 'battle',
         players: game.players,
-        message: '🔑 상대방이 맞출 본인의 3자리 비밀 숫자를 입력해주세요!'
+        message: '🔑 상대방이 맞출 본인의 4자리 비밀 숫자를 입력해주세요!'
       });
     }
   });
@@ -84,9 +84,9 @@ export function registerNumberBaseballHandlers(io, socket) {
     const game = baseballGames.get(room);
     if (!game) return;
 
-    // 3자리 중복 검증
-    if (!/^\d{3}$/.test(secret) || new Set(secret).size !== 3) {
-      return socket.emit('baseball-error', { message: '중복 없는 3자리 숫자를 입력하세요.' });
+    // 4자리 중복 검증
+    if (!/^\d{4}$/.test(secret) || new Set(secret).size !== 4) {
+      return socket.emit('baseball-error', { message: '중복 없는 4자리 숫자를 입력하세요.' });
     }
 
     game.secretNumbers[socket.id] = secret;
@@ -116,8 +116,8 @@ export function registerNumberBaseballHandlers(io, socket) {
     const game = baseballGames.get(room);
     if (!game || game.phase !== 'playing') return;
 
-    if (!/^\d{3}$/.test(guess) || new Set(guess).size !== 3) {
-      return socket.emit('baseball-error', { message: '중복 없는 3자리 숫자를 입력해야 합니다.' });
+    if (!/^\d{4}$/.test(guess) || new Set(guess).size !== 4) {
+      return socket.emit('baseball-error', { message: '중복 없는 4자리 숫자를 입력해야 합니다.' });
     }
 
     if (game.mode === 'single') {
@@ -141,7 +141,7 @@ export function registerNumberBaseballHandlers(io, socket) {
 
       game.history.push(record);
 
-      if (result.strike === 3) {
+      if (result.strike === 4) {
         game.phase = 'game-over';
         game.winner = user.username;
         socket.emit('baseball-update', {
@@ -149,7 +149,7 @@ export function registerNumberBaseballHandlers(io, socket) {
           history: game.history,
           winner: user.username,
           secretNumber: secret,
-          message: `🎉 정답 축하합니다! ${attemptCount}회 시도 만에 3 Strike 성공!`
+          message: `🎉 정답 축하합니다! ${attemptCount}회 시도 만에 4 Strike 성공!`
         });
       } else {
         socket.emit('baseball-update', {
@@ -189,7 +189,7 @@ export function registerNumberBaseballHandlers(io, socket) {
 
       game.history.push(record);
 
-      if (result.strike === 3) {
+      if (result.strike === 4) {
         game.phase = 'game-over';
         game.winner = user.username;
         io.to(room).emit('baseball-update', {
