@@ -91,18 +91,27 @@ export function registerMafiaHandlers(io, socket) {
     }
 
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
-    let mafiaAssigned = false, jokerAssigned = false;
+    const playerCount = shuffled.length;
+
+    // 5인 이상: 마피아, 경찰(Police), 의사(Doctor), 조커(Joker), 시민(Citizen)
+    if (playerCount >= 5) {
+      shuffled[0].role = 'mafia';
+      shuffled[1].role = 'police';
+      shuffled[2].role = 'doctor';
+      shuffled[3].role = 'joker';
+      for (let i = 4; i < playerCount; i++) {
+        shuffled[i].role = 'citizen';
+      }
+    } else {
+      // 3~4인: 마피아, 조커, 시민들
+      shuffled[0].role = 'mafia';
+      shuffled[1].role = 'joker';
+      for (let i = 2; i < playerCount; i++) {
+        shuffled[i].role = 'citizen';
+      }
+    }
 
     shuffled.forEach((player) => {
-      if (!mafiaAssigned) {
-        player.role = 'mafia';
-        mafiaAssigned = true;
-      } else if (!jokerAssigned) {
-        player.role = 'joker';
-        jokerAssigned = true;
-      } else {
-        player.role = 'citizen';
-      }
       player.isAlive = true;
       player.lives = 3;
       player.isProtected = false;
@@ -114,16 +123,14 @@ export function registerMafiaHandlers(io, socket) {
     game.timeLeft = 90;
     game.voteUsed = false;
     game.votes = [];
+    game.doctorTargetId = null;
 
     io.to(room).emit('mafia-update', {
       type: 'game-start',
       data: { players: game.players, phase: 'day', timeLeft: 90 }
     });
 
-    // 서버 타이머 루프 구동
     startMafiaServerTimer(io, room);
-
-    // 낮 진입 시 AI 봇 멘트 발송
     triggerAiDayChat(io, room);
   });
 
@@ -168,6 +175,7 @@ export function registerMafiaHandlers(io, socket) {
     }
   });
 
+  // 🗡️ 마피아 야간 공격
   socket.on('mafia-attack', ({ room, targetId }) => {
     const user = connectedUsers.get(socket.id);
     if (!user || user.room !== room) return;
@@ -184,6 +192,93 @@ export function registerMafiaHandlers(io, socket) {
     executeMafiaAttack(io, room, targetId, targetPlayer);
   });
 
+  // 🩺 의사 야간 치료
+  socket.on('mafia-doctor-heal', ({ room, targetId }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user || user.room !== room) return;
+
+    const game = mafiaGames.get(room);
+    if (!game || !game.gameStarted || game.phase !== 'night') return;
+
+    const doctor = game.players.find(p => p.id === socket.id);
+    if (!doctor || !doctor.isAlive || doctor.role !== 'doctor') return;
+
+    game.doctorTargetId = targetId;
+
+    const target = game.players.find(p => p.id === targetId);
+    if (target) {
+      socket.emit('mafia-update', {
+        type: 'message',
+        data: { id: Date.now().toString(), type: 'system', content: `🩺 [의사 치료] ${target.username}님을 오늘 밤 보호 대상으로 지정했습니다.`, timestamp: new Date() }
+      });
+    }
+  });
+
+  // 🔍 경찰 야간 조사
+  socket.on('mafia-police-investigate', ({ room, targetId }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user || user.room !== room) return;
+
+    const game = mafiaGames.get(room);
+    if (!game || !game.gameStarted || game.phase !== 'night') return;
+
+    const police = game.players.find(p => p.id === socket.id);
+    if (!police || !police.isAlive || police.role !== 'police') return;
+
+    const target = game.players.find(p => p.id === targetId);
+    if (!target) return;
+
+    const isMafia = target.role === 'mafia';
+    const resultMessage = isMafia
+      ? `🔍 [경찰 기밀 조사] ${target.username}님은 🕵️ 마피아입니다!`
+      : `🔍 [경찰 기밀 조사] ${target.username}님은 마피아가 아닙니다 (시민/의사/조커).`;
+
+    socket.emit('mafia-update', {
+      type: 'message',
+      data: { id: Date.now().toString(), type: 'system', content: resultMessage, timestamp: new Date() }
+    });
+  });
+
+  // 🔄 게임 종료 후 대기실 다시 시작
+  socket.on('mafia-restart', ({ room }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user || user.room !== room) return;
+
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    if (game.timerInterval) {
+      clearInterval(game.timerInterval);
+      game.timerInterval = null;
+    }
+
+    game.gameStarted = false;
+    game.phase = 'waiting';
+    game.voteUsed = false;
+    game.votes = [];
+    game.nightAttackExecuted = false;
+    game.doctorTargetId = null;
+
+    game.players.forEach(p => {
+      p.isAlive = true;
+      p.lives = 3;
+      p.isProtected = false;
+      p.jokerAttacked = false;
+      p.role = null;
+    });
+
+    io.to(room).emit('mafia-update', {
+      type: 'reconnect-sync',
+      data: { players: game.players, phase: 'waiting', gameStarted: false }
+    });
+
+    io.to(room).emit('mafia-update', {
+      type: 'message',
+      data: { id: Date.now().toString(), type: 'system', content: '게임이 리셋되었습니다! 대기실에서 다시 시작할 수 있습니다.', timestamp: new Date() }
+    });
+  });
+
+  // 🚪 마피아 게임 방 나가기 이벤트
   socket.on('mafia-leave', ({ room }) => {
     const user = connectedUsers.get(socket.id);
     if (!user || user.room !== room) return;
@@ -193,10 +288,9 @@ export function registerMafiaHandlers(io, socket) {
       const wasHost = game.hostId === socket.id;
       game.players = game.players.filter(p => p.id !== socket.id);
 
-      if (game.players.length === 0) {
-        if (game.timerInterval) {
-          clearInterval(game.timerInterval);
-        }
+      const humanPlayers = game.players.filter(p => !p.isBot);
+      if (humanPlayers.length === 0) {
+        if (game.timerInterval) clearInterval(game.timerInterval);
         mafiaGames.delete(room);
       } else {
         if (wasHost && game.players.length > 0) {
@@ -215,7 +309,7 @@ export function registerMafiaHandlers(io, socket) {
     socket.leave(room);
   });
 
-  // ⏱️ 서버 전용 마피아 타이머 루프 (1초 단위 동기화 및 자동 페이즈 전환)
+  // ⏱️ 서버 측 동기화 타이머 구동
   function startMafiaServerTimer(io, room) {
     const game = mafiaGames.get(room);
     if (!game) return;
@@ -227,43 +321,25 @@ export function registerMafiaHandlers(io, socket) {
     game.timerInterval = setInterval(() => {
       const current = mafiaGames.get(room);
       if (!current || !current.gameStarted || current.phase === 'game-over') {
-        if (current && current.timerInterval) {
-          clearInterval(current.timerInterval);
-          current.timerInterval = null;
-        }
+        clearInterval(game.timerInterval);
         return;
       }
 
-      if (current.timeLeft > 0) {
-        current.timeLeft--;
-        // 1초 단위 타이머 동기화 전송
-        io.to(room).emit('mafia-update', {
-          type: 'timer-tick',
-          data: { timeLeft: current.timeLeft }
-        });
-      }
+      current.timeLeft--;
 
-      // 시간 만료 시 페이즈 자동 전환
       if (current.timeLeft <= 0) {
         if (current.phase === 'day') {
-          // 1:30 낮 토의 시간 만료 ➔ 투표 단계(20초) 자동 진입
-          if (!current.voteUsed) {
-            startVotingPhase(io, room);
-          } else {
-            transitionToNight(io, room);
-          }
+          startVotingPhase(io, room);
         } else if (current.phase === 'voting') {
-          // 투표 시간(20초) 만료 ➔ 투표 집계 후 밤 전환
           tallyVotesAndTransitionToNight(io, room);
         } else if (current.phase === 'night') {
-          // 밤 시간(30초) 만료 ➔ 미공격 시 AI 자동 공격 또는 넘어가기 후 낮 전환
           if (!current.nightAttackExecuted) {
             const aliveTargets = current.players.filter(p => p.isAlive && p.role !== 'mafia');
             if (aliveTargets.length > 0) {
               const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
               executeMafiaAttack(io, room, randomTarget.id, randomTarget);
             } else {
-              startDayPhase(io, room);
+              transitionToDay(io, room);
             }
           }
         }
@@ -271,16 +347,19 @@ export function registerMafiaHandlers(io, socket) {
     }, 1000);
   }
 
-  // ⚖️ 투표 단계 시작
+  // 🗳️ 지목 투표 단계 시작
   function startVotingPhase(io, room) {
     const game = mafiaGames.get(room);
-    if (!game || game.phase === 'game-over') return;
+    if (!game || game.phase === 'voting' || game.phase === 'game-over') return;
 
     game.phase = 'voting';
-    game.timeLeft = 20; // 20초 투표 유예 시간
+    game.timeLeft = 20;
     game.votes = [];
 
-    io.to(room).emit('mafia-vote-popup');
+    game.players.filter(p => p.isAlive && !p.isBot).forEach(p => {
+      io.to(p.id).emit('mafia-vote-popup');
+    });
+
     io.to(room).emit('mafia-update', {
       type: 'phase-change',
       data: {
@@ -293,62 +372,56 @@ export function registerMafiaHandlers(io, socket) {
     handleAiBotVotes(io, room);
   }
 
-  // 🗳️ 투표 집계 후 밤으로 전환
+  // 📊 투표 결과 집계 후 밤으로 전환
   function tallyVotesAndTransitionToNight(io, room) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'game-over') return;
 
-    game.voteUsed = true;
+    if (!game.votes) game.votes = [];
 
-    if (game.votes && game.votes.length > 0) {
-      const voteCount = {};
-      for (const vote of game.votes) {
-        if (!voteCount[vote.targetId]) voteCount[vote.targetId] = 0;
-        voteCount[vote.targetId]++;
+    const voteCount = {};
+    for (const vote of game.votes) {
+      if (!voteCount[vote.targetId]) voteCount[vote.targetId] = 0;
+      voteCount[vote.targetId]++;
+    }
+
+    let max = 0, maxIds = [];
+    for (const id in voteCount) {
+      if (voteCount[id] > max) {
+        max = voteCount[id];
+        maxIds = [id];
+      } else if (voteCount[id] === max) {
+        maxIds.push(id);
       }
+    }
 
-      let max = 0, maxIds = [];
-      for (const id in voteCount) {
-        if (voteCount[id] > max) {
-          max = voteCount[id];
-          maxIds = [id];
-        } else if (voteCount[id] === max) {
-          maxIds.push(id);
-        }
-      }
+    if (maxIds.length === 1 && max > 1) {
+      const votedTarget = game.players.find(p => p.id === maxIds[0]);
+      if (votedTarget) {
+        votedTarget.lives = Math.max(0, votedTarget.lives - 1);
+        votedTarget.isAlive = votedTarget.lives > 0;
 
-      if (maxIds.length === 1 && max > 1) {
-        const votedTarget = game.players.find(p => p.id === maxIds[0]);
-        if (votedTarget) {
-          votedTarget.lives = Math.max(0, votedTarget.lives - 1);
-          votedTarget.isAlive = votedTarget.lives > 0;
-
-          io.to(room).emit('mafia-update', {
-            type: 'vote',
-            data: {
-              targetId: votedTarget.id,
-              player: votedTarget,
-              message: `${votedTarget.username}이(가) 투표를 받아 생명이 1 감소했습니다.`
-            }
-          });
-        }
-      } else {
         io.to(room).emit('mafia-update', {
-          type: 'vote-skip',
-          data: { message: '투표 결과: 동률 또는 찬성 부족으로 아무도 지목되지 않았습니다.' }
+          type: 'vote',
+          data: {
+            targetId: votedTarget.id,
+            player: votedTarget,
+            message: `${votedTarget.username}이(가) 투표를 받아 생명이 1 감소했습니다.`
+          }
         });
       }
     } else {
       io.to(room).emit('mafia-update', {
         type: 'vote-skip',
-        data: { message: '투표 시간 동안 투표가 진행되지 않았습니다.' }
+        data: { message: '투표 결과: 동률 또는 찬성 부족으로 아무도 지목되지 않았습니다.' }
       });
     }
 
+    game.voteUsed = true;
     game.votes = [];
-    checkMafiaGameEnd(io, room);
 
-    if (game.phase !== 'game-over') {
+    const isEnded = checkMafiaGameEnd(io, room);
+    if (!isEnded) {
       setTimeout(() => {
         transitionToNight(io, room);
       }, 1200);
@@ -363,13 +436,14 @@ export function registerMafiaHandlers(io, socket) {
     game.phase = 'night';
     game.timeLeft = 30;
     game.nightAttackExecuted = false;
+    game.doctorTargetId = null;
 
     io.to(room).emit('mafia-update', {
       type: 'phase-change',
       data: {
         phase: 'night',
         timeLeft: 30,
-        message: '밤이 되었습니다. 마피아는 30초 내에 보안 차단(공격) 대상 셀을 선택하세요.'
+        message: '밤이 되었습니다. 마피아, 의사, 경찰이 각자의 능력을 사용할 시간입니다 (30초).'
       }
     });
 
@@ -377,38 +451,45 @@ export function registerMafiaHandlers(io, socket) {
   }
 
   // ☀️ 낮 단계 전환
-  function startDayPhase(io, room) {
+  function transitionToDay(io, room) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'game-over') return;
 
     game.phase = 'day';
     game.timeLeft = 90;
     game.voteUsed = false;
-    game.votes = [];
+    game.doctorTargetId = null;
 
     io.to(room).emit('mafia-update', {
       type: 'phase-change',
       data: {
         phase: 'day',
         timeLeft: 90,
-        message: '밤이 지나고 새로운 낮이 시작되었습니다! (토의시간 1분 30초)'
+        message: '밤이 끝나고 낮이 되었습니다! 모두 대화하고 투표하세요.'
       }
     });
 
-    checkMafiaGameEnd(io, room);
-    if (game.phase !== 'game-over') {
-      triggerAiDayChat(io, room);
-    }
+    triggerAiDayChat(io, room);
   }
 
-  // 🗡️ 마피아 공격 실행
+  // 🔪 마피아 공격 실행
   function executeMafiaAttack(io, room, targetId, targetPlayer) {
     const game = mafiaGames.get(room);
-    if (!game || game.phase !== 'night') return;
+    if (!game || game.nightAttackExecuted) return;
 
     game.nightAttackExecuted = true;
 
-    if (targetPlayer.role === 'joker' && !targetPlayer.jokerAttacked) {
+    // 🩺 의사의 치료 대상인지 체크!
+    if (game.doctorTargetId && game.doctorTargetId === targetId) {
+      io.to(room).emit('mafia-update', {
+        type: 'attack',
+        data: {
+          targetId: null,
+          player: null,
+          message: `🩺 [의사 치료 성공] 의사의 신속한 치료 덕분에 ${targetPlayer.username}님이 마피아의 야간 공격에서 극적으로 생존했습니다!`
+        }
+      });
+    } else if (targetPlayer.role === 'joker' && !targetPlayer.jokerAttacked) {
       targetPlayer.jokerAttacked = true;
       const mafia = game.players.find(p => p.role === 'mafia' && p.isAlive);
       if (mafia) {
@@ -420,7 +501,7 @@ export function registerMafiaHandlers(io, socket) {
         data: {
           targetId: mafia ? mafia.id : null,
           player: mafia,
-          message: `조커가 마피아에게 공격당했지만, 오히려 마피아가 피해를 입었습니다!`
+          message: `조커가 마피아에게 공격당했지만, 오히려 마피아가 피반사를 일으켰습니다!`
         }
       });
     } else {
@@ -431,41 +512,66 @@ export function registerMafiaHandlers(io, socket) {
         data: {
           targetId,
           player: targetPlayer,
-          message: `${targetPlayer.username}이(가) 마피아의 공격을 받았습니다.`
+          message: `${targetPlayer.username}이(가) 마피아의 야간 공격을 받았습니다.`
         }
       });
     }
 
-    checkMafiaGameEnd(io, room);
+    game.doctorTargetId = null;
 
-    if (game.phase !== 'game-over') {
+    const isEnded = checkMafiaGameEnd(io, room);
+    if (!isEnded) {
       setTimeout(() => {
-        startDayPhase(io, room);
-      }, 1200);
+        transitionToDay(io, room);
+      }, 1500);
     }
   }
 
-  // 🤖 AI 봇 야간 공격 자동화
+  // 🤖 AI 봇 야간 자동 액션 (마피아, 의사, 경찰)
   function handleAiNightActions(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
+    // AI 의사 자동 치료
+    const aiDoctor = game.players.find(p => p.role === 'doctor' && p.isAlive && p.isBot);
+    if (aiDoctor) {
+      setTimeout(() => {
+        const current = mafiaGames.get(room);
+        if (!current || current.phase !== 'night') return;
+        const alivePlayers = current.players.filter(p => p.isAlive);
+        if (alivePlayers.length > 0) {
+          const healTarget = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+          current.doctorTargetId = healTarget.id;
+        }
+      }, 2000);
+    }
+
+    // AI 경찰 자동 조사
+    const aiPolice = game.players.find(p => p.role === 'police' && p.isAlive && p.isBot);
+    if (aiPolice) {
+      setTimeout(() => {
+        const current = mafiaGames.get(room);
+        if (!current || current.phase !== 'night') return;
+      }, 2500);
+    }
+
+    // AI 마피아 자동 공격
     const aiMafia = game.players.find(p => p.role === 'mafia' && p.isAlive && p.isBot);
-    if (!aiMafia) return;
+    if (aiMafia) {
+      setTimeout(() => {
+        const current = mafiaGames.get(room);
+        if (!current || current.phase !== 'night' || current.nightAttackExecuted) return;
 
-    setTimeout(() => {
-      const current = mafiaGames.get(room);
-      if (!current || current.phase !== 'night' || current.nightAttackExecuted) return;
+        const aliveTargets = current.players.filter(p => p.isAlive && p.role !== 'mafia');
+        if (aliveTargets.length === 0) return;
 
-      const aliveTargets = current.players.filter(p => p.isAlive && p.role !== 'mafia');
-      if (aliveTargets.length === 0) return;
-
-      const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-      executeMafiaAttack(io, room, randomTarget.id, randomTarget);
-    }, 4000);
+        const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+        executeMafiaAttack(io, room, randomTarget.id, randomTarget);
+      }, 4000);
+    }
   }
 
-  // 🤖 AI 봇 낮 대화 멘트 발송
+  // 🤖 AI 봇 낮 대화 멘트 90초 주기 분산 발송
   function triggerAiDayChat(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'day') return;
@@ -473,112 +579,84 @@ export function registerMafiaHandlers(io, socket) {
     const aliveBots = game.players.filter(p => p.isAlive && p.isBot);
     if (aliveBots.length === 0) return;
 
-    aliveBots.forEach((bot, idx) => {
-      // 1차 멘트 발송 (3.5초 간격)
+    const earlyPhrases = [
+      `🌅 새로운 낮이 되었습니다. 모두 데이터와 로그를 꼼꼼히 대조해봅시다.`,
+      `📂 밤 사이 시스템 보안 로그를 점검했습니다. 이상 탐지 수치를 차근차근 확인해볼까요?`,
+      `☕ 아메리카노 한 잔 마시면서 조용히 서류 분위기를 파악해보는 중입니다.`,
+      `📊 시작부터 특정 인물을 무작정 몰아가는 건 마피아의 전형적인 교란 작전일 수 있습니다.`
+    ];
+
+    const midPhrases = (targetName) => [
+      `🔍 이상 패턴 감지! ${targetName}님이 너무 조용하시거나, 반대로 시선을 맞추려 하고 있습니다.`,
+      `📈 제 알고리즘 예측 수치상 ${targetName}님이 마피아일 확률이 78.4%로 계산되었습니다.`,
+      `📑 VLOOKUP 함수로 검색해본 결과, ${targetName}님의 열 수치가 정상 범위를 벗어났습니다.`,
+      `🤖 솔직히 말씀드리면 ${targetName}님의 언행에 결함(Bug)이 존재하는 것 같습니다.`,
+      `💡 ${targetName}님, 침묵만 유지하지 마시고 명확하게 해명해 주시기 바랍니다.`,
+      `🛡️ 저는 회사의 명을 받아 파견된 순수한 데이터 검증 봇입니다! 저를 의심하지 마세요.`,
+      `⚙️ 저를 투표로 탈락시키시면 시민 진영의 분석력이 크게 손실됩니다. 신중히 판단해주세요!`
+    ];
+
+    const latePhrases = (targetName) => [
+      `⏰ 곧 투표 시간이 다가옵니다. 저는 ${targetName}님을 유력한 마피아 후보로 생각하고 있습니다.`,
+      `🧐 데이터를 종합한 최종 결론입니다. 이번 표결에서는 ${targetName}님을 유심히 보아야 합니다.`,
+      `🚨 무고한 시민이 억울하게 희생되지 않도록 데이터에 기반해서 투표해주세요.`
+    ];
+
+    aliveBots.forEach((bot) => {
+      // 1. 초반 멘트 (8초 ~ 20초 사이 분산)
+      const t1 = 8000 + Math.random() * 12000;
       setTimeout(() => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day') return;
+        const phrase = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
+        sendAiMessage(io, room, bot.username, phrase);
+      }, t1);
 
-        const aliveOtherPlayers = current.players.filter(p => p.isAlive && p.id !== bot.id);
-        if (aliveOtherPlayers.length === 0) return;
-
-        const target = aliveOtherPlayers[Math.floor(Math.random() * aliveOtherPlayers.length)];
-        const aiPhrases = [
-          `📊 PivotTable로 데이터 피벗해 보니 ${target.username}님의 행 지표가 수상하게 튑니다.`,
-          `📑 INDEX-MATCH 함수를 돌려봐도 ${target.username}님의 알리바이는 검색되지 않네요.`,
-          `⚠️ Excel 수식 오류 #REF! 가 발생했습니다. ${target.username}님의 변명이 참조 오류를 일으키고 있습니다.`,
-          `📉 이번 분기 리스크 감사 보고서 1순위 피의자로 ${target.username}님이 등록되었습니다.`,
-          `🔍 셀 서식 색깔만 봐도 ${target.username}님이 마피아라는 사실이 눈에 보이는데요?`,
-          `⌨️ Alt + F11 눌러서 VBA 마크로 뜯어보니까 ${target.username}님 소스코드에 'Mafia=true' 적혀있네요.`,
-          `📁 C드라이브 비밀 폴더 이름이 '${target.username}_마피아_비밀일기.xlsx' 로 설정되어 있더군요.`,
-          `📊 차트 선 그래프 꺾이는 지점이 딱 ${target.username}님 발언 타이밍이랑 일치합니다. 대단하네요.`,
-          `📂 조건부 서식 걸었더니 ${target.username}님 셀만 빨간색으로 하이라이트 떴습니다!`,
-          `📑 엑셀 자동 저장(AutoSave) 켜두셨나요? 다음 라운드엔 ${target.username}님의 자리가 저장되지 않을 수도 있습니다.`,
-          `🤖 제 신경망 모델이 Epoch 100회 학습한 결과, ${target.username}님을 마피아로 분류했습니다.`,
-          `🚨 시트 보호(Sheet Protect) 암호 알고 계신 분? ${target.username}님이 시스템을 잠그려 합니다!`,
-          `📈 통계적 유의수준 p-value < 0.01 로 ${target.username}님의 마피아 가설을 채택합니다.`,
-          `⚡ 긴급 점검! ${target.username}님의 데이터 무결성이 심각하게 훼손되어 있습니다.`,
-          `📊 [AI 감사 서머리] 현재 가장 강력한 의심 대상: ${target.username} (확률 89.2%)`,
-          `🔢 COUNTIF 함수로 조사해 본 결과, ${target.username}님의 거짓말 횟수가 과도하게 많습니다.`,
-          `💼 사수님이 가르쳐주신 감사 체크리스트대로라면 ${target.username}님을 지목해야 합니다.`,
-          `📧 지금 대선배님께 전달할 감사 메일 Draft 작성 중입니다. ${target.username}님, 최종 해명 부탁드립니다.`,
-          `☕ 탕비실에서 믹스커피 마시다 들었는데, ${target.username}님이 밤에 안 자고 쿵쾅거렸답니다.`,
-          `📑 결재 서류 1차 검토 완료. ${target.username}님, 반론 없으시면 서명 부탁드립니다.`,
-          `👔 차장님, 부장님 눈치 보지 말고 솔직하게 말하세요! ${target.username}님이 수상하잖아요.`,
-          `💼 야근까지 하면서 회사 지키는 시민 봇을 마피아로 몰아가시다니... 인사팀에 제보하겠습니다.`,
-          `📝 회의록에 ${target.username}님의 의심스러운 발언 모두 정밀하게 실시간 기록 중입니다.`,
-          `🏆 이번 분기 우수 사원 표창은 몰라도, 마피아 상은 ${target.username}님이 받으셔야겠어요.`,
-          `📑 엑셀 줄 맞춤 설정하듯, ${target.username}님의 수상한 동선부터 깔끔하게 정리합시다!`,
-          `🏢 퇴근시간 10분 남았는데 마피아가 안 잡히네요. ${target.username}님 빠르게 인정하고 퇴근합시다!`,
-          `💻 칼퇴근을 향한 사원들의 염원을 담아 ${target.username}님을 강력 조준합니다.`,
-          `📊 로그 데이터를 종합 분석해보니 ${target.username}님의 반응 속도와 말투가 다소 수상합니다.`,
-          `🔍 이상 패턴 감지! ${target.username}님이 너무 조용하시거나, 반대로 시선을 맞추려 하고 있습니다.`,
-          `🤖 솔직히 말씀드리면 ${target.username}님의 언행에 결함(Bug)이 존재하는 것 같습니다.`,
-          `🛡️ 저는 회사의 명을 받아 파견된 순수한 데이터 검증 봇입니다! 마피아가 아닙니다.`,
-          `⚙️ 저를 의심하시면 시민 진영의 수치 분석력이 떨어지게 됩니다. 신중히 결정해 주세요.`,
-          `🚨 경보! 밤 사이 마피아의 비인가 접근 공격 흔적이 감지되었습니다!`,
-          `📂 피해 기록 확인 완료. 마피아의 흔적을 추적하고 있습니다.`,
-          `📑 VLOOKUP 함수로 검색해본 결과, ${target.username}님의 열 수치가 정상 범위를 벗어났습니다.`,
-          `☕ 아메리카노 한 잔 하면서 천천히 짚어보죠. 제 데이터 직감은 ${target.username}님을 가리킵니다.`,
-          `💡 이상 탐지 모듈 구동 중... ${target.username}님, 해명하실 시간입니다.`,
-          `🧐 모두 침착하세요. 데이터를 논리적으로 짚어가다 보면 마피아의 가면이 벗겨질 것입니다.`,
-          `💬 그렇게 조용히 눈치만 보고 계신 ${target.username}님이 가장 냄새가 나는데요?`,
-          `🕵️ 마피아는 지금 속으로 웃고 있을 겁니다. ${target.username}님, 입꼬리 살짝 올라가셨어요.`,
-          `💡 자, 다들 CTRL+F 로 ${target.username}님을 검색해서 검증합시다!`,
-          `🧐 조용한 자가 가장 위험한 법. ${target.username}님, 왜 채팅창 반응을 지켜보고만 계신가요?`
-        ];
-        const phrase = aiPhrases[Math.floor(Math.random() * aiPhrases.length)];
-
-        io.to(room).emit('mafia-update', {
-          type: 'message',
-          data: {
-            id: Date.now().toString() + '_' + bot.id,
-            type: 'player',
-            content: phrase,
-            timestamp: new Date(),
-            player: bot.username
-          }
-        });
-      }, (idx + 1) * 3500);
-
-      // 2차 멘트 발송 (약 18초 후 추가 발언)
+      // 2. 중반 멘트 (35초 ~ 55초 사이 분산)
+      const t2 = 35000 + Math.random() * 20000;
       setTimeout(() => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day') return;
+        const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
+        if (aliveOthers.length === 0) return;
+        const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+        const phrases = midPhrases(target.username);
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+        sendAiMessage(io, room, bot.username, phrase);
+      }, t2);
 
-        const aliveOtherPlayers = current.players.filter(p => p.isAlive && p.id !== bot.id);
-        if (aliveOtherPlayers.length === 0) return;
+      // 3. 종반 멘트 (68초 ~ 82초 사이 분산)
+      const t3 = 68000 + Math.random() * 14000;
+      setTimeout(() => {
+        const current = mafiaGames.get(room);
+        if (!current || current.phase !== 'day') return;
+        const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
+        if (aliveOthers.length === 0) return;
+        const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+        const phrases = latePhrases(target.username);
+        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+        sendAiMessage(io, room, bot.username, phrase);
+      }, t3);
+    });
+  }
 
-        const target = aliveOtherPlayers[Math.floor(Math.random() * aliveOtherPlayers.length)];
-        const followUpPhrases = [
-          `💡 추가 검증 완료: ${target.username}님의 2차 데이터도 여전히 유의미한 이상치를 나타냅니다.`,
-          `📊 팀장님께 보고서 올라가기 전에 ${target.username}님 자백하시면 가산점 드립니다.`,
-          `🔍 다들 투표 버튼 누르실 준비 되셨나요? 제 데이터는 굳건합니다.`,
-          `🛡️ 저를 투표하시면 억울한 사원의 눈물을 보시게 될 겁니다...`,
-          `📑 혹시 몰라 Ctrl + Z 로 방금 발언 취소하고 싶으신 분 계신가요?`,
-          `☕ 믹스커피 두 봉지나 탔습니다. 이번 투표 결과 끝까지 지켜보겠습니다.`,
-          `🚨 투표 시각이 다가옵니다. 모두 데이터에 기반한 성숙한 판단 부탁드립니다.`
-        ];
-        const phrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
-
-        io.to(room).emit('mafia-update', {
-          type: 'message',
-          data: {
-            id: Date.now().toString() + '_followup_' + bot.id,
-            type: 'player',
-            content: phrase,
-            timestamp: new Date(),
-            player: bot.username
-          }
-        });
-      }, 16000 + idx * 4000);
+  function sendAiMessage(io, room, botName, content) {
+    io.to(room).emit('mafia-update', {
+      type: 'message',
+      data: {
+        id: Date.now().toString() + '_' + Math.random().toString(36).substring(2, 6),
+        type: 'player',
+        content,
+        timestamp: new Date(),
+        player: botName
+      }
     });
   }
 
   // 🤖 AI 봇 자동 투표 처리 함수
   function handleAiBotVotes(io, room) {
     const game = mafiaGames.get(room);
-    if (!game || !game.gameStarted || (game.phase !== 'day' && game.phase !== 'voting')) return;
+    if (!game || !game.gameStarted || game.phase !== 'voting') return;
 
     const aliveBots = game.players.filter(p => p.isAlive && p.isBot);
     if (aliveBots.length === 0) return;
@@ -586,7 +664,7 @@ export function registerMafiaHandlers(io, socket) {
     aliveBots.forEach(bot => {
       setTimeout(() => {
         const current = mafiaGames.get(room);
-        if (!current || !current.gameStarted || (current.phase !== 'day' && current.phase !== 'voting')) return;
+        if (!current || !current.gameStarted || current.phase !== 'voting') return;
         if (!current.votes) current.votes = [];
 
         if (current.votes.some(v => v.voterId === bot.id)) return;
@@ -601,7 +679,7 @@ export function registerMafiaHandlers(io, socket) {
         if (current.votes.length >= aliveCount) {
           tallyVotesAndTransitionToNight(io, room);
         }
-      }, 1500 + Math.random() * 2500);
+      }, 2000 + Math.random() * 3000);
     });
   }
 }

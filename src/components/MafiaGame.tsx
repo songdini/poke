@@ -7,7 +7,7 @@ import './MafiaGame.css';
 interface Player {
   id: string;
   username: string;
-  role: 'mafia' | 'citizen' | 'joker';
+  role: 'mafia' | 'citizen' | 'joker' | 'doctor' | 'police';
   isAlive: boolean;
   lives: number;
   isProtected: boolean;
@@ -98,19 +98,25 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [gameState.messages]);
 
-  // 투표 팝업 서버 이벤트 수신
+  // 투표 팝업 서버 이벤트 수신 (사망자 제외)
   useEffect(() => {
     if (!socketRef.current) return;
     const socket = socketRef.current;
     const handleVotePopup = () => {
-      setShowVotePopup(true);
-      setVoteTarget(null);
+      setGameState(current => {
+        const me = current.players.find(p => p.username === username);
+        if (me && me.isAlive) {
+          setShowVotePopup(true);
+          setVoteTarget(null);
+        }
+        return current;
+      });
     };
     socket.on('mafia-vote-popup', handleVotePopup);
     return () => {
       socket.off('mafia-vote-popup', handleVotePopup);
     };
-  }, []);
+  }, [username]);
 
   // 투표 시작
   const startVote = () => {
@@ -141,6 +147,13 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }
     if (onLeaveRoom) {
       onLeaveRoom();
+    }
+  };
+
+  // 게임 다시 시작 (대기실 복귀)
+  const restartGame = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('mafia-restart', { room });
     }
   };
 
@@ -344,6 +357,18 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     }));
   };
 
+  const executeDoctorHeal = () => {
+    if (!gameState.selectedPlayer || !socketRef.current) return;
+    socketRef.current.emit('mafia-doctor-heal', { room, targetId: gameState.selectedPlayer });
+    setGameState(prev => ({ ...prev, selectedPlayer: null }));
+  };
+
+  const executePoliceInvestigate = () => {
+    if (!gameState.selectedPlayer || !socketRef.current) return;
+    socketRef.current.emit('mafia-police-investigate', { room, targetId: gameState.selectedPlayer });
+    setGameState(prev => ({ ...prev, selectedPlayer: null }));
+  };
+
   const currentPlayerRole = gameState.players.find(p => p.username === username)?.role;
   const selectedPlayerData = gameState.players.find(p => p.id === gameState.selectedPlayer);
 
@@ -477,6 +502,17 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
               </tbody>
             </table>
           </div>
+
+          <div className="waiting-room-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+            <button onClick={restartGame} className="excel-btn primary">
+              🔄 다시 시작 (대기실로 복귀)
+            </button>
+            {onLeaveRoom && (
+              <button onClick={leaveRoom} className="excel-btn close">
+                ✖ 방 완전히 나가기
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <>
@@ -577,12 +613,32 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
                 </div>
               )}
 
-              {gameState.phase === 'night' && currentPlayerRole === 'mafia' && (
-                <div className="mafia-actions">
-                  <p className="excel-control-desc">보안 차단(공격)할 Target Cell을 선택하십시오.</p>
-                  <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer} className="excel-btn primary danger">
-                    ▶ Execute Security Override
-                  </button>
+              {gameState.phase === 'night' && (
+                <div className="night-role-actions">
+                  {currentPlayerRole === 'mafia' && (
+                    <div className="mafia-actions">
+                      <p className="excel-control-desc">보안 차단(공격)할 Target Cell을 선택하십시오.</p>
+                      <button onClick={executeMafiaAttack} disabled={!gameState.selectedPlayer} className="excel-btn primary danger">
+                        🗡️ Execute Security Override (마피아 공격)
+                      </button>
+                    </div>
+                  )}
+                  {currentPlayerRole === 'doctor' && (
+                    <div className="doctor-actions">
+                      <p className="excel-control-desc">응급 치료(보호)할 Target Cell을 선택하십시오.</p>
+                      <button onClick={executeDoctorHeal} disabled={!gameState.selectedPlayer} className="excel-btn primary">
+                        🩺 Execute Emergency Medical Heal (의사 치료)
+                      </button>
+                    </div>
+                  )}
+                  {currentPlayerRole === 'police' && (
+                    <div className="police-actions">
+                      <p className="excel-control-desc">신원 기밀 조사할 Target Cell을 선택하십시오.</p>
+                      <button onClick={executePoliceInvestigate} disabled={!gameState.selectedPlayer} className="excel-btn primary">
+                        🔍 Execute Background Audit Check (경찰 조사)
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
