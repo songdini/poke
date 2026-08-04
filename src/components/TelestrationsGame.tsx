@@ -72,7 +72,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
 
     const joinRoom = () => {
       setMyId(socket.id ?? '');
-      socket.emit('join', { username, room, gameType: 'telestrations', sessionToken: getSessionToken() });
+      socket.emit('join', { username, room, gameType: 'telestrations', sessionToken: getSessionToken('telestrations') });
     };
 
     if (socket.connected) {

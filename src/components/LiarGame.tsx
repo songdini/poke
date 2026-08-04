@@ -168,7 +168,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
         username,
         room,
         gameType: 'liar',
-        sessionToken: getSessionToken()
+        sessionToken: getSessionToken('liar')
       });
     };
 

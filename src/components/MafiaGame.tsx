@@ -79,7 +79,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     if (!socket) return;
 
     const joinRoom = () => {
-      socket.emit('join', { username, room, gameType: 'mafia', sessionToken: getSessionToken() });
+      socket.emit('join', { username, room, gameType: 'mafia', sessionToken: getSessionToken('mafia') });
     };
 
     if (socket.connected) {

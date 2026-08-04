@@ -106,6 +106,12 @@ export function startGarbageCollector() {
       }
     }
 
+    for (const [room, game] of baseballGames.entries()) {
+      if (!game.players || game.players.length === 0) {
+        baseballGames.delete(room);
+      }
+    }
+
     for (const room in kickVotes) {
       if (Object.keys(kickVotes[room]).length === 0) {
         delete kickVotes[room];

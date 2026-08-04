@@ -77,7 +77,7 @@ const Chat: React.FC<ChatProps> = ({ username, room, onLeaveRoom }) => {
     if (!socket) return;
 
     const joinRoom = () => {
-      socket.emit('join', { username, room, sessionToken: getSessionToken() });
+      socket.emit('join', { username, room, sessionToken: getSessionToken('catchmind') });
     };
 
     if (socket.connected) {

@@ -18,9 +18,11 @@ export function registerJoinDisconnectHandlers(io, socket) {
       return socket.emit('join-error', { message: '유효한 이름과 방 이름을 2자 이상 입력해주세요.' });
     }
 
+    const sessionKey = sessionToken ? `${sessionToken}_${gameType || 'chat'}` : null;
+
     // sessionToken이 존재하고 기존 세션이 있다면 세션 복구 처리
-    if (sessionToken && sessions.has(sessionToken)) {
-      const existingSession = sessions.get(sessionToken);
+    if (sessionKey && sessions.has(sessionKey)) {
+      const existingSession = sessions.get(sessionKey);
 
       // 같은 방/게임 세션 복구
       if (existingSession.room === room && existingSession.gameType === gameType) {
@@ -53,6 +55,21 @@ export function registerJoinDisconnectHandlers(io, socket) {
               players: game.players,
               hostId: game.hostId,
               phase: game.phase,
+            });
+          }
+        } else if (gameType === 'baseball') {
+          const game = baseballGames.get(room);
+          if (game) {
+            const player = game.players.find(p => p.id === oldSocketId || p.username === username);
+            if (player) player.id = socket.id;
+            if (game.hostId === oldSocketId) game.hostId = socket.id;
+
+            io.to(room).emit('baseball-update', {
+              players: game.players,
+              hostId: game.hostId,
+              phase: game.phase,
+              mode: game.mode || 'single',
+              history: game.history || [],
             });
           }
         } else if (gameType === 'mafia') {
@@ -92,7 +109,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
           io.to(room).emit('userList', roomUsers);
         }
 
-        console.log(`[Session Reconnected] ${username} (Token: ${sessionToken}, NewSocket: ${socket.id})`);
+        console.log(`[Session Reconnected] ${username} (Token: ${sessionKey}, NewSocket: ${socket.id})`);
         return;
       }
     }
@@ -101,6 +118,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
     socket.join(room);
     const sessionObj = {
       sessionToken: sessionToken || `sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      sessionKey: sessionKey || `sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}_${gameType || 'chat'}`,
       socketId: socket.id,
       username,
       room,
@@ -109,8 +127,8 @@ export function registerJoinDisconnectHandlers(io, socket) {
       disconnectTimeout: null
     };
 
-    if (sessionToken) {
-      sessions.set(sessionToken, sessionObj);
+    if (sessionKey) {
+      sessions.set(sessionKey, sessionObj);
     }
     connectedUsers.set(socket.id, sessionObj);
 
@@ -299,7 +317,9 @@ function executePermanentDisconnectCleanup(io, socketId, user) {
 
   console.log(`[Grace Expired - Permanent Disconnect] ${user.username}`);
 
-  if (user.sessionToken) {
+  if (user.sessionKey) {
+    sessions.delete(user.sessionKey);
+  } else if (user.sessionToken) {
     sessions.delete(user.sessionToken);
   }
   connectedUsers.delete(socketId);

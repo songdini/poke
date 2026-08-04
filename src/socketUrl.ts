@@ -29,12 +29,13 @@ export const resolveImageUrl = (url: string) => {
   return `${serverUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
-export const getSessionToken = () => {
+export const getSessionToken = (gameType?: string) => {
   if (typeof window === 'undefined') return 'server_session';
-  let token = sessionStorage.getItem('game_session_token');
+  const key = gameType ? `game_session_token_${gameType}` : 'game_session_token';
+  let token = sessionStorage.getItem(key);
   if (!token) {
     token = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-    sessionStorage.setItem('game_session_token', token);
+    sessionStorage.setItem(key, token);
   }
   return token;
 };

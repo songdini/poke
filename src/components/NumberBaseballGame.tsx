@@ -49,7 +49,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
 
     const joinRoom = () => {
       setMyId(socket.id ?? '');
-      socket.emit('join', { username, room, gameType: 'baseball', sessionToken: getSessionToken() });
+      socket.emit('join', { username, room, gameType: 'baseball', sessionToken: getSessionToken('baseball') });
     };
 
     if (socket.connected) {
