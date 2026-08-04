@@ -1,134 +1,256 @@
-.telestrations-container {
+/* 📊 Microsoft Excel Incognito Theme for Telestrations Game */
+
+.telestrations-container.excel-stealth-theme {
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
-  background-color: #2c2f33;
-  color: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 📊 Excel Formula Bar */
+.telestrations-container .excel-formula-bar {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
 }
 
-.telestrations-header {
+.telestrations-container .excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-weight: 600;
+  min-width: 150px;
+  color: #201f1e;
   text-align: center;
-  border-bottom: 1px solid #4f545c;
-  padding-bottom: 15px;
+  font-size: 0.8rem;
 }
 
-.telestrations-header h1 {
+.telestrations-container .excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: Georgia, serif;
+}
+
+.telestrations-container .excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+}
+
+/* 📋 Sheet Header Bar */
+.telestrations-container .game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+.telestrations-container .sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.telestrations-container .sheet-title-info h2 {
   margin: 0;
-  color: #7289da;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #201f1e;
+}
+
+.telestrations-container .game-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .telestrations-main {
-  background-color: #23272a;
-  padding: 20px;
-  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 16px;
 }
 
-/* Waiting Room */
-.telestrations-waiting-room h2 {
-  color: #7289da;
-}
-
-.telestrations-waiting-room .player-list ul {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-}
-
-.telestrations-waiting-room .player-list li {
-  background-color: #40444b;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-}
-
-/* Common Button Style */
-.telestrations-container button {
-  background-color: #7289da;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+/* 🔘 Ribbon Buttons */
+.telestrations-container .excel-btn {
+  padding: 6px 14px;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  font-family: inherit;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.telestrations-container button:hover:not(:disabled) {
-  background-color: #677bc4;
+.telestrations-container .excel-btn:hover:not(:disabled) {
+  background: #e1dfdd;
+  border-color: #a19f9d;
 }
 
-.telestrations-container button:disabled {
-  background-color: #4f545c;
+.telestrations-container .excel-btn.primary {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.telestrations-container .excel-btn.primary:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.telestrations-container .excel-btn.close {
+  background: #fde7e9;
+  color: #a80000;
+  border-color: #a80000;
+}
+
+.telestrations-container .excel-btn:disabled {
+  background: #f3f2f1;
+  color: #a19f9d;
+  border-color: #e1dfdd;
   cursor: not-allowed;
 }
 
-/* Game Phase Container */
+/* 🎮 Waiting Room */
+.telestrations-waiting-room {
+  padding: 12px;
+}
+
+.telestrations-waiting-room h3 {
+  color: #107c41;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.player-list-section {
+  background: #f9f9f9;
+  border: 1px solid #e1dfdd;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.player-list-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: #605e5c;
+}
+
+/* 🎯 Phase Containers */
 .telestrations-phase-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+  border: 1px solid #e1dfdd;
+  border-radius: 4px;
 }
 
 .telestrations-phase-container h3 {
   margin: 0;
-  color: #7289da;
+  color: #107c41;
+  font-size: 1.1rem;
 }
 
-.telestrations-phase-container input[type="text"] {
-  width: 80%;
-  max-width: 400px;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #4f545c;
-  background-color: #40444b;
-  color: white;
-  font-size: 16px;
+.excel-desc {
+  font-size: 0.85rem;
+  color: #605e5c;
+  margin: 0;
 }
 
-/* Drawing Phase */
-.canvas-toolbar {
+.excel-input-group {
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 6px 10px;
+  border-radius: 2px;
 }
 
+.excel-input-group .prefix {
+  font-weight: 700;
+  color: #107c41;
+  font-family: 'Consolas', monospace;
+  font-size: 0.9rem;
+}
+
+.excel-input-group .excel-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  color: #201f1e;
+  font-family: inherit;
+}
+
+/* 🎨 Drawing Phase Canvas */
 .telestrations-phase-container canvas {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: crosshair;
-  border: 2px solid #7289da;
+  border: 2px solid #107c41;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Guessing Phase */
+/* 🔍 Guessing Phase Image Frame */
+.guess-image-frame {
+  background: #ffffff;
+  padding: 8px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+}
+
 .guess-image {
   max-width: 100%;
-  max-height: 300px;
-  border: 2px solid #4f545c;
-  border-radius: 8px;
-  background-color: white;
+  max-height: 280px;
+  object-fit: contain;
 }
 
-/* Waiting for Turn */
+/* ⏳ Waiting Turn */
 .telestrations-waiting-turn {
   text-align: center;
-  padding: 50px;
+  padding: 40px;
+  background: #f9f9f9;
+  border: 1px solid #e1dfdd;
+  border-radius: 4px;
 }
 
-/* Results */
-.telestrations-results h2 {
-  text-align: center;
-  color: #7289da;
+.telestrations-waiting-turn h3 {
+  color: #605e5c;
+  font-size: 1rem;
 }
 
 /* 📊 Excel Audit Timeline Sequence Results */
@@ -327,5 +449,16 @@
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin-top: 10px;
+}
+
+.error-alert {
+  color: #a80000;
+  background: #fde7e9;
+  border: 1px solid #a80000;
+  padding: 8px 12px;
+  border-radius: 2px;
+  font-size: 0.85rem;
+  text-align: center;
   margin-top: 10px;
 }

@@ -255,15 +255,6 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
 
   const renderWaitingRoom = () => (
     <div className="telestrations-waiting-room">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2>📑 Telestrations_Sequence</h2>
-        {onLeaveRoom && (
-          <button onClick={onLeaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
-            🚪 방 나가기
-          </button>
-        )}
-      </div>
-
       <div className="telestrations-mode-selector" style={{ background: '#f8f9fa', border: '1px solid #d4d4d4', padding: '12px 16px', borderRadius: '4px', marginBottom: '16px' }}>
         <h4 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: '#201f1e' }}>🎮 게임 진행 모드 선택 {isHost ? '(방장 전용)' : ''}</h4>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -293,16 +284,25 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
         </div>
       </div>
 
-      <h2>대기 중...</h2>
-      <p>플레이어가 모두 모이면 방장이 게임을 시작합니다. (최소 3명)</p>
-      <div className="player-list">
-        <h3>참가자 ({players.length}명)</h3>
-        <ul>
-          {players.map(p => <li key={p.id}>{p.username} {p.id === myId ? '(나)' : ''} {p.id === hostId ? '👑' : ''}</li>)}
-        </ul>
+      <div className="player-list-section">
+        <h3>👥 참가자 목록 ({players.length}명) - 최소 3인</h3>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+          {players.map(p => (
+            <span key={p.id} className="excel-btn" style={{ background: p.id === myId ? '#e6f2eb' : '#ffffff', borderColor: p.id === myId ? '#107c41' : '#d4d4d4' }}>
+              {p.username} {p.id === myId ? '(나)' : ''} {p.id === hostId ? '👑' : ''}
+            </span>
+          ))}
+        </div>
       </div>
-      {isHost && <button onClick={handleStartGame} disabled={players.length < 3}>게임 시작</button>}
-      {error && <p className="error-message">{error}</p>}
+
+      {isHost && (
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <button onClick={handleStartGame} disabled={players.length < 3} className="excel-btn primary" style={{ padding: '10px 24px', fontSize: '0.95rem' }}>
+            ▶ Execute Telestrations Game Start
+          </button>
+        </div>
+      )}
+      {error && <p className="error-alert">{error}</p>}
     </div>
   );
 
@@ -314,10 +314,23 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
     switch (phase) {
       case 'word-input':
         return <div className="telestrations-phase-container">
-          <h3>비밀 단어 입력</h3>
-          <p>다른 사람이 그림으로 그릴 단어를 입력해주세요.</p>
-          <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} maxLength={20} />
-          <button onClick={handleSubmitTurn}>제출</button>
+          <h3>비밀 제시어 작성</h3>
+          <p className="excel-desc">다음 플레이어에게 전달할 비밀 단어를 입력하십시오.</p>
+          <div className="excel-input-group">
+            <span className="prefix">fx =</span>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && handleSubmitTurn()}
+              maxLength={20}
+              placeholder="비밀 제시어 입력 (Enter)..."
+              className="excel-input"
+            />
+            <button onClick={handleSubmitTurn} className="excel-btn primary">
+              제출
+            </button>
+          </div>
         </div>;
 
       case 'drawing':
@@ -336,12 +349,12 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
               />
             </div>
           ) : (
-            <p>제시 단어: <strong>{currentBookPage?.data}</strong></p>
+            <p className="excel-desc">제시 단어: <strong style={{ color: '#107c41', fontSize: '1.1rem' }}>"{currentBookPage?.data}"</strong></p>
           )}
 
           <div className="canvas-toolbar" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', margin: '8px 0' }}>
             {/* 🎨 Quick Color Palette */}
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f3f2f1', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#ffffff', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
               {['#000000', '#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#ffffff'].map(color => (
                 <button
                   key={color}
@@ -363,7 +376,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
             </div>
 
             {/* ✏️ Brush Thickness Selector */}
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#f3f2f1', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', background: '#ffffff', padding: '3px 6px', borderRadius: '4px', border: '1px solid #d4d4d4' }}>
               {[2, 5, 10, 18].map(size => (
                 <button
                   key={size}
@@ -392,16 +405,33 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
             onTouchEnd={stopDrawing}
             onTouchCancel={stopDrawing}
           />
-          <button onClick={handleSubmitTurn}>그림 제출</button>
+          <button onClick={handleSubmitTurn} className="excel-btn primary" style={{ padding: '8px 24px', marginTop: '8px' }}>
+            ▶ 그림 제출 완료
+          </button>
         </div>;
 
       case 'guessing':
         return <div className="telestrations-phase-container">
           <h3>그림 보고 단어 맞히기</h3>
-          <p>아래 그림이 무엇인지 맞춰보세요.</p>
-          <img src={resolveImageUrl(currentBookPage?.data || '')} alt="그림" className="guess-image" />
-          <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} maxLength={20} />
-          <button onClick={handleSubmitTurn}>추측 제출</button>
+          <p className="excel-desc">전 단계 플레이어가 그린 아래 그림을 보고 정답 단어를 추측하십시오.</p>
+          <div className="guess-image-frame">
+            <img src={resolveImageUrl(currentBookPage?.data || '')} alt="그림" className="guess-image" />
+          </div>
+          <div className="excel-input-group">
+            <span className="prefix">fx =</span>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyPress={e => e.key === 'Enter' && handleSubmitTurn()}
+              maxLength={20}
+              placeholder="추측 단어 입력 (Enter)..."
+              className="excel-input"
+            />
+            <button onClick={handleSubmitTurn} className="excel-btn primary">
+              추측 제출
+            </button>
+          </div>
         </div>;
 
       default: return null;
@@ -512,11 +542,42 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
   };
 
   return (
-    <div className="telestrations-container">
-      <div className="telestrations-header">
-        <h1>📝</h1>
-        <p>'{room}' 방 - {username}님</p>
+    <div className="telestrations-container excel-stealth-theme">
+      {/* 📊 Excel Formula Bar */}
+      <div className="excel-formula-bar">
+        <div className="excel-name-box">B5: TELESTRATIONS</div>
+        <div className="excel-fx-icon">fx</div>
+        <div className="excel-formula-input">
+          =PROPAGATE_SEQUENCE_MAP(room_code, player_chain)
+        </div>
       </div>
+
+      {/* 📋 Sheet Header Bar */}
+      <div className="game-header">
+        <div className="sheet-title-info">
+          <span className="sheet-icon">📑</span>
+          <h2>Telestrations_Sequence_Map.xlsx</h2>
+        </div>
+        <div className="game-info">
+          <span className="excel-cell-badge phase">
+            {phase === 'waiting'
+              ? '대기 중'
+              : phase === 'word-input'
+              ? '제시어 작성'
+              : phase === 'drawing'
+              ? '그림 그리기'
+              : phase === 'guessing'
+              ? '단어 맞히기'
+              : '결과 공개'}
+          </span>
+          {onLeaveRoom && (
+            <button onClick={onLeaveRoom} className="excel-btn close">
+              🚪 방 나가기
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="telestrations-main">
         {phase === 'waiting' && renderWaitingRoom()}
         {(phase === 'word-input' || phase === 'drawing' || phase === 'guessing') && renderGamePhase()}
