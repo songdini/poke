@@ -52,6 +52,17 @@ export function registerMafiaHandlers(io, socket) {
     const user = connectedUsers.get(socket.id);
 
     if (user && user.gameType === 'mafia' && user.room === room && rawMessage) {
+      const game = mafiaGames.get(room);
+      if (game && game.gameStarted && game.phase !== 'game-over') {
+        const player = game.players.find(p => p.id === socket.id || p.username === user.username);
+        if (player && !player.isAlive) {
+          return socket.emit('mafia-update', {
+            type: 'message',
+            data: { id: Date.now().toString(), type: 'system', content: '💀 사망한 플레이어는 게임 진행 중 대화에 참여할 수 없습니다 (관전 전용).', timestamp: new Date() }
+          });
+        }
+      }
+
       const sanitizedContent = typeof rawMessage.content === 'string'
         ? sanitizeChatMessage(rawMessage.content, 500)
         : '';

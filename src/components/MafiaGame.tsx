@@ -320,6 +320,11 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
   const sendMessage = () => {
     if (!inputMessage.trim() || !socketRef.current) return;
 
+    const me = gameState.players.find(p => p.username === username);
+    if (me && !me.isAlive && gameState.gameStarted && gameState.phase !== 'game-over') {
+      return;
+    }
+
     const newMessage: GameMessage = {
       id: Date.now().toString(),
       type: 'player',
@@ -369,7 +374,10 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     setGameState(prev => ({ ...prev, selectedPlayer: null }));
   };
 
-  const currentPlayerRole = gameState.players.find(p => p.username === username)?.role;
+  const myPlayer = gameState.players.find(p => p.username === username);
+  const isDead = myPlayer ? !myPlayer.isAlive : false;
+  const isChatDisabled = isDead && gameState.gameStarted && gameState.phase !== 'game-over';
+  const currentPlayerRole = myPlayer?.role;
   const selectedPlayerData = gameState.players.find(p => p.id === gameState.selectedPlayer);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -682,9 +690,10 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Enter audit comment or message... (Enter)"
+                placeholder={isChatDisabled ? "💀 사망 처리된 플레이어입니다 (관전 전용 모드)" : "Enter audit comment or message... (Enter)"}
+                disabled={isChatDisabled}
               />
-              <button onClick={sendMessage} className="excel-btn primary">
+              <button onClick={sendMessage} disabled={isChatDisabled} className="excel-btn primary">
                 Insert Log
               </button>
             </div>
