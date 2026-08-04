@@ -321,26 +321,27 @@
 
 .player-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 6px;
-  padding: 6px 10px;
-  overflow-y: auto;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 8px 10px;
   background: #ffffff;
-  max-height: 110px;
+  max-height: none;
+  overflow: visible;
 }
 
 .player-card {
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  padding: 4px 6px;
+  border-radius: 4px;
+  padding: 6px 8px;
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
   font-size: 0.78rem;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  box-sizing: border-box;
 }
 
 .player-card:hover {
@@ -375,17 +376,20 @@
   color: #201f1e;
   font-size: 0.8rem;
   margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dead-tag {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: #a80000;
   margin-left: 4px;
   font-weight: normal;
 }
 
 .player-lives {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #605e5c;
   font-weight: 500;
 }
@@ -402,46 +406,42 @@
   100% { background: #fde7e9; color: #a80000; }
 }
 
+.player-role {
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
 .role-badge {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   padding: 2px 6px;
   border-radius: 2px;
   display: inline-block;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
 .role-badge.mafia {
   background: #fde7e9;
   color: #a80000;
   border: 1px solid #a80000;
-  font-weight: 600;
 }
 
 .role-badge.citizen {
   background: #e6f2eb;
   color: #107c41;
   border: 1px solid #107c41;
-  font-weight: 600;
-}
-
-.role-badge.joker {
-  background: #fff4ce;
-  color: #795e00;
-  border: 1px solid #795e00;
-  font-weight: 600;
 }
 
 .role-badge.doctor {
   background: #e1f5fe;
   color: #0288d1;
   border: 1px solid #0288d1;
-  font-weight: 600;
 }
 
 .role-badge.police {
   background: #ede7f6;
   color: #512da8;
   border: 1px solid #512da8;
-  font-weight: 600;
 }
 
 .role-badge.confidential {

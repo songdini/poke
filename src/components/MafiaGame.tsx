@@ -48,6 +48,7 @@ type MafiaUpdateMessage =
 
 const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => void }> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
+  const [mafiaCount, setMafiaCount] = useState<number>(1);
   const [gameState, setGameState] = useState<GameState>({
     phase: 'waiting',
     players: [],
@@ -59,6 +60,11 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     winner: null,
     voteUsed: false
   });
+
+  const handleMafiaCountChange = (count: number) => {
+    setMafiaCount(count);
+    socketRef.current?.emit('mafia-set-mafia-count', { room, count });
+  };
 
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef<Socket | null>(socket);
@@ -170,6 +176,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
         break;
 
       case 'reconnect-sync':
+        if ((data as any).mafiaCount) setMafiaCount((data as any).mafiaCount);
         setGameState(prev => ({
           ...prev,
           players: data.players || prev.players,
@@ -459,6 +466,28 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
             </table>
           </div>
 
+          {gameState.players.length >= 6 && (
+            <div style={{ margin: '12px 0', background: '#f8f9fa', padding: '10px 14px', border: '1px solid #d4d4d4', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#201f1e' }}>🕵️ 마피아 인원 수 설정 (6인 이상):</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => handleMafiaCountChange(1)}
+                  className={`excel-btn ${mafiaCount === 1 ? 'primary' : ''}`}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  1명
+                </button>
+                <button
+                  onClick={() => handleMafiaCountChange(2)}
+                  className={`excel-btn ${mafiaCount === 2 ? 'primary' : ''}`}
+                  style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                >
+                  2명
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="waiting-room-actions">
             <button onClick={addBot} className="excel-btn secondary">
               ➕ Insert AI_Worker Node (+1 Bot)
@@ -478,7 +507,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
           <div className="excel-summary-header">
             <h3>📊 Audit Execution Summary - Final Status Report</h3>
             <div className="winner-banner">
-              RESULT: {gameState.winner === 'joker' ? 'JOKER_ANOMALY_VICTORY' : gameState.winner === 'citizens' ? 'CITIZEN_AUDITORS_VICTORY' : 'MAFIA_SECURITY_OVERRIDE_VICTORY'}
+              RESULT: {gameState.winner === 'citizens' ? 'CITIZEN_AUDITORS_VICTORY' : 'MAFIA_SECURITY_OVERRIDE_VICTORY'}
             </div>
           </div>
 
@@ -497,7 +526,15 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
                   <tr key={player.id} className={!player.isAlive ? 'inactive-row' : ''}>
                     <td className="excel-row-num">{idx + 1}</td>
                     <td className="excel-cell-name">{player.username}</td>
-                    <td className="role-cell">{player.role.toUpperCase()}</td>
+                    <td className="role-cell">
+                      {player.role === 'mafia'
+                        ? '🕵️ MAFIA'
+                        : player.role === 'police'
+                        ? '🔍 POLICE'
+                        : player.role === 'doctor'
+                        ? '🩺 DOCTOR'
+                        : '👤 CITIZEN'}
+                    </td>
                     <td>
                       {player.isAlive ? (
                         <span className="excel-status-tag active">SURVIVED ({player.lives} HP)</span>
@@ -549,8 +586,16 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
                       Score: {player.lives}/3
                     </div>
                     <div className="player-role">
-                      {player.username === username ? (
-                        <span className={`role-badge ${player.role}`}>Clearance: {player.role.toUpperCase()}</span>
+                      {player.username === username && player.role ? (
+                        <span className={`role-badge ${player.role}`}>
+                          {player.role === 'mafia'
+                            ? '🕵️ MAFIA'
+                            : player.role === 'police'
+                            ? '🔍 POLICE'
+                            : player.role === 'doctor'
+                            ? '🩺 DOCTOR'
+                            : '👤 CITIZEN'}
+                        </span>
                       ) : (
                         <span className="role-badge confidential">Confidential</span>
                       )}

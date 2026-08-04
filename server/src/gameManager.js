@@ -26,19 +26,19 @@ export function checkMafiaGameEnd(io, room) {
   });
 
   const aliveMafia = activeAlivePlayers.filter(p => p.role === 'mafia');
-  const aliveCitizens = activeAlivePlayers.filter(p => p.role === 'citizen' || p.role === 'joker');
+  const aliveCitizens = activeAlivePlayers.filter(p => p.role !== 'mafia');
   
   if (aliveMafia.length === 0) {
     game.phase = 'game-over';
     io.to(room).emit('mafia-update', {
       type: 'game-over',
-      data: { winner: 'citizens', message: '마피아가 이탈하거나 제거되었습니다! 시민과 조커의 승리입니다!' }
+      data: { winner: 'citizens', message: '🎉 모든 마피아가 제거되었습니다! 시민 팀의 승리입니다!' }
     });
-  } else if (aliveCitizens.length === 0) {
+  } else if (aliveCitizens.length <= aliveMafia.length) {
     game.phase = 'game-over';
     io.to(room).emit('mafia-update', {
       type: 'game-over',
-      data: { winner: 'mafia', message: '모든 시민과 조커가 이탈하거나 사망했습니다! 마피아의 승리입니다!' }
+      data: { winner: 'mafia', message: '🕵️ 마피아 수가 시민 수 이상입니다! 마피아 팀의 승리입니다!' }
     });
   }
 }

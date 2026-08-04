@@ -77,6 +77,22 @@ export function registerMafiaHandlers(io, socket) {
     });
   });
 
+  socket.on('mafia-set-mafia-count', ({ room, count }) => {
+    const game = mafiaGames.get(room);
+    if (!game || game.hostId !== socket.id || game.gameStarted) return;
+    const mafiaCount = Math.max(1, Math.min(2, count));
+    game.requestedMafiaCount = mafiaCount;
+    io.to(room).emit('mafia-update', {
+      type: 'reconnect-sync',
+      data: {
+        players: game.players,
+        phase: 'waiting',
+        gameStarted: false,
+        mafiaCount: game.requestedMafiaCount
+      }
+    });
+  });
+
   socket.on('mafia-game-start', ({ room }) => {
     const game = mafiaGames.get(room);
     if (!game || game.gameStarted) return;
@@ -97,30 +113,34 @@ export function registerMafiaHandlers(io, socket) {
 
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
     const playerCount = shuffled.length;
+    const targetMafiaCount = playerCount >= 6 ? (game.requestedMafiaCount || 1) : 1;
 
-    // 5인 이상: 마피아, 경찰(Police), 의사(Doctor), 조커(Joker), 시민(Citizen)
+    let assignedMafia = 0;
+    let idx = 0;
+
+    // 1. 마피아 할당 (6인 이상 설정값 반영)
+    while (assignedMafia < targetMafiaCount && idx < playerCount) {
+      shuffled[idx++].role = 'mafia';
+      assignedMafia++;
+    }
+
+    // 2. 5인 이상: 경찰, 의사 할당
     if (playerCount >= 5) {
-      shuffled[0].role = 'mafia';
-      shuffled[1].role = 'police';
-      shuffled[2].role = 'doctor';
-      shuffled[3].role = 'joker';
-      for (let i = 4; i < playerCount; i++) {
-        shuffled[i].role = 'citizen';
-      }
-    } else {
-      // 3~4인: 마피아, 조커, 시민들
-      shuffled[0].role = 'mafia';
-      shuffled[1].role = 'joker';
-      for (let i = 2; i < playerCount; i++) {
-        shuffled[i].role = 'citizen';
-      }
+      if (idx < playerCount) shuffled[idx++].role = 'police';
+      if (idx < playerCount) shuffled[idx++].role = 'doctor';
+    } else if (playerCount === 4) {
+      if (idx < playerCount) shuffled[idx++].role = 'police';
+    }
+
+    // 3. 남은 플레이어: 시민 할당 (조커 완전 제거)
+    while (idx < playerCount) {
+      shuffled[idx++].role = 'citizen';
     }
 
     shuffled.forEach((player) => {
       player.isAlive = true;
       player.lives = 3;
       player.isProtected = false;
-      player.jokerAttacked = false;
     });
 
     game.gameStarted = true;
@@ -385,7 +405,7 @@ export function registerMafiaHandlers(io, socket) {
       }
     }
 
-    if (maxIds.length === 1 && max > 1) {
+    if (maxIds.length === 1 && max >= 1) {
       const votedTarget = game.players.find(p => p.id === maxIds[0]);
       if (votedTarget) {
         votedTarget.lives = Math.max(0, votedTarget.lives - 1);
@@ -403,7 +423,7 @@ export function registerMafiaHandlers(io, socket) {
     } else {
       io.to(room).emit('mafia-update', {
         type: 'vote-skip',
-        data: { message: '투표 결과: 동률 또는 찬성 부족으로 아무도 지목되지 않았습니다.' }
+        data: { message: '투표 결과: 동률 또는 표 부족으로 아무도 지목되지 않았습니다.' }
       });
     }
 
@@ -477,21 +497,6 @@ export function registerMafiaHandlers(io, socket) {
           targetId: null,
           player: null,
           message: `🩺 [의사 치료 성공] 의사의 신속한 치료 덕분에 ${targetPlayer.username}님이 마피아의 야간 공격에서 극적으로 생존했습니다!`
-        }
-      });
-    } else if (targetPlayer.role === 'joker' && !targetPlayer.jokerAttacked) {
-      targetPlayer.jokerAttacked = true;
-      const mafia = game.players.find(p => p.role === 'mafia' && p.isAlive);
-      if (mafia) {
-        mafia.lives = Math.max(0, mafia.lives - 1);
-        mafia.isAlive = mafia.lives > 0;
-      }
-      io.to(room).emit('mafia-update', {
-        type: 'attack',
-        data: {
-          targetId: mafia ? mafia.id : null,
-          player: mafia,
-          message: `조커가 마피아에게 공격당했지만, 오히려 마피아가 피반사를 일으켰습니다!`
         }
       });
     } else {
