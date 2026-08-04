@@ -4,9 +4,6 @@ import { sanitizeChatMessage } from '../utils/sanitize.js';
 export function registerMafiaHandlers(io, socket) {
   // 🤖 AI 봇 추가 이벤트
   socket.on('mafia-add-bot', ({ room }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || game.gameStarted) return;
 
@@ -49,41 +46,38 @@ export function registerMafiaHandlers(io, socket) {
   socket.on('mafia-message', (messageData) => {
     if (!messageData || typeof messageData !== 'object') return;
     const { room, message: rawMessage } = messageData;
-    const user = connectedUsers.get(socket.id);
+    if (!room || !rawMessage) return;
 
-    if (user && user.gameType === 'mafia' && user.room === room && rawMessage) {
-      const game = mafiaGames.get(room);
-      if (game && game.gameStarted && game.phase !== 'game-over') {
-        const player = game.players.find(p => p.id === socket.id || p.username === user.username);
-        if (player && !player.isAlive) {
-          return socket.emit('mafia-update', {
-            type: 'message',
-            data: { id: Date.now().toString(), type: 'system', content: '💀 사망한 플레이어는 게임 진행 중 대화에 참여할 수 없습니다 (관전 전용).', timestamp: new Date() }
-          });
-        }
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    if (game.gameStarted && game.phase !== 'game-over') {
+      const player = game.players.find(p => p.id === socket.id || p.username === rawMessage.player);
+      if (player && !player.isAlive) {
+        return socket.emit('mafia-update', {
+          type: 'message',
+          data: { id: Date.now().toString(), type: 'system', content: '💀 사망한 플레이어는 게임 진행 중 대화에 참여할 수 없습니다 (관전 전용).', timestamp: new Date() }
+        });
       }
-
-      const sanitizedContent = typeof rawMessage.content === 'string'
-        ? sanitizeChatMessage(rawMessage.content, 500)
-        : '';
-      if (!sanitizedContent) return;
-
-      const safeMessage = {
-        ...rawMessage,
-        content: sanitizedContent
-      };
-
-      io.to(room).emit('mafia-update', {
-        type: 'message',
-        data: safeMessage
-      });
     }
+
+    const sanitizedContent = typeof rawMessage.content === 'string'
+      ? sanitizeChatMessage(rawMessage.content, 500)
+      : '';
+    if (!sanitizedContent) return;
+
+    const safeMessage = {
+      ...rawMessage,
+      content: sanitizedContent
+    };
+
+    io.to(room).emit('mafia-update', {
+      type: 'message',
+      data: safeMessage
+    });
   });
 
   socket.on('mafia-game-start', ({ room }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || game.gameStarted) return;
 
@@ -146,9 +140,6 @@ export function registerMafiaHandlers(io, socket) {
   });
 
   socket.on('mafia-vote-start', ({ room }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'day' || game.voteUsed) return;
 
@@ -159,9 +150,6 @@ export function registerMafiaHandlers(io, socket) {
   });
 
   socket.on('mafia-vote', ({ room, targetId }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || (game.phase !== 'day' && game.phase !== 'voting')) return;
 
@@ -188,9 +176,6 @@ export function registerMafiaHandlers(io, socket) {
 
   // 🗡️ 마피아 야간 공격
   socket.on('mafia-attack', ({ room, targetId }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
@@ -205,9 +190,6 @@ export function registerMafiaHandlers(io, socket) {
 
   // 🩺 의사 야간 치료
   socket.on('mafia-doctor-heal', ({ room, targetId }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
@@ -227,9 +209,6 @@ export function registerMafiaHandlers(io, socket) {
 
   // 🔍 경찰 야간 조사
   socket.on('mafia-police-investigate', ({ room, targetId }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
@@ -252,9 +231,6 @@ export function registerMafiaHandlers(io, socket) {
 
   // 🔄 게임 종료 후 대기실 다시 시작
   socket.on('mafia-restart', ({ room }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (!game) return;
 
@@ -291,9 +267,6 @@ export function registerMafiaHandlers(io, socket) {
 
   // 🚪 마피아 게임 방 나가기 이벤트
   socket.on('mafia-leave', ({ room }) => {
-    const user = connectedUsers.get(socket.id);
-    if (!user || user.room !== room) return;
-
     const game = mafiaGames.get(room);
     if (game) {
       const wasHost = game.hostId === socket.id;
@@ -337,6 +310,12 @@ export function registerMafiaHandlers(io, socket) {
       }
 
       current.timeLeft--;
+
+      // ⏱️ 매초 남은 시간(timer-tick)을 해당 방 클라이언트에 전송!
+      io.to(room).emit('mafia-update', {
+        type: 'timer-tick',
+        data: { timeLeft: current.timeLeft }
+      });
 
       if (current.timeLeft <= 0) {
         if (current.phase === 'day') {
