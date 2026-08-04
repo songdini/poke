@@ -1,4 +1,4 @@
-import { connectedUsers, sessions, mafiaGames, liarGames, telestrationsGames, checkMafiaGameEnd, roomMessages } from '../gameManager.js';
+import { connectedUsers, sessions, mafiaGames, liarGames, telestrationsGames, baseballGames, checkMafiaGameEnd, roomMessages } from '../gameManager.js';
 import { sanitizeString } from '../utils/sanitize.js';
 
 export function registerJoinDisconnectHandlers(io, socket) {
