@@ -279,14 +279,60 @@
   padding: 8px 12px;
 }
 
-.excel-grid-table tr:nth-child(even) {
-  background: #fdfdfd;
+/* 본인 시도 행 (My Row) - 연한 녹색 배경 */
+.excel-grid-table tr.my-row {
+  background-color: #e8f5e9 !important;
 }
 
-.row-num {
-  font-family: 'Consolas', monospace;
-  font-weight: 700;
-  color: #a19f9d;
+.excel-grid-table tr.my-row .row-num {
+  background-color: #d2e7d6 !important;
+  color: #0b5a2f !important;
+  border-right: 2px solid #107c41 !important;
+}
+
+/* 상대방 시도 행 (Opponent Row) - 깔끔한 연파랑/흰색 배경 */
+.excel-grid-table tr.opponent-row {
+  background-color: #f7fafd !important;
+}
+
+.excel-grid-table tr.opponent-row .row-num {
+  background-color: #e4edf5 !important;
+  color: #005a9e !important;
+  border-right: 2px solid #106ebe !important;
+}
+
+/* 마우스 호버 효과 */
+.excel-grid-table tbody tr.my-row:hover {
+  background-color: #d8edd9 !important;
+}
+
+.excel-grid-table tbody tr.opponent-row:hover {
+  background-color: #eaf1f8 !important;
+}
+
+.excel-grid-table tr.win-row {
+  background-color: #fff3c4 !important;
+  border-left: 4px solid #795e00;
+}
+
+.user-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.user-badge.me {
+  background: #e6f2eb;
+  color: #0b5a2f;
+  border: 1px solid #107c41;
+}
+
+.user-badge.opponent {
+  background: #eff6fc;
+  color: #005a9e;
+  border: 1px solid #106ebe;
 }
 
 .guess-col {

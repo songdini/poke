@@ -262,32 +262,44 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
                     </td>
                   </tr>
                 ) : (
-                  history.slice().reverse().map((record) => (
-                    <tr key={record.id} className={record.strike === 4 ? 'win-row' : ''}>
-                      <td className="row-num">#{record.attempt}</td>
-                      {mode === 'battle' && <td className="user-col">{record.guesser}</td>}
-                      <td className="guess-col">{record.guess}</td>
-                      <td>
-                        <span className={`badge strike ${record.strike > 0 ? 'active' : ''}`}>
-                          {record.strike} S
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ball ${record.ball > 0 ? 'active' : ''}`}>
-                          {record.ball} B
-                        </span>
-                      </td>
-                      <td>
-                        {record.strike === 4 ? (
-                          <span className="status-tag win">🏆 PERFECT 4S (승리)</span>
-                        ) : record.isOut ? (
-                          <span className="status-tag out">🚫 OUT</span>
-                        ) : (
-                          <span className="status-tag ongoing">{record.strike}S {record.ball}B</span>
+                  history.slice().reverse().map((record) => {
+                    const isMe = record.guesser === username;
+                    return (
+                      <tr
+                        key={record.id}
+                        className={`${record.strike === 4 ? 'win-row' : ''} ${isMe ? 'my-row' : 'opponent-row'}`}
+                      >
+                        <td className="row-num">#{record.attempt}</td>
+                        {mode === 'battle' && (
+                          <td className="user-col">
+                            <span className={`user-badge ${isMe ? 'me' : 'opponent'}`}>
+                              {record.guesser} {isMe ? '(나)' : ''}
+                            </span>
+                          </td>
                         )}
-                      </td>
-                    </tr>
-                  ))
+                        <td className="guess-col">{record.guess}</td>
+                        <td>
+                          <span className={`badge strike ${record.strike > 0 ? 'active' : ''}`}>
+                            {record.strike} S
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ball ${record.ball > 0 ? 'active' : ''}`}>
+                            {record.ball} B
+                          </span>
+                        </td>
+                        <td>
+                          {record.strike === 4 ? (
+                            <span className="status-tag win">🏆 PERFECT 4S (승리)</span>
+                          ) : record.isOut ? (
+                            <span className="status-tag out">🚫 OUT</span>
+                          ) : (
+                            <span className="status-tag ongoing">{record.strike}S {record.ball}B</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
