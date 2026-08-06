@@ -25,12 +25,26 @@ const server = createServer(app);
 const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  'http://54.180.85.31/'
+  'http://54.180.85.31'
 ]);
+
+if (process.env.ALLOWED_ORIGINS) {
+  process.env.ALLOWED_ORIGINS.split(',').forEach((o) => {
+    const trimmed = o.trim().replace(/\/$/, '');
+    if (trimmed) allowedOrigins.add(trimmed);
+  });
+}
+
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  return allowedOrigins.has(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+  const cleanOrigin = origin.replace(/\/$/, '');
+  return (
+    allowedOrigins.has(cleanOrigin) ||
+    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(cleanOrigin) ||
+    /^http:\/\/54\.180\.85\.31(:\d+)?$/.test(cleanOrigin)
+  );
 };
+
 const corsOptions = {
   origin: (origin, callback) => {
     callback(isAllowedOrigin(origin) ? null : new Error(`Origin not allowed by CORS: ${origin}`), isAllowedOrigin(origin));
