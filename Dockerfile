@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build:docker
 
 # 2단계: Nginx로 정적 파일 및 역프록시 서빙
 FROM nginx:alpine

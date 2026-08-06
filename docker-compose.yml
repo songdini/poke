@@ -1,4 +1,3 @@
-version: "3"
 services:
   # 백엔드 서버
   chat-server:
