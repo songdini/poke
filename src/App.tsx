@@ -5,9 +5,10 @@ import MafiaGame from './components/MafiaGame'
 import LiarGame from './components/LiarGame'
 import TelestrationsGame from './components/TelestrationsGame';
 import NumberBaseballGame from './components/NumberBaseballGame';
+import SudokuGame from './components/SudokuGame';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball';
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku';
 
 interface GameSession {
   username: string;
@@ -23,7 +24,8 @@ function App() {
     mafia: null,
     liar: null,
     telestrations: null,
-    numberbaseball: null
+    numberbaseball: null,
+    sudoku: null
   });
 
   const handleGameSelection = (gameType: GameKey) => {
@@ -124,6 +126,18 @@ function App() {
               </div>
               <span className="excel-cell-tag">{gameSessions.numberbaseball ? 'ACTIVE' : 'MOD_05'}</span>
             </button>
+
+            <button
+              className={`game-option sudoku ${gameSessions.sudoku ? 'has-active-session' : ''}`}
+              onClick={() => handleGameSelection('sudoku')}
+            >
+              <div className="game-icon">🧩</div>
+              <div className="game-info">
+                <h3>Table 06: Sudoku_Matrix_Solver.xlsx</h3>
+                <p>9x9 Grid Deductive Logic & Matrix Solver | Status: {gameSessions.sudoku ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+              </div>
+              <span className="excel-cell-tag">{gameSessions.sudoku ? 'ACTIVE' : 'MOD_06'}</span>
+            </button>
           </div>
         </div>
       );
@@ -147,7 +161,9 @@ function App() {
                 ? '📈 Liar_Keyword_CrossCheck.xlsx'
                 : selectedGame === 'telestrations'
                 ? '📑 Telestrations_Sequence_Map.xlsx'
-                : '⚾ NumberBaseball_BullsCows_Audit.xlsx'}
+                : selectedGame === 'numberbaseball'
+                ? '⚾ NumberBaseball_BullsCows_Audit.xlsx'
+                : '🧩 Sudoku_Matrix_Solver.xlsx'}
             </h1>
             <p className="excel-subtext">
               Enter User Credentials and Workgroup Session Key to Load Cell Data:
@@ -214,6 +230,11 @@ function App() {
         <div style={{ display: selectedGame === 'numberbaseball' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.numberbaseball && (
             <NumberBaseballGame username={gameSessions.numberbaseball.username} room={gameSessions.numberbaseball.room} onLeaveRoom={() => handleLeaveGame('numberbaseball')} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'sudoku' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.sudoku && (
+            <SudokuGame username={gameSessions.sudoku.username} room={gameSessions.sudoku.room} onLeaveRoom={() => handleLeaveGame('sudoku')} />
           )}
         </div>
       </div>

@@ -1,0 +1,349 @@
+/* 📊 Microsoft Excel Incognito Theme for Sudoku Matrix Solver */
+
+.sudoku-container.excel-stealth-theme {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 📊 Excel Formula Bar */
+.sudoku-container .excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
+}
+
+.sudoku-container .excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-weight: 600;
+  min-width: 140px;
+  color: #201f1e;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.sudoku-container .excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: Georgia, serif;
+}
+
+.sudoku-container .excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 📋 Sheet Header Bar */
+.sudoku-container .game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+.sudoku-container .sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sudoku-container .sheet-title-info h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #201f1e;
+}
+
+.sudoku-container .game-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excel-cell-badge {
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  color: #201f1e;
+}
+
+.excel-cell-badge.phase {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+/* 🔘 Ribbon Buttons */
+.sudoku-container .excel-btn {
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.sudoku-container .excel-btn:hover:not(:disabled) {
+  background: #e1dfdd;
+  border-color: #a19f9d;
+}
+
+.sudoku-container .excel-btn.primary {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.sudoku-container .excel-btn.primary:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.sudoku-container .excel-btn.close {
+  background: #fde7e9;
+  color: #a80000;
+  border-color: #a80000;
+}
+
+/* 📱 Main Workspace */
+.sudoku-main-workspace {
+  padding: 16px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: #ffffff;
+}
+
+/* 🧩 9x9 Sudoku Board Container */
+.sudoku-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.sudoku-grid-table {
+  border-collapse: collapse;
+  border: 2px solid #0b5a2f;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sudoku-grid-table th {
+  background: #f3f2f1;
+  color: #605e5c;
+  font-weight: 600;
+  font-size: 0.78rem;
+  border: 1px solid #d4d4d4;
+  padding: 4px;
+  text-align: center;
+  width: 42px;
+  height: 24px;
+}
+
+.sudoku-grid-table th.corner-cell {
+  background: #e1dfdd;
+  width: 28px;
+}
+
+.sudoku-cell {
+  width: 44px;
+  height: 44px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border: 1px solid #d4d4d4;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+
+/* 3x3 블록 두꺼운 테두리 구분 */
+.sudoku-cell.border-right-thick {
+  border-right: 2px solid #0b5a2f;
+}
+
+.sudoku-cell.border-bottom-thick {
+  border-bottom: 2px solid #0b5a2f;
+}
+
+/* 셀 상태 강조 */
+.sudoku-cell.fixed {
+  background: #f9f9f9;
+  color: #201f1e;
+  font-weight: 700;
+}
+
+.sudoku-cell.user-input {
+  color: #107c41;
+  font-weight: 600;
+}
+
+.sudoku-cell.selected {
+  background: #e6f2eb !important;
+  outline: 2px solid #107c41;
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+.sudoku-cell.related {
+  background: #f4f8f5;
+}
+
+.sudoku-cell.same-number {
+  background: #d4ebd9;
+}
+
+.sudoku-cell.conflict {
+  background: #fde7e9 !important;
+  color: #a80000 !important;
+}
+
+/* 🎛️ Keypad & Controls Panel */
+.sudoku-controls-panel {
+  flex: 1;
+  min-width: 280px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sudoku-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 14px;
+}
+
+.sudoku-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  color: #107c41;
+  font-weight: 600;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.numpad-btn {
+  height: 44px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.numpad-btn:hover {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.action-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 🏆 Complete Banner */
+.sudoku-complete-banner {
+  background: #e6f2eb;
+  border: 1px solid #107c41;
+  color: #0b5a2f;
+  padding: 14px;
+  border-radius: 2px;
+  text-align: center;
+}
+
+.sudoku-complete-banner h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+}
+
+/* 📑 Bottom Excel Sheet Tabs */
+.sudoku-container .excel-sheet-tab-bar {
+  display: flex;
+  background: #f3f2f1;
+  border-top: 1px solid #d4d4d4;
+  padding: 4px 8px 0 8px;
+  gap: 4px;
+  font-size: 0.8rem;
+  align-items: center;
+}
+
+.sudoku-container .excel-sheet-tab {
+  padding: 4px 12px;
+  background: #e1dfdd;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  color: #605e5c;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.sudoku-container .excel-sheet-tab.active {
+  background: #ffffff;
+  color: #107c41;
+  font-weight: 700;
+  border-top: 2px solid #107c41;
+}
+
+.sudoku-container .excel-status-ready {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #605e5c;
+  padding-bottom: 4px;
+}

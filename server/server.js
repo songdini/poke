@@ -14,6 +14,7 @@ import { registerMafiaHandlers } from './src/socketHandlers/mafiaHandler.js';
 import { registerLiarHandlers } from './src/socketHandlers/liarHandler.js';
 import { registerTelestrationsHandlers } from './src/socketHandlers/telestrationsHandler.js';
 import { registerNumberBaseballHandlers } from './src/socketHandlers/numberBaseballHandler.js';
+import { registerSudokuHandlers } from './src/socketHandlers/sudokuHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,6 +109,7 @@ io.on('connection', (socket) => {
   registerLiarHandlers(io, socket);
   registerTelestrationsHandlers(io, socket);
   registerNumberBaseballHandlers(io, socket);
+  registerSudokuHandlers(io, socket);
 });
 
 // 주기적 서버 메모리 가비지 컬렉터 구동
