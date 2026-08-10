@@ -1,0 +1,312 @@
+/* 💣 Microsoft Excel Incognito Theme for Minesweeper Risk Analysis */
+
+.minesweeper-container.excel-stealth-theme {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 📊 Excel Formula Bar */
+.minesweeper-container .excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
+}
+
+.minesweeper-container .excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-weight: 600;
+  min-width: 140px;
+  color: #201f1e;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.minesweeper-container .excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: Georgia, serif;
+}
+
+.minesweeper-container .excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 📋 Sheet Header Bar */
+.minesweeper-container .game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+.minesweeper-container .sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.minesweeper-container .sheet-title-info h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #201f1e;
+}
+
+.minesweeper-container .game-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excel-cell-badge {
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  color: #201f1e;
+}
+
+.excel-cell-badge.phase {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+.excel-cell-badge.warning {
+  background: #fde7e9;
+  border-color: #dc2626;
+  color: #a80000;
+}
+
+/* 🔘 Ribbon Buttons */
+.minesweeper-container .excel-btn {
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.minesweeper-container .excel-btn:hover:not(:disabled) {
+  background: #e1dfdd;
+  border-color: #a19f9d;
+}
+
+.minesweeper-container .excel-btn.primary {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.minesweeper-container .excel-btn.primary:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.minesweeper-container .excel-btn.close {
+  background: #fde7e9;
+  color: #a80000;
+  border-color: #a80000;
+}
+
+/* 📱 Main Workspace */
+.minesweeper-workspace {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+}
+
+/* 🎮 Control Dashboard Header */
+.minesweeper-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 600px;
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 6px 14px;
+}
+
+.minesweeper-counter-box {
+  background: #000000;
+  color: #dc2626;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 2px;
+  letter-spacing: 2px;
+}
+
+.minesweeper-face-btn {
+  font-size: 1.4rem;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 2px 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.minesweeper-face-btn:hover {
+  background: #e6f2eb;
+}
+
+/* 💣 Minesweeper Grid Table */
+.minesweeper-board-wrapper {
+  overflow-x: auto;
+  border: 2px solid #107c41;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  user-select: none;
+}
+
+.minesweeper-grid-table {
+  border-collapse: collapse;
+}
+
+.minesweeper-grid-table th {
+  background: #f3f2f1;
+  color: #605e5c;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid #d4d4d4;
+  padding: 2px;
+  text-align: center;
+  width: 28px;
+  height: 22px;
+}
+
+.minesweeper-grid-table th.corner-cell {
+  background: #e1dfdd;
+  width: 24px;
+}
+
+.ms-cell {
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid #d4d4d4;
+  cursor: pointer;
+  box-sizing: border-border;
+}
+
+/* 닫힌 셀 (3D 버튼 필) */
+.ms-cell.closed {
+  background: #f3f2f1;
+  border: 1px solid #ffffff;
+  border-right-color: #a19f9d;
+  border-bottom-color: #a19f9d;
+}
+
+.ms-cell.closed:hover {
+  background: #e1dfdd;
+}
+
+/* 열린 셀 */
+.ms-cell.opened {
+  background: #ffffff;
+  border: 1px solid #e1dfdd;
+}
+
+.ms-cell.mine-exploded {
+  background: #fde7e9 !important;
+  border-color: #dc2626;
+}
+
+/* 클래식 지뢰찾기 조건부 서식 폰트 색상 */
+.ms-num-1 { color: #2563eb; }
+.ms-num-2 { color: #16a34a; }
+.ms-num-3 { color: #dc2626; }
+.ms-num-4 { color: #1e40af; }
+.ms-num-5 { color: #991b1b; }
+.ms-num-6 { color: #0d9488; }
+.ms-num-7 { color: #1f2937; }
+.ms-num-8 { color: #6b7280; }
+
+/* 📑 Bottom Excel Sheet Tabs */
+.minesweeper-container .excel-sheet-tab-bar {
+  display: flex;
+  background: #f3f2f1;
+  border-top: 1px solid #d4d4d4;
+  padding: 4px 8px 0 8px;
+  gap: 4px;
+  font-size: 0.8rem;
+  align-items: center;
+}
+
+.minesweeper-container .excel-sheet-tab {
+  padding: 4px 12px;
+  background: #e1dfdd;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  color: #605e5c;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.minesweeper-container .excel-sheet-tab.active {
+  background: #ffffff;
+  color: #107c41;
+  font-weight: 700;
+  border-top: 2px solid #107c41;
+}
+
+.minesweeper-container .excel-status-ready {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #605e5c;
+  padding-bottom: 4px;
+}

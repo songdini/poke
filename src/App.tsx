@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import Chat from './components/Chat'
 import MafiaGame from './components/MafiaGame'
@@ -6,9 +6,11 @@ import LiarGame from './components/LiarGame'
 import TelestrationsGame from './components/TelestrationsGame';
 import NumberBaseballGame from './components/NumberBaseballGame';
 import SudokuGame from './components/SudokuGame';
+import MinesweeperGame from './components/MinesweeperGame';
+import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku';
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper';
 
 interface GameSession {
   username: string;
@@ -19,14 +21,28 @@ interface GameSession {
 function App() {
   const [selectedGame, setSelectedGame] = useState<GameKey | null>(null);
   const [activeTab, setActiveTab] = useState('Home');
+  const [isBossMode, setIsBossMode] = useState(false);
   const [gameSessions, setGameSessions] = useState<Record<GameKey, GameSession | null>>({
     catchmind: null,
     mafia: null,
     liar: null,
     telestrations: null,
     numberbaseball: null,
-    sudoku: null
+    sudoku: null,
+    minesweeper: null
   });
+
+  // 🚨 Emergency Boss Key Keyboard Listener (F2 or ESC)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F2' || e.key === 'Escape') {
+        e.preventDefault();
+        setIsBossMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleGameSelection = (gameType: GameKey) => {
     setSelectedGame(gameType);
@@ -138,6 +154,18 @@ function App() {
               </div>
               <span className="excel-cell-tag">{gameSessions.sudoku ? 'ACTIVE' : 'MOD_06'}</span>
             </button>
+
+            <button
+              className={`game-option minesweeper ${gameSessions.minesweeper ? 'has-active-session' : ''}`}
+              onClick={() => handleGameSelection('minesweeper')}
+            >
+              <div className="game-icon">💣</div>
+              <div className="game-info">
+                <h3>Table 07: Minesweeper_Grid_Risk_Analysis.xlsx</h3>
+                <p>Grid Cell Risk Audit & Mine Detector | Status: {gameSessions.minesweeper ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+              </div>
+              <span className="excel-cell-tag">{gameSessions.minesweeper ? 'ACTIVE' : 'MOD_07'}</span>
+            </button>
           </div>
         </div>
       );
@@ -163,7 +191,9 @@ function App() {
                 ? '📑 Telestrations_Sequence_Map.xlsx'
                 : selectedGame === 'numberbaseball'
                 ? '⚾ NumberBaseball_BullsCows_Audit.xlsx'
-                : '🧩 Sudoku_Matrix_Solver.xlsx'}
+                : selectedGame === 'sudoku'
+                ? '🧩 Sudoku_Matrix_Solver.xlsx'
+                : '💣 Minesweeper_Grid_Risk_Analysis.xlsx'}
             </h1>
             <p className="excel-subtext">
               Enter User Credentials and Workgroup Session Key to Load Cell Data:
@@ -237,12 +267,20 @@ function App() {
             <SudokuGame username={gameSessions.sudoku.username} room={gameSessions.sudoku.room} onLeaveRoom={() => handleLeaveGame('sudoku')} />
           )}
         </div>
+        <div style={{ display: selectedGame === 'minesweeper' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.minesweeper && (
+            <MinesweeperGame username={gameSessions.minesweeper.username} room={gameSessions.minesweeper.room} onLeaveRoom={() => handleLeaveGame('minesweeper')} />
+          )}
+        </div>
       </div>
     );
   };
 
   return (
     <SocketProvider>
+      {/* 🚨 Emergency Boss Key Screen Overlay */}
+      {isBossMode && <BossScreen onToggle={() => setIsBossMode(false)} />}
+
       <div className="excel-app-window">
         {/* Excel Top Title Bar */}
         <div className="excel-title-bar">
@@ -257,6 +295,23 @@ function App() {
             </div>
           </div>
           <div className="excel-title-right">
+            <button
+              onClick={() => setIsBossMode(true)}
+              style={{
+                background: '#0b5a2f',
+                color: '#ffffff',
+                border: '1px solid #8bf7b5',
+                padding: '2px 8px',
+                borderRadius: '2px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                marginRight: '6px'
+              }}
+              title="긴급 보스키 (F2 / ESC)"
+            >
+              ⚡ Stealth View (F2)
+            </button>
             <span className="excel-user-profile">👤 KIMSJ (Corp)</span>
             <div className="excel-window-controls">
               <span>─</span>
