@@ -1,681 +1,563 @@
-.liar-game {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    color: #333;
+/* 📊 Microsoft Excel Incognito Theme for Liar Game */
+
+.liar-game-container.excel-stealth-theme {
+  width: 100%;
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  color: #201f1e;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.game-header {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* 📊 Excel Formula Bar */
+.excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  height: 32px;
+  gap: 4px;
+  user-select: none;
 }
 
-.game-header h2 {
-    margin: 0 0 10px 0;
-    color: #4c51bf;
-    font-size: 24px;
+.excel-name-box {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-weight: 600;
+  min-width: 130px;
+  color: #201f1e;
+  text-align: center;
+  font-size: 0.8rem;
 }
 
-.room-info {
-    display: flex;
-    gap: 20px;
-    color: #666;
+.excel-fx-icon {
+  padding: 0 8px;
+  font-style: italic;
+  font-weight: 700;
+  color: #605e5c;
+  font-family: Georgia, serif;
 }
 
+.excel-formula-input {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 3px 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: #107c41;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 📋 Sheet Header Bar */
+.liar-game-container .game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+.sheet-title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-title-info h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #201f1e;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.excel-cell-badge {
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  color: #201f1e;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.excel-cell-badge.phase {
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+}
+
+.excel-cell-badge.timer {
+  background: #ffffff;
+  border-color: #d4d4d4;
+  color: #605e5c;
+}
+
+/* 🔘 Excel Ribbon Buttons */
+.excel-btn {
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid #d4d4d4;
+  background: #f3f2f1;
+  color: #201f1e;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.excel-btn:hover:not(:disabled) {
+  background: #e1dfdd;
+  border-color: #a19f9d;
+}
+
+.excel-btn.primary {
+  background: #107c41;
+  color: #ffffff;
+  border-color: #0b5a2f;
+}
+
+.excel-btn.primary:hover:not(:disabled) {
+  background: #0b5a2f;
+}
+
+.excel-btn.close {
+  background: #fde7e9;
+  color: #a80000;
+  border-color: #a80000;
+}
+
+.excel-btn.close:hover:not(:disabled) {
+  background: #f9c5c8;
+}
+
+.excel-btn:disabled {
+  background: #f3f2f1;
+  color: #a19f9d;
+  border-color: #e1dfdd;
+  cursor: not-allowed;
+}
+
+/* ⚠️ Error Banner */
 .error-message {
-    background: #fee;
-    color: #c53030;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #fed7d7;
-    margin-bottom: 20px;
-    text-align: center;
+  background: #fde7e9;
+  color: #a80000;
+  border-bottom: 1px solid #f9c5c8;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
 }
 
-.players-section {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* 📱 Main Layout Area */
+.liar-game-main {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: #ffffff;
 }
 
-.players-section h3 {
-    margin: 0 0 15px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #4c51bf;
+/* 📊 Excel Grid Table */
+.excel-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  background: #ffffff;
 }
 
-.players-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
 }
 
-.player-card {
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: all 0.2s;
+.excel-grid-table th {
+  background: #f3f2f1;
+  color: #605e5c;
+  font-weight: 600;
+  border: 1px solid #d4d4d4;
+  padding: 6px 10px;
+  text-align: left;
+  user-select: none;
 }
 
-.player-card.me {
-    background: #ebf8ff;
-    border-color: #4299e1;
+.excel-grid-table th.corner-header {
+  width: 40px;
+  text-align: center;
+  background: #e1dfdd;
 }
 
-.player-name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 500;
+.excel-grid-table td {
+  border: 1px solid #e1dfdd;
+  padding: 6px 10px;
+  color: #201f1e;
 }
 
-.host-icon {
-    color: #f6ad55;
+.excel-grid-table td.row-header {
+  background: #f3f2f1;
+  color: #605e5c;
+  font-weight: 600;
+  text-align: center;
+  user-select: none;
+  width: 40px;
 }
 
-.me-badge {
-    background: #4299e1;
-    color: white;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: auto;
+.excel-grid-table tr:hover td:not(.row-header) {
+  background: #f9f9f9;
 }
 
-.vote-btn {
-    background: #4299e1;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
+.excel-grid-table tr.me-row td:not(.row-header) {
+  background: #e6f2eb;
 }
 
-.vote-btn:hover:not(:disabled) {
-    background: #3182ce;
+.excel-tag {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-weight: 700;
+  margin-left: 6px;
+  display: inline-block;
 }
 
-.vote-btn:disabled {
-    background: #a0aec0;
-    cursor: not-allowed;
+.excel-tag.me {
+  background: #107c41;
+  color: #ffffff;
 }
 
-.vote-btn.selected {
-    background: #38a169;
+.excel-tag.host {
+  background: #d97706;
+  color: #ffffff;
 }
 
-.vote-count {
-    background: #fc8181;
-    color: white;
-    text-align: center;
-    padding: 4px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
+/* 📄 Phase Content Cards */
+.excel-phase-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.phase-section {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.excel-card-header {
+  border-bottom: 1px solid #e1dfdd;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.waiting-content, .word-input-content, .word-distribute-content, .vote-content, .result-content {
-    text-align: center;
+.excel-card-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #107c41;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .phase-description {
-    color: #666;
-    margin: 10px 0;
+  color: #605e5c;
+  font-size: 0.85rem;
+  margin: 6px 0 12px 0;
 }
 
-.primary-btn {
-    background: #4c51bf;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
+/* 🔐 Word Reveal Card */
+.my-word-box {
+  background: #f9f9f9;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 14px;
+  text-align: center;
+  margin: 10px 0;
 }
 
-.primary-btn:hover {
-    background: #434190;
-    transform: translateY(-1px);
+.word-display-cell {
+  margin-top: 10px;
+  display: inline-block;
+  padding: 8px 24px;
+  background: #e6f2eb;
+  border: 1px solid #107c41;
+  color: #0b5a2f;
+  font-weight: 700;
+  font-size: 1.1rem;
+  font-family: 'Consolas', monospace;
+  border-radius: 2px;
 }
 
-.input-group {
-    margin: 15px 0;
+.word-display-cell.liar {
+  background: #fde7e9;
+  border-color: #a80000;
+  color: #a80000;
 }
 
-.word-input {
-    width: 100%;
-    max-width: 300px;
-    padding: 12px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 10px;
+/* 💬 Excel Audit Log Chat */
+.excel-chat-container {
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: 280px;
 }
 
-.word-input:focus {
-    outline: none;
-    border-color: #4c51bf;
+.excel-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fafafa;
 }
 
-.input-group small {
-    display: block;
-    color: #666;
-    font-size: 12px;
-    margin-top: 5px;
+.excel-chat-row {
+  display: flex;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid #e1dfdd;
+  border-radius: 2px;
+  gap: 8px;
+  align-items: center;
 }
 
-.my-word-section {
-    margin: 20px 0;
+.excel-chat-row.my-row {
+  background: #e6f2eb;
+  border-color: #b0d8c0;
 }
 
-.word-reveal {
-    background: #f7fafc;
-    border-radius: 8px;
-    padding: 20px;
+.excel-chat-time {
+  color: #8a8886;
+  font-size: 0.75rem;
+  min-width: 65px;
+  font-family: 'Consolas', monospace;
 }
 
-.liar-notice {
-    background: linear-gradient(135deg, #fc8181, #f56565);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+.excel-chat-user {
+  font-weight: 600;
+  color: #201f1e;
+  min-width: 90px;
 }
 
-.citizen-notice {
-    background: linear-gradient(135deg, #68d391, #48bb78);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+.excel-chat-text {
+  flex: 1;
+  color: #201f1e;
+  word-break: break-all;
 }
 
-.liar-notice h4, .citizen-notice h4 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
+.excel-chat-input-bar {
+  display: flex;
+  align-items: center;
+  background: #f3f2f1;
+  border-top: 1px solid #d4d4d4;
+  padding: 6px 8px;
+  gap: 6px;
 }
 
-.my-word-display {
-    margin-top: 15px;
+.excel-chat-input-bar .prefix {
+  font-weight: 700;
+  color: #107c41;
+  font-family: 'Consolas', monospace;
+  font-size: 0.85rem;
 }
 
-.word-toggle-btn {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0 auto 10px auto;
-    transition: all 0.2s;
+.excel-chat-input-bar input {
+  flex: 1;
+  border: 1px solid #d4d4d4;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  outline: none;
+  font-family: inherit;
+  background: #ffffff;
 }
 
-.word-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+.excel-chat-input-bar input:focus {
+  border-color: #107c41;
 }
 
-.word-toggle-btn.small {
-    padding: 6px 12px;
-    font-size: 12px;
-    background: #4c51bf;
-    color: white;
-    border-color: #4c51bf;
+/* 🗳️ Vote Results Section */
+.vote-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 10px;
 }
 
-.word-display {
-    background: rgba(255, 255, 255, 0.9);
-    color: #333;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
+.vote-summary-table th {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 6px;
+  text-align: center;
 }
 
-.word-display.small {
-    font-size: 14px;
-    padding: 8px;
+.vote-summary-table td {
+  border: 1px solid #e1dfdd;
+  padding: 6px;
+  text-align: center;
 }
 
-.talk-content {
-    max-width: none;
+/* 🏆 Game Result Box */
+.excel-result-box {
+  background: #f9f9f9;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  padding: 16px;
+  text-align: center;
 }
 
-.talk-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e2e8f0;
+.excel-result-box.citizen-win {
+  border-color: #107c41;
+  background: #e6f2eb;
 }
 
-.talk-header h3 {
-    margin: 0;
-    color: #4c51bf;
+.excel-result-box.liar-win {
+  border-color: #a80000;
+  background: #fde7e9;
 }
 
-.timer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #4c51bf;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 18px;
+.excel-result-box h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+
 }
 
-.my-word-reminder {
-    text-align: center;
-    margin-bottom: 20px;
+/* 📑 Sheet Tabs Bar (Bottom) */
+.excel-sheet-tab-bar {
+  display: flex;
+  background: #f3f2f1;
+  border-top: 1px solid #d4d4d4;
+  padding: 4px 8px 0 8px;
+  gap: 4px;
+  font-size: 0.8rem;
+  align-items: center;
 }
 
-.chat-section {
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    height: 400px;
-    display: flex;
-    flex-direction: column;
+.excel-sheet-tab {
+  padding: 4px 12px;
+  background: #e1dfdd;
+  border: 1px solid #d4d4d4;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  color: #605e5c;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-.messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    background: #f7fafc;
+.excel-sheet-tab.active {
+  background: #ffffff;
+  color: #107c41;
+  font-weight: 700;
+  border-top: 2px solid #107c41;
 }
 
-.message {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.excel-status-ready {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #605e5c;
+  padding-bottom: 4px;
 }
 
-.message.my-message {
-    background: #ebf8ff;
-    border-left: 3px solid #4299e1;
+/* ⏳ Loading Overlay Window */
+.liar-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.message-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
+.liar-loading-container {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  width: 380px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  font-family: 'Segoe UI', Calibri, sans-serif;
 }
 
-.message-header strong {
-    color: #4c51bf;
-}
-
-.timestamp {
-    font-size: 12px;
-    color: #666;
-}
-
-.message-content {
-    color: #333;
-    line-height: 1.4;
-}
-
-.message-input {
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    background: white;
-    border-top: 1px solid #e2e8f0;
-}
-
-.message-input input {
-    flex: 1;
-    padding: 10px;
-    border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.message-input input:focus {
-    outline: none;
-    border-color: #4c51bf;
-}
-
-.message-input button {
-    background: #4c51bf;
-    color: white;
-    border: none;
-    padding: 10px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: all 0.2s;
-}
-
-.message-input button:hover:not(:disabled) {
-    background: #434190;
-}
-
-.message-input button:disabled {
-    background: #a0aec0;
-    cursor: not-allowed;
-}
-
-.vote-status {
-    background: #edf2f7;
-    padding: 10px;
-    border-radius: 6px;
-    margin: 15px 0;
-    font-weight: 500;
-}
-
-.vote-confirmation {
-    background: #c6f6d5;
-    color: #276749;
-    padding: 12px;
-    border-radius: 6px;
-    margin: 15px 0;
-    font-weight: 500;
-}
-
-.result-message {
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.result-message.citizens {
-    background: linear-gradient(135deg, #68d391, #48bb78);
-    color: white;
-}
-
-.result-message.liar {
-    background: linear-gradient(135deg, #fc8181, #f56565);
-    color: white;
-}
-
-.result-message h4 {
-    margin: 0;
-}
-
-.result-details {
-    background: #f7fafc;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-}
-
-.result-item {
-    margin: 10px 0;
-    padding: 8px 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.result-item:last-child {
-    border-bottom: none;
-}
-
-.result-item strong {
-    color: #4c51bf;
-}
-
-.vote-results {
-    background: #edf2f7;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 20px 0;
-}
-
-.vote-results h4 {
-    margin: 0 0 15px 0;
-    color: #4c51bf;
-}
-
-.vote-result-item {
-    padding: 5px 0;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #cbd5e0;
-}
-
-.vote-result-item:last-child {
-    border-bottom: none;
-}
-
-/* 로딩 오버레이 스타일 */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    animation: fadeIn 0.3s ease-out;
-}
-
-.loading-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    padding: 40px 30px;
-    text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    max-width: 400px;
-    width: 90%;
-    position: relative;
-    overflow: hidden;
-}
-
-.loading-container::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transform: rotate(45deg);
-    animation: shimmer 2s infinite;
-}
-
-.loading-spinner {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 30px;
-}
-
-.spinner-ring {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border: 4px solid transparent;
-    border-top: 4px solid #fff;
-    border-radius: 50%;
-    animation: spin 1.5s linear infinite;
-}
-
-.spinner-ring.delay-1 {
-    animation-delay: -0.5s;
-    border-top-color: rgba(255, 255, 255, 0.7);
-}
-
-.spinner-ring.delay-2 {
-    animation-delay: -1s;
-    border-top-color: rgba(255, 255, 255, 0.4);
+.loading-window-header {
+  background: #107c41;
+  color: #ffffff;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .loading-content {
-    position: relative;
-    z-index: 1;
+  padding: 16px;
+  text-align: center;
 }
 
 .loading-title {
-    color: #fff;
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 30px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  color: #201f1e;
+  font-weight: 600;
 }
 
 .loading-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-align: left;
 }
 
 .loading-step {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    transition: all 0.5s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transform: translateX(-10px);
-    opacity: 0.6;
+  padding: 6px 10px;
+  background: #f3f2f1;
+  border: 1px solid #e1dfdd;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  color: #605e5c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .loading-step.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    transform: translateX(0px);
-    border-color: rgba(255, 255, 255, 0.3);
-    opacity: 1;
-}
-
-.loading-step-icon {
-    font-size: 20px;
-    width: 30px;
-    text-align: center;
-}
-
-.loading-step span {
-    font-weight: 500;
-    flex: 1;
-    text-align: left;
-}
-
-.loading-message {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 16px;
-    font-weight: 500;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-}
-
-@media (max-width: 768px) {
-    .liar-game {
-        padding: 10px;
-    }
-
-    .players-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .talk-header {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-    }
-
-    .room-info {
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .chat-section {
-        height: 300px;
-    }
-
-    .loading-container {
-        padding: 30px 20px;
-        margin: 20px;
-    }
-
-    .loading-title {
-        font-size: 20px;
-    }
-
-    .loading-spinner {
-        width: 60px;
-        height: 60px;
-        margin-bottom: 20px;
-    }
-
-    .loading-step {
-        padding: 10px 15px;
-        gap: 10px;
-    }
-
-    .loading-step-icon {
-        font-size: 18px;
-        width: 25px;
-    }
+  background: #e6f2eb;
+  border-color: #107c41;
+  color: #0b5a2f;
+  font-weight: 600;
 }

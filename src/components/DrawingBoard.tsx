@@ -180,12 +180,33 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   }, [paths]);
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#23272f', borderRadius: 12, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
-        <h3 style={{ margin: 0, marginBottom: 12, color: '#39ff14', fontFamily: 'Fira Mono, Consolas, monospace' }}>🖌️ 그림 그리기</h3>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 12, alignItems: 'center', justifyContent: 'center' }}>
-          {/* 색상 선택 (프리셋 + 커스텀) */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Segoe UI', Calibri, Arial, sans-serif" }}>
+      <div style={{ background: '#ffffff', borderRadius: '4px', width: '420px', border: '1px solid #d4d4d4', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        {/* 📊 Excel Window Header */}
+        <div style={{ background: '#107c41', color: '#ffffff', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📊</span>
+            <span>Excel Ink & Drawing Object - Insert Shapes</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1rem', padding: '0 4px', lineHeight: 1 }} title="닫기">
+            ✕
+          </button>
+        </div>
+
+        {/* 📊 Excel Formula Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', background: '#f3f2f1', borderBottom: '1px solid #d4d4d4', padding: '4px 8px', fontSize: '0.8rem', gap: '6px' }}>
+          <span style={{ background: '#ffffff', border: '1px solid #d4d4d4', padding: '2px 8px', fontWeight: 600, color: '#201f1e' }}>Sheet1!C4</span>
+          <span style={{ fontStyle: 'italic', fontWeight: 700, color: '#605e5c', padding: '0 4px' }}>fx</span>
+          <div style={{ flex: 1, background: '#ffffff', border: '1px solid #d4d4d4', padding: '2px 8px', fontFamily: 'Consolas, monospace', color: '#107c41', fontSize: '0.78rem', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            =INSERT_INK_DATA(Canvas.PngData, "Sheet1!C4:H18")
+          </div>
+        </div>
+
+        {/* 🎨 Excel Ribbon Toolbar */}
+        <div style={{ background: '#f8f9fa', padding: '8px 12px', borderBottom: '1px solid #d4d4d4', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Row 1: Color Palette */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#605e5c' }}>잉크 색상:</span>
             {COLORS.map((c) => (
               <button
                 key={c}
@@ -194,13 +215,14 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
                   setIsEraser(false);
                 }}
                 style={{
-                  width: 24,
-                  height: 24,
+                  width: '20px',
+                  height: '20px',
                   borderRadius: '50%',
-                  border: color === c && !isEraser ? '2px solid #39ff14' : '2px solid #333',
+                  border: color === c && !isEraser ? '2px solid #107c41' : '1px solid #d4d4d4',
                   background: c,
                   cursor: 'pointer',
                   outline: 'none',
+                  boxShadow: color === c && !isEraser ? '0 0 0 2px #e6f2eb' : 'none'
                 }}
                 title={c}
               />
@@ -213,108 +235,154 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
                 setIsEraser(false);
               }}
               style={{
-                width: 32,
-                height: 32,
+                width: '22px',
+                height: '22px',
                 border: 'none',
                 background: 'none',
                 cursor: 'pointer',
-                marginLeft: 4,
-                padding: 0,
+                padding: 0
               }}
-              title="색상 선택"
+              title="사용자 지정 색상"
             />
           </div>
-          {/* 굵기 선택 */}
-          <div style={{ display: 'flex', gap: 6 }}>
+
+          {/* Row 2: Stroke Size & Tools */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#605e5c' }}>선 두께:</span>
             {SIZES.map((s) => (
               <button
                 key={s}
                 onClick={() => setSize(s)}
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  border: size === s ? '2px solid #39ff14' : '2px solid #bbb',
-                  background: '#eee',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+                  padding: '2px 8px',
+                  borderRadius: '2px',
+                  border: size === s ? '1px solid #107c41' : '1px solid #d4d4d4',
+                  background: size === s ? '#e6f2eb' : '#ffffff',
+                  color: size === s ? '#0b5a2f' : '#201f1e',
+                  fontSize: '0.75rem',
+                  fontWeight: size === s ? 700 : 500,
+                  cursor: 'pointer'
                 }}
-                title={`굵기 ${s}`}
+                title={`두께 ${s}px`}
               >
-                <div style={{ width: s, height: s, background: isEraser ? '#f87171' : color, borderRadius: '50%', border: '1px solid #888' }} />
+                {s}px
               </button>
             ))}
+
+            <div style={{ width: '1px', height: '16px', background: '#d4d4d4', margin: '0 4px' }} />
+
+            <button
+              onClick={toggleEraser}
+              style={{
+                padding: '2px 8px',
+                borderRadius: '2px',
+                border: isEraser ? '1px solid #dc2626' : '1px solid #d4d4d4',
+                background: isEraser ? '#fde7e9' : '#ffffff',
+                color: isEraser ? '#a80000' : '#201f1e',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="지우개 모드"
+            >
+              🧽 지우개
+            </button>
+            <button
+              onClick={handleUndo}
+              style={{
+                padding: '2px 8px',
+                borderRadius: '2px',
+                border: '1px solid #d4d4d4',
+                background: '#ffffff',
+                color: '#201f1e',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                cursor: 'pointer'
+              }}
+              title="실행 취소"
+            >
+              ↩️ 되돌리기
+            </button>
           </div>
-          {/* 지우개 버튼 */}
-          <button
-            onClick={toggleEraser}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: isEraser ? '2px solid #39ff14' : '2px solid #333',
-              background: '#18181b',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              outline: 'none',
-              fontSize: '16px',
-            }}
-            title="지우개"
-          >
-            🧽
-          </button>
-          {/* Undo 버튼 */}
-          <button
-            onClick={handleUndo}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: '2px solid #333',
-              background: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              outline: 'none',
-              fontSize: '16px',
-              marginLeft: 4
-            }}
-            title="실행 취소"
-          >
-            ↩️
-          </button>
         </div>
-        <canvas
-          ref={canvasRef}
-          width={320}
-          height={240}
-          style={{ border: '1px solid #333', borderRadius: 8, background: '#fff', touchAction: 'none', display: 'block', margin: '0 auto', userSelect: 'none', WebkitUserSelect: 'none' }}
-          onMouseDown={startDrawing}
-          onMouseUp={endDrawing}
-          onMouseOut={endDrawing}
-          onMouseMove={draw}
-          onTouchStart={startDrawing}
-          onTouchEnd={endDrawing}
-          onTouchCancel={endDrawing}
-          onTouchMove={draw}
-        />
-        <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button onClick={handleClear} style={{ padding: '8px 16px', background: '#23272f', color: '#39ff14', border: '1px solid #333', borderRadius: 6 }}>전체 지우기</button>
-          <button onClick={handleSend} style={{ padding: '8px 16px', background: '#39ff14', color: '#18181b', border: 'none', borderRadius: 6 }}>전송</button>
-          <button onClick={onClose} style={{ padding: '8px 16px', background: '#f87171', color: 'white', border: 'none', borderRadius: 6 }}>닫기</button>
-        </div>
-        {isEraser && (
-          <div style={{ marginTop: 8, textAlign: 'center', color: '#f87171', fontSize: '12px' }}>
-            🧽 지우개 모드 활성화
+
+        {/* 🖌️ Canvas Container (Excel Sheet Grid Feel) */}
+        <div style={{ padding: '16px', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', border: '1px solid #107c41', borderRadius: '2px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', background: '#ffffff' }}>
+            <canvas
+              ref={canvasRef}
+              width={350}
+              height={250}
+              style={{ touchAction: 'none', display: 'block', cursor: isEraser ? 'cell' : 'crosshair', userSelect: 'none', WebkitUserSelect: 'none' }}
+              onMouseDown={startDrawing}
+              onMouseUp={endDrawing}
+              onMouseOut={endDrawing}
+              onMouseMove={draw}
+              onTouchStart={startDrawing}
+              onTouchEnd={endDrawing}
+              onTouchCancel={endDrawing}
+              onTouchMove={draw}
+            />
           </div>
-        )}
+
+          {isEraser && (
+            <div style={{ marginTop: '6px', color: '#a80000', fontSize: '0.75rem', fontWeight: 600 }}>
+              🧽 지우개 모드 동작 중
+            </div>
+          )}
+
+          {/* 🔘 Excel Action Buttons Footer */}
+          <div style={{ marginTop: '16px', display: 'flex', gap: '8px', width: '100%', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleClear}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '2px',
+                border: '1px solid #d4d4d4',
+                background: '#f3f2f1',
+                color: '#201f1e',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              전체 지우기
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '2px',
+                border: '1px solid #a80000',
+                background: '#fde7e9',
+                color: '#a80000',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSend}
+              style={{
+                padding: '5px 16px',
+                borderRadius: '2px',
+                border: '1px solid #0b5a2f',
+                background: '#107c41',
+                color: '#ffffff',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              ▶ 그림 개체 전송
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

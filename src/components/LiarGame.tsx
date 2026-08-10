@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, Clock, Crown, Eye, EyeOff } from 'lucide-react';
+import { Send, Clock, Crown, Eye, EyeOff } from 'lucide-react';
 import { type Socket } from 'socket.io-client';
 import { getSessionToken } from '../socketUrl';
 import { useSocket } from '../context/SocketContext';
@@ -58,7 +58,7 @@ interface LiarErrorPayload {
   message: string;
 }
 
-// 로딩 컴포넌트
+// 📊 Excel PowerQuery Loading Window Component
 const LiarGameLoading: React.FC = () => {
   const [dots, setDots] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
@@ -85,37 +85,34 @@ const LiarGameLoading: React.FC = () => {
   }, []);
 
   const steps = [
-    { icon: '📝', text: '단어 사전 데이터베이스 연결 중' },
-    { icon: '🔍', text: '카테고리별 단어 무작위 조합 중' },
-    { icon: '🎭', text: '라이어 플레이어 비밀리에 추첨 중' }
+    { icon: '📝', text: '단어 사전 데이터베이스 연결 및 쿼리 실행 중' },
+    { icon: '🔍', text: '카테고리별 제시어 인덱스 무작위 추출 중' },
+    { icon: '🎭', text: '라이어 계정 권한 할당 및 암호화 진행 중' }
   ];
 
   return (
-      <div className="liar-loading-overlay">
-        <div className="liar-loading-container">
-          <div className="loading-spinner">
-            <div className="spinner-ring"></div>
-            <div className="spinner-ring delay-1"></div>
-            <div className="spinner-ring delay-2"></div>
+    <div className="liar-loading-overlay">
+      <div className="liar-loading-container">
+        <div className="loading-window-header">
+          <span>📊</span>
+          <span>Excel PowerQuery Engine - Data Querying</span>
+        </div>
+        <div className="loading-content">
+          <h3 className="loading-title">🎭 데이터베이스 연동 및 라이어 추첨 중{dots}</h3>
+          <div className="loading-steps">
+            {steps.map((step, index) => (
+              <div key={index} className={`loading-step ${index <= currentStep ? 'active' : ''}`}>
+                <span>{step.icon}</span>
+                <span>{step.text}</span>
+              </div>
+            ))}
           </div>
-
-          <div className="loading-content">
-            <h2 className="loading-title">🎭 게임 준비 중{dots}</h2>
-            <div className="loading-steps">
-              {steps.map((step, index) => (
-                  <div key={index} className={`loading-step ${index <= currentStep ? 'active' : ''}`}>
-                    <div className="loading-step-icon">{step.icon}</div>
-                    <span>{step.text}</span>
-                  </div>
-              ))}
-            </div>
-
-            <div className="loading-message">
-              잠시만 기다려주세요...
-            </div>
+          <div style={{ fontSize: '0.78rem', color: '#605e5c' }}>
+            잠시만 기다려주십시오...
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
@@ -247,14 +244,12 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     };
   }, [socket, username, room]);
 
-  // 메시지 스크롤
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 이벤트 핸들러들
   const handleGameStart = () => {
-    setPhase('starting'); // 로딩 상태로 변경
+    setPhase('starting');
     socketRef.current?.emit('liar-game-start', { room });
   };
 
@@ -289,227 +284,246 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
   const isHost = myPlayer?.isHost || false;
 
   return (
-      <div className="liar-game">
-        {/* 헤더 */}
-        <div className="game-header">
-          <h2>🤥 Liar_Check</h2>
-          <div className="room-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span>방: <strong>{room}</strong></span>
-            <span>닉네임: <strong>{username}</strong></span>
-            {onLeaveRoom && (
-              <button onClick={onLeaveRoom} className="leave-room-btn" style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
-                🚪 방 나가기
+    <div className="liar-game-container excel-stealth-theme">
+      {/* 📊 Excel Formula Bar */}
+      <div className="excel-formula-bar">
+        <div className="excel-name-box">Sheet1!A1</div>
+        <div className="excel-fx-icon">fx</div>
+        <div className="excel-formula-input">
+          {phase === 'waiting' && `=SUM(PLAYERS_READY) & " / " & COUNT(PLAYERS_TOTAL)`}
+          {phase === 'word-input' && `=QUERY_WORD_DICTIONARY(CATEGORY_ALL)`}
+          {phase === 'word-distribute' && `=VLOOKUP(USER, SECRET_WORD_DB, 2, FALSE)`}
+          {phase === 'talk' && `=COUNTDOWN_TIMER(${timer}) & " - DISCUSS_LIAR()"`}
+          {phase === 'vote' && `=VOTE_CAST(USER_SELECTION, ACTIVE_VOTES)`}
+          {phase === 'result' && `=IF(WINNER="CITIZENS", "CITIZEN_VICTORY", "LIAR_VICTORY")`}
+          {phase === 'starting' && `=QUERY_DATABASE("WORD_DICT_INDEXING...")`}
+        </div>
+      </div>
+
+      {/* 📋 Sheet Header Bar */}
+      <div className="game-header">
+        <div className="sheet-title-info">
+          <span style={{ fontSize: '1.2rem' }}>🤥</span>
+          <h2>Sheet1_LiarCheck.xlsx</h2>
+        </div>
+        <div className="game-info">
+          <span className="excel-cell-badge phase">
+            단계: {phase === 'waiting' ? '대기 중' : phase === 'talk' ? '대화 시간' : phase === 'vote' ? '투표 진행' : phase === 'result' ? '게임 결과' : '진행 중'}
+          </span>
+          {phase === 'talk' && (
+            <span className="excel-cell-badge timer">
+              <Clock size={14} /> {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+            </span>
+          )}
+          <span className="excel-cell-badge">방 #{room}</span>
+          <span className="excel-cell-badge">USER: {username}</span>
+          {onLeaveRoom && (
+            <button onClick={onLeaveRoom} className="excel-btn close">
+              🚪 나가기
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ⚠️ 에러 메시지 */}
+      {error && (
+        <div className="error-message">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* 📱 Main Layout Area */}
+      <div className="liar-game-main">
+        {/* 📊 플레이어 목록 (Excel Grid Data Table) */}
+        <div className="excel-table-wrapper">
+          <table className="excel-grid-table">
+            <thead>
+              <tr>
+                <th className="corner-header"></th>
+                <th style={{ width: '80px' }}>A (ID)</th>
+                <th>B (참가자)</th>
+                <th style={{ width: '120px' }}>C (권한)</th>
+                {phase === 'vote' && <th style={{ width: '120px' }}>D (투표)</th>}
+                {phase === 'vote' && <th style={{ width: '80px' }}>E (득표)</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {players.map((player, idx) => (
+                <tr key={player.id} className={player.username === username ? 'me-row' : ''}>
+                  <td className="row-header">{idx + 1}</td>
+                  <td style={{ fontFamily: 'Consolas, monospace', fontSize: '0.78rem' }}>{player.id.substring(0, 6)}</td>
+                  <td>
+                    {player.isHost && <Crown size={14} className="host-icon" style={{ color: '#d97706', marginRight: 4, verticalAlign: 'middle' }} />}
+                    <strong style={{ verticalAlign: 'middle' }}>{player.username}</strong>
+                    {player.username === username && <span className="excel-tag me">나</span>}
+                    {player.isHost && <span className="excel-tag host">방장</span>}
+                  </td>
+                  <td>{player.isHost ? '방장 (Host)' : '참가자 (Member)'}</td>
+                  {phase === 'vote' && (
+                    <td>
+                      <button
+                        className={`excel-btn ${voteTarget === player.id ? 'primary' : ''}`}
+                        onClick={() => handleVote(player.id)}
+                        disabled={hasVoted || player.username === username}
+                        style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                      >
+                        {voteTarget === player.id ? '✓ 투표됨' : '투표하기'}
+                      </button>
+                    </td>
+                  )}
+                  {phase === 'vote' && (
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: voteCount[player.id] ? '#107c41' : '#8a8886' }}>
+                      {voteCount[player.id] ? `${voteCount[player.id]}표` : '-'}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 🎮 대기 단계 */}
+        {phase === 'waiting' && (
+          <div className="excel-phase-card">
+            <div className="excel-card-header">
+              <h3>🎮 라이어 게임 세션 대기 중</h3>
+              <span style={{ fontSize: '0.8rem', color: '#605e5c' }}>참가자: {players.length}명</span>
+            </div>
+            <p className="phase-description">최소 3명의 참가자가 모이면 방장이 게임을 시작할 수 있습니다.</p>
+            {isHost && players.length >= 3 && (
+              <button className="excel-btn primary" onClick={handleGameStart} style={{ padding: '8px 24px' }}>
+                ▶ 라이어 게임 시작 (Start)
               </button>
             )}
+            {!isHost && (
+              <p className="phase-description">방장이 게임을 시작할 때까지 잠시 기다려주세요.</p>
+            )}
           </div>
-        </div>
-
-        {/* 에러 메시지 */}
-        {error && (
-            <div className="error-message">
-              {error}
-            </div>
         )}
 
-        {/* 플레이어 목록 */}
-        <div className="players-section">
-          <h3><Users size={18} /> 참가자 ({players.length}명)</h3>
-          <div className="players-grid">
-            {players.map((player) => (
-                <div key={player.id} className={`player-card ${player.username === username ? 'me' : ''}`}>
-                  <div className="player-name">
-                    {player.isHost && <Crown size={14} className="host-icon" />}
-                    {player.username}
-                    {player.username === username && <span className="me-badge">나</span>}
-                  </div>
-                  {phase === 'vote' && (
-                      <button
-                          className={`vote-btn ${voteTarget === player.id ? 'selected' : ''}`}
-                          onClick={() => handleVote(player.id)}
-                          disabled={hasVoted || player.username === username}
-                      >
-                        {voteTarget === player.id ? '투표함' : '투표'}
-                      </button>
-                  )}
-                  {phase === 'vote' && voteCount[player.id] && (
-                      <div className="vote-count">
-                        {voteCount[player.id]}표
-                      </div>
-                  )}
-                </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 대기 단계 */}
-        {phase === 'waiting' && (
-            <div className="phase-section">
-              <div className="waiting-content">
-                <p>게임 시작을 기다리는 중...</p>
-                <p className="phase-description">최소 3명이 필요합니다.</p>
-                {isHost && players.length >= 3 && (
-                    <button className="primary-btn" onClick={handleGameStart}>
-                      🎮 게임 시작
-                    </button>
-                )}
-                {!isHost && (
-                    <p>방장이 게임을 시작할 때까지 기다려주세요.</p>
-                )}
-              </div>
+        {/* 🔍 제시어 입력/배분 단계 */}
+        {(phase === 'word-input' || phase === 'word-distribute') && (
+          <div className="excel-phase-card">
+            <div className="excel-card-header">
+              <h3>🔍 비밀 제시어 데이터 확인</h3>
             </div>
-        )}
-
-        {/* 제시어 입력 단계 */}
-        {phase === 'word-input' && (
-            <div className="phase-section">
-              <div className="word-input-content">
-                <h3>제시어 입력</h3>
-                {isHost ? (
-                    <p className="phase-description">게임 시작 버튼을 누르면 서버에서 자동으로 제시어를 가져옵니다.</p>
-                ) : (
-                    <div>
-                      <p className="phase-description">방장이 게임을 시작하면 서버에서 자동으로 제시어를 가져옵니다...</p>
-                    </div>
-                )}
-              </div>
-            </div>
-        )}
-
-        {/* 제시어 배분 단계 */}
-        {phase === 'word-distribute' && (
-            <div className="phase-section">
-              <div className="word-distribute-content">
-                <h3>제시어 확인</h3>
-                <div className="my-word-section">
-                  <div className="word-reveal">
-                    <div className="word-info">
-                      <div className="citizen-notice">
-                        <h4>내 제시어 확인</h4>
-                        <p>다른 사람에게 들키지 않게 조심하세요!</p>
-                        <div className="my-word-display">
-                          <button className="word-toggle-btn" onClick={() => setShowMyWord(!showMyWord)}>
-                            {showMyWord ? <EyeOff size={16} /> : <Eye size={16} />}
-                            {showMyWord ? '제시어 숨기기' : '내 제시어 보기'}
-                          </button>
-                          {showMyWord && <div className="word-display">{myWord}</div>}
-                        </div>
-                      </div>
-                    </div>
+            <div className="my-word-box">
+              <p style={{ margin: '0 0 6px 0', fontSize: '0.85rem', color: '#605e5c' }}>다른 사람에게 들키지 않게 주의하십시오!</p>
+              <button className="excel-btn" onClick={() => setShowMyWord(!showMyWord)}>
+                {showMyWord ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showMyWord ? '제시어 숨기기' : '내 제시어 확인하기'}
+              </button>
+              {showMyWord && (
+                <div style={{ marginTop: '10px' }}>
+                  <div className={`word-display-cell ${!myWord ? 'liar' : ''}`}>
+                    {myWord ? `제시어: ${myWord}` : '⚠️ 당신은 라이어입니다!'}
                   </div>
                 </div>
-                <p className="phase-description">곧 대화 단계가 시작됩니다...</p>
-              </div>
+              )}
             </div>
+            <p className="phase-description" style={{ textAlign: 'center', marginTop: '10px' }}>곧 대화 및 심문 단계가 시작됩니다...</p>
+          </div>
         )}
 
-        {/* 대화 단계 */}
+        {/* 💬 대화 단계 */}
         {phase === 'talk' && (
-            <div className="phase-section">
-              <div className="talk-content">
-                <div className="talk-header">
-                  <h3>💬 대화 시간</h3>
-                  <div className="timer">
-                    <Clock size={18} />
-                    {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+          <div className="excel-phase-card">
+            <div className="excel-card-header">
+              <h3>💬 대화 및 라이어 추론 시간</h3>
+              <button className="excel-btn" onClick={() => setShowMyWord(!showMyWord)}>
+                {showMyWord ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showMyWord ? '내 제시어 숨기기' : '내 제시어 확인'}
+              </button>
+            </div>
+            {showMyWord && (
+              <div style={{ marginBottom: '10px', textAlign: 'center' }}>
+                <span className={`word-display-cell ${!myWord ? 'liar' : ''}`} style={{ fontSize: '0.85rem', padding: '4px 14px' }}>
+                  {myWord ? `제시어: ${myWord}` : '⚠️ 당신은 라이어입니다!'}
+                </span>
+              </div>
+            )}
+            <div className="excel-chat-container">
+              <div className="excel-chat-messages">
+                {messages.map((msg, index) => (
+                  <div key={index} className={`excel-chat-row ${msg.username === username ? 'my-row' : ''}`}>
+                    <span className="excel-chat-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    <span className="excel-chat-user">{msg.username}:</span>
+                    <span className="excel-chat-text">{msg.message}</span>
                   </div>
-                </div>
-
-                <div className="my-word-reminder">
-                  <button
-                      className="word-toggle-btn small"
-                      onClick={() => setShowMyWord(!showMyWord)}
-                  >
-                    {showMyWord ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {showMyWord ? '숨기기' : '내 제시어'}
-                  </button>
-                  {showMyWord && (
-                      <div className="word-display small">
-                        {myWord || '제시어 없음 (라이어)'}
-                      </div>
-                  )}
-                </div>
-
-                <div className="chat-section">
-                  <div className="messages">
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`message ${msg.username === username ? 'my-message' : ''}`}>
-                          <div className="message-header">
-                            <strong>{msg.username}</strong>
-                            <span className="timestamp">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
-                      </span>
-                          </div>
-                          <div className="message-content">{msg.message}</div>
-                        </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                  <div className="message-input">
-                    <input
-                        type="text"
-                        value={currentMessage}
-                        onChange={e => setCurrentMessage(e.target.value)}
-                        placeholder="메시지를 입력하세요"
-                        onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                    />
-                    <button onClick={handleSendMessage} disabled={!currentMessage.trim()}>
-                      <Send size={18} />
-                    </button>
-                  </div>
-                </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              <div className="excel-chat-input-bar">
+                <span className="prefix">fx =</span>
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={e => setCurrentMessage(e.target.value)}
+                  placeholder="메시지를 입력하세요 (Enter)..."
+                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                />
+                <button className="excel-btn primary" onClick={handleSendMessage} disabled={!currentMessage.trim()}>
+                  <Send size={14} /> 전송
+                </button>
               </div>
             </div>
+          </div>
         )}
 
-        {/* 투표 단계 */}
+        {/* 🗳️ 투표 단계 */}
         {phase === 'vote' && (
-            <div className="phase-section">
-              <div className="vote-content">
-                <h3>투표</h3>
-                <p className="phase-description">
-                  대화 단계에서 누구를 라이어로 지목했는지 확인해주세요.
-                </p>
-                <div className="vote-status">
-                  현재 투표 상태: {votedCount}명 투표 완료
-                </div>
-                <div className="vote-results">
-                  <h4>투표 결과</h4>
-                  {Object.entries(voteCount).map(([playerId, count]) => (
-                      <div key={playerId} className="vote-result-item">
-                        <span>{players.find(p => p.id === playerId)?.username || playerId}:</span>
-                        <span>{count}표</span>
-                      </div>
-                  ))}
-                </div>
-                <button className="primary-btn" onClick={handleRestart}>
-                  게임 다시 시작
+          <div className="excel-phase-card">
+            <div className="excel-card-header">
+              <h3>🗳️ 라이어 지목 투표 세션</h3>
+              <span style={{ fontSize: '0.85rem', color: '#107c41', fontWeight: 600 }}>{votedCount}명 투표 완료</span>
+            </div>
+            <p className="phase-description">상단 참가자 목록(D열)에서 라이어로 의심되는 플레이어의 [투표하기] 버튼을 누르십시오.</p>
+            {isHost && (
+              <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                <button className="excel-btn primary" onClick={handleRestart}>
+                  🔄 세션 재시작
                 </button>
               </div>
-            </div>
+            )}
+          </div>
         )}
 
-        {/* 결과 단계 */}
+        {/* 🏆 결과 단계 */}
         {phase === 'result' && (
-            <div className="phase-section">
-              <div className="result-content">
-                <h3>게임 결과</h3>
-                <div className="result-message">
-                  <h4>{result?.winner === 'liar' ? '라이어 승리!' : '시민 승리!'}</h4>
-                  <p>{result?.message}</p>
-                  <p>라이어: {result?.liar}</p>
-                  <p>제시어: {result?.word}</p>
-                  <p>라이어 제시어: {result?.liarWord}</p>
-                </div>
-                <button className="primary-btn" onClick={handleRestart}>
-                  게임 다시 시작
-                </button>
+          <div className="excel-phase-card">
+            <div className="excel-card-header">
+              <h3>📊 세션 분석 최종 결과</h3>
+            </div>
+            <div className={`excel-result-box ${result?.winner === 'citizens' ? 'citizen-win' : 'liar-win'}`}>
+              <h4>{result?.winner === 'citizens' ? '🎉 시민 승리! (Citizen Victory)' : '🎭 라이어 승리! (Liar Victory)'}</h4>
+              <p style={{ margin: '4px 0 12px 0', fontSize: '0.9rem' }}>{result?.message}</p>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+                <div className="excel-cell-badge"><strong>라이어 계정:</strong> {result?.liar}</div>
+                <div className="excel-cell-badge"><strong>정답 제시어:</strong> {result?.word}</div>
+                <div className="excel-cell-badge"><strong>최다 득표:</strong> {result?.mostVoted}</div>
               </div>
             </div>
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <button className="excel-btn primary" onClick={handleRestart} style={{ padding: '8px 24px' }}>
+                🔄 다음 라운드 시작
+              </button>
+            </div>
+          </div>
         )}
-
-        {/* 로딩 오버레이 */}
-        {phase === 'starting' && <LiarGameLoading />}
       </div>
+
+      {/* 📑 Bottom Excel Sheet Tabs */}
+      <div className="excel-sheet-tab-bar">
+        <div className="excel-sheet-tab active">Sheet1_LiarCheck</div>
+        <div className="excel-sheet-tab">Audit_Logs</div>
+        <div className="excel-sheet-tab">Pivot_Summary</div>
+        <div style={{ color: '#8a8886', padding: '0 6px', cursor: 'pointer' }}>+</div>
+        <div className="excel-status-ready">STATUS: READY</div>
+      </div>
+
+      {/* ⏳ 로딩 오버레이 */}
+      {phase === 'starting' && <LiarGameLoading />}
+    </div>
   );
 };
 
