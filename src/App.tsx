@@ -468,6 +468,24 @@ function App() {
             >
               ⚾ Sheet6 - 숫자야구 {gameSessions.numberbaseball && <span className="tab-live-dot">●</span>}
             </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'sudoku' ? 'active' : ''} ${gameSessions.sudoku ? 'has-session' : ''}`}
+              onClick={() => handleGameSelection('sudoku')}
+            >
+              🧩 Sheet7 - 스도쿠 {gameSessions.sudoku && <span className="tab-live-dot">●</span>}
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'minesweeper' ? 'active' : ''} ${gameSessions.minesweeper ? 'has-session' : ''}`}
+              onClick={() => handleGameSelection('minesweeper')}
+            >
+              💣 Sheet8 - 지뢰찾기 {gameSessions.minesweeper && <span className="tab-live-dot">●</span>}
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'wordle' ? 'active' : ''} ${gameSessions.wordle ? 'has-session' : ''}`}
+              onClick={() => handleGameSelection('wordle')}
+            >
+              🔤 Sheet9 - Wordle {gameSessions.wordle && <span className="tab-live-dot">●</span>}
+            </button>
             <span className="new-sheet-btn">➕</span>
           </div>
 
