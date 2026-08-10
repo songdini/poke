@@ -16,6 +16,7 @@ import { registerTelestrationsHandlers } from './src/socketHandlers/telestration
 import { registerNumberBaseballHandlers } from './src/socketHandlers/numberBaseballHandler.js';
 import { registerSudokuHandlers } from './src/socketHandlers/sudokuHandler.js';
 import { registerMinesweeperHandlers } from './src/socketHandlers/minesweeperHandler.js';
+import { registerWordleHandlers } from './src/socketHandlers/wordleHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -112,6 +113,7 @@ io.on('connection', (socket) => {
   registerNumberBaseballHandlers(io, socket);
   registerSudokuHandlers(io, socket);
   registerMinesweeperHandlers(io, socket);
+  registerWordleHandlers(io, socket);
 });
 
 // 주기적 서버 메모리 가비지 컬렉터 구동

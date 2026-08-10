@@ -7,10 +7,11 @@ import TelestrationsGame from './components/TelestrationsGame';
 import NumberBaseballGame from './components/NumberBaseballGame';
 import SudokuGame from './components/SudokuGame';
 import MinesweeperGame from './components/MinesweeperGame';
+import WordleGame from './components/WordleGame';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper';
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle';
 
 interface GameSession {
   username: string;
@@ -29,7 +30,8 @@ function App() {
     telestrations: null,
     numberbaseball: null,
     sudoku: null,
-    minesweeper: null
+    minesweeper: null,
+    wordle: null
   });
 
   // 🚨 Emergency Boss Key Keyboard Listener (F2 or ESC)
@@ -166,6 +168,18 @@ function App() {
               </div>
               <span className="excel-cell-tag">{gameSessions.minesweeper ? 'ACTIVE' : 'MOD_07'}</span>
             </button>
+
+            <button
+              className={`game-option wordle ${gameSessions.wordle ? 'has-active-session' : ''}`}
+              onClick={() => handleGameSelection('wordle')}
+            >
+              <div className="game-icon">🔤</div>
+              <div className="game-info">
+                <h3>Table 08: Wordle_Text_Parser_2026.xlsx</h3>
+                <p>5-Letter Text Verification & Word Matcher | Status: {gameSessions.wordle ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+              </div>
+              <span className="excel-cell-tag">{gameSessions.wordle ? 'ACTIVE' : 'MOD_08'}</span>
+            </button>
           </div>
         </div>
       );
@@ -193,7 +207,9 @@ function App() {
                 ? '⚾ NumberBaseball_BullsCows_Audit.xlsx'
                 : selectedGame === 'sudoku'
                 ? '🧩 Sudoku_Matrix_Solver.xlsx'
-                : '💣 Minesweeper_Grid_Risk_Analysis.xlsx'}
+                : selectedGame === 'minesweeper'
+                ? '💣 Minesweeper_Grid_Risk_Analysis.xlsx'
+                : '🔤 Wordle_Text_Parser_2026.xlsx'}
             </h1>
             <p className="excel-subtext">
               Enter User Credentials and Workgroup Session Key to Load Cell Data:
@@ -270,6 +286,11 @@ function App() {
         <div style={{ display: selectedGame === 'minesweeper' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.minesweeper && (
             <MinesweeperGame username={gameSessions.minesweeper.username} room={gameSessions.minesweeper.room} onLeaveRoom={() => handleLeaveGame('minesweeper')} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'wordle' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.wordle && (
+            <WordleGame username={gameSessions.wordle.username} room={gameSessions.wordle.room} onLeaveRoom={() => handleLeaveGame('wordle')} />
           )}
         </div>
       </div>

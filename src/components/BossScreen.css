@@ -1,4 +1,4 @@
-/* 🚨 Emergency Boss Screen - 100% Authentic Corporate Excel Audit View */
+/* 🚀 Developer Study IDE Theme for Emergency Boss Screen */
 
 .boss-screen-container {
   position: fixed;
@@ -7,382 +7,373 @@
   width: 100vw;
   height: 100vh;
   z-index: 999999;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
-  color: #201f1e;
-  user-select: text;
   box-sizing: border-box;
 }
 
-/* 📊 Title Bar */
-.boss-excel-titlebar {
-  background: #107c41;
-  color: #ffffff;
+/* 💻 VS Code Theme Layout */
+.dev-ide-workspace {
+  width: 100%;
+  height: 100%;
+  background: #18181b;
+  color: #e4e4e7;
+  font-family: 'Consolas', 'Fira Code', 'Segoe UI', monospace;
+  display: flex;
+  flex-direction: column;
+}
+
+/* IDE Top Title Bar */
+.dev-titlebar {
+  background: #18181b;
+  border-bottom: 1px solid #27272a;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.8rem;
   user-select: none;
 }
 
-.boss-excel-titlebar .title-left {
+.dev-title-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: 600;
+  color: #a1a1aa;
 }
 
-.boss-excel-titlebar .autosave-badge {
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 2px 8px;
-  border-radius: 2px;
-  margin-left: 8px;
-}
-
-.boss-excel-titlebar .toggle-on {
-  color: #8bf7b5;
-  font-weight: 700;
-}
-
-.boss-excel-titlebar .title-center {
+.dev-title-center {
   flex: 1;
-  max-width: 320px;
+  max-width: 360px;
 }
 
-.boss-excel-titlebar .search-box {
-  background: rgba(255, 255, 255, 0.2);
+.ide-search {
+  background: #27272a;
+  border: 1px solid #3f3f46;
   border-radius: 4px;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.9);
+  padding: 3px 12px;
+  font-size: 0.78rem;
+  color: #71717a;
   text-align: center;
 }
 
-.boss-excel-titlebar .title-right {
+.dev-title-right {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.boss-toggle-btn {
-  background: #0b5a2f;
-  color: #ffffff;
-  border: 1px solid #8bf7b5;
-  padding: 3px 10px;
-  border-radius: 2px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  animation: pulse-border 2s infinite;
-}
-
-.boss-excel-titlebar .window-controls {
-  display: flex;
-  gap: 12px;
-  font-size: 0.9rem;
-}
-
-.boss-excel-titlebar .window-controls span {
-  cursor: pointer;
-}
-
-.boss-excel-titlebar .window-controls .close-btn:hover {
-  color: #f87171;
-}
-
-/* 📊 Ribbon Tabs */
-.boss-ribbon-tabs {
-  background: #f3f2f1;
-  border-bottom: 1px solid #d4d4d4;
-  display: flex;
-  padding: 0 8px;
-  gap: 2px;
-  user-select: none;
-}
-
-.boss-ribbon-tabs .ribbon-tab {
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  color: #201f1e;
-  cursor: pointer;
-}
-
-.boss-ribbon-tabs .ribbon-tab.active {
-  background: #ffffff;
-  color: #107c41;
-  font-weight: 700;
-  border-bottom: 3px solid #107c41;
-}
-
-/* 📊 Formula Bar */
-.boss-formula-bar {
-  display: flex;
-  align-items: center;
-  background: #f3f2f1;
-  border-bottom: 1px solid #d4d4d4;
-  padding: 3px 8px;
-  font-size: 0.8rem;
-  gap: 4px;
-  user-select: none;
-}
-
-.boss-formula-bar .name-box {
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  padding: 3px 10px;
-  font-weight: 700;
-  min-width: 140px;
-  color: #201f1e;
-  text-align: center;
-}
-
-.boss-formula-bar .fx-icon {
-  font-style: italic;
-  font-weight: 700;
-  color: #605e5c;
-  padding: 0 8px;
-  font-family: Georgia, serif;
-}
-
-.boss-formula-bar .formula-input {
-  flex: 1;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  padding: 3px 10px;
-  font-family: 'Consolas', monospace;
-  color: #107c41;
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-/* 📄 Sheet Viewport Area */
-.boss-sheet-viewport {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.sheet-doc-header {
-  border-bottom: 2px solid #107c41;
-  padding-bottom: 8px;
-}
-
-.sheet-doc-header h2 {
-  margin: 0 0 4px 0;
-  font-size: 1.25rem;
-  color: #0b5a2f;
-  font-weight: 700;
-}
-
-.sheet-doc-header p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: #605e5c;
-}
-
-/* 📊 Grid Table */
-.boss-table-section .table-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #107c41;
-  margin-bottom: 8px;
-}
-
-.boss-grid-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-  border: 1px solid #d4d4d4;
-}
-
-.boss-grid-table th {
-  background: #f3f2f1;
-  border: 1px solid #d4d4d4;
-  padding: 6px 10px;
-  font-weight: 600;
-  color: #605e5c;
-  text-align: left;
-}
-
-.boss-grid-table th.corner-col {
-  background: #e1dfdd;
-  width: 40px;
-}
-
-.boss-grid-table td {
-  border: 1px solid #e1dfdd;
-  padding: 6px 10px;
-  color: #201f1e;
-}
-
-.boss-grid-table td.row-header {
-  background: #f3f2f1;
-  color: #605e5c;
-  font-weight: 600;
-  text-align: center;
-  width: 40px;
-}
-
-.boss-grid-table td.num-cell {
-  text-align: right;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-weight: 500;
-}
-
-.boss-grid-table td.percent-cell {
-  text-align: right;
-  font-family: 'Consolas', monospace;
-  font-weight: 600;
-}
-
-.boss-grid-table td.percent-cell.positive {
-  color: #107c41;
-}
-
-.boss-grid-table td.formula-cell {
-  font-family: 'Consolas', monospace;
-  color: #605e5c;
-  font-size: 0.78rem;
-}
-
-.boss-grid-table tr.highlight-row {
-  background: #f4f8f5;
-}
-
-.boss-grid-table tr.highlight-row.major td {
-  border-top: 2px solid #107c41;
-  border-bottom: 2px solid #107c41;
-  background: #e6f2eb;
-}
-
-.boss-grid-table tr.grand-total-row td {
-  border-top: 2px solid #107c41;
-  border-bottom: 3px double #107c41;
-  font-size: 0.92rem;
-  background: #d4ebd9;
-}
-
-/* 📈 Chart & Ratio Section */
-.boss-chart-and-ratio-section {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.chart-card {
-  flex: 1.2;
-  min-width: 320px;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.ratio-card {
-  flex: 1;
-  min-width: 280px;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.card-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #107c41;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #e1dfdd;
-  padding-bottom: 6px;
-}
-
-.ratio-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
-.ratio-box {
-  background: #f8f9fa;
-  border: 1px solid #e1dfdd;
-  padding: 10px;
-  border-radius: 2px;
-  display: flex;
-  flex-direction: column;
-}
-
-.ratio-box .label {
-  font-size: 0.78rem;
-  color: #605e5c;
-  margin-bottom: 4px;
-}
-
-.ratio-box .value {
-  font-size: 1.2rem;
+.stealth-mode-badge {
+  background: #047857;
+  color: #a7f3d0;
+  border: 1px solid #10b981;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #201f1e;
-  font-family: 'Consolas', monospace;
-}
-
-.ratio-box .value.positive {
-  color: #107c41;
-}
-
-.ratio-box .sub {
-  font-size: 0.7rem;
-  color: #8a8886;
-  margin-top: 4px;
-}
-
-.font-cons {
-  font-family: 'Consolas', monospace;
-}
-
-/* 📑 Status Bar */
-.boss-sheet-tab-bar {
-  display: flex;
-  background: #f3f2f1;
-  border-top: 1px solid #d4d4d4;
-  padding: 4px 12px 0 12px;
-  gap: 4px;
-  font-size: 0.8rem;
-  align-items: center;
-  user-select: none;
-}
-
-.boss-sheet-tab-bar .sheet-tab {
-  padding: 5px 14px;
-  background: #e1dfdd;
-  border: 1px solid #d4d4d4;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-  color: #605e5c;
   cursor: pointer;
 }
 
-.boss-sheet-tab-bar .sheet-tab.active {
-  background: #ffffff;
-  color: #107c41;
-  font-weight: 700;
-  border-top: 2px solid #107c41;
+.mode-switch-btn {
+  background: #27272a;
+  color: #d4d4d8;
+  border: 1px solid #3f3f46;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
 }
 
-.boss-sheet-tab-bar .status-bar-right {
-  margin-left: auto;
+.dev-titlebar .window-controls {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+}
+
+.dev-titlebar .window-controls .close-btn:hover {
+  color: #f87171;
+}
+
+/* IDE Menu Bar */
+.dev-menubar {
+  background: #18181b;
+  border-bottom: 1px solid #27272a;
+  padding: 2px 12px;
+  display: flex;
+  gap: 14px;
   font-size: 0.78rem;
-  color: #605e5c;
+  color: #a1a1aa;
+  user-select: none;
+}
+
+.dev-menubar .menu-item {
+  cursor: pointer;
+}
+
+.dev-menubar .menu-item:hover {
+  color: #ffffff;
+}
+
+/* Main Body Layout */
+.dev-main-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar File Explorer */
+.dev-sidebar {
+  width: 220px;
+  background: #121215;
+  border-right: 1px solid #27272a;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.sidebar-header {
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #71717a;
+  letter-spacing: 1px;
+}
+
+.sidebar-tree {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+
+.tree-folder {
+  padding: 4px 12px;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.tree-file {
+  padding: 4px 12px 4px 24px;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+
+.tree-file:hover {
+  background: #27272a;
+  color: #ffffff;
+}
+
+.tree-file.active {
+  background: #27272a;
+  color: #38bdf8;
+  border-left: 2px solid #38bdf8;
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  padding: 10px 12px;
+  border-top: 1px solid #27272a;
+  font-size: 0.72rem;
+  color: #71717a;
+}
+
+/* Middle Code Editor */
+.dev-editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e24;
+}
+
+.editor-tab-bar {
+  background: #18181b;
+  display: flex;
+  border-bottom: 1px solid #27272a;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.editor-tab-bar .tab {
+  padding: 6px 16px;
+  background: #18181b;
+  color: #71717a;
+  border-right: 1px solid #27272a;
   display: flex;
   align-items: center;
-  padding-bottom: 4px;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.editor-tab-bar .tab.active {
+  background: #1e1e24;
+  color: #38bdf8;
+  border-top: 2px solid #38bdf8;
+  font-weight: 600;
+}
+
+.editor-breadcrumb {
+  background: #1e1e24;
+  padding: 4px 16px;
+  font-size: 0.75rem;
+  color: #71717a;
+  border-bottom: 1px solid #27272a;
+}
+
+.editor-breadcrumb span {
+  color: #a1a1aa;
+}
+
+/* Code Editor Window */
+.code-editor {
+  flex: 1;
+  display: flex;
+  overflow-y: auto;
+  padding: 12px 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.line-numbers {
+  width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-right: 12px;
+  color: #52525b;
+  user-select: none;
+  font-size: 0.82rem;
+}
+
+.code-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  white-space: pre;
+}
+
+/* Syntax Highlighting Colors */
+.code-line .keyword { color: #c586c0; font-weight: 600; }
+.code-line .module { color: #4ec9b0; }
+.code-line .type { color: #4ec9b0; }
+.code-line .class-name { color: #4ec9b0; font-weight: 600; }
+.code-line .func { color: #dcdcaa; }
+.code-line .builtin { color: #569cd6; }
+.code-line .self { color: #9cdcfe; }
+.code-line .comment { color: #6a9955; font-style: italic; }
+.code-line .number { color: #b5cea8; }
+
+/* Integrated Terminal */
+.dev-terminal-panel {
+  height: 150px;
+  background: #121215;
+  border-top: 1px solid #27272a;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+}
+
+.terminal-tabs {
+  background: #18181b;
+  display: flex;
+  gap: 16px;
+  padding: 4px 16px;
+  font-size: 0.75rem;
+  border-bottom: 1px solid #27272a;
+  color: #71717a;
+  user-select: none;
+}
+
+.terminal-tabs .active {
+  color: #38bdf8;
+  font-weight: 700;
+  border-bottom: 2px solid #38bdf8;
+}
+
+.terminal-body {
+  padding: 8px 16px;
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'Consolas', monospace;
+}
+
+.term-line { margin-bottom: 2px; color: #a1a1aa; }
+.term-line.info { color: #38bdf8; }
+.term-line.success { color: #10b981; font-weight: 600; }
+.term-prompt { color: #f59e0b; margin-top: 4px; font-weight: 600; }
+
+/* Right GPU Monitor Panel */
+.dev-gpu-monitor {
+  width: 250px;
+  background: #121215;
+  border-left: 1px solid #27272a;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 0.8rem;
+}
+
+.gpu-card {
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.gpu-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 6px;
+}
+
+.gpu-name {
+  font-size: 0.78rem;
+  color: #e4e4e7;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.gauge-label {
+  font-size: 0.72rem;
+  color: #a1a1aa;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.gauge-bar {
+  height: 6px;
+  background: #27272a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gauge-bar .fill {
+  height: 100%;
+  background: #38bdf8;
+}
+
+.gauge-bar .fill.green { background: #10b981; }
+.gauge-bar .fill.yellow { background: #f59e0b; }
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  color: #a1a1aa;
+}
+
+.metric-row strong {
+  color: #ffffff;
+}
+
+/* Excel Full Fallback Theme inside BossScreen */
+.boss-excel-full {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', sans-serif;
 }
