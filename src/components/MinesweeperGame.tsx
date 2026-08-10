@@ -146,7 +146,7 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
       {/* 📱 Main Workspace */}
       <div className="minesweeper-workspace">
         {/* 난이도 선택 리본 */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#605e5c' }}>난이도 선택:</span>
           {(['beginner', 'intermediate', 'expert'] as Difficulty[]).map(diff => (
             <button
@@ -157,26 +157,22 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
               {diff === 'beginner' ? '🌱 초급 (9x9)' : diff === 'intermediate' ? '⚡ 중급 (16x16)' : '🔥 고급 (16x30)'}
             </button>
           ))}
-          <button className="excel-btn close" onClick={handleReset} style={{ marginLeft: '12px' }}>
-            🔄 리셋
-          </button>
         </div>
 
-        {/* 🎮 Classic Minesweeper Control Dashboard */}
-        <div className="minesweeper-status-bar">
-          {/* 남은 지뢰 수 (3자리 카운터) */}
-          <div className="minesweeper-counter-box" title="남은 지뢰 수">
-            {remainingMines.toString().padStart(3, '0')}
+        {/* 📊 Excel KPI Status Bar */}
+        <div className="minesweeper-excel-status-bar">
+          <div className="status-kpi-item">
+            <span className="kpi-label">미탐지 리스크 (Risk_Count):</span>
+            <span className="kpi-value warning">{remainingMines.toString().padStart(2, '0')}</span>
           </div>
 
-          {/* 스마일리 리셋 버튼 */}
-          <button className="minesweeper-face-btn" onClick={handleReset} title="퍼즐 재시작">
-            {phase === 'playing' ? '🙂' : phase === 'won' ? '😎' : '😵'}
+          <button className="excel-btn primary" onClick={handleReset} title="퍼즐 재검증">
+            {phase === 'playing' ? '🔄 데이터 재검증 (Re-Audit)' : phase === 'won' ? '🎉 검증 완료 (Reset)' : '💥 지뢰 폭발 (Retry)'}
           </button>
 
-          {/* 경과 시간 카운터 */}
-          <div className="minesweeper-counter-box" title="경과 시간 (초)">
-            {Math.min(999, elapsedTime).toString().padStart(3, '0')}
+          <div className="status-kpi-item">
+            <span className="kpi-label">감사 소요 시간 (Elapsed_Time):</span>
+            <span className="kpi-value">{elapsedTime}s</span>
           </div>
         </div>
 

@@ -27,9 +27,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [winner, setWinner] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // 셀 선택
+  // 셀 선택 및 토글 옵션
   const [selectedCell, setSelectedCell] = useState<{ r: number; c: number } | null>(null);
   const [message, setMessage] = useState('');
+  const [showNumpad, setShowNumpad] = useState(false); // 기본값: 숨김으로 설정하여 100% 엑셀 셀처럼 연출
 
   // 타이머
   useEffect(() => {
@@ -112,12 +113,12 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     socket?.emit('sudoku-start', { room, difficulty: diff });
   };
 
-  // 셀 숫쳐 입력/수정
+  // 셀 숫자 입력/수정
   const handleNumberInput = (val: number) => {
     if (!selectedCell || phase !== 'playing' || completed) return;
     const { r, c } = selectedCell;
 
-    if (fixedMask[r][c]) return; // 고정 셀 수정 금지
+    if (fixedMask[r][c]) return;
 
     socket?.emit('sudoku-cell-change', {
       room,
@@ -141,18 +142,16 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     socket?.emit('sudoku-reset', { room });
   };
 
-  // 오류 체크 (동일 행, 열, 3x3 중복 검사)
+  // 오류 체크
   const isConflict = (r: number, c: number) => {
     const val = grid[r][c];
     if (val === 0) return false;
 
-    // 행/열 중복
     for (let i = 0; i < 9; i++) {
       if (i !== c && grid[r][i] === val) return true;
       if (i !== r && grid[i][c] === val) return true;
     }
 
-    // 3x3 블록 중복
     const startR = Math.floor(r / 3) * 3;
     const startC = Math.floor(c / 3) * 3;
     for (let i = 0; i < 3; i++) {
@@ -166,11 +165,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     return false;
   };
 
-  // 셀 스타일 결정 (선택된 셀과 관련된 행, 열, 3x3, 동일 숫자 강조)
+  // 셀 클래스명 결정
   const getCellClassName = (r: number, c: number) => {
     const classes = ['sudoku-cell'];
 
-    // 3x3 경계선
     if (c === 2 || c === 5) classes.push('border-right-thick');
     if (r === 2 || r === 5) classes.push('border-bottom-thick');
 
@@ -248,7 +246,42 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
       {/* 📱 Main Workspace */}
       <div className="sudoku-main-workspace">
-        {/* 🧩 9x9 Sudoku Grid Table (Excel Cell Sheet Look) */}
+        {/* 난이도 선택 & 패드 토글 리본 */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {(['easy', 'medium', 'hard'] as Difficulty[]).map(diff => (
+            <button
+              key={diff}
+              className={`excel-btn ${difficulty === diff && phase === 'playing' ? 'primary' : ''}`}
+              onClick={() => handleStartGame(diff)}
+            >
+              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : '🔥 어려움'}
+            </button>
+          ))}
+          <button
+            className="excel-btn"
+            onClick={() => setShowNumpad(!showNumpad)}
+          >
+            {showNumpad ? '🔢 수식 패드 숨기기' : '🔢 수식 패드 보이기'}
+          </button>
+          {selectedCell && (
+            <button
+              className="excel-btn"
+              onClick={handleUseHint}
+              disabled={phase !== 'playing' || completed}
+            >
+              💡 힌트
+            </button>
+          )}
+          <button
+            className="excel-btn close"
+            onClick={handleReset}
+            disabled={phase !== 'playing'}
+          >
+            🔄 리셋
+          </button>
+        </div>
+
+        {/* 🧩 9x9 Sudoku Grid Table (Authentic Compact Excel Cells) */}
         <div className="sudoku-board-wrapper">
           <table className="sudoku-grid-table">
             <thead>
@@ -262,7 +295,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             <tbody>
               {grid.map((row, r) => (
                 <tr key={r}>
-                  <th>{r + 1}</th>
+                  <td className="row-header">{r + 1}</td>
                   {row.map((val, c) => (
                     <td
                       key={c}
@@ -278,92 +311,54 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           </table>
         </div>
 
-        {/* 🎛️ Keypad & Controls Panel */}
-        <div className="sudoku-controls-panel">
-          {/* 난이도 선택 (대기 중 또는 언제나) */}
-          <div className="sudoku-card">
-            <h3>🎮 난이도 선택 & 퍼즐 시작</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {(['easy', 'medium', 'hard'] as Difficulty[]).map(diff => (
-                <button
-                  key={diff}
-                  className={`excel-btn ${difficulty === diff && phase === 'playing' ? 'primary' : ''}`}
-                  onClick={() => handleStartGame(diff)}
-                  style={{ flex: 1, padding: '8px 0', textTransform: 'capitalize' }}
-                >
-                  {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : '🔥 어려움'}
-                </button>
-              ))}
-            </div>
+        {/* 퍼즐 완성 배너 */}
+        {completed && (
+          <div className="sudoku-complete-banner">
+            <h4>🎉 스도쿠 퍼즐 완성!</h4>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>
+              축하합니다! [{winner}] 님이 스도쿠 행렬 분석을 완수했습니다! (소요시간: {elapsedTime}초)
+            </p>
           </div>
+        )}
 
-          {/* 퍼즐 완성 배너 */}
-          {completed && (
-            <div className="sudoku-complete-banner">
-              <h4>🎉 스도쿠 퍼즐 완성!</h4>
-              <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                축하합니다! [{winner}] 님이 스도쿠 행렬 분석을 완수했습니다! (소요시간: {elapsedTime}초)
-              </p>
-            </div>
-          )}
-
-          {/* 숫자 패드 & 도구 버튼 */}
-          <div className="sudoku-card">
-            <h3>🔢 수식 입력 패드 (1~9)</h3>
-            <div className="numpad-grid">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <button
-                  key={num}
-                  className="numpad-btn"
-                  onClick={() => handleNumberInput(num)}
-                  disabled={phase !== 'playing' || completed}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-
-            <div className="action-tools-grid">
-              <button
-                className="excel-btn"
-                onClick={() => handleNumberInput(0)}
-                disabled={phase !== 'playing' || completed || !selectedCell}
-              >
-                🧽 숫자 지우기
-              </button>
-              <button
-                className="excel-btn"
-                onClick={handleUseHint}
-                disabled={phase !== 'playing' || completed || !selectedCell}
-              >
-                💡 힌트 입력
-              </button>
-            </div>
-
-            <div style={{ marginTop: '10px' }}>
-              <button
-                className="excel-btn close"
-                onClick={handleReset}
-                disabled={phase !== 'playing'}
-                style={{ width: '100%' }}
-              >
-                🔄 퍼즐 초기화 (Reset)
-              </button>
-            </div>
-          </div>
-
-          {/* 시스템 정보 및 키보드 조작 가이드 */}
-          <div className="sudoku-card" style={{ fontSize: '0.8rem', color: '#605e5c' }}>
-            <div style={{ fontWeight: 600, color: '#107c41', marginBottom: '4px' }}>💡 조작 단축키 가이드</div>
-            <div>• 방향키 (↑ ↓ ← →) : 선택 셀 이동</div>
-            <div>• 숫자 키 (1 ~ 9) : 숫자 입력</div>
-            <div>• Backspace / Delete : 숫자 지우기</div>
-            {message && (
-              <div style={{ marginTop: '8px', color: '#107c41', fontWeight: 600 }}>
-                {message}
+        {/* 🎛️ Numpad Control Panel (토글 가능) */}
+        {showNumpad && (
+          <div className="sudoku-controls-panel">
+            <div className="sudoku-card">
+              <h3>🔢 수식 입력 패드 (1~9)</h3>
+              <div className="numpad-grid">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                  <button
+                    key={num}
+                    className="numpad-btn"
+                    onClick={() => handleNumberInput(num)}
+                    disabled={phase !== 'playing' || completed}
+                  >
+                    {num}
+                  </button>
+                ))}
               </div>
-            )}
+              <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                <button
+                  className="excel-btn"
+                  onClick={() => handleNumberInput(0)}
+                  disabled={phase !== 'playing' || completed || !selectedCell}
+                >
+                  🧽 선택 셀 지우기
+                </button>
+              </div>
+            </div>
           </div>
+        )}
+
+        {message && (
+          <div style={{ fontSize: '0.82rem', color: '#107c41', fontWeight: 600, textAlign: 'center' }}>
+            {message}
+          </div>
+        )}
+
+        <div style={{ fontSize: '0.78rem', color: '#605e5c', textAlign: 'center' }}>
+          💡 방향키(`↑` `↓` `←` `→`)로 셀 이동 | 숫자 키(`1`~`9`) 입력 | `Backspace` / `Delete` 지우기
         </div>
       </div>
 

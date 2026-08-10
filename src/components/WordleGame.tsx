@@ -29,6 +29,9 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  // ⌨️ 가상 키보드 표시 여부 (기본값: 숨김으로 설정하여 엑셀 셀만 표시)
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+
   // 소켓 연동
   useEffect(() => {
     if (!socket) return;
@@ -71,7 +74,7 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
     };
   }, [socket, username, room]);
 
-  // 키보드 물리 입력 핸들러
+  // 물리 키보드 입력 핸들러
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (phase !== 'playing') return;
@@ -121,7 +124,7 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
     socket?.emit('wordle-start', { room });
   };
 
-  // 가상 키보드 키 상태 계산 (Green > Yellow > Gray)
+  // 가상 키보드 키 상태 계산
   const getKeyStatus = (key: string): CellStatus => {
     let status: CellStatus = 'empty';
     for (let r = 0; r < attempts.length; r++) {
@@ -144,10 +147,14 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
     <div className="wordle-container excel-stealth-theme">
       {/* 📊 Excel Formula Bar */}
       <div className="excel-formula-bar">
-        <div className="excel-name-box">B2: WORDLE_PARSER</div>
+        <div className="excel-name-box">
+          {`A${attempts.length + 1}:E${attempts.length + 1}`}
+        </div>
         <div className="excel-fx-icon">fx</div>
         <div className="excel-formula-input">
-          =VLOOKUP_WORDLE_ATTEMPT(Current_Guess_5Letters, Secret_Target_Word)
+          {currentInput
+            ? `=VLOOKUP_WORDLE_ATTEMPT("${currentInput}", Secret_Target_Word)`
+            : '=VLOOKUP_WORDLE_ATTEMPT(Cell_A1_E6, Secret_Target_Word)'}
         </div>
       </div>
 
@@ -180,41 +187,62 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
       {/* 📱 Main Workspace */}
       <div className="wordle-workspace">
         {/* 리본 액션 바 */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <button className="excel-btn primary" onClick={handleStartGame}>
             ▶ 새 퍼즐 생성 (New Game)
           </button>
+          <button
+            className="excel-btn"
+            onClick={() => setShowVirtualKeyboard(!showVirtualKeyboard)}
+          >
+            {showVirtualKeyboard ? '⌨️ 가상 키보드 숨기기' : '⌨️ 가상 키보드 보이기'}
+          </button>
           <span style={{ fontSize: '0.8rem', color: '#605e5c' }}>
-            5글자 영단어를 6번의 기회 안에 맞히십시오.
+            (키보드로 직접 입력 후 Enter)
           </span>
         </div>
 
-        {/* 🔤 6x5 Grid Board */}
-        <div className="wordle-board">
-          {Array.from({ length: 6 }).map((_, rowIdx) => {
-            const isSubmitted = rowIdx < attempts.length;
-            const isCurrentRow = rowIdx === attempts.length && phase === 'playing';
-            const rowWord = isSubmitted ? attempts[rowIdx] : isCurrentRow ? currentInput : '';
-            const rowResult = isSubmitted ? results[rowIdx] : [];
+        {/* 🔤 Compact Excel Cell Grid Table (Authentic Cell Grid Look) */}
+        <div className="wordle-board-wrapper">
+          <table className="wordle-grid-table">
+            <thead>
+              <tr>
+                <th className="corner-cell"></th>
+                <th>A</th>
+                <th>B</th>
+                <th>C</th>
+                <th>D</th>
+                <th>E</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, rowIdx) => {
+                const isSubmitted = rowIdx < attempts.length;
+                const isCurrentRow = rowIdx === attempts.length && phase === 'playing';
+                const rowWord = isSubmitted ? attempts[rowIdx] : isCurrentRow ? currentInput : '';
+                const rowResult = isSubmitted ? results[rowIdx] : [];
 
-            return (
-              <div key={rowIdx} className="wordle-row">
-                {Array.from({ length: 5 }).map((_, colIdx) => {
-                  const letter = rowWord[colIdx] || '';
-                  const status = isSubmitted ? rowResult[colIdx] : 'empty';
+                return (
+                  <tr key={rowIdx}>
+                    <td className="row-header">{rowIdx + 1}</td>
+                    {Array.from({ length: 5 }).map((_, colIdx) => {
+                      const letter = rowWord[colIdx] || '';
+                      const status = isSubmitted ? rowResult[colIdx] : 'empty';
 
-                  return (
-                    <div
-                      key={colIdx}
-                      className={`wordle-cell ${status} ${letter ? 'filled' : ''}`}
-                    >
-                      {letter}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+                      return (
+                        <td
+                          key={colIdx}
+                          className={`wordle-cell ${status} ${isCurrentRow ? 'active-row' : ''}`}
+                        >
+                          {letter}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         {/* 퍼즐 결과 배너 */}
@@ -229,31 +257,33 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
           </div>
         )}
 
-        {/* ⌨️ Virtual QWERTY Keyboard */}
-        <div className="wordle-keyboard">
-          {KEYBOARD_ROWS.map((row, rIdx) => (
-            <div key={rIdx} className="keyboard-row">
-              {row.map(key => {
-                const isWide = key === 'ENTER' || key === 'BACKSPACE';
-                const status = getKeyStatus(key);
+        {/* ⌨️ Virtual QWERTY Keyboard (토글 가능) */}
+        {showVirtualKeyboard && (
+          <div className="wordle-keyboard">
+            {KEYBOARD_ROWS.map((row, rIdx) => (
+              <div key={rIdx} className="keyboard-row">
+                {row.map(key => {
+                  const isWide = key === 'ENTER' || key === 'BACKSPACE';
+                  const status = getKeyStatus(key);
 
-                return (
-                  <button
-                    key={key}
-                    className={`key-btn ${isWide ? 'wide' : ''} ${status}`}
-                    onClick={() => {
-                      if (key === 'ENTER') handleSubmitGuess();
-                      else if (key === 'BACKSPACE') handleBackspace();
-                      else handleKeyPress(key);
-                    }}
-                  >
-                    {key === 'BACKSPACE' ? '⌫' : key}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+                  return (
+                    <button
+                      key={key}
+                      className={`key-btn ${isWide ? 'wide' : ''} ${status}`}
+                      onClick={() => {
+                        if (key === 'ENTER') handleSubmitGuess();
+                        else if (key === 'BACKSPACE') handleBackspace();
+                        else handleKeyPress(key);
+                      }}
+                    >
+                      {key === 'BACKSPACE' ? '⌫' : key}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
 
         {message && (
           <div style={{ fontSize: '0.82rem', color: '#107c41', fontWeight: 600 }}>

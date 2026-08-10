@@ -149,25 +149,27 @@
 .sudoku-main-workspace {
   padding: 16px;
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   background: #ffffff;
 }
 
-/* 🧩 9x9 Sudoku Board Container */
+/* 🧩 9x9 Sudoku Grid Table (Authentic Compact Excel Cells) */
 .sudoku-board-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  overflow-x: auto;
+  border: 1px solid #d4d4d4;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   user-select: none;
 }
 
 .sudoku-grid-table {
   border-collapse: collapse;
-  border: 2px solid #0b5a2f;
+  border: 1px solid #107c41;
   background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-family: 'Consolas', 'Courier New', monospace;
 }
 
 .sudoku-grid-table th {
@@ -176,9 +178,9 @@
   font-weight: 600;
   font-size: 0.78rem;
   border: 1px solid #d4d4d4;
-  padding: 4px;
+  padding: 3px;
   text-align: center;
-  width: 42px;
+  width: 38px;
   height: 24px;
 }
 
@@ -187,31 +189,42 @@
   width: 28px;
 }
 
+.sudoku-grid-table td.row-header {
+  background: #f3f2f1;
+  color: #605e5c;
+  font-weight: 600;
+  font-size: 0.78rem;
+  border: 1px solid #d4d4d4;
+  text-align: center;
+  width: 28px;
+}
+
 .sudoku-cell {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 28px;
   text-align: center;
   vertical-align: middle;
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: 600;
   border: 1px solid #d4d4d4;
   cursor: pointer;
   position: relative;
   transition: background 0.15s;
+  background: #ffffff;
 }
 
-/* 3x3 블록 두꺼운 테두리 구분 */
+/* 3x3 블록 엑셀 경계선 */
 .sudoku-cell.border-right-thick {
-  border-right: 2px solid #0b5a2f;
+  border-right: 1.5px solid #107c41;
 }
 
 .sudoku-cell.border-bottom-thick {
-  border-bottom: 2px solid #0b5a2f;
+  border-bottom: 1.5px solid #107c41;
 }
 
 /* 셀 상태 강조 */
 .sudoku-cell.fixed {
-  background: #f9f9f9;
+  background: #f8f9fa;
   color: #201f1e;
   font-weight: 700;
 }
@@ -224,7 +237,7 @@
 .sudoku-cell.selected {
   background: #e6f2eb !important;
   outline: 2px solid #107c41;
-  outline-offset: -2px;
+  outline-offset: -1px;
   z-index: 2;
 }
 
@@ -241,40 +254,39 @@
   color: #a80000 !important;
 }
 
-/* 🎛️ Keypad & Controls Panel */
+/* 🎛️ Numpad & Controls Panel (Toggleable) */
 .sudoku-controls-panel {
-  flex: 1;
-  min-width: 280px;
-  max-width: 360px;
+  width: 100%;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sudoku-card {
   background: #ffffff;
   border: 1px solid #d4d4d4;
   border-radius: 2px;
-  padding: 14px;
+  padding: 12px;
 }
 
 .sudoku-card h3 {
-  margin: 0 0 10px 0;
-  font-size: 0.95rem;
+  margin: 0 0 8px 0;
+  font-size: 0.88rem;
   color: #107c41;
   font-weight: 600;
 }
 
 .numpad-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 10px;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  margin-top: 8px;
 }
 
 .numpad-btn {
-  height: 44px;
-  font-size: 1.15rem;
+  height: 34px;
+  font-size: 0.95rem;
   font-weight: 700;
   border: 1px solid #d4d4d4;
   background: #f3f2f1;
@@ -294,7 +306,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 /* 🏆 Complete Banner */
@@ -302,14 +314,14 @@
   background: #e6f2eb;
   border: 1px solid #107c41;
   color: #0b5a2f;
-  padding: 14px;
+  padding: 10px;
   border-radius: 2px;
   text-align: center;
 }
 
 .sudoku-complete-banner h4 {
   margin: 0 0 4px 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 /* 📑 Bottom Excel Sheet Tabs */
