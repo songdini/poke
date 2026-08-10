@@ -24,11 +24,12 @@ const server = createServer(app);
 
 const allowedOrigins = new Set([
   'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://54.180.85.31'
+  'http://127.0.0.1:5173'
 ]);
 
-if (process.env.ALLOWED_ORIGINS) {
+const allowAllOrigins = process.env.ALLOWED_ORIGINS === '*';
+
+if (process.env.ALLOWED_ORIGINS && !allowAllOrigins) {
   process.env.ALLOWED_ORIGINS.split(',').forEach((o) => {
     const trimmed = o.trim().replace(/\/$/, '');
     if (trimmed) allowedOrigins.add(trimmed);
@@ -36,13 +37,18 @@ if (process.env.ALLOWED_ORIGINS) {
 }
 
 const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
+  if (!origin || allowAllOrigins) return true;
   const cleanOrigin = origin.replace(/\/$/, '');
-  return (
-    allowedOrigins.has(cleanOrigin) ||
-    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(cleanOrigin) ||
-    /^http:\/\/54\.180\.85\.31(:\d+)?$/.test(cleanOrigin)
-  );
+
+  // 1. Explicitly configured origins (Set)
+  if (allowedOrigins.has(cleanOrigin)) return true;
+
+  // 2. Localhost & Any IPv4 Address (Public/Private, e.g., http://3.34.198.156:5173, http://192.168.1.5)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(cleanOrigin)) {
+    return true;
+  }
+
+  return false;
 };
 
 const corsOptions = {
