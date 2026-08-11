@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Clock, Crown, Eye, EyeOff } from 'lucide-react';
+import { Send, Clock, Crown, Eye, EyeOff, Bot } from 'lucide-react';
 import { type Socket } from 'socket.io-client';
 import { getSessionToken } from '../socketUrl';
 import { useSocket } from '../context/SocketContext';
@@ -12,6 +12,7 @@ interface Player {
   isLiar: boolean;
   word: string | null;
   voted?: boolean;
+  isBot?: boolean;
 }
 
 interface Message {
@@ -280,6 +281,14 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     socketRef.current?.emit('liar-game-restart', { room });
   };
 
+  const handleAddBot = () => {
+    socketRef.current?.emit('liar-add-bot', { room });
+  };
+
+  const handleRemoveBot = (botId?: string) => {
+    socketRef.current?.emit('liar-remove-bot', { room, botId });
+  };
+
   const myPlayer = players.find(p => p.username === username);
   const isHost = myPlayer?.isHost || false;
 
@@ -354,11 +363,13 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
                   <td style={{ fontFamily: 'Consolas, monospace', fontSize: '0.78rem' }}>{player.id.substring(0, 6)}</td>
                   <td>
                     {player.isHost && <Crown size={14} className="host-icon" style={{ color: '#d97706', marginRight: 4, verticalAlign: 'middle' }} />}
+                    {player.isBot && <Bot size={14} style={{ color: '#0284c7', marginRight: 4, verticalAlign: 'middle' }} />}
                     <strong style={{ verticalAlign: 'middle' }}>{player.username}</strong>
                     {player.username === username && <span className="excel-tag me">나</span>}
                     {player.isHost && <span className="excel-tag host">방장</span>}
+                    {player.isBot && <span className="excel-tag bot" style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd', marginLeft: 6 }}>🤖 봇</span>}
                   </td>
-                  <td>{player.isHost ? '방장 (Host)' : '참가자 (Member)'}</td>
+                  <td>{player.isHost ? '방장 (Host)' : player.isBot ? '인공지능 (Bot)' : '참가자 (Member)'}</td>
                   {phase === 'vote' && (
                     <td>
                       <button
@@ -389,11 +400,23 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
               <h3>🎮 라이어 게임 세션 대기 중</h3>
               <span style={{ fontSize: '0.8rem', color: '#605e5c' }}>참가자: {players.length}명</span>
             </div>
-            <p className="phase-description">최소 3명의 참가자가 모이면 방장이 게임을 시작할 수 있습니다.</p>
-            {isHost && players.length >= 3 && (
-              <button className="excel-btn primary" onClick={handleGameStart} style={{ padding: '8px 24px' }}>
-                ▶ 라이어 게임 시작 (Start)
-              </button>
+            <p className="phase-description">최소 3명의 참가자가 모이면 방장이 게임을 시작할 수 있습니다. (🤖 봇 참가자 가능)</p>
+            {isHost && (
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
+                <button className="excel-btn" onClick={handleAddBot} disabled={players.length >= 10}>
+                  <Bot size={14} /> 🤖 봇 추가 (+Bot)
+                </button>
+                {players.some(p => p.isBot) && (
+                  <button className="excel-btn close" onClick={() => handleRemoveBot()}>
+                    🗑️ 봇 제거 (-Bot)
+                  </button>
+                )}
+                {players.length >= 3 && (
+                  <button className="excel-btn primary" onClick={handleGameStart} style={{ padding: '8px 24px' }}>
+                    ▶ 라이어 게임 시작 (Start)
+                  </button>
+                )}
+              </div>
             )}
             {!isHost && (
               <p className="phase-description">방장이 게임을 시작할 때까지 잠시 기다려주세요.</p>

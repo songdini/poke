@@ -1,5 +1,6 @@
 import { connectedUsers, sessions, mafiaGames, liarGames, telestrationsGames, baseballGames, checkMafiaGameEnd, roomMessages } from '../gameManager.js';
 import { sanitizeString } from '../utils/sanitize.js';
+import { clearBotTimers } from './liarHandler.js';
 
 export function registerJoinDisconnectHandlers(io, socket) {
   // 사용자 입장 및 세션 재접속 복구
@@ -399,23 +400,28 @@ function executePermanentDisconnectCleanup(io, socketId, user) {
     if (game) {
       game.players = game.players.filter(p => p.id !== socketId && p.username !== user.username);
 
-      if (game.host === socketId && game.players.length > 0) {
-        game.host = game.players[0].id;
-        game.players[0].isHost = true;
-      }
+      const humanPlayers = game.players.filter(p => !p.isBot);
 
-      io.to(user.room).emit('liar-update', {
-        type: 'leave',
-        data: { 
-          playerId: socketId,
-          players: game.players,
-          host: game.host
-        }
-      });
-
-      if (game.players.length === 0) {
+      if (humanPlayers.length === 0) {
         if (game.timerInterval) clearInterval(game.timerInterval);
+        clearBotTimers(game);
         liarGames.delete(user.room);
+      } else {
+        if (game.host === socketId) {
+          game.host = humanPlayers[0].id;
+          game.players.forEach(p => {
+            p.isHost = (p.id === game.host);
+          });
+        }
+
+        io.to(user.room).emit('liar-update', {
+          type: 'leave',
+          data: { 
+            playerId: socketId,
+            players: game.players,
+            host: game.host
+          }
+        });
       }
     }
   } else {

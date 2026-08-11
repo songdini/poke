@@ -1,8 +1,85 @@
 import { liarGames, connectedUsers } from '../gameManager.js';
-import { getLiarGameWords } from '../dictionaryService.js';
+import { getLiarGameWords, getDefinitionChunks } from '../dictionaryService.js';
 import { sanitizeChatMessage } from '../utils/sanitize.js';
 
+export function clearBotTimers(game) {
+  if (game && game.botTimeouts && Array.isArray(game.botTimeouts)) {
+    game.botTimeouts.forEach(t => clearTimeout(t));
+  }
+  if (game) game.botTimeouts = [];
+}
+
 export function registerLiarHandlers(io, socket) {
+  socket.on('liar-add-bot', ({ room }) => {
+    const game = liarGames.get(room);
+    if (!game || game.gameStarted || game.phase !== 'waiting') return;
+
+    const user = connectedUsers.get(socket.id);
+    if (!user || game.host !== socket.id) return;
+
+    if (game.players.length >= 10) {
+      socket.emit('liar-error', { message: '최대 10명까지 참여 가능합니다.' });
+      return;
+    }
+
+    const botCount = game.players.filter(p => p.isBot).length + 1;
+    const botId = `bot_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const botPlayer = {
+      id: botId,
+      username: `🤖 AI 봇 ${botCount}`,
+      isHost: false,
+      isLiar: false,
+      word: null,
+      voted: false,
+      isBot: true
+    };
+
+    game.players.push(botPlayer);
+
+    io.to(room).emit('liar-update', {
+      type: 'join',
+      data: {
+        players: game.players,
+        phase: game.phase,
+        host: game.host,
+        wordProvider: game.wordProvider
+      }
+    });
+  });
+
+  socket.on('liar-remove-bot', ({ room, botId }) => {
+    const game = liarGames.get(room);
+    if (!game || game.gameStarted || game.phase !== 'waiting') return;
+
+    const user = connectedUsers.get(socket.id);
+    if (!user || game.host !== socket.id) return;
+
+    let targetBotIndex = -1;
+    if (botId) {
+      targetBotIndex = game.players.findIndex(p => p.id === botId && p.isBot);
+    } else {
+      for (let i = game.players.length - 1; i >= 0; i--) {
+        if (game.players[i].isBot) {
+          targetBotIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (targetBotIndex !== -1) {
+      game.players.splice(targetBotIndex, 1);
+
+      io.to(room).emit('liar-update', {
+        type: 'leave',
+        data: {
+          players: game.players,
+          phase: game.phase,
+          host: game.host
+        }
+      });
+    }
+  });
+
   socket.on('liar-game-start', async ({ room }) => {
     const game = liarGames.get(room);
     if (!game || game.gameStarted) return;
@@ -16,10 +93,12 @@ export function registerLiarHandlers(io, socket) {
     }
 
     try {
-      const { citizenWord, liarWord } = await getLiarGameWords();
+      const { citizenWord, liarWord, citizenDef, liarDef } = await getLiarGameWords();
 
       game.word = citizenWord;
       game.liarWord = liarWord;
+      game.citizenDef = citizenDef;
+      game.liarDef = liarDef;
 
       const randomLiar = game.players[Math.floor(Math.random() * game.players.length)];
       game.liar = randomLiar.id;
@@ -28,8 +107,11 @@ export function registerLiarHandlers(io, socket) {
         if (player.id === game.liar) {
           player.isLiar = true;
           player.word = game.liarWord;
+          player.wordDef = game.liarDef;
         } else {
+          player.isLiar = false;
           player.word = game.word;
+          player.wordDef = game.citizenDef;
         }
       });
 
@@ -37,14 +119,16 @@ export function registerLiarHandlers(io, socket) {
       game.phase = 'word-distribute';
 
       game.players.forEach(player => {
-        io.to(player.id).emit('liar-update', {
-          type: 'word-distribute',
-          data: {
-            phase: 'word-distribute',
-            myWord: player.word,
-            isLiar: player.isLiar
-          }
-        });
+        if (!player.isBot) {
+          io.to(player.id).emit('liar-update', {
+            type: 'word-distribute',
+            data: {
+              phase: 'word-distribute',
+              myWord: player.word,
+              isLiar: player.isLiar
+            }
+          });
+        }
       });
 
       setTimeout(() => {
@@ -117,21 +201,25 @@ export function registerLiarHandlers(io, socket) {
 
     if (game.timerInterval) {
       clearInterval(game.timerInterval);
+      game.timerInterval = null;
     }
+    clearBotTimers(game);
 
     game.gameStarted = false;
     game.phase = 'waiting';
     game.wordProvider = null;
     game.word = '';
     game.liarWord = '';
+    game.citizenDef = '';
+    game.liarDef = '';
     game.liar = null;
     game.timer = 180;
     game.votes = {};
-    game.timerInterval = null;
 
     game.players.forEach(player => {
       player.isLiar = false;
       player.word = null;
+      player.wordDef = null;
       player.voted = false;
     });
 
@@ -155,6 +243,7 @@ function startTalkPhase(io, room) {
     clearInterval(game.timerInterval);
     game.timerInterval = null;
   }
+  clearBotTimers(game);
 
   game.phase = 'talk';
   game.timer = 180;
@@ -165,6 +254,37 @@ function startTalkPhase(io, room) {
       phase: 'talk',
       timer: game.timer
     }
+  });
+
+  // 🤖 봇 사전 정의 5글자 분할 발화 등록
+  const bots = game.players.filter(p => p.isBot);
+  bots.forEach((bot, index) => {
+    const chunks = getDefinitionChunks(bot.wordDef || '사전정의없음', 5);
+    
+    let initialDelay = (index + 1) * 3000 + Math.floor(Math.random() * 2000);
+    const interval = 10000 + (index * 2000) + Math.floor(Math.random() * 3000);
+
+    chunks.forEach((chunk, chunkIdx) => {
+      const delay = initialDelay + (chunkIdx * interval);
+      if (delay < 175000) {
+        const timeout = setTimeout(() => {
+          const currentGame = liarGames.get(room);
+          if (!currentGame || currentGame.phase !== 'talk') return;
+
+          io.to(room).emit('liar-update', {
+            type: 'message',
+            data: {
+              username: bot.username,
+              message: chunk,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }, delay);
+
+        if (!game.botTimeouts) game.botTimeouts = [];
+        game.botTimeouts.push(timeout);
+      }
+    });
   });
 
   game.timerInterval = setInterval(() => {
@@ -187,6 +307,8 @@ function startVotePhase(io, room) {
   const game = liarGames.get(room);
   if (!game) return;
 
+  clearBotTimers(game);
+
   game.phase = 'vote';
   game.votes = {};
 
@@ -196,6 +318,44 @@ function startVotePhase(io, room) {
       phase: 'vote',
       players: game.players
     }
+  });
+
+  // 🤖 봇 자동 투표
+  const bots = game.players.filter(p => p.isBot);
+  bots.forEach(bot => {
+    const voteDelay = Math.floor(Math.random() * 3000) + 1500;
+    const timeout = setTimeout(() => {
+      const currentGame = liarGames.get(room);
+      if (!currentGame || currentGame.phase !== 'vote') return;
+      if (currentGame.votes[bot.id]) return;
+
+      const candidates = currentGame.players.filter(p => p.id !== bot.id);
+      if (candidates.length > 0) {
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+        currentGame.votes[bot.id] = target.id;
+
+        const voteCount = {};
+        Object.values(currentGame.votes).forEach(vote => {
+          voteCount[vote] = (voteCount[vote] || 0) + 1;
+        });
+
+        io.to(room).emit('liar-update', {
+          type: 'vote-update',
+          data: {
+            votedCount: Object.keys(currentGame.votes).length,
+            totalCount: currentGame.players.length,
+            voteCount
+          }
+        });
+
+        if (Object.keys(currentGame.votes).length >= currentGame.players.length) {
+          showLiarResult(io, room);
+        }
+      }
+    }, voteDelay);
+
+    if (!game.botTimeouts) game.botTimeouts = [];
+    game.botTimeouts.push(timeout);
   });
 }
 
@@ -207,6 +367,7 @@ function showLiarResult(io, room) {
     clearInterval(game.timerInterval);
     game.timerInterval = null;
   }
+  clearBotTimers(game);
 
   const voteCount = {};
   Object.values(game.votes).forEach(vote => {
@@ -252,3 +413,4 @@ function showLiarResult(io, room) {
     }
   });
 }
+

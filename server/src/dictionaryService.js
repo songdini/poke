@@ -36,9 +36,87 @@ const COOLDOWN_MS = 60 * 1000;    // 1분간 차단 유효
 function getRandomFallbackPair() {
   const randomIndex = Math.floor(Math.random() * FALLBACK_WORD_PAIRS.length);
   const pair = FALLBACK_WORD_PAIRS[randomIndex];
-  return Math.random() > 0.5
-    ? pair
-    : { citizenWord: pair.liarWord, liarWord: pair.citizenWord };
+  const isSwapped = Math.random() > 0.5;
+  const citizenWord = isSwapped ? pair.liarWord : pair.citizenWord;
+  const liarWord = isSwapped ? pair.citizenWord : pair.liarWord;
+
+  return {
+    citizenWord,
+    liarWord,
+    citizenDef: getWordDefinition(citizenWord),
+    liarDef: getWordDefinition(liarWord)
+  };
+}
+
+export const WORD_DEFINITIONS = {
+  '사과': '사과나무의 열매. 겉은 붉거나 노랗고 맛은 달고 십니다.',
+  '오렌지': '감귤류에 속하는 나무의 열매. 주황색으로 즙이 많고 달콤함.',
+  '피자': '밀가루 반죽 위에 치즈와 고기, 야채 등을 얹어 구운 이탈리아 요리.',
+  '햄버거': '빵 사이에 고기 패티와 야채, 소스를 넣은 샌드위치.',
+  '짜장면': '춘장에 고기와 야채를 볶아 국수에 비벼 먹는 한국식 중화요리.',
+  '짬뽕': '해물과 야채를 볶아 매콤한 국물에 국수를 말아 먹는 음식.',
+  '호랑이': '고양이과의 맹수로 몸에 검은 줄무늬가 있는 대표적 야생 동물.',
+  '사자': '고양이과의 맹수로 갈기가 웅장하며 백수의 왕이라 불리는 동물.',
+  '고양이': '고양이과의 소형 육식 동물로 귀엽고 야행성인 가목 축용 동물.',
+  '강아지': '개 새끼 또는 어린 개를 친근하게 이르는 말.',
+  '아이폰': '애플사에서 개발하여 판매하는 스마트폰 브랜드.',
+  '갤럭시': '삼성전자에서 제조하여 판매하는 스마트폰 라인업 브랜드.',
+  '노트북': '휴대할 수 있도록 작고 가볍게 만든 개인용 컴퓨터.',
+  '태블릿': '터치스크린을 사용하여 손가락이나 펜으로 조작하는 휴대용 컴퓨터.',
+  '학교': '학생들이 모여 선생님에게 지식과 교양을 배우는 교육 기관.',
+  '도서관': '책이나 각종 자료를 수집, 보관하여 일반인이 읽을 수 있게 한 시설.',
+  '병원': '의사나 간호사가 환자의 질병을 진단하고 치료하는 의료 기관.',
+  '약국': '약사가 약품을 조제하고 판매하며 복약 지도하는 장소.',
+  '영화관': '영화를 영상 매체로 관객에게 상영하는 시설이나 극장.',
+  '공연장': '음악회, 연극, 무용 등의 공연 예술이 이루어지는 무대 시설.',
+  '축구': '열한 명씩 팀을 이루어 공을 차서 상대 골대에 넣는 경기.',
+  '농구': '다섯 명씩 팀을 이루어 공을 손으로 던져 상대 바스켓에 넣는 경기.',
+  '수영장': '인공적으로 물을 채워 수영을 할 수 있도록 만든 시설.',
+  '해수욕장': '바닷가에 마련되어 피서객들이 수영과 휴식을 즐기는 장소.',
+  '피아노': '건반을 누르면 건반에 연결된 망치가 현을 쳐서 소리를 내는 건반 악기.',
+  '바이올린': '활을 켜서 현을 진동시켜 소리를 내는 찰현 현악기.',
+  '지하철': '도시 지하의 궤도를 달리며 승객을 수송하는 전동차 교통 수단.',
+  '버스': '많은 승객을 태우고 정해진 노선을 따라 운행하는 대형 자동차.',
+  '아메리카노': '에스프레소에 물을 섞어 옅게 만든 커피 음료.',
+  '카페라떼': '에스프레소에 따뜻한 우유를 섞어 만든 미드급 커피 음료.'
+};
+
+export function getWordDefinition(word, item = null) {
+  if (item) {
+    let def = '';
+    if (typeof item.definition === 'string' && item.definition.trim()) {
+      def = item.definition;
+    } else if (item.sense) {
+      if (Array.isArray(item.sense) && item.sense[0]?.definition) {
+        def = item.sense[0].definition;
+      } else if (typeof item.sense === 'object' && item.sense.definition) {
+        def = item.sense.definition;
+      }
+    }
+    if (def) {
+      const cleaned = def.replace(/<[^>]*>/g, '').replace(/\^/g, '').trim();
+      if (cleaned) return cleaned;
+    }
+  }
+
+  if (WORD_DEFINITIONS[word]) {
+    return WORD_DEFINITIONS[word];
+  }
+
+  return `${word}은(는) 사전에 등재된 단어입니다.`;
+}
+
+export function getDefinitionChunks(definition, chunkSize = 5) {
+  if (!definition) return ['사전정의없음'];
+  const clean = definition.replace(/[\r\n]+/g, ' ').trim();
+  const chunks = [];
+  for (let i = 0; i < clean.length; i += chunkSize) {
+    const chunk = clean.slice(i, i + chunkSize);
+    if (chunk.length > 0) {
+      chunks.push(chunk);
+    }
+  }
+  return chunks.length > 0 ? chunks : ['사전정의없음'];
 }
 
 export const generateRandomKoreanWord = (length = 3) => {
@@ -121,26 +199,29 @@ export const getLiarGameWords = async () => {
         continue;
       }
 
-      const validWords = items
-        .map(item => item.word.replace(/\^/g, ''))
-        .filter(word => 
-          word.length >= 2 && 
-          word.length <= 4 && 
-          /^[가-힣]+$/.test(word)
-        );
+      const validItems = items
+        .filter(item => {
+          const cleanWord = item.word.replace(/\^/g, '');
+          return cleanWord.length >= 2 && cleanWord.length <= 4 && /^[가-힣]+$/.test(cleanWord);
+        });
       
-      if (validWords.length >= 2) {
-        const shuffled = validWords.sort(() => 0.5 - Math.random());
-        const word1 = shuffled[0];
-        const word2 = shuffled[1];
+      if (validItems.length >= 2) {
+        const shuffled = validItems.sort(() => 0.5 - Math.random());
+        const item1 = shuffled[0];
+        const item2 = shuffled[1];
+        const word1 = item1.word.replace(/\^/g, '');
+        const word2 = item2.word.replace(/\^/g, '');
+
+        const def1 = getWordDefinition(word1, item1);
+        const def2 = getWordDefinition(word2, item2);
 
         // 성공 시 서킷 브레이커 리셋
         circuitState = CircuitState.CLOSED;
         consecutiveFailures = 0;
 
         return Math.random() > 0.5
-          ? { citizenWord: word1, liarWord: word2 }
-          : { citizenWord: word2, liarWord: word1 };
+          ? { citizenWord: word1, liarWord: word2, citizenDef: def1, liarDef: def2 }
+          : { citizenWord: word2, liarWord: word1, citizenDef: def2, liarDef: def1 };
       }
     } catch (error) {
       // 개별 요청 에러 발생 시 반복 진행
@@ -160,3 +241,4 @@ export const getLiarGameWords = async () => {
 
   return getRandomFallbackPair();
 };
+
