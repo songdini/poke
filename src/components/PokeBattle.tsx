@@ -56,6 +56,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   const [isPureStealth, setIsPureStealth] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'player' | 'spectator'>('player');
   const [spectatorCount, setSpectatorCount] = useState<number>(0);
+  const [showDebugHud, setShowDebugHud] = useState<boolean>(true);
 
   // Draft Selection
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -296,20 +297,22 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     }
   };
 
-  // Damage Calculation Helper
+  // Damage Calculation Helper (Guaranteed non-zero damage)
   const calculateDamage = (attacker: BattlePokemon, defender: BattlePokemon, move: Move) => {
     const level = 50;
-    const isSpecial = move.category === 'special';
-    const attackStat = isSpecial ? attacker.stats.spAtk : attacker.stats.attack;
-    const defenseStat = isSpecial ? defender.stats.spDef : defender.stats.defense;
-    const stab = attacker.types.includes(move.type) ? 1.5 : 1.0;
-    const typeMult = getTypeMultiplier(move.type, defender.types);
+    const movePower = (move?.power && move.power > 0) ? move.power : 75;
+    const isSpecial = move?.category === 'special';
+    const attackStat = Math.max(1, isSpecial ? (attacker.stats.spAtk || 80) : (attacker.stats.attack || 80));
+    const defenseStat = Math.max(1, isSpecial ? (defender.stats.spDef || 80) : (defender.stats.defense || 80));
+    const stab = attacker.types?.includes(move?.type) ? 1.5 : 1.0;
+    const typeMult = getTypeMultiplier(move?.type || 'normal', defender.types || ['normal']);
     const randomVal = 0.85 + Math.random() * 0.15;
     const isCritical = Math.random() < 0.0625;
     const critMult = isCritical ? 1.5 : 1.0;
 
-    const baseDamage = (((2 * level / 5 + 2) * move.power * (attackStat / defenseStat)) / 50 + 2);
-    const totalDamage = Math.max(1, Math.floor(baseDamage * stab * typeMult * critMult * randomVal));
+    const baseDamage = (((2 * level / 5 + 2) * movePower * (attackStat / defenseStat)) / 50 + 2);
+    const calculated = Math.floor(baseDamage * stab * typeMult * critMult * randomVal);
+    const totalDamage = isNaN(calculated) || calculated <= 0 ? 25 : Math.max(18, calculated);
 
     return { damage: totalDamage, typeMult, isCritical };
   };
@@ -366,12 +369,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, typeMult >= 2.0 ? 'super-effective' : 'attack');
       setEnemyDamageFloater({ text: `-${damage}`, id: Date.now() });
 
-      // Immediate state update to animate enemy HP drop!
-      setEnemyTeam({
-        trainerName: enemyTeam.trainerName,
-        pokemonList: [...updatedEnemyList],
+      // Functional state update for enemy HP drop!
+      setEnemyTeam(prev => prev ? {
+        ...prev,
+        pokemonList: updatedEnemyList.map(p => ({ ...p, moves: [...p.moves] })),
         activeIndex: enemyActiveIdx
-      });
+      } : null);
 
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
@@ -385,11 +388,11 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
         } else {
           enemyActiveIdx = nextEnemyIdx;
           addLog(`🔄 상대가 ${updatedEnemyList[nextEnemyIdx].koreanName}(으)로 교체 출전`, 'switch');
-          setEnemyTeam({
-            trainerName: enemyTeam.trainerName,
-            pokemonList: [...updatedEnemyList],
+          setEnemyTeam(prev => prev ? {
+            ...prev,
+            pokemonList: updatedEnemyList.map(p => ({ ...p, moves: [...p.moves] })),
             activeIndex: enemyActiveIdx
-          });
+          } : null);
         }
       }
       return true;
@@ -413,12 +416,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
 
-      // Immediate state update to animate player HP drop!
-      setPlayerTeam({
-        trainerName: playerTeam.trainerName,
-        pokemonList: [...updatedPlayerList],
+      // Functional state update for player HP drop!
+      setPlayerTeam(prev => prev ? {
+        ...prev,
+        pokemonList: updatedPlayerList.map(p => ({ ...p, moves: [...p.moves] })),
         activeIndex: playerActiveIdx
-      });
+      } : null);
 
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
@@ -432,11 +435,11 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
         } else {
           playerActiveIdx = nextPlayerIdx;
           addLog(`🔄 ${updatedPlayerList[nextPlayerIdx].koreanName}(이)가 교체 출전`, 'switch');
-          setPlayerTeam({
-            trainerName: playerTeam.trainerName,
-            pokemonList: [...updatedPlayerList],
+          setPlayerTeam(prev => prev ? {
+            ...prev,
+            pokemonList: updatedPlayerList.map(p => ({ ...p, moves: [...p.moves] })),
             activeIndex: playerActiveIdx
-          });
+          } : null);
         }
       }
       return true;
@@ -504,16 +507,16 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     }
 
     // Apply Switch state immediately
-    setPlayerTeam({
-      trainerName: playerTeam.trainerName,
-      pokemonList: updatedPlayerList,
+    setPlayerTeam(prev => prev ? {
+      ...prev,
+      pokemonList: updatedPlayerList.map(p => ({ ...p, moves: [...p.moves] })),
       activeIndex: playerActiveIdx
-    });
-    setEnemyTeam({
-      trainerName: enemyTeam.trainerName,
-      pokemonList: updatedEnemyList,
+    } : null);
+    setEnemyTeam(prev => prev ? {
+      ...prev,
+      pokemonList: updatedEnemyList.map(p => ({ ...p, moves: [...p.moves] })),
       activeIndex: enemyActiveIdx
-    });
+    } : null);
 
     const pActive = updatedPlayerList[playerActiveIdx];
     const eActive = updatedEnemyList[enemyActiveIdx];
@@ -538,12 +541,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, typeMult >= 2.0 ? 'super-effective' : 'attack');
       setEnemyDamageFloater({ text: `-${damage}`, id: Date.now() });
 
-      // Immediate state flush for opponent HP bar drop animation!
-      setEnemyTeam({
-        trainerName: enemyTeam.trainerName,
-        pokemonList: [...updatedEnemyList],
+      // Immediate functional state update for opponent HP drop!
+      setEnemyTeam(prev => prev ? {
+        ...prev,
+        pokemonList: updatedEnemyList.map(p => ({ ...p, moves: [...p.moves] })),
         activeIndex: enemyActiveIdx
-      });
+      } : null);
 
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
@@ -557,11 +560,11 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
         } else {
           enemyActiveIdx = nextEnemyIdx;
           addLog(`🔄 상대가 ${updatedEnemyList[nextEnemyIdx].koreanName}(으)로 교체 출전`, 'switch');
-          setEnemyTeam({
-            trainerName: enemyTeam.trainerName,
-            pokemonList: [...updatedEnemyList],
+          setEnemyTeam(prev => prev ? {
+            ...prev,
+            pokemonList: updatedEnemyList.map(p => ({ ...p, moves: [...p.moves] })),
             activeIndex: enemyActiveIdx
-          });
+          } : null);
         }
       }
       return true;
@@ -586,12 +589,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
 
-      // Immediate state flush for player HP bar drop animation!
-      setPlayerTeam({
-        trainerName: playerTeam.trainerName,
-        pokemonList: [...updatedPlayerList],
+      // Immediate functional state update for player HP drop!
+      setPlayerTeam(prev => prev ? {
+        ...prev,
+        pokemonList: updatedPlayerList.map(p => ({ ...p, moves: [...p.moves] })),
         activeIndex: playerActiveIdx
-      });
+      } : null);
 
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
@@ -605,11 +608,11 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
         } else {
           playerActiveIdx = nextPlayerIdx;
           addLog(`🔄 ${updatedPlayerList[nextPlayerIdx].koreanName}(이)가 교체 출전`, 'switch');
-          setPlayerTeam({
-            trainerName: playerTeam.trainerName,
-            pokemonList: [...updatedPlayerList],
+          setPlayerTeam(prev => prev ? {
+            ...prev,
+            pokemonList: updatedPlayerList.map(p => ({ ...p, moves: [...p.moves] })),
             activeIndex: playerActiveIdx
-          });
+          } : null);
         }
       }
       return true;
@@ -751,6 +754,23 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
         </div>
       </div>
 
+      {/* 🐞 REAL-TIME LIVE DEBUG HUD CONSOLE */}
+      {showDebugHud && (phase === 'battle' || phase === 'result') && (
+        <div style={{ background: '#0f172a', color: '#38bdf8', padding: '10px 14px', fontSize: '0.78rem', fontFamily: 'Consolas, monospace', borderBottom: '1px solid #334155', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ fontWeight: 'bold', color: '#f43f5e', display: 'flex', justifyContent: 'space-between' }}>
+            <span>🐞 [LIVE BATTLE REAL-TIME DEBUG HUD CONSOLE]</span>
+            <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Click [🐞 Debug HUD] button to hide/show</span>
+          </div>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            <div>👤 내 포켓몬 ({pActiveMon?.koreanName}): <span style={{ color: '#4ade80', fontWeight: 'bold' }}>{pActiveMon?.currentHp} / {pActiveMon?.maxHp} HP</span> (상태: {pActiveMon?.status})</div>
+            <div>🤖 상대 포켓몬 ({eActiveMon?.koreanName}): <span style={{ color: '#fb7185', fontWeight: 'bold' }}>{eActiveMon?.currentHp} / {eActiveMon?.maxHp} HP</span> (상태: {eActiveMon?.status})</div>
+          </div>
+          <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
+            STATE: Mode={mode} | Turn={turn} | IsProcessingTurn={String(isProcessingTurn)} | IsSubmitted={String(isActionSubmitted)} | Role={userRole}
+          </div>
+        </div>
+      )}
+
       {/* 📋 Ribbon Control Header */}
       <div className="poke-battle-header">
         {/* Mode Selector */}
@@ -778,8 +798,16 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
           </button>
         </div>
 
-        {/* 💼 PURE STEALTH TOGGLE BUTTON */}
+        {/* 💼 PURE STEALTH & DEBUG TOGGLE BUTTONS */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            className={`excel-btn ${showDebugHud ? 'primary' : ''}`}
+            onClick={() => setShowDebugHud(prev => !prev)}
+            style={{ fontWeight: 600 }}
+          >
+            🐞 Real-Time Debug HUD ({showDebugHud ? 'ON' : 'OFF'})
+          </button>
+
           <button
             className={`excel-btn ${isPureStealth ? 'primary' : ''}`}
             onClick={() => setIsPureStealth(prev => !prev)}
