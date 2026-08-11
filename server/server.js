@@ -17,6 +17,7 @@ import { registerNumberBaseballHandlers } from './src/socketHandlers/numberBaseb
 import { registerSudokuHandlers } from './src/socketHandlers/sudokuHandler.js';
 import { registerMinesweeperHandlers } from './src/socketHandlers/minesweeperHandler.js';
 import { registerWordleHandlers } from './src/socketHandlers/wordleHandler.js';
+import { registerPokeBattleHandlers } from './src/socketHandlers/pokeBattleHandler.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -114,6 +115,7 @@ io.on('connection', (socket) => {
   registerSudokuHandlers(io, socket);
   registerMinesweeperHandlers(io, socket);
   registerWordleHandlers(io, socket);
+  registerPokeBattleHandlers(io, socket);
 });
 
 // 주기적 서버 메모리 가비지 컬렉터 구동
