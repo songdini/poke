@@ -1,12 +1,15 @@
 import { pokeBattleGames, connectedUsers } from '../gameManager.js';
 
 export function registerPokeBattleHandlers(io, socket) {
-  socket.on('pokebattle-join', ({ room }) => {
+  socket.on('pokebattle-join', ({ room, username: payloadUsername }) => {
     if (!room) return;
-    const user = connectedUsers.get(socket.id);
-    if (!user) return;
+    socket.join(room);
 
-    if (!pokeBattleGames.has(room)) {
+    const user = connectedUsers.get(socket.id);
+    const targetUsername = user?.username || payloadUsername;
+    if (!targetUsername) return;
+
+    if (!pokeBattleGames.has(room) || pokeBattleGames.get(room).phase === 'result') {
       pokeBattleGames.set(room, {
         room,
         phase: 'draft',
@@ -21,8 +24,8 @@ export function registerPokeBattleHandlers(io, socket) {
     }
 
     const game = pokeBattleGames.get(room);
-    let player = game.players.find(p => p.username === user.username);
-    let spectator = game.spectators.find(s => s.username === user.username);
+    let player = game.players.find(p => p.username.trim().toLowerCase() === targetUsername.trim().toLowerCase());
+    let spectator = game.spectators.find(s => s.username.trim().toLowerCase() === targetUsername.trim().toLowerCase());
 
     let role = 'player';
 
@@ -36,7 +39,7 @@ export function registerPokeBattleHandlers(io, socket) {
       if (game.players.length < 2 && game.phase === 'draft') {
         player = {
           id: socket.id,
-          username: user.username,
+          username: targetUsername,
           isHost: game.players.length === 0,
           team: null,
           activeIndex: 0
@@ -46,14 +49,13 @@ export function registerPokeBattleHandlers(io, socket) {
       } else {
         spectator = {
           id: socket.id,
-          username: user.username
+          username: targetUsername
         };
         game.spectators.push(spectator);
         role = 'spectator';
       }
     }
 
-    // Direct Sync to Socket
     socket.emit('pokebattle-role', { role });
 
     io.to(room).emit('pokebattle-update', {
@@ -74,11 +76,15 @@ export function registerPokeBattleHandlers(io, socket) {
     const game = pokeBattleGames.get(room);
     if (!game || game.phase !== 'draft') return;
 
-    let player = game.players.find(p => p.id === socket.id);
+    socket.join(room);
+
+    const user = connectedUsers.get(socket.id);
+    let player = game.players.find(p => p.id === socket.id || (user && p.username.trim().toLowerCase() === user.username.trim().toLowerCase()));
     if (!player) return;
 
+    player.id = socket.id;
     player.team = pokemonList;
-    game.readyDrafts[socket.id] = true;
+    game.readyDrafts[player.username] = true;
 
     io.to(room).emit('pokebattle-update', {
       type: 'draft-update',
@@ -121,11 +127,14 @@ export function registerPokeBattleHandlers(io, socket) {
     const game = pokeBattleGames.get(room);
     if (!game || game.phase !== 'battle') return;
 
-    // Reject spectator actions
-    const isPlayer = game.players.some(p => p.id === socket.id);
-    if (!isPlayer) return;
+    socket.join(room);
 
-    game.turnActions[socket.id] = action;
+    const user = connectedUsers.get(socket.id);
+    let player = game.players.find(p => p.id === socket.id || (user && p.username.trim().toLowerCase() === user.username.trim().toLowerCase()));
+    if (!player) return;
+
+    player.id = socket.id;
+    game.turnActions[player.username] = action;
 
     io.to(room).emit('pokebattle-update', {
       type: 'action-waiting',
@@ -145,6 +154,8 @@ export function registerPokeBattleHandlers(io, socket) {
   socket.on('pokebattle-restart', ({ room }) => {
     const game = pokeBattleGames.get(room);
     if (!game) return;
+
+    socket.join(room);
 
     game.phase = 'draft';
     game.readyDrafts = {};
@@ -174,8 +185,8 @@ function resolveTurn(io, game) {
 
   if (!p1 || !p2) return;
 
-  const a1 = game.turnActions[p1.id] || { type: 'move', moveIndex: 0 };
-  const a2 = game.turnActions[p2.id] || { type: 'move', moveIndex: 0 };
+  const a1 = game.turnActions[p1.username] || { type: 'move', moveIndex: 0 };
+  const a2 = game.turnActions[p2.username] || { type: 'move', moveIndex: 0 };
 
   // Clear turn actions for next turn
   game.turnActions = {};

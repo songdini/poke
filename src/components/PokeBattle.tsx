@@ -81,6 +81,16 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   const [enemyDamageFloater, setEnemyDamageFloater] = useState<{ text: string; id: number } | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const playerTeamRef = useRef<PlayerTeam | null>(playerTeam);
+  const enemyTeamRef = useRef<PlayerTeam | null>(enemyTeam);
+
+  useEffect(() => {
+    playerTeamRef.current = playerTeam;
+  }, [playerTeam]);
+
+  useEffect(() => {
+    enemyTeamRef.current = enemyTeam;
+  }, [enemyTeam]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -145,6 +155,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     };
 
     const handlePokeBattleUpdate = (update: PokeBattleUpdatePayload) => {
+      console.log(`[SOCKET_EVENT_RECV] ${username}:`, update.type, update.data);
       if (update.data.spectatorCount !== undefined) {
         setSpectatorCount(update.data.spectatorCount);
       }
@@ -159,8 +170,9 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
             const p1 = update.data.players[0];
             const p2 = update.data.players[1];
 
-            const me = update.data.players.find(p => p.username === username);
-            const opponent = update.data.players.find(p => p.username !== username);
+            const cleanUser = username.trim().toLowerCase();
+            const me = update.data.players.find(p => p.username.trim().toLowerCase() === cleanUser);
+            const opponent = update.data.players.find(p => p.username.trim().toLowerCase() !== cleanUser);
 
             if (me && me.team && opponent && opponent.team) {
               // Active Battler Perspective
@@ -477,20 +489,23 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     p1Data: { playerId: string; username: string; action: PokeBattleAction },
     p2Data: { playerId: string; username: string; action: PokeBattleAction }
   ) => {
-    if (!playerTeam || !enemyTeam) return;
+    const currentPTeam = playerTeamRef.current;
+    const currentETeam = enemyTeamRef.current;
+    if (!currentPTeam || !currentETeam) return;
 
     setIsActionSubmitted(false);
     setIsProcessingTurn(true);
     setTurn(prev => prev + 1);
 
-    const myData = p1Data.username === username ? p1Data : p2Data;
-    const oppData = p1Data.username === username ? p2Data : p1Data;
+    const cleanUser = username.trim().toLowerCase();
+    const myData = p1Data.username.trim().toLowerCase() === cleanUser ? p1Data : p2Data;
+    const oppData = p1Data.username.trim().toLowerCase() === cleanUser ? p2Data : p1Data;
 
-    const updatedPlayerList = playerTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
-    const updatedEnemyList = enemyTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedPlayerList = currentPTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedEnemyList = currentETeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
 
-    let playerActiveIdx = playerTeam.activeIndex;
-    let enemyActiveIdx = enemyTeam.activeIndex;
+    let playerActiveIdx = currentPTeam.activeIndex;
+    let enemyActiveIdx = currentETeam.activeIndex;
 
     // 1. Handle Switches First
     if (myData.action.type === 'switch' && myData.action.switchIndex !== undefined) {
