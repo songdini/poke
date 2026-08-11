@@ -8,10 +8,11 @@ import NumberBaseballGame from './components/NumberBaseballGame';
 import SudokuGame from './components/SudokuGame';
 import MinesweeperGame from './components/MinesweeperGame';
 import WordleGame from './components/WordleGame';
+import PokeBattle from './components/PokeBattle';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle';
+type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle' | 'pokebattle';
 
 interface GameSession {
   username: string;
@@ -31,7 +32,8 @@ function App() {
     numberbaseball: null,
     sudoku: null,
     minesweeper: null,
-    wordle: null
+    wordle: null,
+    pokebattle: null
   });
 
   // 🚨 Emergency Boss Key Keyboard Listener (F2 or ESC)
@@ -180,6 +182,18 @@ function App() {
               </div>
               <span className="excel-cell-tag">{gameSessions.wordle ? 'ACTIVE' : 'MOD_08'}</span>
             </button>
+
+            <button
+              className={`game-option pokebattle ${gameSessions.pokebattle ? 'has-active-session' : ''}`}
+              onClick={() => handleGameSelection('pokebattle')}
+            >
+              <div className="game-icon">⚡</div>
+              <div className="game-info">
+                <h3>Table 09: PokeBattle_3v3_Simulation.xlsx</h3>
+                <p>3v3 Pokemon Type Advantage & Stat Simulator | Status: {gameSessions.pokebattle ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+              </div>
+              <span className="excel-cell-tag">{gameSessions.pokebattle ? 'ACTIVE' : 'MOD_09'}</span>
+            </button>
           </div>
         </div>
       );
@@ -209,7 +223,9 @@ function App() {
                 ? '🧩 Sudoku_Matrix_Solver.xlsx'
                 : selectedGame === 'minesweeper'
                 ? '💣 Minesweeper_Grid_Risk_Analysis.xlsx'
-                : '🔤 Wordle_Text_Parser_2026.xlsx'}
+                : selectedGame === 'wordle'
+                ? '🔤 Wordle_Text_Parser_2026.xlsx'
+                : '⚡ PokeBattle_3v3_Simulation.xlsx'}
             </h1>
             <p className="excel-subtext">
               Enter User Credentials and Workgroup Session Key to Load Cell Data:
@@ -291,6 +307,11 @@ function App() {
         <div style={{ display: selectedGame === 'wordle' ? 'block' : 'none', height: '100%' }}>
           {gameSessions.wordle && (
             <WordleGame username={gameSessions.wordle.username} room={gameSessions.wordle.room} onLeaveRoom={() => handleLeaveGame('wordle')} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'pokebattle' ? 'block' : 'none', height: '100%' }}>
+          {gameSessions.pokebattle && (
+            <PokeBattle username={gameSessions.pokebattle.username} room={gameSessions.pokebattle.room} onLeaveRoom={() => handleLeaveGame('pokebattle')} />
           )}
         </div>
       </div>
@@ -485,6 +506,12 @@ function App() {
               onClick={() => handleGameSelection('wordle')}
             >
               🔤 Sheet9 - Wordle {gameSessions.wordle && <span className="tab-live-dot">●</span>}
+            </button>
+            <button
+              className={`sheet-tab ${selectedGame === 'pokebattle' ? 'active' : ''} ${gameSessions.pokebattle ? 'has-session' : ''}`}
+              onClick={() => handleGameSelection('pokebattle')}
+            >
+              ⚡ Sheet10 - PokeBattle {gameSessions.pokebattle && <span className="tab-live-dot">●</span>}
             </button>
             <span className="new-sheet-btn">➕</span>
           </div>

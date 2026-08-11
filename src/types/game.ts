@@ -1,4 +1,4 @@
-export type GameType = 'catchmind' | 'mafia' | 'liar' | 'telestrations';
+export type GameType = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'pokebattle';
 
 export interface UserData {
   username: string;
