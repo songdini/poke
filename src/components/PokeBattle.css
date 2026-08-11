@@ -1,18 +1,72 @@
-/* 📊 Microsoft Excel Stealth Theme - 3v3 Pokemon Battle Simulator */
+/* 📊 Microsoft Excel Stealth Theme - 100% Authentic Worksheet Styling */
 
 .poke-battle-container {
   width: 100%;
-  max-width: 1150px;
+  max-width: 1180px;
   margin: 0 auto;
   background: #ffffff;
   border: 1px solid #d4d4d4;
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  border-radius: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  font-family: 'Segoe UI', Arial, sans-serif;
   color: #201f1e;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* 🟢 Excel Top Title Bar */
+.excel-title-bar {
+  background: #107c41;
+  color: #ffffff;
+  padding: 4px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 500;
+  user-select: none;
+}
+
+.excel-title-bar .title-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excel-title-bar .quick-access-icons {
+  display: flex;
+  gap: 8px;
+  opacity: 0.85;
+}
+
+/* 📊 Excel Ribbon Menu Bar */
+.excel-ribbon-menu {
+  background: #f3f2f1;
+  border-bottom: 1px solid #d4d4d4;
+  display: flex;
+  padding: 0 8px;
+  gap: 2px;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.excel-ribbon-tab {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #323130;
+  border-bottom: 2px solid transparent;
+}
+
+.excel-ribbon-tab:hover {
+  background: #edebe9;
+}
+
+.excel-ribbon-tab.active {
+  color: #107c41;
+  font-weight: 600;
+  border-bottom-color: #107c41;
+  background: #ffffff;
 }
 
 /* 📊 Formula Bar */
@@ -23,317 +77,234 @@
   border-bottom: 1px solid #d4d4d4;
   padding: 4px 8px;
   font-size: 0.8rem;
-  height: 32px;
+  height: 30px;
   gap: 6px;
   user-select: none;
+}
+
+.excel-name-box {
+  background: #ffffff;
+  border: 1px solid #c8c6c4;
+  padding: 2px 8px;
+  font-family: 'Consolas', monospace;
+  font-size: 0.78rem;
+  width: 90px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.excel-fx-icon {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-weight: bold;
+  color: #605e5c;
+  padding: 0 4px;
 }
 
 .poke-formula-input {
   flex: 1;
   background: #ffffff;
-  border: 1px solid #d4d4d4;
-  padding: 3px 10px;
-  font-family: 'Consolas', 'Courier New', monospace;
+  border: 1px solid #c8c6c4;
+  padding: 2px 10px;
+  font-family: 'Consolas', monospace;
   color: #107c41;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* 📋 Header */
+/* 📋 Control Ribbon Header */
 .poke-battle-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 6px 12px;
   background: #f3f2f1;
   border-bottom: 1px solid #d4d4d4;
 }
 
-.poke-header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* ▦ Excel Grid System */
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Segoe UI', monospace;
+  background: #ffffff;
+  user-select: text;
 }
 
-.poke-header-title h2 {
-  margin: 0;
-  font-size: 1.05rem;
+.excel-grid-table th {
+  background: #f3f2f1;
+  border: 1px solid #d4d4d4;
+  padding: 4px 8px;
   font-weight: 600;
-  color: #201f1e;
+  color: #605e5c;
+  text-align: center;
+  font-size: 0.75rem;
 }
 
-/* 🎯 Draft Phase Card */
+.excel-grid-table td {
+  border: 1px solid #e1dfdd;
+  padding: 6px 10px;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.excel-grid-table tr:hover td {
+  background: #f8f9fa;
+}
+
+.excel-row-header {
+  background: #f3f2f1;
+  color: #605e5c;
+  text-align: center;
+  font-weight: 600;
+  width: 32px;
+}
+
+.excel-cell-active {
+  outline: 2px solid #107c41;
+  outline-offset: -2px;
+  background: #f0fdf4 !important;
+}
+
+/* 📊 Pure Excel Stealth Sparkline Text Bar */
+.excel-sparkline-text {
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.excel-sparkline-text.high { color: #107c41; }
+.excel-sparkline-text.medium { color: #d97706; }
+.excel-sparkline-text.low { color: #d13438; }
+
+/* 🎯 Draft Grid Styling */
 .poke-draft-container {
-  padding: 20px;
+  padding: 16px;
   background: #ffffff;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .draft-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
-  max-height: 420px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  max-height: 400px;
   overflow-y: auto;
-  padding: 4px;
+  padding: 2px;
 }
 
 .draft-card {
-  background: #fdfdfd;
-  border: 2px solid #e1dfdd;
-  border-radius: 6px;
-  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: all 0.2s ease;
   position: relative;
+  transition: border-color 0.15s;
 }
 
 .draft-card:hover {
-  transform: translateY(-2px);
   border-color: #107c41;
-  box-shadow: 0 4px 12px rgba(16, 124, 65, 0.15);
+  background: #fcfcfc;
 }
 
 .draft-card.selected {
-  border-color: #107c41;
+  border: 2px solid #107c41;
   background: #f0fdf4;
-  box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.3);
 }
 
 .draft-card-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   background: #107c41;
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .draft-sprite {
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
   image-rendering: pixelated;
 }
 
 .draft-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  margin: 4px 0 2px 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin: 2px 0;
   color: #201f1e;
 }
 
 .type-badge-container {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 3px;
+  margin-top: 2px;
 }
 
 .type-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 2px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-/* ⚔️ Battle Arena Layout */
+/* ⚔️ Excel Stealth Battle Arena Layout */
 .poke-battle-arena {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  background: #f8fafc;
+  gap: 12px;
+  padding: 12px;
+  background: #ffffff;
 }
 
-.battle-field-container {
-  background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  height: 320px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* 🟩 Opponent & Player Status Units */
-.pokemon-status-card {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(4px);
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 10px 14px;
-  min-width: 240px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  z-index: 5;
-}
-
-.pokemon-status-card.enemy {
-  top: 16px;
-  left: 20px;
-}
-
-.pokemon-status-card.player {
-  bottom: 16px;
-  right: 20px;
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.status-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1e293b;
-}
-
-.status-level {
-  font-size: 0.78rem;
-  color: #64748b;
-  font-weight: 600;
-}
-
-/* 📊 HP Bar Styling */
-.hp-bar-outer {
-  width: 100%;
-  height: 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid #cbd5e1;
-  margin-bottom: 4px;
-  position: relative;
-}
-
-.hp-bar-inner {
-  height: 100%;
-  transition: width 0.5s ease-in-out, background-color 0.3s ease;
-  border-radius: 5px;
-}
-
-.hp-bar-inner.high { background: #10b981; }
-.hp-bar-inner.medium { background: #f59e0b; }
-.hp-bar-inner.low { background: #ef4444; }
-
-.hp-text {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-  text-align: right;
-  font-family: 'Consolas', monospace;
-}
-
-/* 👾 Showdown Animated Sprites */
-.sprite-stage {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprite-stage.enemy {
-  top: 25px;
-  right: 80px;
-}
-
-.sprite-stage.player {
-  bottom: 25px;
-  left: 80px;
-}
-
-.pokemon-battle-sprite {
-  max-height: 120px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  transition: transform 0.2s ease;
-}
-
-/* 💥 Damage Floater Animation */
-.damage-floater {
-  position: absolute;
-  font-family: 'Consolas', monospace;
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: #ef4444;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 2px white;
-  animation: floatUp 1.2s ease-out forwards;
-  pointer-events: none;
-  z-index: 20;
-}
-
-@keyframes floatUp {
-  0% { opacity: 1; transform: translateY(0) scale(1); }
-  50% { opacity: 1; transform: translateY(-25px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
-}
-
-/* ⚡ Hit Shake Animation */
-.shake {
-  animation: shakeAnim 0.4s ease-in-out;
-}
-
-@keyframes shakeAnim {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-12px); }
-  40% { transform: translateX(12px); }
-  60% { transform: translateX(-8px); }
-  80% { transform: translateX(8px); }
-}
-
-/* 🎮 Battle Control Panel */
+/* 🎮 Battle Controls in Excel Cells */
 .battle-controls-panel {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 14px;
+  border: 1px solid #d4d4d4;
+  padding: 10px;
 }
 
 .moves-grid {
   flex: 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .move-btn {
-  padding: 10px 12px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  padding: 8px 10px;
+  border: 1px solid #c8c6c4;
+  background: #f3f2f1;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: all 0.15s ease;
   text-align: left;
+  font-family: 'Consolas', monospace;
+  font-size: 0.8rem;
+  transition: background 0.1s, border-color 0.1s;
 }
 
 .move-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  filter: brightness(0.96);
+  border-color: #107c41;
+  background: #e1dfdd;
 }
 
 .move-btn:disabled {
@@ -346,7 +317,6 @@
   justify-content: space-between;
   align-items: center;
   font-weight: 700;
-  font-size: 0.88rem;
 }
 
 .move-info-row {
@@ -354,33 +324,34 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: #605e5c;
 }
 
 .switch-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  border-left: 1px solid #e2e8f0;
-  padding-left: 14px;
+  gap: 6px;
+  border-left: 1px solid #e1dfdd;
+  padding-left: 10px;
 }
 
 .switch-pokemon-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  background: #f8fafc;
+  padding: 5px 8px;
+  border: 1px solid #c8c6c4;
+  background: #ffffff;
   cursor: pointer;
-  transition: background 0.15s;
+  font-family: 'Consolas', monospace;
+  font-size: 0.78rem;
 }
 
 .switch-pokemon-btn:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: #f3f2f1;
+  border-color: #107c41;
 }
 
 .switch-pokemon-btn:disabled {
@@ -388,25 +359,24 @@
   cursor: not-allowed;
 }
 
-/* 📊 Battle Audit Log Table */
+/* 📋 Audit Log Table */
 .poke-log-container {
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border: 1px solid #d4d4d4;
   background: #ffffff;
-  height: 140px;
+  height: 130px;
   overflow-y: auto;
-}
-
-.poke-log-row {
-  padding: 4px 10px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.8rem;
-  display: flex;
-  gap: 8px;
-  align-items: center;
   font-family: 'Consolas', monospace;
 }
 
+.poke-log-row {
+  padding: 3px 8px;
+  border-bottom: 1px solid #f3f2f1;
+  font-size: 0.78rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .poke-log-row.attack { background: #f0fdf4; }
-.poke-log-row.damage { background: #fef2f2; }
-.poke-log-row.super-effective { background: #fefce8; font-weight: 700; }
+.poke-log-row.damage { background: #fdf2f2; }
+.poke-log-row.super-effective { background: #fffbeb; font-weight: 700; }

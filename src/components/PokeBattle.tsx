@@ -8,9 +8,10 @@ import type {
   Move 
 } from '../types/pokemon';
 import { getTypeMultiplier, TYPE_COLORS } from '../types/pokemon';
-import { Swords, RefreshCw, Trophy, Users, User } from 'lucide-react';
+import { Swords, RefreshCw, Trophy, Users, User, Dices, Briefcase, Eye, Save, RotateCcw, Table } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { getSessionToken } from '../socketUrl';
+import { fetchRandomTeamFromApi, type GenRange } from '../services/pokeApiService';
 import './PokeBattle.css';
 
 interface PokeBattleProps {
@@ -19,7 +20,7 @@ interface PokeBattleProps {
   onLeaveRoom?: () => void;
 }
 
-type BattleMode = 'solo' | 'pvp';
+type BattleMode = 'solo' | 'pvp' | 'pvp-random';
 type BattlePhase = 'draft' | 'battle' | 'result';
 
 interface PokeBattleAction {
@@ -46,14 +47,17 @@ interface PokeBattleUpdatePayload {
 const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room', onLeaveRoom }) => {
   const { socket } = useSocket();
 
-  // Mode & Phase
+  // Mode & Phase & Gen Range Filter
   const [mode, setMode] = useState<BattleMode>('solo');
   const [phase, setPhase] = useState<BattlePhase>('draft');
+  const [genRange, setGenRange] = useState<GenRange>('gen1-2');
+  const [isPureStealth, setIsPureStealth] = useState<boolean>(false);
 
   // Draft Selection
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDraftReady, setIsDraftReady] = useState<boolean>(false);
   const [readyCount, setReadyCount] = useState<number>(0);
+  const [isFetchingApi, setIsFetchingApi] = useState<boolean>(false);
 
   // Teams
   const [playerTeam, setPlayerTeam] = useState<PlayerTeam | null>(null);
@@ -76,6 +80,18 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  // F4 Key for Emergency Pure Stealth Toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F4') {
+        e.preventDefault();
+        setIsPureStealth(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Add Log Entry
   const addLog = (text: string, type: BattleLog['type'] = 'system') => {
@@ -100,7 +116,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
   // Socket.io PvP Room Listener
   useEffect(() => {
-    if (!socket || mode !== 'pvp') return;
+    if (!socket || (mode !== 'pvp' && mode !== 'pvp-random')) return;
 
     const joinRoom = () => {
       socket.emit('join', {
@@ -141,7 +157,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
               setTurn(1);
               setLogs([]);
               setPhase('battle');
-              addLog(`⚔️ 실시간 1v1 PvP 배틀 시작! (${me.username} vs ${opponent.username})`, 'system');
+              addLog(`⚔️ 1v1 배틀 데이터 스트림 연결 완료 (${me.username} vs ${opponent.username})`, 'system');
             }
           }
           break;
@@ -196,20 +212,19 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     const playerMonList = playerPicked.map(createBattlePokemon);
 
     if (mode === 'solo') {
-      // AI Team
       const availableForAi = POKEMON_ROSTER.filter(p => !selectedIds.includes(p.id));
       const shuffledAi = [...availableForAi].sort(() => 0.5 - Math.random());
       const enemyPicked = (shuffledAi.length >= 3 ? shuffledAi : [...POKEMON_ROSTER].sort(() => 0.5 - Math.random())).slice(0, 3);
       const enemyMonList = enemyPicked.map(createBattlePokemon);
 
       setPlayerTeam({
-        trainerName: username || '플레이어',
+        trainerName: username || 'User_Session',
         pokemonList: playerMonList,
         activeIndex: 0
       });
 
       setEnemyTeam({
-        trainerName: '🤖 AI 라이벌 트레이너',
+        trainerName: 'AI_Model_Ref',
         pokemonList: enemyMonList,
         activeIndex: 0
       });
@@ -217,12 +232,33 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       setTurn(1);
       setLogs([]);
       setPhase('battle');
-      addLog(`⚔️ Solo 3v3 포켓몬 배틀 시작! (${playerMonList[0].koreanName} vs ${enemyMonList[0].koreanName})`, 'system');
+      addLog(`⚔️ Solo 배틀 시뮬레이션 시작 (${playerMonList[0].koreanName} vs ${enemyMonList[0].koreanName})`, 'system');
     } else {
-      // PvP Mode: Submit to Server
       setIsDraftReady(true);
       socket?.emit('pokebattle-draft-submit', { room, pokemonList: playerMonList });
-      addLog(`🎯 엔트리 선택 완료! 상대방의 선택을 기다리는 중...`, 'system');
+      addLog(`🎯 데이터 모델 제출 완료. 상대방 승인 대기 중...`, 'system');
+    }
+  };
+
+  // Dynamic PokeAPI Random PvP Draft Submit
+  const handleStartRandomPvPBattle = async () => {
+    setIsFetchingApi(true);
+    try {
+      const genLabel = genRange === 'gen1-2' ? '1~2세대(251종)' : genRange === 'gen1-5' ? '1~5세대(649종)' : '1~9세대(1025종)';
+      addLog(`🌐 PokeAPI ${genLabel} 모델 인덱스 로딩 중...`, 'system');
+      const randomTeamData = await fetchRandomTeamFromApi(3, genRange);
+      const randomMonList = randomTeamData.map(createBattlePokemon);
+
+      setIsDraftReady(true);
+      socket?.emit('pokebattle-draft-submit', { room, pokemonList: randomMonList });
+      addLog(`🎲 무작위 모델 인덱스([${randomMonList.map(p => p.koreanName).join(', ')}]) 생성 및 제출 완료.`, 'system');
+    } catch (err) {
+      console.error('Failed to fetch random team from PokeAPI', err);
+      addLog(`⚠️ API 로딩 실패. 로컬 프리셋 매트릭스로 전환합니다.`, 'system');
+      handleRandomizeDraft();
+      handleStartBattle();
+    } finally {
+      setIsFetchingApi(false);
     }
   };
 
@@ -248,8 +284,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   const handleExecuteTurn = (move: Move) => {
     if (!playerTeam || !enemyTeam || isProcessingTurn) return;
 
-    if (mode === 'pvp') {
-      // PvP Mode: Submit move action to socket
+    if (mode === 'pvp' || mode === 'pvp-random') {
       const moveIndex = playerTeam.pokemonList[playerTeam.activeIndex].moves.findIndex(m => m.id === move.id);
       setIsActionSubmitted(true);
       socket?.emit('pokebattle-action-submit', {
@@ -259,7 +294,6 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       return;
     }
 
-    // Solo Mode Execution
     setIsProcessingTurn(true);
     const pActive = playerTeam.pokemonList[playerTeam.activeIndex];
     const eActive = enemyTeam.pokemonList[enemyTeam.activeIndex];
@@ -272,26 +306,29 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       setEnemyShake(true);
       setTimeout(() => setEnemyShake(false), 400);
 
-      let logText = `${pActive.koreanName}의 ${move.name}! (${damage} 대미지)`;
-      if (isCritical) logText += ` 💥 급소 타격!`;
-      if (typeMult >= 2.0) logText += ` ⚡ 효과가 굉장했다!`;
-      else if (typeMult <= 0.5) logText += ` 🛡️ 효과가 별로인 듯하다...`;
+      let logText = isPureStealth 
+        ? `[MACRO_EXECUTE] ${pActive.koreanName} -> ${move.name} (ΔHP: -${damage})`
+        : `${pActive.koreanName}의 ${move.name}! (${damage} 대미지)`;
+
+      if (isCritical) logText += ` 💥 Critical Impact`;
+      if (typeMult >= 2.0) logText += ` ⚡ Super Effective (2.0x)`;
+      else if (typeMult <= 0.5) logText += ` 🛡️ Not Very Effective (0.5x)`;
 
       addLog(logText, typeMult >= 2.0 ? 'super-effective' : 'attack');
       setEnemyDamageFloater({ text: `-${damage}`, id: Date.now() });
 
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
-        addLog(`☠️ 상대의 ${eActive.koreanName}이(가) 쓰러졌습니다!`, 'faint');
+        addLog(`☠️ ${eActive.koreanName} 세션 종료 (Status: Fainted)`, 'faint');
         const nextEnemyIdx = enemyTeam.pokemonList.findIndex(p => p.status !== 'fainted');
         if (nextEnemyIdx === -1) {
           setPhase('result');
-          addLog(`🏆 ${username} 트레이너의 승리!`, 'system');
+          addLog(`🏆 ${username} 세션 승리 완료!`, 'system');
           setIsProcessingTurn(false);
           return false;
         } else {
           enemyTeam.activeIndex = nextEnemyIdx;
-          addLog(`🤖 상대가 ${enemyTeam.pokemonList[nextEnemyIdx].koreanName}(을)를 내보냈다!`, 'switch');
+          addLog(`🔄 상대가 ${enemyTeam.pokemonList[nextEnemyIdx].koreanName} 모델로 전환함.`, 'switch');
         }
       }
       return true;
@@ -305,25 +342,28 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       setPlayerShake(true);
       setTimeout(() => setPlayerShake(false), 400);
 
-      let logText = `🤖 상대 ${eActive.koreanName}의 ${enemyMove.name}! (${damage} 대미지)`;
-      if (isCritical) logText += ` 💥 급소 타격!`;
-      if (typeMult >= 2.0) logText += ` ⚡ 효과가 굉장했다!`;
+      let logText = isPureStealth
+        ? `[REF_EXECUTE] ${eActive.koreanName} -> ${enemyMove.name} (ΔHP: -${damage})`
+        : `상대 ${eActive.koreanName}의 ${enemyMove.name}! (${damage} 대미지)`;
+
+      if (isCritical) logText += ` 💥 Critical Impact`;
+      if (typeMult >= 2.0) logText += ` ⚡ Super Effective (2.0x)`;
 
       addLog(logText, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
 
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
-        addLog(`☠️ 내 ${pActive.koreanName}이(가) 쓰러졌습니다!`, 'faint');
+        addLog(`☠️ 내 ${pActive.koreanName} 세션 종료 (Status: Fainted)`, 'faint');
         const nextPlayerIdx = playerTeam.pokemonList.findIndex(p => p.status !== 'fainted');
         if (nextPlayerIdx === -1) {
           setPhase('result');
-          addLog(`💀 ${username} 트레이너의 패배...`, 'system');
+          addLog(`💀 ${username} 세션 종료 (Result: Defeat)`, 'system');
           setIsProcessingTurn(false);
           return false;
         } else {
           playerTeam.activeIndex = nextPlayerIdx;
-          addLog(`🔄 ${playerTeam.pokemonList[nextPlayerIdx].koreanName}(이)가 출전합니다!`, 'switch');
+          addLog(`🔄 ${playerTeam.pokemonList[nextPlayerIdx].koreanName} 모델 출전`, 'switch');
         }
       }
       return true;
@@ -371,17 +411,15 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     const pActive = playerTeam.pokemonList[playerTeam.activeIndex];
     const eActive = enemyTeam.pokemonList[enemyTeam.activeIndex];
 
-    // Handle Switch Action first
     if (myData.action.type === 'switch' && myData.action.switchIndex !== undefined) {
       playerTeam.activeIndex = myData.action.switchIndex;
-      addLog(`🔄 ${username} 트레이너가 포켓몬을 교체했습니다!`, 'switch');
+      addLog(`🔄 ${username} 유저가 포켓몬 모델을 교체함`, 'switch');
     }
     if (oppData.action.type === 'switch' && oppData.action.switchIndex !== undefined) {
       enemyTeam.activeIndex = oppData.action.switchIndex;
-      addLog(`🔄 상대 ${oppData.username} 트레이너가 포켓몬을 교체했습니다!`, 'switch');
+      addLog(`🔄 상대 ${oppData.username} 유저가 포켓몬 모델을 교체함`, 'switch');
     }
 
-    // Handle Attacks
     if (myData.action.type === 'move' && myData.action.moveIndex !== undefined) {
       const myMove = pActive.moves[myData.action.moveIndex] || pActive.moves[0];
       const { damage } = calculateDamage(pActive, eActive, myMove);
@@ -394,7 +432,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
-        addLog(`☠️ 상대의 ${eActive.koreanName}이(가) 쓰러졌습니다!`, 'faint');
+        addLog(`☠️ 상대의 ${eActive.koreanName} 모델 세션 종료`, 'faint');
       }
     }
 
@@ -410,7 +448,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
-        addLog(`☠️ 내 ${pActive.koreanName}이(가) 쓰러졌습니다!`, 'faint');
+        addLog(`☠️ 내 ${pActive.koreanName} 모델 세션 종료`, 'faint');
       }
     }
 
@@ -423,7 +461,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     if (targetIndex === playerTeam.activeIndex) return;
     if (playerTeam.pokemonList[targetIndex].status === 'fainted') return;
 
-    if (mode === 'pvp') {
+    if (mode === 'pvp' || mode === 'pvp-random') {
       setIsActionSubmitted(true);
       socket?.emit('pokebattle-action-submit', {
         room,
@@ -432,13 +470,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       return;
     }
 
-    // Solo mode switch
     setIsProcessingTurn(true);
     const oldMon = playerTeam.pokemonList[playerTeam.activeIndex];
     const newMon = playerTeam.pokemonList[targetIndex];
     playerTeam.activeIndex = targetIndex;
 
-    addLog(`🔄 ${oldMon.koreanName}(을)를 집어넣고 ${newMon.koreanName}(을)를 내보냈다!`, 'switch');
+    addLog(`🔄 ${oldMon.koreanName} -> ${newMon.koreanName} 모델 전환`, 'switch');
 
     setTimeout(() => {
       const eActive = enemyTeam!.pokemonList[enemyTeam!.activeIndex];
@@ -449,12 +486,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       setPlayerShake(true);
       setTimeout(() => setPlayerShake(false), 400);
 
-      addLog(`🤖 상대 ${eActive.koreanName}의 틈새 공격! ${enemyMove.name}! (${damage} 대미지)`, 'damage');
+      addLog(`🤖 상대 ${eActive.koreanName}의 틈새 공격 ${enemyMove.name}! (${damage} 대미지)`, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
 
       if (newMon.currentHp <= 0) {
         newMon.status = 'fainted';
-        addLog(`☠️ 내 ${newMon.koreanName}이(가) 쓰러졌습니다!`, 'faint');
+        addLog(`☠️ ${newMon.koreanName} 모델 세션 종료`, 'faint');
       }
 
       setTurn(prev => prev + 1);
@@ -470,7 +507,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     setPlayerTeam(null);
     setEnemyTeam(null);
     setPhase('draft');
-    if (mode === 'pvp') {
+    if (mode === 'pvp' || mode === 'pvp-random') {
       socket?.emit('pokebattle-restart', { room });
     }
   };
@@ -478,48 +515,97 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   const pActiveMon = playerTeam?.pokemonList[playerTeam.activeIndex];
   const eActiveMon = enemyTeam?.pokemonList[enemyTeam.activeIndex];
 
+  // Text Sparkline Renderer
+  const renderSparklineText = (hp: number, maxHp: number) => {
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    const totalBars = 10;
+    const filledBars = Math.round(ratio * totalBars);
+    const emptyBars = totalBars - filledBars;
+    const barStr = '█'.repeat(filledBars) + '░'.repeat(emptyBars);
+    const colorClass = ratio > 0.5 ? 'high' : ratio > 0.2 ? 'medium' : 'low';
+    return (
+      <span className={`excel-sparkline-text ${colorClass}`}>
+        [{barStr}] {Math.round(ratio * 100)}% ({hp}/{maxHp})
+      </span>
+    );
+  };
+
   return (
     <div className="poke-battle-container excel-stealth-theme">
-      {/* 📊 Excel Formula Bar */}
-      <div className="poke-formula-bar">
-        <div className="excel-name-box">Sheet5!B3</div>
-        <div className="excel-fx-icon">fx</div>
-        <div className="poke-formula-input">
-          {phase === 'draft' && `=SELECT_3V3_POKEMON_TEAM(MODE="${mode.toUpperCase()}")`}
-          {phase === 'battle' && `=POKE_BATTLE_SIMULATOR("${pActiveMon?.koreanName}", "${eActiveMon?.koreanName}", TURN=${turn})`}
-          {phase === 'result' && `=VLOOKUP(WINNER, BATTLE_RESULTS_DB, 1, FALSE)`}
+      {/* 🟢 Authentic Excel Title Bar */}
+      <div className="excel-title-bar">
+        <div className="title-text">
+          <Table size={14} />
+          <span>Q3_Quarterly_Financial_Portfolio_Analysis_2026.xlsx - Excel</span>
+        </div>
+        <div className="quick-access-icons">
+          <Save size={13} />
+          <RotateCcw size={13} />
+          <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Alt+F4: Hide</span>
         </div>
       </div>
 
-      {/* 📋 Header Bar */}
-      <div className="poke-battle-header">
-        <div className="poke-header-title">
-          <span style={{ fontSize: '1.2rem' }}>⚡</span>
-          <h2>Sheet5_PokeBattle_Analysis.xlsx</h2>
-        </div>
+      {/* 📊 Excel Ribbon Menu Bar */}
+      <div className="excel-ribbon-menu">
+        <div className="excel-ribbon-tab">File</div>
+        <div className="excel-ribbon-tab">Home</div>
+        <div className="excel-ribbon-tab">Insert</div>
+        <div className="excel-ribbon-tab">Page Layout</div>
+        <div className="excel-ribbon-tab active">Formulas</div>
+        <div className="excel-ribbon-tab">Data</div>
+        <div className="excel-ribbon-tab">Review</div>
+        <div className="excel-ribbon-tab">View</div>
+      </div>
 
-        {/* 🎮 MODE SELECTION TOGGLE */}
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+      {/* 📊 Excel Formula Bar */}
+      <div className="poke-formula-bar">
+        <div className="excel-name-box">Cell B4</div>
+        <div className="excel-fx-icon">fx</div>
+        <div className="poke-formula-input">
+          {phase === 'draft' && `=SUMIFS(PROJECTION_MODEL, RANGE, "${mode.toUpperCase()}")`}
+          {phase === 'battle' && `=POKE_BATTLE_SIMULATOR("${pActiveMon?.koreanName}", "${eActiveMon?.koreanName}", TURN=${turn})`}
+          {phase === 'result' && `=VLOOKUP("WINNER", FINANCIAL_AUDIT_LOG, 3, FALSE)`}
+        </div>
+      </div>
+
+      {/* 📋 Ribbon Control Header */}
+      <div className="poke-battle-header">
+        {/* Mode Selector */}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           <button 
             className={`excel-btn ${mode === 'solo' ? 'primary' : ''}`}
             onClick={() => setMode('solo')}
             disabled={phase !== 'draft'}
           >
-            <User size={13} /> 🤖 솔로 모드 (vs AI)
+            <User size={13} /> 🤖 솔로 (vs AI)
           </button>
           <button 
             className={`excel-btn ${mode === 'pvp' ? 'primary' : ''}`}
             onClick={() => setMode('pvp')}
             disabled={phase !== 'draft'}
           >
-            <Users size={13} /> ⚔️ 대전 모드 (1v1 PvP)
+            <Users size={13} /> ⚔️ 대전 (선택)
+          </button>
+          <button 
+            className={`excel-btn ${mode === 'pvp-random' ? 'primary' : ''}`}
+            onClick={() => setMode('pvp-random')}
+            disabled={phase !== 'draft'}
+          >
+            <Dices size={13} /> 🎲 대전 (랜덤)
           </button>
         </div>
 
-        <div className="game-info">
-          <span className="excel-cell-badge phase">
-            모드: {mode === 'solo' ? '솔로 (vs AI)' : `멀티 1v1 PvP (방 #${room})`}
-          </span>
+        {/* 💼 PURE STEALTH TOGGLE BUTTON */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            className={`excel-btn ${isPureStealth ? 'primary' : ''}`}
+            onClick={() => setIsPureStealth(prev => !prev)}
+            style={{ fontWeight: 600 }}
+          >
+            {isPureStealth ? <Briefcase size={13} /> : <Eye size={13} />}
+            {isPureStealth ? '💼 100% 엑셀 텍스트 위장 (ON)' : '👁️ 비주얼 그래픽 보기 (OFF)'}
+          </button>
+
           <span className="excel-cell-badge">USER: {username}</span>
           {onLeaveRoom && (
             <button onClick={onLeaveRoom} className="excel-btn close">
@@ -532,149 +618,218 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       {/* 🎯 DRAFT PHASE */}
       {phase === 'draft' && (
         <div className="poke-draft-container">
-          <div className="excel-card-header">
-            <h3>🎯 3v3 배틀 포켓몬 엔트리 선택 ({selectedIds.length} / 3)</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="excel-btn" onClick={handleRandomizeDraft} disabled={isDraftReady}>
-                <RefreshCw size={14} /> 🎲 무작위 추첨
-              </button>
-              <button 
-                className="excel-btn primary" 
-                onClick={handleStartBattle}
-                disabled={selectedIds.length !== 3 || isDraftReady}
-              >
-                <Swords size={14} /> {isDraftReady ? '✓ 엔트리 제출됨 (상대방 대기 중...)' : mode === 'solo' ? '⚔️ 솔로 배틀 시작' : '⚔️ 대전 엔트리 제출'}
-              </button>
-            </div>
-          </div>
-          <p className="phase-description">
-            {mode === 'solo' 
-              ? '원하는 포켓몬 3마리를 선택하여 AI 라이벌과 3v3 배틀을 진행하십시오.'
-              : `대전 모드: 3마리를 선택하고 엔트리를 제출하면 상대방과 1v1 PvP 배틀이 시작됩니다. (${readyCount}/2 준비됨)`}
-          </p>
-
-          <div className="draft-grid">
-            {POKEMON_ROSTER.map((mon) => {
-              const isSelected = selectedIds.includes(mon.id);
-              const selectIndex = selectedIds.indexOf(mon.id) + 1;
-              return (
-                <div 
-                  key={mon.id}
-                  className={`draft-card ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleToggleDraft(mon.id)}
+          {mode === 'pvp-random' ? (
+            <div className="excel-phase-card" style={{ textAlign: 'center', padding: '24px' }}>
+              <Dices size={36} style={{ color: '#107c41', marginBottom: 6 }} />
+              <h3>🎲 PokeAPI 무작위 3v3 랜덤 대전 모드</h3>
+              
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', margin: '12px 0' }}>
+                <button
+                  className={`excel-btn ${genRange === 'gen1-2' ? 'primary' : ''}`}
+                  onClick={() => setGenRange('gen1-2')}
+                  disabled={isDraftReady || isFetchingApi}
                 >
-                  {isSelected && <div className="draft-card-badge">#{selectIndex}</div>}
-                  <img src={mon.sprites.front} alt={mon.koreanName} className="draft-sprite" />
-                  <div className="draft-name">{mon.koreanName}</div>
+                  🔴 1~2세대 (관동/성도 251종)
+                </button>
+                <button
+                  className={`excel-btn ${genRange === 'gen1-5' ? 'primary' : ''}`}
+                  onClick={() => setGenRange('gen1-5')}
+                  disabled={isDraftReady || isFetchingApi}
+                >
+                  🟢 1~5세대 (649종)
+                </button>
+                <button
+                  className={`excel-btn ${genRange === 'all' ? 'primary' : ''}`}
+                  onClick={() => setGenRange('all')}
+                  disabled={isDraftReady || isFetchingApi}
+                >
+                  🌐 1~9세대 (1025종)
+                </button>
+              </div>
+
+              <p className="phase-description" style={{ maxWidth: '580px', margin: '6px auto 14px auto', fontSize: '0.82rem' }}>
+                {genRange === 'gen1-2'
+                  ? '선택됨: 1~2세대 (이상해씨~세레비 251종) 무작위 추출'
+                  : genRange === 'gen1-5'
+                  ? '선택됨: 1~5세대 (649종) 무작위 추출'
+                  : '선택됨: 1~9세대 (1025종) 무작위 추출'}
+              </p>
+
+              <button
+                className="excel-btn primary"
+                onClick={handleStartRandomPvPBattle}
+                disabled={isDraftReady || isFetchingApi}
+                style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+              >
+                {isFetchingApi ? (
+                  '🌐 PokeAPI 모델 로딩 중...'
+                ) : isDraftReady ? (
+                  '✓ 무작위 엔트리 제출 완료 (상대방 대기 중...)'
+                ) : (
+                  `🎲 PokeAPI 무작위 3v3 엔트리 뽑기 (${genRange === 'gen1-2' ? '1~2세대' : genRange === 'gen1-5' ? '1~5세대' : '1~9세대'})`
+                )}
+              </button>
+              <div style={{ marginTop: 10, fontSize: '0.78rem', color: '#64748b' }}>
+                준비된 플레이어: {readyCount} / 2
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="excel-card-header">
+                <h3>🎯 3v3 배틀 엔트리 선택 ({selectedIds.length} / 3)</h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="excel-btn" onClick={handleRandomizeDraft} disabled={isDraftReady}>
+                    <RefreshCw size={13} /> 🎲 무작위 추첨
+                  </button>
+                  <button 
+                    className="excel-btn primary" 
+                    onClick={handleStartBattle}
+                    disabled={selectedIds.length !== 3 || isDraftReady}
+                  >
+                    <Swords size={13} /> {isDraftReady ? '✓ 엔트리 제출됨' : mode === 'solo' ? '⚔️ 배틀 시작' : '⚔️ 대전 엔트리 제출'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="draft-grid">
+                {POKEMON_ROSTER.map((mon) => {
+                  const isSelected = selectedIds.includes(mon.id);
+                  const selectIndex = selectedIds.indexOf(mon.id) + 1;
+                  return (
+                    <div 
+                      key={mon.id}
+                      className={`draft-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleToggleDraft(mon.id)}
+                    >
+                      {isSelected && <div className="draft-card-badge">#{selectIndex}</div>}
+                      {!isPureStealth && <img src={mon.sprites.front} alt={mon.koreanName} className="draft-sprite" />}
+                      <div className="draft-name">{isPureStealth ? `[ASSET_${mon.id}] ${mon.koreanName}` : mon.koreanName}</div>
+                      <div className="type-badge-container">
+                        {mon.types.map(t => (
+                          <span 
+                            key={t} 
+                            className="type-badge"
+                            style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: 3, fontFamily: 'Consolas, monospace' }}>
+                        HP:{mon.stats.hp} ATK:{mon.stats.attack} SPD:{mon.stats.speed}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ⚔️ BATTLE ARENA (100% AUTHENTIC EXCEL WORKSHEET TABLE GRID) */}
+      {(phase === 'battle' || phase === 'result') && pActiveMon && eActiveMon && (
+        <div className="poke-battle-arena">
+          {/* EXCEL WORKSHEET GRID TABLE */}
+          <table className="excel-grid-table">
+            <thead>
+              <tr>
+                <th className="excel-row-header">#</th>
+                <th style={{ width: '120px' }}>Column A (ID)</th>
+                <th style={{ width: '180px' }}>Column B (Model_Name)</th>
+                <th style={{ width: '140px' }}>Column C (Type_Class)</th>
+                <th style={{ width: '120px' }}>Column D (Level)</th>
+                <th>Column E (Sparkline_Bar / Status)</th>
+                {!isPureStealth && <th style={{ width: '100px' }}>Graphic_Ref</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Row 4: Opponent Pokemon */}
+              <tr>
+                <td className="excel-row-header">4</td>
+                <td>TARGET_01</td>
+                <td style={{ fontWeight: 700, color: '#d13438' }}>
+                  🤖 {enemyTeam?.trainerName}: {eActiveMon.koreanName}
+                </td>
+                <td>
                   <div className="type-badge-container">
-                    {mon.types.map(t => (
-                      <span 
-                        key={t} 
-                        className="type-badge"
-                        style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}
-                      >
+                    {eActiveMon.types.map(t => (
+                      <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
                         {t}
                       </span>
                     ))}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4, fontFamily: 'Consolas, monospace' }}>
-                    HP:{mon.stats.hp} ATK:{mon.stats.attack} SPD:{mon.stats.speed}
+                </td>
+                <td>Lv. 50</td>
+                <td>
+                  {renderSparklineText(eActiveMon.currentHp, eActiveMon.maxHp)}
+                  {enemyDamageFloater && (
+                    <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
+                      {enemyDamageFloater.text}
+                    </span>
+                  )}
+                </td>
+                {!isPureStealth && (
+                  <td style={{ textAlign: 'center' }}>
+                    <img 
+                      src={eActiveMon.sprites.showdownFront || eActiveMon.sprites.front} 
+                      alt={eActiveMon.koreanName}
+                      className={enemyShake ? 'shake' : ''}
+                      style={{ height: 42, objectFit: 'contain' }}
+                    />
+                  </td>
+                )}
+              </tr>
+
+              {/* Row 8: Player Pokemon */}
+              <tr className="excel-cell-active">
+                <td className="excel-row-header">8</td>
+                <td>ACTIVE_01</td>
+                <td style={{ fontWeight: 700, color: '#107c41' }}>
+                  👤 {playerTeam?.trainerName}: {pActiveMon.koreanName}
+                </td>
+                <td>
+                  <div className="type-badge-container">
+                    {pActiveMon.types.map(t => (
+                      <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
+                        {t}
+                      </span>
+                    ))}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                </td>
+                <td>Lv. 50</td>
+                <td>
+                  {renderSparklineText(pActiveMon.currentHp, pActiveMon.maxHp)}
+                  {playerDamageFloater && (
+                    <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
+                      {playerDamageFloater.text}
+                    </span>
+                  )}
+                </td>
+                {!isPureStealth && (
+                  <td style={{ textAlign: 'center' }}>
+                    <img 
+                      src={pActiveMon.sprites.showdownBack || pActiveMon.sprites.back || pActiveMon.sprites.front} 
+                      alt={pActiveMon.koreanName}
+                      className={playerShake ? 'shake' : ''}
+                      style={{ height: 46, objectFit: 'contain' }}
+                    />
+                  </td>
+                )}
+              </tr>
+            </tbody>
+          </table>
 
-      {/* ⚔️ BATTLE ARENA PHASE */}
-      {(phase === 'battle' || phase === 'result') && pActiveMon && eActiveMon && (
-        <div className="poke-battle-arena">
-          <div className="battle-field-container">
-            {/* 🤖 ENEMY POKEMON STATUS CARD (Top Left) */}
-            <div className="pokemon-status-card enemy">
-              <div className="status-header">
-                <span className="status-name">{enemyTeam?.trainerName}: {eActiveMon.koreanName}</span>
-                <span className="status-level">Lv.50</span>
-              </div>
-              <div className="type-badge-container" style={{ marginBottom: 6 }}>
-                {eActiveMon.types.map(t => (
-                  <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <div className="hp-bar-outer">
-                <div 
-                  className={`hp-bar-inner ${eActiveMon.currentHp / eActiveMon.maxHp > 0.5 ? 'high' : eActiveMon.currentHp / eActiveMon.maxHp > 0.2 ? 'medium' : 'low'}`}
-                  style={{ width: `${(eActiveMon.currentHp / eActiveMon.maxHp) * 100}%` }}
-                />
-              </div>
-              <div className="hp-text">{eActiveMon.currentHp} / {eActiveMon.maxHp} HP</div>
-            </div>
-
-            {/* 🤖 ENEMY SPRITE (Top Right) */}
-            <div className="sprite-stage enemy">
-              <img 
-                src={eActiveMon.sprites.showdownFront || eActiveMon.sprites.front} 
-                alt={eActiveMon.koreanName}
-                className={`pokemon-battle-sprite ${enemyShake ? 'shake' : ''}`} 
-              />
-              {enemyDamageFloater && (
-                <div key={enemyDamageFloater.id} className="damage-floater" style={{ top: '-10px', right: '40px' }}>
-                  {enemyDamageFloater.text}
-                </div>
-              )}
-            </div>
-
-            {/* 👤 PLAYER SPRITE (Bottom Left) */}
-            <div className="sprite-stage player">
-              <img 
-                src={pActiveMon.sprites.showdownBack || pActiveMon.sprites.back || pActiveMon.sprites.front} 
-                alt={pActiveMon.koreanName}
-                className={`pokemon-battle-sprite ${playerShake ? 'shake' : ''}`}
-                style={{ transform: 'scale(1.15)' }}
-              />
-              {playerDamageFloater && (
-                <div key={playerDamageFloater.id} className="damage-floater" style={{ top: '-10px', left: '40px' }}>
-                  {playerDamageFloater.text}
-                </div>
-              )}
-            </div>
-
-            {/* 👤 PLAYER POKEMON STATUS CARD (Bottom Right) */}
-            <div className="pokemon-status-card player">
-              <div className="status-header">
-                <span className="status-name">👤 {playerTeam?.trainerName}: {pActiveMon.koreanName}</span>
-                <span className="status-level">Lv.50</span>
-              </div>
-              <div className="type-badge-container" style={{ marginBottom: 6 }}>
-                {pActiveMon.types.map(t => (
-                  <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <div className="hp-bar-outer">
-                <div 
-                  className={`hp-bar-inner ${pActiveMon.currentHp / pActiveMon.maxHp > 0.5 ? 'high' : pActiveMon.currentHp / pActiveMon.maxHp > 0.2 ? 'medium' : 'low'}`}
-                  style={{ width: `${(pActiveMon.currentHp / pActiveMon.maxHp) * 100}%` }}
-                />
-              </div>
-              <div className="hp-text">{pActiveMon.currentHp} / {pActiveMon.maxHp} HP</div>
-            </div>
-          </div>
-
-          {/* 🎮 CONTROLS PANEL */}
+          {/* 🎮 EXCEL CONTROLS PANEL */}
           {phase === 'battle' && (
             <div className="battle-controls-panel">
               {isActionSubmitted ? (
-                <div style={{ flex: 1, textAlign: 'center', padding: '20px', fontSize: '0.95rem', fontWeight: 600, color: '#107c41' }}>
-                  ⌛ 상대방의 턴 선택을 기다리는 중입니다...
+                <div style={{ flex: 1, textAlign: 'center', padding: '16px', fontSize: '0.88rem', fontWeight: 600, color: '#107c41', fontFamily: 'Consolas, monospace' }}>
+                  ⌛ [STATUS: WAITING_FOR_OPPONENT_TRANSACTION_APPROVAL...]
                 </div>
               ) : (
                 <>
-                  {/* Moves (4 Attack Buttons) */}
+                  {/* Moves (4 Excel Action Buttons) */}
                   <div className="moves-grid">
                     {pActiveMon.moves.map((move) => {
                       const typeColor = TYPE_COLORS[move.type];
@@ -687,14 +842,14 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
                           style={{ borderColor: typeColor.border }}
                         >
                           <div className="move-title-row">
-                            <span>{move.name}</span>
+                            <span>{isPureStealth ? `=MACRO_DERIVATIVE("${move.name}")` : move.name}</span>
                             <span className="type-badge" style={{ background: typeColor.bg, color: typeColor.text }}>
                               {move.type}
                             </span>
                           </div>
                           <div className="move-info-row">
-                            <span>위력: {move.power}</span>
-                            <span>명중: {move.accuracy}%</span>
+                            <span>Power: {move.power}</span>
+                            <span>Acc: {move.accuracy}%</span>
                             <span>PP: {move.pp}/{move.maxPp}</span>
                           </div>
                         </button>
@@ -704,8 +859,8 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
                   {/* Bench Switch Panel */}
                   <div className="switch-panel">
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: 4 }}>
-                      🔄 엔트리 교체 (Bench)
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#605e5c', marginBottom: 2 }}>
+                      🔄 Macro_Switch_Model
                     </div>
                     {playerTeam?.pokemonList.map((mon, idx) => (
                       <button
@@ -714,13 +869,13 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
                         onClick={() => handleSwitchPokemon(idx)}
                         disabled={isProcessingTurn || idx === playerTeam.activeIndex || mon.status === 'fainted'}
                       >
-                        <img src={mon.sprites.front} alt={mon.koreanName} style={{ width: 28, height: 28 }} />
+                        {!isPureStealth && <img src={mon.sprites.front} alt={mon.koreanName} style={{ width: 22, height: 22 }} />}
                         <div style={{ flex: 1, textAlign: 'left' }}>
-                          <div style={{ fontSize: '0.78rem', fontWeight: 600 }}>{mon.koreanName}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{mon.currentHp}/{mon.maxHp} HP</div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>{isPureStealth ? `[MODEL_${mon.id}] ${mon.koreanName}` : mon.koreanName}</div>
+                          <div style={{ fontSize: '0.68rem', color: '#605e5c' }}>{mon.currentHp}/{mon.maxHp} HP</div>
                         </div>
-                        {idx === playerTeam.activeIndex && <span style={{ fontSize: '0.7rem', color: '#107c41', fontWeight: 700 }}>[출전]</span>}
-                        {mon.status === 'fainted' && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 700 }}>[기절]</span>}
+                        {idx === playerTeam.activeIndex && <span style={{ fontSize: '0.68rem', color: '#107c41', fontWeight: 700 }}>[ACTIVE]</span>}
+                        {mon.status === 'fainted' && <span style={{ fontSize: '0.68rem', color: '#d13438', fontWeight: 700 }}>[FAINTED]</span>}
                       </button>
                     ))}
                   </div>
@@ -731,27 +886,27 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
           {/* 🏆 RESULT SCREEN */}
           {phase === 'result' && (
-            <div className="excel-phase-card" style={{ textAlign: 'center' }}>
-              <Trophy size={36} style={{ color: '#d97706', marginBottom: 8 }} />
-              <h3>📊 3v3 포켓몬 배틀 최종 시뮬레이션 결과</h3>
-              <p className="phase-description" style={{ fontSize: '1rem', fontWeight: 600, color: '#107c41' }}>
-                배틀이 성공적으로 종료되었습니다. [재도전 / 새 엔트리] 버튼을 눌러 다시 플레이할 수 있습니다.
+            <div className="excel-phase-card" style={{ textAlign: 'center', padding: '16px' }}>
+              <Trophy size={32} style={{ color: '#d97706', marginBottom: 4 }} />
+              <h3>📊 Financial_Battle_Simulation_Completed</h3>
+              <p className="phase-description" style={{ fontSize: '0.9rem', fontWeight: 600, color: '#107c41' }}>
+                시뮬레이션 검증이 종료되었습니다. [재도전] 버튼을 눌러 다시 세션을 시작하십시오.
               </p>
-              <button className="excel-btn primary" onClick={handleResetDraft} style={{ padding: '8px 24px', marginTop: 12 }}>
-                🔄 새 엔트리 드래프트 & 재도전
+              <button className="excel-btn primary" onClick={handleResetDraft} style={{ padding: '6px 20px', marginTop: 8 }}>
+                🔄 새 모델 드래프트 & 재도전
               </button>
             </div>
           )}
 
           {/* 📊 BATTLE AUDIT LOG TABLE */}
           <div className="poke-log-container">
-            <div style={{ padding: '4px 10px', background: '#f1f5f9', fontWeight: 700, fontSize: '0.78rem', borderBottom: '1px solid #cbd5e1' }}>
-              📋 배틀 진행 로그 (Audit Log Data Stream)
+            <div style={{ padding: '3px 8px', background: '#f3f2f1', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #d4d4d4', color: '#605e5c' }}>
+              📋 AUDIT LOG DATA STREAM (Range: A15:G50)
             </div>
             {logs.map((log) => (
               <div key={log.id} className={`poke-log-row ${log.type || ''}`}>
-                <span style={{ color: '#94a3b8' }}>[{log.timestamp}]</span>
-                <span style={{ color: '#475569', fontWeight: 600 }}>[Turn {log.turn}]</span>
+                <span style={{ color: '#8a8886' }}>[{log.timestamp}]</span>
+                <span style={{ color: '#605e5c', fontWeight: 600 }}>[Turn {log.turn}]</span>
                 <span>{log.text}</span>
               </div>
             ))}
