@@ -256,35 +256,30 @@ function startTalkPhase(io, room) {
     }
   });
 
-  // 🤖 봇 사전 정의 5글자 분할 발화 등록
+  // 🤖 봇 사전 정의 3글자 단일 발화 (한 턴에 한 마디씩)
   const bots = game.players.filter(p => p.isBot);
   bots.forEach((bot, index) => {
-    const chunks = getDefinitionChunks(bot.wordDef || '사전정의없음', 5);
+    const chunks = getDefinitionChunks(bot.wordDef || '사전정', 3);
+    const phrase = chunks[Math.floor(Math.random() * Math.min(chunks.length, 3))] || chunks[0] || '사전정';
     
-    let initialDelay = (index + 1) * 3000 + Math.floor(Math.random() * 2000);
-    const interval = 10000 + (index * 2000) + Math.floor(Math.random() * 3000);
+    const delay = (index + 1) * 3000 + Math.floor(Math.random() * 2000);
 
-    chunks.forEach((chunk, chunkIdx) => {
-      const delay = initialDelay + (chunkIdx * interval);
-      if (delay < 175000) {
-        const timeout = setTimeout(() => {
-          const currentGame = liarGames.get(room);
-          if (!currentGame || currentGame.phase !== 'talk') return;
+    const timeout = setTimeout(() => {
+      const currentGame = liarGames.get(room);
+      if (!currentGame || currentGame.phase !== 'talk') return;
 
-          io.to(room).emit('liar-update', {
-            type: 'message',
-            data: {
-              username: bot.username,
-              message: chunk,
-              timestamp: new Date().toISOString()
-            }
-          });
-        }, delay);
+      io.to(room).emit('liar-update', {
+        type: 'message',
+        data: {
+          username: bot.username,
+          message: phrase,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }, delay);
 
-        if (!game.botTimeouts) game.botTimeouts = [];
-        game.botTimeouts.push(timeout);
-      }
-    });
+    if (!game.botTimeouts) game.botTimeouts = [];
+    game.botTimeouts.push(timeout);
   });
 
   game.timerInterval = setInterval(() => {

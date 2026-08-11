@@ -106,8 +106,8 @@ export function getWordDefinition(word, item = null) {
   return `${word}은(는) 사전에 등재된 단어입니다.`;
 }
 
-export function getDefinitionChunks(definition, chunkSize = 5) {
-  if (!definition) return ['사전정의없음'];
+export function getDefinitionChunks(definition, chunkSize = 3) {
+  if (!definition) return ['사전정'];
   const clean = definition.replace(/[\r\n]+/g, ' ').trim();
   const chunks = [];
   for (let i = 0; i < clean.length; i += chunkSize) {
@@ -116,7 +116,7 @@ export function getDefinitionChunks(definition, chunkSize = 5) {
       chunks.push(chunk);
     }
   }
-  return chunks.length > 0 ? chunks : ['사전정의없음'];
+  return chunks.length > 0 ? chunks : ['사전정'];
 }
 
 export const generateRandomKoreanWord = (length = 3) => {
@@ -149,6 +149,64 @@ export const generateRandomKoreanWord = (length = 3) => {
   return word;
 };
 
+const COMMON_SEARCH_CHARS = [
+  '가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하',
+  '물', '산', '해', '달', '별', '꽃', '새', '말', '소', '개', '집', '길', '책', '밥',
+  '약', '전', '차', '공', '원', '국', '학교', '동물', '음식', '운동', '나무', '하늘'
+];
+
+function parseDictionaryResponse(data) {
+  let jsonObj = null;
+  if (typeof data === 'object' && data !== null) {
+    jsonObj = data;
+  } else if (typeof data === 'string') {
+    const trimmed = data.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        jsonObj = JSON.parse(trimmed);
+      } catch (e) {}
+    }
+  }
+
+  // 1. JSON 구조 파싱
+  if (jsonObj && jsonObj.channel) {
+    const rawItems = jsonObj.channel.item || jsonObj.channel.items;
+    if (Array.isArray(rawItems)) {
+      return rawItems.map(item => {
+        const word = (item.word || '').replace(/\^/g, '').trim();
+        let definition = '';
+        if (typeof item.definition === 'string') {
+          definition = item.definition;
+        } else if (item.sense) {
+          if (Array.isArray(item.sense)) definition = item.sense[0]?.definition || '';
+          else if (typeof item.sense === 'object') definition = item.sense.definition || '';
+        }
+        return { word, definition: definition.replace(/<[^>]*>/g, '').trim() };
+      });
+    }
+  }
+
+  // 2. XML 응답 폴백 파싱 (국립국어원 API가 XML 반환 시)
+  if (typeof data === 'string' && data.includes('<item>')) {
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    while ((match = itemRegex.exec(data)) !== null) {
+      const itemContent = match[1];
+      const wordMatch = itemContent.match(/<word>([^<]+)<\/word>/);
+      const defMatch = itemContent.match(/<definition>([^<]+)<\/definition>/);
+      if (wordMatch) {
+        const word = wordMatch[1].replace(/\^/g, '').trim();
+        const definition = defMatch ? defMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+        items.push({ word, definition });
+      }
+    }
+    return items;
+  }
+
+  return [];
+}
+
 export const getLiarGameWords = async () => {
   const now = Date.now();
 
@@ -165,66 +223,71 @@ export const getLiarGameWords = async () => {
 
   const API_KEY = process.env.KOREAN_DICT_API_KEY;
   if (!API_KEY) {
-    console.error('KOREAN_DICT_API_KEY가 설정되지 않았습니다.');
+    console.warn('[LiarGame] KOREAN_DICT_API_KEY 환경변수가 설정되지 않아 오프라인 단어 세트를 사용합니다.');
     return getRandomFallbackPair();
   }
 
   const MAX_ATTEMPTS = 3;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     try {
-      const randomCat = Math.floor(Math.random() * 68);
-      const randomWord = generateRandomKoreanWord(1);
-    
+      const randomQuery = COMMON_SEARCH_CHARS[Math.floor(Math.random() * COMMON_SEARCH_CHARS.length)];
+      
       const response = await axios.get('https://opendict.korean.go.kr/api/search', {
         params: {
           key: API_KEY,
           req_type: 'json',
           type1: 'word',
           target: 1,
-          cat: randomCat,
           num: 100,
           start: 1,
           advanced: 'y',
-          q: randomWord,
+          q: randomQuery,
           part: 'word',
           sort: 'dict',
-          letter_s: 2,
-          method: 'include',
+          method: 'include'
         },
-        timeout: 1500
+        timeout: 4000
       });
 
-      const items = response.data?.channel?.item;
-      if (!items || !Array.isArray(items) || items.length < 2) {
+      // API 에러 응답(Unregistered key 등) 감지
+      if (typeof response.data === 'string' && response.data.includes('<error>')) {
+        const errCodeMatch = response.data.match(/<error_code>([^<]+)<\/error_code>/);
+        const errMsgMatch = response.data.match(/<message>([^<]+)<\/message>/);
+        const code = errCodeMatch ? errCodeMatch[1] : 'Unknown';
+        const msg = errMsgMatch ? errMsgMatch[1] : 'API Error';
+        console.error(`[LiarGame API Error] 국립국어원 API 에러 (코드: ${code}, 메시지: ${msg})`);
+        break;
+      }
+
+      const items = parseDictionaryResponse(response.data);
+      if (!items || items.length < 2) {
         continue;
       }
 
-      const validItems = items
-        .filter(item => {
-          const cleanWord = item.word.replace(/\^/g, '');
-          return cleanWord.length >= 2 && cleanWord.length <= 4 && /^[가-힣]+$/.test(cleanWord);
-        });
-      
+      const validItems = items.filter(item => {
+        return item.word.length >= 2 && item.word.length <= 4 && /^[가-힣]+$/.test(item.word);
+      });
+
       if (validItems.length >= 2) {
         const shuffled = validItems.sort(() => 0.5 - Math.random());
         const item1 = shuffled[0];
         const item2 = shuffled[1];
-        const word1 = item1.word.replace(/\^/g, '');
-        const word2 = item2.word.replace(/\^/g, '');
-
+        const word1 = item1.word;
+        const word2 = item2.word;
         const def1 = getWordDefinition(word1, item1);
         const def2 = getWordDefinition(word2, item2);
 
-        // 성공 시 서킷 브레이커 리셋
         circuitState = CircuitState.CLOSED;
         consecutiveFailures = 0;
+
+        console.log(`[LiarGame API Success] 외장 API 단어 조회 성공: "${word1}" vs "${word2}"`);
 
         return Math.random() > 0.5
           ? { citizenWord: word1, liarWord: word2, citizenDef: def1, liarDef: def2 }
           : { citizenWord: word2, liarWord: word1, citizenDef: def2, liarDef: def1 };
       }
     } catch (error) {
-      // 개별 요청 에러 발생 시 반복 진행
+      console.warn(`[LiarGame API Attempt Failed] 시도 ${i+1}/${MAX_ATTEMPTS}: ${error.message}`);
     }
   }
 
