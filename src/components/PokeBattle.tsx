@@ -34,6 +34,8 @@ interface PokeBattleUpdatePayload {
   data: {
     phase?: BattlePhase;
     players?: Array<{ id: string; username: string; isHost: boolean; team: BattlePokemon[] | null }>;
+    spectators?: Array<{ id: string; username: string }>;
+    spectatorCount?: number;
     readyCount?: number;
     totalPlayers?: number;
     submittedCount?: number;
@@ -47,11 +49,13 @@ interface PokeBattleUpdatePayload {
 const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room', onLeaveRoom }) => {
   const { socket } = useSocket();
 
-  // Mode & Phase & Gen Range Filter
+  // Mode & Phase & Gen Range Filter & Spectator Role
   const [mode, setMode] = useState<BattleMode>('solo');
   const [phase, setPhase] = useState<BattlePhase>('draft');
   const [genRange, setGenRange] = useState<GenRange>('gen1-2');
   const [isPureStealth, setIsPureStealth] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'player' | 'spectator'>('player');
+  const [spectatorCount, setSpectatorCount] = useState<number>(0);
 
   // Draft Selection
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -132,7 +136,18 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       joinRoom();
     }
 
+    const handleRoleUpdate = ({ role }: { role: 'player' | 'spectator' }) => {
+      setUserRole(role);
+      if (role === 'spectator') {
+        addLog(`👀 관전자(Spectator)로 1v1 배틀 방에 입장하였습니다.`, 'system');
+      }
+    };
+
     const handlePokeBattleUpdate = (update: PokeBattleUpdatePayload) => {
+      if (update.data.spectatorCount !== undefined) {
+        setSpectatorCount(update.data.spectatorCount);
+      }
+
       switch (update.type) {
         case 'sync':
         case 'draft-update':
@@ -140,10 +155,14 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
           break;
         case 'battle-start':
           if (update.data.players && update.data.players.length === 2) {
+            const p1 = update.data.players[0];
+            const p2 = update.data.players[1];
+
             const me = update.data.players.find(p => p.username === username);
             const opponent = update.data.players.find(p => p.username !== username);
 
             if (me && me.team && opponent && opponent.team) {
+              // Active Battler Perspective
               setPlayerTeam({
                 trainerName: me.username,
                 pokemonList: me.team.map(createBattlePokemon),
@@ -154,11 +173,24 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
                 pokemonList: opponent.team.map(createBattlePokemon),
                 activeIndex: 0
               });
-              setTurn(1);
-              setLogs([]);
-              setPhase('battle');
-              addLog(`⚔️ 1v1 배틀 데이터 스트림 연결 완료 (${me.username} vs ${opponent.username})`, 'system');
+            } else if (p1 && p1.team && p2 && p2.team) {
+              // Spectator Perspective
+              setPlayerTeam({
+                trainerName: p1.username,
+                pokemonList: p1.team.map(createBattlePokemon),
+                activeIndex: 0
+              });
+              setEnemyTeam({
+                trainerName: p2.username,
+                pokemonList: p2.team.map(createBattlePokemon),
+                activeIndex: 0
+              });
             }
+
+            setTurn(1);
+            setLogs([]);
+            setPhase('battle');
+            addLog(`⚔️ 1v1 배틀 데이터 스트림 연결 완료 (${p1.username} vs ${p2.username})`, 'system');
           }
           break;
         case 'turn-resolved':
@@ -177,10 +209,12 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     };
 
     socket.on('connect', joinRoom);
+    socket.on('pokebattle-role', handleRoleUpdate);
     socket.on('pokebattle-update', handlePokeBattleUpdate);
 
     return () => {
       socket.off('connect', joinRoom);
+      socket.off('pokebattle-role', handleRoleUpdate);
       socket.off('pokebattle-update', handlePokeBattleUpdate);
     };
   }, [socket, mode, username, room]);
@@ -281,16 +315,23 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   };
 
   // Execute Turn Action (Solo vs AI)
-  const handleExecuteTurn = (move: Move) => {
+  const handleExecuteTurn = (move: Move, moveIndexOverride?: number) => {
     if (!playerTeam || !enemyTeam || isProcessingTurn) return;
 
     if (mode === 'pvp' || mode === 'pvp-random') {
-      const moveIndex = playerTeam.pokemonList[playerTeam.activeIndex].moves.findIndex(m => m.id === move.id);
+      const activeMoves = playerTeam.pokemonList[playerTeam.activeIndex].moves;
+      const foundIdx = activeMoves.findIndex(m => m.id === move.id);
+      const moveIndex = moveIndexOverride !== undefined ? moveIndexOverride : (foundIdx >= 0 ? foundIdx : 0);
       setIsActionSubmitted(true);
       socket?.emit('pokebattle-action-submit', {
         room,
         action: { type: 'move', moveIndex }
       });
+
+      // Safety timeout: unlock UI if turn takes longer than 8 seconds
+      setTimeout(() => {
+        setIsActionSubmitted(false);
+      }, 8000);
       return;
     }
 
@@ -606,6 +647,14 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
             {isPureStealth ? '💼 100% 엑셀 텍스트 위장 (ON)' : '👁️ 비주얼 그래픽 보기 (OFF)'}
           </button>
 
+          <span className="excel-cell-badge" style={{ background: userRole === 'spectator' ? '#e0f2fe' : undefined, color: userRole === 'spectator' ? '#0369a1' : undefined }}>
+            {userRole === 'spectator' ? '👀 관전자 (Spectator)' : '⚔️ 선수 (Battler)'}
+          </span>
+          {spectatorCount > 0 && (
+            <span className="excel-cell-badge" style={{ background: '#fef3c7', color: '#92400e' }}>
+              👀 관전자: {spectatorCount}명
+            </span>
+          )}
           <span className="excel-cell-badge">USER: {username}</span>
           {onLeaveRoom && (
             <button onClick={onLeaveRoom} className="excel-btn close">
@@ -823,7 +872,14 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
           {/* 🎮 EXCEL CONTROLS PANEL */}
           {phase === 'battle' && (
             <div className="battle-controls-panel">
-              {isActionSubmitted ? (
+              {userRole === 'spectator' ? (
+                <div style={{ flex: 1, textAlign: 'center', padding: '16px', fontSize: '0.88rem', fontWeight: 600, color: '#0078d4', fontFamily: 'Consolas, monospace', background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+                  👀 [SPECTATOR_MODE: LIVE_STREAMING_BATTLE ({playerTeam?.trainerName} vs {enemyTeam?.trainerName})]
+                  <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '4px', fontWeight: 'normal' }}>
+                    두 트레이너의 3v3 배틀을 실시간 관전 중입니다. 기술 발사 및 체력 변화가 실시간 동기화됩니다.
+                  </div>
+                </div>
+              ) : isActionSubmitted ? (
                 <div style={{ flex: 1, textAlign: 'center', padding: '16px', fontSize: '0.88rem', fontWeight: 600, color: '#107c41', fontFamily: 'Consolas, monospace' }}>
                   ⌛ [STATUS: WAITING_FOR_OPPONENT_TRANSACTION_APPROVAL...]
                 </div>
@@ -831,13 +887,13 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
                 <>
                   {/* Moves (4 Excel Action Buttons) */}
                   <div className="moves-grid">
-                    {pActiveMon.moves.map((move) => {
+                    {pActiveMon.moves.map((move, moveIdx) => {
                       const typeColor = TYPE_COLORS[move.type];
                       return (
                         <button
-                          key={move.id}
+                          key={`${move.id}_${moveIdx}`}
                           className="move-btn"
-                          onClick={() => handleExecuteTurn(move)}
+                          onClick={() => handleExecuteTurn(move, moveIdx)}
                           disabled={isProcessingTurn || pActiveMon.status === 'fainted'}
                           style={{ borderColor: typeColor.border }}
                         >

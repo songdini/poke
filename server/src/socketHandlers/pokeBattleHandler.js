@@ -11,6 +11,7 @@ export function registerPokeBattleHandlers(io, socket) {
         room,
         phase: 'draft',
         players: [],
+        spectators: [],
         readyDrafts: {},
         currentTurn: 1,
         turnActions: {},
@@ -21,28 +22,47 @@ export function registerPokeBattleHandlers(io, socket) {
 
     const game = pokeBattleGames.get(room);
     let player = game.players.find(p => p.username === user.username);
+    let spectator = game.spectators.find(s => s.username === user.username);
+
+    let role = 'player';
+
     if (player) {
       player.id = socket.id;
+      role = 'player';
+    } else if (spectator) {
+      spectator.id = socket.id;
+      role = 'spectator';
     } else {
-      if (game.players.length >= 2) {
-        socket.emit('pokebattle-error', { message: '이미 2명의 플레이어가 배틀 중입니다.' });
-        return;
+      if (game.players.length < 2 && game.phase === 'draft') {
+        player = {
+          id: socket.id,
+          username: user.username,
+          isHost: game.players.length === 0,
+          team: null,
+          activeIndex: 0
+        };
+        game.players.push(player);
+        role = 'player';
+      } else {
+        spectator = {
+          id: socket.id,
+          username: user.username
+        };
+        game.spectators.push(spectator);
+        role = 'spectator';
       }
-      player = {
-        id: socket.id,
-        username: user.username,
-        isHost: game.players.length === 0,
-        team: null,
-        activeIndex: 0
-      };
-      game.players.push(player);
     }
+
+    // Direct Sync to Socket
+    socket.emit('pokebattle-role', { role });
 
     io.to(room).emit('pokebattle-update', {
       type: 'sync',
       data: {
         phase: game.phase,
         players: game.players,
+        spectators: game.spectators,
+        spectatorCount: game.spectators.length,
         currentTurn: game.currentTurn,
         logs: game.logs,
         winner: game.winner
@@ -54,22 +74,36 @@ export function registerPokeBattleHandlers(io, socket) {
     const game = pokeBattleGames.get(room);
     if (!game || game.phase !== 'draft') return;
 
-    const player = game.players.find(p => p.id === socket.id);
+    let player = game.players.find(p => p.id === socket.id);
     if (!player) return;
 
     player.team = pokemonList;
     game.readyDrafts[socket.id] = true;
+
+    // Single Player Room Check: Auto-create AI Bot if alone
+    if (game.players.length === 1) {
+      const botPlayer = {
+        id: 'ai_bot_opponent',
+        username: '🤖 AI_Bot_Opponent',
+        isHost: false,
+        team: pokemonList, // Fallback team structure
+        activeIndex: 0
+      };
+      game.players.push(botPlayer);
+      game.readyDrafts['ai_bot_opponent'] = true;
+    }
 
     io.to(room).emit('pokebattle-update', {
       type: 'draft-update',
       data: {
         readyCount: Object.keys(game.readyDrafts).length,
         totalPlayers: game.players.length,
-        players: game.players
+        players: game.players,
+        spectatorCount: game.spectators.length
       }
     });
 
-    if (game.players.length === 2 && Object.keys(game.readyDrafts).length === 2) {
+    if (game.players.length >= 2 && Object.keys(game.readyDrafts).length >= 2) {
       game.phase = 'battle';
       game.currentTurn = 1;
       game.logs = [
@@ -77,7 +111,7 @@ export function registerPokeBattleHandlers(io, socket) {
           id: `log_${Date.now()}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           turn: 1,
-          text: `⚔️ 실시간 1v1 포켓몬 3v3 배틀 시작! (${game.players[0].username} vs ${game.players[1].username})`,
+          text: `⚔️ 1v1 포켓몬 3v3 배틀 시작! (${game.players[0].username} vs ${game.players[1].username})`,
           type: 'system'
         }
       ];
@@ -87,6 +121,8 @@ export function registerPokeBattleHandlers(io, socket) {
         data: {
           phase: 'battle',
           players: game.players,
+          spectators: game.spectators,
+          spectatorCount: game.spectators.length,
           currentTurn: game.currentTurn,
           logs: game.logs
         }
@@ -98,18 +134,32 @@ export function registerPokeBattleHandlers(io, socket) {
     const game = pokeBattleGames.get(room);
     if (!game || game.phase !== 'battle') return;
 
+    // Reject spectator actions
+    const isPlayer = game.players.some(p => p.id === socket.id);
+    if (!isPlayer) return;
+
     game.turnActions[socket.id] = action;
+
+    // Auto-fill Bot Action if Bot is in room
+    const botPlayer = game.players.find(p => p.id === 'ai_bot_opponent');
+    if (botPlayer && !game.turnActions['ai_bot_opponent']) {
+      game.turnActions['ai_bot_opponent'] = {
+        type: 'move',
+        moveIndex: Math.floor(Math.random() * 4)
+      };
+    }
 
     io.to(room).emit('pokebattle-update', {
       type: 'action-waiting',
       data: {
         submittedCount: Object.keys(game.turnActions).length,
-        totalPlayers: game.players.length
+        totalPlayers: game.players.length,
+        spectatorCount: game.spectators.length
       }
     });
 
-    if (Object.keys(game.turnActions).length === 2) {
-      // Both players submitted turn actions -> Resolve Turn
+    if (Object.keys(game.turnActions).length >= game.players.length) {
+      // All players submitted turn actions -> Resolve Turn
       resolveTurn(io, game);
     }
   });
@@ -124,6 +174,7 @@ export function registerPokeBattleHandlers(io, socket) {
     game.turnActions = {};
     game.logs = [];
     game.winner = null;
+    game.players = game.players.filter(p => p.id !== 'ai_bot_opponent');
     game.players.forEach(p => {
       p.team = null;
       p.activeIndex = 0;
@@ -133,7 +184,8 @@ export function registerPokeBattleHandlers(io, socket) {
       type: 'restart',
       data: {
         phase: 'draft',
-        players: game.players
+        players: game.players,
+        spectatorCount: game.spectators.length
       }
     });
   });
@@ -141,10 +193,10 @@ export function registerPokeBattleHandlers(io, socket) {
 
 function resolveTurn(io, game) {
   const p1 = game.players[0];
-  const p2 = game.players[1];
+  const p2 = game.players[1] || { id: 'ai_bot_opponent', username: '🤖 AI_Bot' };
 
-  const a1 = game.turnActions[p1.id];
-  const a2 = game.turnActions[p2.id];
+  const a1 = game.turnActions[p1.id] || { type: 'move', moveIndex: 0 };
+  const a2 = game.turnActions[p2.id] || { type: 'move', moveIndex: 0 };
 
   // Clear turn actions for next turn
   game.turnActions = {};

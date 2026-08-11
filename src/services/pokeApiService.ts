@@ -156,20 +156,29 @@ export async function fetchRandomSinglePokemonFromApi(idOverride?: number, genRa
     const front = pokeData.sprites?.front_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
     const back = pokeData.sprites?.back_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pokemonId}.png`;
 
-    // Generate 4 Moves based on Types
+    // Generate 4 Unique Moves based on Types
     const primaryType = types[0] || 'normal';
     const secondaryType = types[1] || 'normal';
 
-    const primaryMoves = TYPE_MOVES[primaryType] || TYPE_MOVES['normal'];
-    const secondaryMoves = TYPE_MOVES[secondaryType] || TYPE_MOVES['normal'];
-    const normalMoves = TYPE_MOVES['normal'];
-
-    const moves: Move[] = [
-      primaryMoves[0],
-      secondaryMoves[0] || primaryMoves[1] || normalMoves[0],
-      primaryMoves[1] || normalMoves[1],
-      normalMoves[0]
+    const moveCandidates = [
+      ...(TYPE_MOVES[primaryType] || []),
+      ...(TYPE_MOVES[secondaryType] || []),
+      ...TYPE_MOVES['normal'],
+      ...TYPE_MOVES['fire'],
+      ...TYPE_MOVES['water'],
+      ...TYPE_MOVES['electric']
     ];
+
+    const moves: Move[] = [];
+    const usedIds = new Set<string>();
+
+    for (const m of moveCandidates) {
+      if (!usedIds.has(m.id)) {
+        usedIds.add(m.id);
+        moves.push({ ...m });
+        if (moves.length >= 4) break;
+      }
+    }
 
     return {
       id: pokemonId,
