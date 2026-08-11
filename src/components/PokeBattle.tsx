@@ -336,11 +336,19 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     }
 
     setIsProcessingTurn(true);
-    const pActive = playerTeam.pokemonList[playerTeam.activeIndex];
-    const eActive = enemyTeam.pokemonList[enemyTeam.activeIndex];
+
+    const updatedPlayerList = playerTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedEnemyList = enemyTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+
+    let playerActiveIdx = playerTeam.activeIndex;
+    let enemyActiveIdx = enemyTeam.activeIndex;
+
+    const pActive = updatedPlayerList[playerActiveIdx];
+    const eActive = updatedEnemyList[enemyActiveIdx];
+
     const playerFirst = pActive.stats.speed >= eActive.stats.speed;
 
-    const executePlayerAttack = () => {
+    const executePlayerHit = () => {
       const { damage, typeMult, isCritical } = calculateDamage(pActive, eActive, move);
       eActive.currentHp = Math.max(0, eActive.currentHp - damage);
 
@@ -358,24 +366,36 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, typeMult >= 2.0 ? 'super-effective' : 'attack');
       setEnemyDamageFloater({ text: `-${damage}`, id: Date.now() });
 
+      // Immediate state update to animate enemy HP drop!
+      setEnemyTeam({
+        trainerName: enemyTeam.trainerName,
+        pokemonList: [...updatedEnemyList],
+        activeIndex: enemyActiveIdx
+      });
+
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
-        addLog(`☠️ ${eActive.koreanName} 세션 종료 (Status: Fainted)`, 'faint');
-        const nextEnemyIdx = enemyTeam.pokemonList.findIndex(p => p.status !== 'fainted');
+        addLog(`☠️ 상대의 ${eActive.koreanName} 쓰러짐!`, 'faint');
+        const nextEnemyIdx = updatedEnemyList.findIndex(p => p.status !== 'fainted');
         if (nextEnemyIdx === -1) {
           setPhase('result');
-          addLog(`🏆 ${username} 세션 승리 완료!`, 'system');
+          addLog(`🏆 ${username} 트레이너 승리!`, 'system');
           setIsProcessingTurn(false);
           return false;
         } else {
-          enemyTeam.activeIndex = nextEnemyIdx;
-          addLog(`🔄 상대가 ${enemyTeam.pokemonList[nextEnemyIdx].koreanName} 모델로 전환함.`, 'switch');
+          enemyActiveIdx = nextEnemyIdx;
+          addLog(`🔄 상대가 ${updatedEnemyList[nextEnemyIdx].koreanName}(으)로 교체 출전`, 'switch');
+          setEnemyTeam({
+            trainerName: enemyTeam.trainerName,
+            pokemonList: [...updatedEnemyList],
+            activeIndex: enemyActiveIdx
+          });
         }
       }
       return true;
     };
 
-    const executeEnemyAttack = () => {
+    const executeEnemyHit = () => {
       const enemyMove = eActive.moves[Math.floor(Math.random() * eActive.moves.length)];
       const { damage, typeMult, isCritical } = calculateDamage(eActive, pActive, enemyMove);
 
@@ -393,40 +413,54 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       addLog(logText, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
 
+      // Immediate state update to animate player HP drop!
+      setPlayerTeam({
+        trainerName: playerTeam.trainerName,
+        pokemonList: [...updatedPlayerList],
+        activeIndex: playerActiveIdx
+      });
+
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
-        addLog(`☠️ 내 ${pActive.koreanName} 세션 종료 (Status: Fainted)`, 'faint');
-        const nextPlayerIdx = playerTeam.pokemonList.findIndex(p => p.status !== 'fainted');
+        addLog(`☠️ 내 ${pActive.koreanName} 쓰러짐!`, 'faint');
+        const nextPlayerIdx = updatedPlayerList.findIndex(p => p.status !== 'fainted');
         if (nextPlayerIdx === -1) {
           setPhase('result');
-          addLog(`💀 ${username} 세션 종료 (Result: Defeat)`, 'system');
+          addLog(`💀 ${username} 트레이너 패배...`, 'system');
           setIsProcessingTurn(false);
           return false;
         } else {
-          playerTeam.activeIndex = nextPlayerIdx;
-          addLog(`🔄 ${playerTeam.pokemonList[nextPlayerIdx].koreanName} 모델 출전`, 'switch');
+          playerActiveIdx = nextPlayerIdx;
+          addLog(`🔄 ${updatedPlayerList[nextPlayerIdx].koreanName}(이)가 교체 출전`, 'switch');
+          setPlayerTeam({
+            trainerName: playerTeam.trainerName,
+            pokemonList: [...updatedPlayerList],
+            activeIndex: playerActiveIdx
+          });
         }
       }
       return true;
     };
 
     if (playerFirst) {
-      if (executePlayerAttack() && eActive.status !== 'fainted') {
+      if (executePlayerHit() && eActive.status !== 'fainted') {
         setTimeout(() => {
-          executeEnemyAttack();
-          setTurn(prev => prev + 1);
-          setIsProcessingTurn(false);
+          if (executeEnemyHit()) {
+            setTurn(prev => prev + 1);
+            setIsProcessingTurn(false);
+          }
         }, 800);
       } else {
         setTurn(prev => prev + 1);
         setIsProcessingTurn(false);
       }
     } else {
-      if (executeEnemyAttack() && pActive.status !== 'fainted') {
+      if (executeEnemyHit() && pActive.status !== 'fainted') {
         setTimeout(() => {
-          executePlayerAttack();
-          setTurn(prev => prev + 1);
-          setIsProcessingTurn(false);
+          if (executePlayerHit()) {
+            setTurn(prev => prev + 1);
+            setIsProcessingTurn(false);
+          }
         }, 800);
       } else {
         setTurn(prev => prev + 1);
@@ -435,11 +469,13 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     }
   };
 
-  // Resolve PvP Simultaneous Turn
+  // Resolve PvP Simultaneous Turn (Sequential Step-by-Step Execution)
   const handleResolvePvpTurn = (
     p1Data: { playerId: string; username: string; action: PokeBattleAction },
     p2Data: { playerId: string; username: string; action: PokeBattleAction }
   ) => {
+    if (!playerTeam || !enemyTeam) return;
+
     setIsActionSubmitted(false);
     setIsProcessingTurn(true);
     setTurn(prev => prev + 1);
@@ -447,53 +483,159 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     const myData = p1Data.username === username ? p1Data : p2Data;
     const oppData = p1Data.username === username ? p2Data : p1Data;
 
-    if (!playerTeam || !enemyTeam) return;
+    const updatedPlayerList = playerTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedEnemyList = enemyTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
 
-    const pActive = playerTeam.pokemonList[playerTeam.activeIndex];
-    const eActive = enemyTeam.pokemonList[enemyTeam.activeIndex];
+    let playerActiveIdx = playerTeam.activeIndex;
+    let enemyActiveIdx = enemyTeam.activeIndex;
 
+    // 1. Handle Switches First
     if (myData.action.type === 'switch' && myData.action.switchIndex !== undefined) {
-      playerTeam.activeIndex = myData.action.switchIndex;
-      addLog(`🔄 ${username} 유저가 포켓몬 모델을 교체함`, 'switch');
+      if (updatedPlayerList[myData.action.switchIndex]?.status !== 'fainted') {
+        playerActiveIdx = myData.action.switchIndex;
+        addLog(`🔄 ${username} 유저가 ${updatedPlayerList[playerActiveIdx].koreanName}(으)로 교체함`, 'switch');
+      }
     }
     if (oppData.action.type === 'switch' && oppData.action.switchIndex !== undefined) {
-      enemyTeam.activeIndex = oppData.action.switchIndex;
-      addLog(`🔄 상대 ${oppData.username} 유저가 포켓몬 모델을 교체함`, 'switch');
+      if (updatedEnemyList[oppData.action.switchIndex]?.status !== 'fainted') {
+        enemyActiveIdx = oppData.action.switchIndex;
+        addLog(`🔄 상대 ${oppData.username} 유저가 ${updatedEnemyList[enemyActiveIdx].koreanName}(으)로 교체함`, 'switch');
+      }
     }
 
-    if (myData.action.type === 'move' && myData.action.moveIndex !== undefined) {
-      const myMove = pActive.moves[myData.action.moveIndex] || pActive.moves[0];
-      const { damage } = calculateDamage(pActive, eActive, myMove);
-      eActive.currentHp = Math.max(0, eActive.currentHp - damage);
+    // Apply Switch state immediately
+    setPlayerTeam({
+      trainerName: playerTeam.trainerName,
+      pokemonList: updatedPlayerList,
+      activeIndex: playerActiveIdx
+    });
+    setEnemyTeam({
+      trainerName: enemyTeam.trainerName,
+      pokemonList: updatedEnemyList,
+      activeIndex: enemyActiveIdx
+    });
 
+    const pActive = updatedPlayerList[playerActiveIdx];
+    const eActive = updatedEnemyList[enemyActiveIdx];
+
+    const doPlayerHit = () => {
+      if (myData.action.type !== 'move' || myData.action.moveIndex === undefined) return true;
+      const myMove = pActive.moves[myData.action.moveIndex] || pActive.moves[0];
+      const { damage, typeMult, isCritical } = calculateDamage(pActive, eActive, myMove);
+
+      eActive.currentHp = Math.max(0, eActive.currentHp - damage);
       setEnemyShake(true);
       setTimeout(() => setEnemyShake(false), 400);
-      addLog(`${pActive.koreanName}의 ${myMove.name}! (${damage} 대미지)`, 'attack');
+
+      let logText = isPureStealth 
+        ? `[MACRO_EXECUTE] ${pActive.koreanName} -> ${myMove.name} (ΔHP: -${damage})`
+        : `${pActive.koreanName}의 ${myMove.name}! (${damage} 대미지)`;
+
+      if (isCritical) logText += ` 💥 Critical Impact`;
+      if (typeMult >= 2.0) logText += ` ⚡ Super Effective (2.0x)`;
+      else if (typeMult <= 0.5) logText += ` 🛡️ Not Very Effective (0.5x)`;
+
+      addLog(logText, typeMult >= 2.0 ? 'super-effective' : 'attack');
       setEnemyDamageFloater({ text: `-${damage}`, id: Date.now() });
+
+      // Immediate state flush for opponent HP bar drop animation!
+      setEnemyTeam({
+        trainerName: enemyTeam.trainerName,
+        pokemonList: [...updatedEnemyList],
+        activeIndex: enemyActiveIdx
+      });
 
       if (eActive.currentHp <= 0) {
         eActive.status = 'fainted';
-        addLog(`☠️ 상대의 ${eActive.koreanName} 모델 세션 종료`, 'faint');
+        addLog(`☠️ 상대의 ${eActive.koreanName} 쓰러짐!`, 'faint');
+        const nextEnemyIdx = updatedEnemyList.findIndex(p => p.status !== 'fainted');
+        if (nextEnemyIdx === -1) {
+          setPhase('result');
+          addLog(`🏆 ${username} 트레이너 승리!`, 'system');
+          setIsProcessingTurn(false);
+          return false;
+        } else {
+          enemyActiveIdx = nextEnemyIdx;
+          addLog(`🔄 상대가 ${updatedEnemyList[nextEnemyIdx].koreanName}(으)로 교체 출전`, 'switch');
+          setEnemyTeam({
+            trainerName: enemyTeam.trainerName,
+            pokemonList: [...updatedEnemyList],
+            activeIndex: enemyActiveIdx
+          });
+        }
       }
-    }
+      return true;
+    };
 
-    if (oppData.action.type === 'move' && oppData.action.moveIndex !== undefined && eActive.status !== 'fainted') {
+    const doOpponentHit = () => {
+      if (oppData.action.type !== 'move' || oppData.action.moveIndex === undefined) return true;
       const oppMove = eActive.moves[oppData.action.moveIndex] || eActive.moves[0];
-      const { damage } = calculateDamage(eActive, pActive, oppMove);
-      pActive.currentHp = Math.max(0, pActive.currentHp - damage);
+      const { damage, typeMult, isCritical } = calculateDamage(eActive, pActive, oppMove);
 
+      pActive.currentHp = Math.max(0, pActive.currentHp - damage);
       setPlayerShake(true);
       setTimeout(() => setPlayerShake(false), 400);
-      addLog(`상대 ${eActive.koreanName}의 ${oppMove.name}! (${damage} 대미지)`, 'damage');
+
+      let logText = isPureStealth
+        ? `[REF_EXECUTE] ${eActive.koreanName} -> ${oppMove.name} (ΔHP: -${damage})`
+        : `상대 ${eActive.koreanName}의 ${oppMove.name}! (${damage} 대미지)`;
+
+      if (isCritical) logText += ` 💥 Critical Impact`;
+      if (typeMult >= 2.0) logText += ` ⚡ Super Effective (2.0x)`;
+
+      addLog(logText, 'damage');
       setPlayerDamageFloater({ text: `-${damage}`, id: Date.now() });
+
+      // Immediate state flush for player HP bar drop animation!
+      setPlayerTeam({
+        trainerName: playerTeam.trainerName,
+        pokemonList: [...updatedPlayerList],
+        activeIndex: playerActiveIdx
+      });
 
       if (pActive.currentHp <= 0) {
         pActive.status = 'fainted';
-        addLog(`☠️ 내 ${pActive.koreanName} 모델 세션 종료`, 'faint');
+        addLog(`☠️ 내 ${pActive.koreanName} 쓰러짐!`, 'faint');
+        const nextPlayerIdx = updatedPlayerList.findIndex(p => p.status !== 'fainted');
+        if (nextPlayerIdx === -1) {
+          setPhase('result');
+          addLog(`💀 ${username} 트레이너 패배...`, 'system');
+          setIsProcessingTurn(false);
+          return false;
+        } else {
+          playerActiveIdx = nextPlayerIdx;
+          addLog(`🔄 ${updatedPlayerList[nextPlayerIdx].koreanName}(이)가 교체 출전`, 'switch');
+          setPlayerTeam({
+            trainerName: playerTeam.trainerName,
+            pokemonList: [...updatedPlayerList],
+            activeIndex: playerActiveIdx
+          });
+        }
+      }
+      return true;
+    };
+
+    const playerFirst = pActive.stats.speed >= eActive.stats.speed;
+
+    if (playerFirst) {
+      if (doPlayerHit() && eActive.status !== 'fainted') {
+        setTimeout(() => {
+          doOpponentHit();
+          setIsProcessingTurn(false);
+        }, 800);
+      } else {
+        setIsProcessingTurn(false);
+      }
+    } else {
+      if (doOpponentHit() && pActive.status !== 'fainted') {
+        setTimeout(() => {
+          doPlayerHit();
+          setIsProcessingTurn(false);
+        }, 800);
+      } else {
+        setIsProcessingTurn(false);
       }
     }
-
-    setIsProcessingTurn(false);
   };
 
   // Switch Active Pokemon
