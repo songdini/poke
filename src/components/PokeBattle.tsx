@@ -329,12 +329,17 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     return { damage: totalDamage, typeMult, isCritical };
   };
 
-  // Execute Turn Action (Solo vs AI)
+  // Execute Turn Action (Solo vs AI or PvP)
   const handleExecuteTurn = (move: Move, moveIndexOverride?: number) => {
-    if (!playerTeam || !enemyTeam || isProcessingTurn) return;
+    const currentPTeam = playerTeamRef.current;
+    const currentETeam = enemyTeamRef.current;
+    if (!currentPTeam || !currentETeam || isProcessingTurn) return;
 
     if (mode === 'pvp' || mode === 'pvp-random') {
-      const activeMoves = playerTeam.pokemonList[playerTeam.activeIndex].moves;
+      const activeMon = currentPTeam.pokemonList[currentPTeam.activeIndex];
+      if (!activeMon || activeMon.status === 'fainted') return;
+
+      const activeMoves = activeMon.moves;
       const foundIdx = activeMoves.findIndex(m => m.id === move.id);
       const moveIndex = moveIndexOverride !== undefined ? moveIndexOverride : (foundIdx >= 0 ? foundIdx : 0);
       setIsActionSubmitted(true);
@@ -352,11 +357,11 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
     setIsProcessingTurn(true);
 
-    const updatedPlayerList = playerTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
-    const updatedEnemyList = enemyTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedPlayerList = currentPTeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
+    const updatedEnemyList = currentETeam.pokemonList.map(p => ({ ...p, moves: [...p.moves] }));
 
-    let playerActiveIdx = playerTeam.activeIndex;
-    let enemyActiveIdx = enemyTeam.activeIndex;
+    let playerActiveIdx = currentPTeam.activeIndex;
+    let enemyActiveIdx = currentETeam.activeIndex;
 
     const pActive = updatedPlayerList[playerActiveIdx];
     const eActive = updatedEnemyList[enemyActiveIdx];
@@ -658,9 +663,10 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
 
   // Switch Active Pokemon
   const handleSwitchPokemon = (targetIndex: number) => {
-    if (!playerTeam || isProcessingTurn || isActionSubmitted) return;
-    if (targetIndex === playerTeam.activeIndex) return;
-    if (playerTeam.pokemonList[targetIndex].status === 'fainted') return;
+    const currentPTeam = playerTeamRef.current;
+    if (!currentPTeam || isProcessingTurn || isActionSubmitted) return;
+    if (targetIndex === currentPTeam.activeIndex) return;
+    if (currentPTeam.pokemonList[targetIndex].status === 'fainted') return;
 
     if (mode === 'pvp' || mode === 'pvp-random') {
       setIsActionSubmitted(true);
@@ -672,9 +678,9 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
     }
 
     setIsProcessingTurn(true);
-    const oldMon = playerTeam.pokemonList[playerTeam.activeIndex];
-    const newMon = playerTeam.pokemonList[targetIndex];
-    playerTeam.activeIndex = targetIndex;
+    const oldMon = currentPTeam.pokemonList[currentPTeam.activeIndex];
+    const newMon = currentPTeam.pokemonList[targetIndex];
+    currentPTeam.activeIndex = targetIndex;
 
     addLog(`🔄 ${oldMon.koreanName} -> ${newMon.koreanName} 모델 전환`, 'switch');
 
