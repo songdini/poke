@@ -359,3 +359,27 @@
   color: #605e5c;
   padding-bottom: 4px;
 }
+
+@media (max-width: 768px) {
+  .sudoku-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+  .sudoku-container .excel-formula-bar,
+  .sudoku-container .excel-sheet-tab-bar {
+    display: none !important;
+  }
+  .sudoku-grid-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 6px;
+  }
+  .sudoku-cell {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+}
+

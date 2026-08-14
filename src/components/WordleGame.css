@@ -359,3 +359,34 @@
   color: #605e5c;
   padding-bottom: 4px;
 }
+
+@media (max-width: 768px) {
+  .wordle-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+  .wordle-container .excel-formula-bar,
+  .wordle-container .excel-sheet-tab-bar {
+    display: none !important;
+  }
+  .wordle-grid {
+    gap: 4px;
+  }
+  .wordle-tile {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+  .keyboard-row {
+    gap: 3px;
+  }
+  .key-btn {
+    min-width: 26px;
+    height: 42px;
+    font-size: 0.8rem;
+    padding: 0 4px;
+  }
+}
+

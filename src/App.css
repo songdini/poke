@@ -560,3 +560,493 @@ body {
   padding: 16px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
+
+/* ----------------------------------------------------
+ * 📱 MOBILE UI MODE STYLES
+ * ---------------------------------------------------- */
+.mobile-app-window {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Header */
+.mobile-header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-back-btn {
+  background: #334155;
+  color: #f8fafc;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobile-app-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #38bdf8;
+  letter-spacing: -0.5px;
+}
+
+.mobile-header-center {
+  flex: 1;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 8px;
+}
+
+.mobile-header-game-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.mobile-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-mode-toggle-btn {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.mobile-boss-btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Horizontal Sessions Bar */
+.mobile-sessions-nav {
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-sessions-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-nav-chip {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-chip.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+  font-weight: 700;
+}
+
+.mobile-nav-chip.has-session {
+  border-color: #10b981;
+}
+
+.mobile-live-dot {
+  color: #10b981;
+  font-size: 10px;
+  animation: pulse-live 1.5s infinite;
+}
+
+/* Main Body */
+.mobile-main-body {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #0f172a;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 1. Mobile Home View */
+.mobile-home-container {
+  padding: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.mobile-hero-banner {
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  border: 1px solid #4338ca;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.mobile-hero-tag {
+  display: inline-block;
+  background: rgba(129, 140, 248, 0.2);
+  color: #818cf8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.mobile-hero-banner h2 {
+  margin: 0 0 6px 0;
+  font-size: 1.3rem;
+  color: #ffffff;
+}
+
+.mobile-hero-banner p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #c7d2fe;
+}
+
+.mobile-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 480px) {
+  .mobile-game-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mobile-game-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.mobile-game-card:active {
+  transform: scale(0.98);
+}
+
+.mobile-game-card.has-active-session {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #1e293b, #064e3b);
+}
+
+.mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-card-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.mobile-badge {
+  background: #334155;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.mobile-badge.active-badge {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.mobile-card-body h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.05rem;
+  color: #f8fafc;
+}
+
+.mobile-card-body p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+.mobile-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #334155;
+  padding-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+/* 2. Mobile Join Container */
+.mobile-join-container {
+  padding: 20px 16px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.mobile-join-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+.mobile-card-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.mobile-join-header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 3px solid #38bdf8;
+  margin-bottom: 20px;
+}
+
+.mobile-join-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  margin: 0 auto 12px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.mobile-join-header h2 {
+  margin: 0 0 6px 0;
+  color: #f8fafc;
+  font-size: 1.3rem;
+}
+
+.mobile-join-header p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.mobile-join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobile-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-label-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.mobile-quick-fill-btn {
+  background: #334155;
+  color: #38bdf8;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobile-form-group input {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #f8fafc;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.mobile-form-group input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.mobile-join-submit-btn {
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease;
+}
+
+.mobile-join-submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* 3. Mobile Game Viewport */
+.mobile-game-viewport {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 110px);
+  background: #ffffff;
+  overflow: auto;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* ----------------------------------------------------
+ * 📱 MOBILE RESPONSIVE MEDIA QUERIES FOR GAME COMPONENTS
+ * ---------------------------------------------------- */
+@media (max-width: 768px) {
+  .excel-app-window {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .excel-title-bar {
+    font-size: 11px;
+    padding: 0 6px;
+  }
+
+  .excel-search-box {
+    display: none;
+  }
+
+  .excel-autosave {
+    display: none;
+  }
+
+  .excel-ribbon-toolbar {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .excel-formula-bar {
+    font-size: 11px;
+  }
+
+  .excel-name-box {
+    width: 45px;
+  }
+
+  .excel-col-headers {
+    overflow-x: auto;
+  }
+
+  .excel-sheet-content {
+    padding: 12px;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .game-option {
+    padding: 12px;
+  }
+
+  .game-icon {
+    font-size: 1.3rem;
+    margin-right: 10px;
+  }
+
+  .game-info h3 {
+    font-size: 0.92rem;
+  }
+
+  .game-info p {
+    font-size: 0.78rem;
+  }
+
+  .excel-cell-tag {
+    font-size: 9px;
+  }
+}
+

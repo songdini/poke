@@ -317,3 +317,22 @@
   color: #605e5c;
   padding-bottom: 4px;
 }
+
+@media (max-width: 768px) {
+  .minesweeper-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+  .minesweeper-container .excel-formula-bar,
+  .minesweeper-container .excel-sheet-tab-bar {
+    display: none !important;
+  }
+  .minesweeper-board-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+    padding: 8px;
+  }
+}
+

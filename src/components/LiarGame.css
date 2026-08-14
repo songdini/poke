@@ -561,3 +561,15 @@
   color: #0b5a2f;
   font-weight: 600;
 }
+
+@media (max-width: 768px) {
+  .liar-game-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+  .liar-game-container .excel-formula-bar {
+    display: none !important;
+  }
+}

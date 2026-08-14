@@ -404,3 +404,28 @@
   text-align: center;
   margin-top: 10px;
 }
+
+@media (max-width: 768px) {
+  .number-baseball-container {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+  .number-baseball-container .excel-formula-bar,
+  .number-baseball-container .excel-sheet-tab-bar {
+    display: none !important;
+  }
+  .input-form {
+    flex-direction: column;
+  }
+  .digit-inputs {
+    justify-content: center;
+  }
+  .digit-inputs input {
+    width: 48px;
+    height: 48px;
+    font-size: 1.4rem;
+  }
+}
+

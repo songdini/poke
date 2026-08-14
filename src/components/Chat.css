@@ -787,3 +787,24 @@
   border-color: #fbbf24;
   transform: scale(1.12);
 }
+
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 110px);
+    border: none;
+    border-radius: 0;
+  }
+  .chat-container .excel-formula-bar {
+    display: none !important;
+  }
+  .chat-main {
+    flex-direction: column-reverse;
+  }
+  .chat-sidebar {
+    width: 100%;
+    max-height: 120px;
+    border-left: none;
+    border-top: 1px solid #e1dfdd;
+  }
+}
+
