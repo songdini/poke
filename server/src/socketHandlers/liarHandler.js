@@ -1,6 +1,12 @@
 import { liarGames, connectedUsers } from '../gameManager.js';
 import { getLiarGameWords, getDefinitionChunks } from '../dictionaryService.js';
 import { sanitizeChatMessage } from '../utils/sanitize.js';
+import {
+  generateLiarTalkMessage,
+  generateLiarVoteTarget,
+  isGeminiConfigured,
+  getGeminiModelName
+} from '../aiService.js';
 
 export function clearBotTimers(game) {
   if (game && game.botTimeouts && Array.isArray(game.botTimeouts)) {
@@ -92,6 +98,8 @@ export function registerLiarHandlers(io, socket) {
       return;
     }
 
+    clearBotTimers(game);
+
     try {
       const { citizenWord, liarWord, citizenDef, liarDef } = await getLiarGameWords();
 
@@ -99,6 +107,7 @@ export function registerLiarHandlers(io, socket) {
       game.liarWord = liarWord;
       game.citizenDef = citizenDef;
       game.liarDef = liarDef;
+      game.chatHistory = [];
 
       const randomLiar = game.players[Math.floor(Math.random() * game.players.length)];
       game.liar = randomLiar.id;
@@ -131,6 +140,19 @@ export function registerLiarHandlers(io, socket) {
         }
       });
 
+      const aiStatusMsg = isGeminiConfigured()
+        ? `🧠 [AI 시스템] Google Gemini LLM (${getGeminiModelName()}) 지능형 라이어 봇 엔진이 가동되었습니다.`
+        : `🤖 [AI 시스템] 기본 템플릿 모드로 봇이 동작합니다 (GEMINI_API_KEY 설정 시 실시간 추리 가능).`;
+
+      io.to(room).emit('liar-update', {
+        type: 'message',
+        data: {
+          username: '시스템',
+          message: aiStatusMsg,
+          timestamp: new Date().toISOString()
+        }
+      });
+
       setTimeout(() => {
         startTalkPhase(io, room);
       }, 3000);
@@ -151,13 +173,19 @@ export function registerLiarHandlers(io, socket) {
       const message = sanitizeChatMessage(rawMessage, 500);
       if (!message || message.trim() === '') return;
 
+      const chatItem = {
+        username: user.username,
+        message,
+        timestamp: new Date().toISOString()
+      };
+
+      if (!game.chatHistory) game.chatHistory = [];
+      game.chatHistory.push(chatItem);
+      if (game.chatHistory.length > 40) game.chatHistory.shift();
+
       io.to(room).emit('liar-update', {
         type: 'message',
-        data: {
-          username: user.username,
-          message,
-          timestamp: new Date().toISOString()
-        }
+        data: chatItem
       });
     }
   });
@@ -215,6 +243,7 @@ export function registerLiarHandlers(io, socket) {
     game.liar = null;
     game.timer = 180;
     game.votes = {};
+    game.chatHistory = [];
 
     game.players.forEach(player => {
       player.isLiar = false;
@@ -256,30 +285,86 @@ function startTalkPhase(io, room) {
     }
   });
 
-  // 🤖 봇 사전 정의 3글자 단일 발화 (한 턴에 한 마디씩)
+  // 🤖 AI 봇 힌트 발언 스케줄링 (Gemini LLM 실시간 생성 + 템플릿 폴백)
   const bots = game.players.filter(p => p.isBot);
   bots.forEach((bot, index) => {
-    const chunks = getDefinitionChunks(bot.wordDef || '사전정', 3);
-    const phrase = chunks[Math.floor(Math.random() * Math.min(chunks.length, 3))] || chunks[0] || '사전정';
-    
-    const delay = (index + 1) * 3000 + Math.floor(Math.random() * 2000);
-
-    const timeout = setTimeout(() => {
+    // 1차 힌트 발언 (4초 ~ 18초 사이 분산)
+    const delay1 = (index + 1) * 3500 + Math.floor(Math.random() * 2000);
+    const timeout1 = setTimeout(async () => {
       const currentGame = liarGames.get(room);
       if (!currentGame || currentGame.phase !== 'talk') return;
 
+      let phrase = null;
+      if (isGeminiConfigured()) {
+        phrase = await generateLiarTalkMessage({
+          bot,
+          isLiar: bot.isLiar,
+          word: bot.word,
+          wordDef: bot.wordDef,
+          players: currentGame.players,
+          chatHistory: currentGame.chatHistory || []
+        });
+      }
+
+      if (!phrase) {
+        const chunks = getDefinitionChunks(bot.wordDef || '사전정', 3);
+        phrase = chunks[Math.floor(Math.random() * Math.min(chunks.length, 3))] || chunks[0] || '사전정';
+      }
+
+      const msgObj = {
+        username: bot.username,
+        message: phrase,
+        timestamp: new Date().toISOString()
+      };
+
+      if (!currentGame.chatHistory) currentGame.chatHistory = [];
+      currentGame.chatHistory.push(msgObj);
+      if (currentGame.chatHistory.length > 40) currentGame.chatHistory.shift();
+
       io.to(room).emit('liar-update', {
         type: 'message',
-        data: {
+        data: msgObj
+      });
+    }, delay1);
+
+    // 2차 추가 대화 발언 (45초 ~ 80초 사이 추가 인터랙션)
+    const delay2 = 45000 + (index * 6000) + Math.floor(Math.random() * 5000);
+    const timeout2 = setTimeout(async () => {
+      const currentGame = liarGames.get(room);
+      if (!currentGame || currentGame.phase !== 'talk') return;
+
+      let phrase = null;
+      if (isGeminiConfigured()) {
+        phrase = await generateLiarTalkMessage({
+          bot,
+          isLiar: bot.isLiar,
+          word: bot.word,
+          wordDef: bot.wordDef,
+          players: currentGame.players,
+          chatHistory: currentGame.chatHistory || []
+        });
+      }
+
+      if (phrase) {
+        const msgObj = {
           username: bot.username,
           message: phrase,
           timestamp: new Date().toISOString()
-        }
-      });
-    }, delay);
+        };
+
+        if (!currentGame.chatHistory) currentGame.chatHistory = [];
+        currentGame.chatHistory.push(msgObj);
+        if (currentGame.chatHistory.length > 40) currentGame.chatHistory.shift();
+
+        io.to(room).emit('liar-update', {
+          type: 'message',
+          data: msgObj
+        });
+      }
+    }, delay2);
 
     if (!game.botTimeouts) game.botTimeouts = [];
-    game.botTimeouts.push(timeout);
+    game.botTimeouts.push(timeout1, timeout2);
   });
 
   game.timerInterval = setInterval(() => {
@@ -315,19 +400,35 @@ function startVotePhase(io, room) {
     }
   });
 
-  // 🤖 봇 자동 투표
+  // 🤖 AI 봇 자동 투표 (Gemini 추리 기반)
   const bots = game.players.filter(p => p.isBot);
-  bots.forEach(bot => {
-    const voteDelay = Math.floor(Math.random() * 3000) + 1500;
-    const timeout = setTimeout(() => {
+  bots.forEach((bot, index) => {
+    const voteDelay = 2000 + (index * 1500) + Math.floor(Math.random() * 2000);
+    const timeout = setTimeout(async () => {
       const currentGame = liarGames.get(room);
       if (!currentGame || currentGame.phase !== 'vote') return;
       if (currentGame.votes[bot.id]) return;
 
       const candidates = currentGame.players.filter(p => p.id !== bot.id);
       if (candidates.length > 0) {
-        const target = candidates[Math.floor(Math.random() * candidates.length)];
-        currentGame.votes[bot.id] = target.id;
+        let targetId = null;
+
+        if (isGeminiConfigured()) {
+          targetId = await generateLiarVoteTarget({
+            bot,
+            isLiar: bot.isLiar,
+            word: bot.word,
+            players: currentGame.players,
+            chatHistory: currentGame.chatHistory || []
+          });
+        }
+
+        if (!targetId || !candidates.some(c => c.id === targetId)) {
+          const randomTarget = candidates[Math.floor(Math.random() * candidates.length)];
+          targetId = randomTarget.id;
+        }
+
+        currentGame.votes[bot.id] = targetId;
 
         const voteCount = {};
         Object.values(currentGame.votes).forEach(vote => {
@@ -408,4 +509,3 @@ function showLiarResult(io, room) {
     }
   });
 }
-

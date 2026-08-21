@@ -1,5 +1,19 @@
 import { mafiaGames, connectedUsers, checkMafiaGameEnd } from '../gameManager.js';
 import { sanitizeChatMessage } from '../utils/sanitize.js';
+import {
+  generateMafiaDayChat,
+  generateMafiaVoteTarget,
+  generateMafiaNightAction,
+  isGeminiConfigured,
+  getGeminiModelName
+} from '../aiService.js';
+
+export function clearMafiaBotTimers(game) {
+  if (game && game.botTimeouts && Array.isArray(game.botTimeouts)) {
+    game.botTimeouts.forEach(t => clearTimeout(t));
+  }
+  if (game) game.botTimeouts = [];
+}
 
 export function registerMafiaHandlers(io, socket) {
   // 🤖 AI 봇 추가 이벤트
@@ -71,6 +85,15 @@ export function registerMafiaHandlers(io, socket) {
       content: sanitizedContent
     };
 
+    // 📝 AI 봇 컨텍스트용 채팅 히스토리 기록
+    if (!game.chatHistory) game.chatHistory = [];
+    game.chatHistory.push({
+      player: safeMessage.player || '익명',
+      content: safeMessage.content,
+      timestamp: Date.now()
+    });
+    if (game.chatHistory.length > 40) game.chatHistory.shift();
+
     io.to(room).emit('mafia-update', {
       type: 'message',
       data: safeMessage
@@ -111,6 +134,8 @@ export function registerMafiaHandlers(io, socket) {
       });
     }
 
+    clearMafiaBotTimers(game);
+
     const shuffled = [...game.players].sort(() => Math.random() - 0.5);
     const playerCount = shuffled.length;
     const targetMafiaCount = playerCount >= 6 ? (game.requestedMafiaCount || 1) : 1;
@@ -132,7 +157,7 @@ export function registerMafiaHandlers(io, socket) {
       if (idx < playerCount) shuffled[idx++].role = 'police';
     }
 
-    // 3. 남은 플레이어: 시민 할당 (조커 완전 제거)
+    // 3. 남은 플레이어: 시민 할당
     while (idx < playerCount) {
       shuffled[idx++].role = 'citizen';
     }
@@ -149,10 +174,21 @@ export function registerMafiaHandlers(io, socket) {
     game.voteUsed = false;
     game.votes = [];
     game.doctorTargetId = null;
+    game.chatHistory = [];
+    game.botKnowledge = {}; // 각 AI 봇의 비밀 기억(경찰 조사 결과 등)
+
+    const aiStatusMsg = isGeminiConfigured()
+      ? `🧠 [AI 시스템] Google Gemini LLM (${getGeminiModelName()}) 지능형 봇 엔진이 가동되었습니다.`
+      : `🤖 [AI 시스템] 기본 템플릿 모드로 봇이 동작합니다 (GEMINI_API_KEY 설정 시 실시간 추리 가능).`;
 
     io.to(room).emit('mafia-update', {
       type: 'game-start',
       data: { players: game.players, phase: 'day', timeLeft: 90 }
+    });
+
+    io.to(room).emit('mafia-update', {
+      type: 'message',
+      data: { id: Date.now().toString(), type: 'system', content: aiStatusMsg, timestamp: new Date() }
     });
 
     startMafiaServerTimer(io, room);
@@ -258,6 +294,7 @@ export function registerMafiaHandlers(io, socket) {
       clearInterval(game.timerInterval);
       game.timerInterval = null;
     }
+    clearMafiaBotTimers(game);
 
     game.gameStarted = false;
     game.phase = 'waiting';
@@ -265,6 +302,8 @@ export function registerMafiaHandlers(io, socket) {
     game.votes = [];
     game.nightAttackExecuted = false;
     game.doctorTargetId = null;
+    game.chatHistory = [];
+    game.botKnowledge = {};
 
     game.players.forEach(p => {
       p.isAlive = true;
@@ -295,6 +334,7 @@ export function registerMafiaHandlers(io, socket) {
       const humanPlayers = game.players.filter(p => !p.isBot);
       if (humanPlayers.length === 0) {
         if (game.timerInterval) clearInterval(game.timerInterval);
+        clearMafiaBotTimers(game);
         mafiaGames.delete(room);
       } else {
         if (wasHost && game.players.length > 0) {
@@ -331,7 +371,6 @@ export function registerMafiaHandlers(io, socket) {
 
       current.timeLeft--;
 
-      // ⏱️ 매초 남은 시간(timer-tick)을 해당 방 클라이언트에 전송!
       io.to(room).emit('mafia-update', {
         type: 'timer-tick',
         data: { timeLeft: current.timeLeft }
@@ -362,6 +401,8 @@ export function registerMafiaHandlers(io, socket) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'voting' || game.phase === 'game-over') return;
 
+    clearMafiaBotTimers(game);
+
     game.phase = 'voting';
     game.timeLeft = 20;
     game.votes = [];
@@ -386,6 +427,8 @@ export function registerMafiaHandlers(io, socket) {
   function tallyVotesAndTransitionToNight(io, room) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'game-over') return;
+
+    clearMafiaBotTimers(game);
 
     if (!game.votes) game.votes = [];
 
@@ -443,6 +486,8 @@ export function registerMafiaHandlers(io, socket) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'game-over') return;
 
+    clearMafiaBotTimers(game);
+
     game.phase = 'night';
     game.timeLeft = 30;
     game.nightAttackExecuted = false;
@@ -464,6 +509,8 @@ export function registerMafiaHandlers(io, socket) {
   function transitionToDay(io, room) {
     const game = mafiaGames.get(room);
     if (!game || game.phase === 'game-over') return;
+
+    clearMafiaBotTimers(game);
 
     game.phase = 'day';
     game.timeLeft = 90;
@@ -527,46 +574,109 @@ export function registerMafiaHandlers(io, socket) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
-    // AI 의사 자동 치료
+    // 1. AI 의사 치료
     const aiDoctor = game.players.find(p => p.role === 'doctor' && p.isAlive && p.isBot);
     if (aiDoctor) {
-      setTimeout(() => {
+      const t = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night') return;
         const alivePlayers = current.players.filter(p => p.isAlive);
-        if (alivePlayers.length > 0) {
-          const healTarget = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-          current.doctorTargetId = healTarget.id;
+        if (alivePlayers.length === 0) return;
+
+        let healTargetId = null;
+        if (isGeminiConfigured()) {
+          healTargetId = await generateMafiaNightAction({
+            bot: aiDoctor,
+            role: 'doctor',
+            alivePlayers,
+            knownInfo: current.botKnowledge?.[aiDoctor.id] || {}
+          });
         }
-      }, 2000);
+        if (!healTargetId) {
+          healTargetId = alivePlayers[Math.floor(Math.random() * alivePlayers.length)]?.id;
+        }
+
+        current.doctorTargetId = healTargetId;
+      }, 2000 + Math.random() * 1500);
+
+      if (!game.botTimeouts) game.botTimeouts = [];
+      game.botTimeouts.push(t);
     }
 
-    // AI 경찰 자동 조사
+    // 2. AI 경찰 조사
     const aiPolice = game.players.find(p => p.role === 'police' && p.isAlive && p.isBot);
     if (aiPolice) {
-      setTimeout(() => {
+      const t = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night') return;
-      }, 2500);
+        const aliveCandidates = current.players.filter(p => p.isAlive && p.id !== aiPolice.id);
+        if (aliveCandidates.length === 0) return;
+
+        let investigateTargetId = null;
+        if (isGeminiConfigured()) {
+          investigateTargetId = await generateMafiaNightAction({
+            bot: aiPolice,
+            role: 'police',
+            alivePlayers: aliveCandidates,
+            knownInfo: current.botKnowledge?.[aiPolice.id] || {}
+          });
+        }
+        if (!investigateTargetId) {
+          investigateTargetId = aliveCandidates[Math.floor(Math.random() * aliveCandidates.length)]?.id;
+        }
+
+        const target = current.players.find(p => p.id === investigateTargetId);
+        if (target) {
+          if (!current.botKnowledge) current.botKnowledge = {};
+          if (!current.botKnowledge[aiPolice.id]) current.botKnowledge[aiPolice.id] = { investigations: [] };
+          current.botKnowledge[aiPolice.id].investigations.push({
+            targetId: target.id,
+            targetName: target.username,
+            isMafia: target.role === 'mafia'
+          });
+        }
+      }, 2500 + Math.random() * 1500);
+
+      if (!game.botTimeouts) game.botTimeouts = [];
+      game.botTimeouts.push(t);
     }
 
-    // AI 마피아 자동 공격
+    // 3. AI 마피아 공격
     const aiMafia = game.players.find(p => p.role === 'mafia' && p.isAlive && p.isBot);
     if (aiMafia) {
-      setTimeout(() => {
+      const t = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night' || current.nightAttackExecuted) return;
 
         const aliveTargets = current.players.filter(p => p.isAlive && p.role !== 'mafia');
         if (aliveTargets.length === 0) return;
 
-        const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-        executeMafiaAttack(io, room, randomTarget.id, randomTarget);
-      }, 4000);
+        let attackTargetId = null;
+        if (isGeminiConfigured()) {
+          attackTargetId = await generateMafiaNightAction({
+            bot: aiMafia,
+            role: 'mafia',
+            alivePlayers: aliveTargets,
+            knownInfo: current.botKnowledge?.[aiMafia.id] || {}
+          });
+        }
+        if (!attackTargetId) {
+          const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+          attackTargetId = randomTarget?.id;
+        }
+
+        const targetPlayer = current.players.find(p => p.id === attackTargetId && p.isAlive);
+        if (targetPlayer) {
+          executeMafiaAttack(io, room, targetPlayer.id, targetPlayer);
+        }
+      }, 4500 + Math.random() * 2000);
+
+      if (!game.botTimeouts) game.botTimeouts = [];
+      game.botTimeouts.push(t);
     }
   }
 
-  // 🤖 AI 봇 낮 대화 멘트 90초 주기 분산 발송
+  // 🤖 AI 봇 낮 대화 멘트 (Gemini LLM 실시간 생성 + 템플릿 폴백)
   function triggerAiDayChat(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'day') return;
@@ -598,44 +708,101 @@ export function registerMafiaHandlers(io, socket) {
     ];
 
     aliveBots.forEach((bot) => {
-      // 1. 초반 멘트 (8초 ~ 20초 사이 분산)
-      const t1 = 8000 + Math.random() * 12000;
-      setTimeout(() => {
+      // 1. 초반 멘트 (6초 ~ 18초 사이)
+      const t1 = 6000 + Math.random() * 12000;
+      const timeout1 = setTimeout(async () => {
         const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day') return;
-        const phrase = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
-        sendAiMessage(io, room, bot.username, phrase);
+        if (!current || current.phase !== 'day' || !bot.isAlive) return;
+
+        let content = null;
+        if (isGeminiConfigured()) {
+          content = await generateMafiaDayChat({
+            bot,
+            role: bot.role,
+            alivePlayers: current.players.filter(p => p.isAlive),
+            chatHistory: current.chatHistory || [],
+            knownInfo: current.botKnowledge?.[bot.id] || {}
+          });
+        }
+
+        if (!content) {
+          content = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
+        }
+
+        sendAiMessage(io, room, bot.username, content);
       }, t1);
 
-      // 2. 중반 멘트 (35초 ~ 55초 사이 분산)
-      const t2 = 35000 + Math.random() * 20000;
-      setTimeout(() => {
+      // 2. 중반 멘트 (32초 ~ 50초 사이)
+      const t2 = 32000 + Math.random() * 18000;
+      const timeout2 = setTimeout(async () => {
         const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day') return;
-        const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
-        if (aliveOthers.length === 0) return;
-        const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-        const phrases = midPhrases(target.username);
-        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-        sendAiMessage(io, room, bot.username, phrase);
+        if (!current || current.phase !== 'day' || !bot.isAlive) return;
+
+        let content = null;
+        if (isGeminiConfigured()) {
+          content = await generateMafiaDayChat({
+            bot,
+            role: bot.role,
+            alivePlayers: current.players.filter(p => p.isAlive),
+            chatHistory: current.chatHistory || [],
+            knownInfo: current.botKnowledge?.[bot.id] || {}
+          });
+        }
+
+        if (!content) {
+          const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
+          const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+          const phrases = target ? midPhrases(target.username) : earlyPhrases;
+          content = phrases[Math.floor(Math.random() * phrases.length)];
+        }
+
+        sendAiMessage(io, room, bot.username, content);
       }, t2);
 
-      // 3. 종반 멘트 (68초 ~ 82초 사이 분산)
-      const t3 = 68000 + Math.random() * 14000;
-      setTimeout(() => {
+      // 3. 종반 멘트 (65초 ~ 78초 사이)
+      const t3 = 65000 + Math.random() * 13000;
+      const timeout3 = setTimeout(async () => {
         const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day') return;
-        const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
-        if (aliveOthers.length === 0) return;
-        const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-        const phrases = latePhrases(target.username);
-        const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-        sendAiMessage(io, room, bot.username, phrase);
+        if (!current || current.phase !== 'day' || !bot.isAlive) return;
+
+        let content = null;
+        if (isGeminiConfigured()) {
+          content = await generateMafiaDayChat({
+            bot,
+            role: bot.role,
+            alivePlayers: current.players.filter(p => p.isAlive),
+            chatHistory: current.chatHistory || [],
+            knownInfo: current.botKnowledge?.[bot.id] || {}
+          });
+        }
+
+        if (!content) {
+          const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
+          const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
+          const phrases = target ? latePhrases(target.username) : earlyPhrases;
+          content = phrases[Math.floor(Math.random() * phrases.length)];
+        }
+
+        sendAiMessage(io, room, bot.username, content);
       }, t3);
+
+      if (!game.botTimeouts) game.botTimeouts = [];
+      game.botTimeouts.push(timeout1, timeout2, timeout3);
     });
   }
 
   function sendAiMessage(io, room, botName, content) {
+    const game = mafiaGames.get(room);
+    if (!game) return;
+
+    if (!game.chatHistory) game.chatHistory = [];
+    game.chatHistory.push({
+      player: botName,
+      content,
+      timestamp: Date.now()
+    });
+    if (game.chatHistory.length > 40) game.chatHistory.shift();
+
     io.to(room).emit('mafia-update', {
       type: 'message',
       data: {
@@ -648,7 +815,7 @@ export function registerMafiaHandlers(io, socket) {
     });
   }
 
-  // 🤖 AI 봇 자동 투표 처리 함수
+  // 🤖 AI 봇 자동 투표 처리 함수 (Gemini LLM 추리 기반)
   function handleAiBotVotes(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'voting') return;
@@ -656,10 +823,11 @@ export function registerMafiaHandlers(io, socket) {
     const aliveBots = game.players.filter(p => p.isAlive && p.isBot);
     if (aliveBots.length === 0) return;
 
-    aliveBots.forEach(bot => {
-      setTimeout(() => {
+    aliveBots.forEach((bot, index) => {
+      const voteDelay = 2000 + (index * 1500) + Math.random() * 2000;
+      const timeout = setTimeout(async () => {
         const current = mafiaGames.get(room);
-        if (!current || !current.gameStarted || current.phase !== 'voting') return;
+        if (!current || !current.gameStarted || current.phase !== 'voting' || !bot.isAlive) return;
         if (!current.votes) current.votes = [];
 
         if (current.votes.some(v => v.voterId === bot.id)) return;
@@ -667,14 +835,32 @@ export function registerMafiaHandlers(io, socket) {
         const aliveTargets = current.players.filter(p => p.isAlive && p.id !== bot.id);
         if (aliveTargets.length === 0) return;
 
-        const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-        current.votes.push({ targetId: randomTarget.id, voterId: bot.id });
+        let targetId = null;
+        if (isGeminiConfigured()) {
+          targetId = await generateMafiaVoteTarget({
+            bot,
+            role: bot.role,
+            alivePlayers: current.players.filter(p => p.isAlive),
+            chatHistory: current.chatHistory || [],
+            knownInfo: current.botKnowledge?.[bot.id] || {}
+          });
+        }
+
+        if (!targetId || !aliveTargets.some(t => t.id === targetId)) {
+          const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+          targetId = randomTarget.id;
+        }
+
+        current.votes.push({ targetId, voterId: bot.id });
 
         const aliveCount = current.players.filter(p => p.isAlive).length;
         if (current.votes.length >= aliveCount) {
           tallyVotesAndTransitionToNight(io, room);
         }
-      }, 2000 + Math.random() * 3000);
+      }, voteDelay);
+
+      if (!game.botTimeouts) game.botTimeouts = [];
+      game.botTimeouts.push(timeout);
     });
   }
 }
