@@ -14,42 +14,92 @@ function getMaskedApiKey(key) {
   return key.substring(0, 6) + '...' + key.substring(key.length - 4);
 }
 
+let rateLimitCooldownUntil = 0;
+
+/**
+ * 🧹 따옴표, 마크다운, 내부 생각 잔여물 등을 깨끗하게 제거하는 메시지 정제기
+ */
+export function cleanMessage(text) {
+  if (!text || typeof text !== 'string') return '';
+  let clean = text.trim();
+
+  // 1. 코드블록 마크다운 제거
+  clean = clean.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // 2. 내부 추론 과정(Thought / Draft / 1. ...) 라인 분리 및 정리
+  const lines = clean.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    // 만약 여러 줄이 들어왔다면 '마지막 유의미한 대화 줄'을 선택
+    const lastCandidate = lines[lines.length - 1];
+    if (lastCandidate && !lastCandidate.startsWith('*') && !lastCandidate.startsWith('1.') && !lastCandidate.startsWith('2.') && !lastCandidate.startsWith('3.')) {
+      clean = lastCandidate;
+    }
+  }
+
+  // 3. 앞뒤 따옴표, 콜론, 별표, 마크다운 기호 제거
+  clean = clean.replace(/^[:"'`\s\*\-]+/, '').replace(/[:"'`\s\*\-]+$/, '').trim();
+
+  // 4. 쌍따옴표가 중복으로 씌워져 있는 경우 정리 (""Data_Bot님" -> Data_Bot님)
+  while ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
+    clean = clean.slice(1, -1).trim();
+  }
+
+  // 5. 앞머리에 붙은 영문 접두사(/Short):*, Draft: 등) 제거
+  clean = clean.replace(/^[\(\/\*\s]*[A-Za-z0-9_\-\/]+\s*[:\)]\s*\*?\s*/, '').trim();
+  clean = clean.replace(/^[:"'`\s\*\-]+/, '').replace(/[:"'`\s\*\-]+$/, '').trim();
+
+  // 6. 영어 내부 생각 문장만 있거나(result yet anyway...) 1글자 이하면 필터링
+  if (clean.length < 2 || (/^[A-Za-z0-9\s_\-\*\.\(\)\:\,\'\"]+$/.test(clean) && !/[가-힣]/.test(clean) && clean.length > 15)) {
+    return '';
+  }
+
+  return clean;
+}
+
 /**
  * 🛠️ LLM 응답 텍스트에서 안전하게 JSON을 추출 및 복구 파싱하는 헬퍼
  */
 function extractAndParseJSON(rawText) {
   if (!rawText || typeof rawText !== 'string') return null;
-  const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-  // 1. 순수 JSON 파싱 시도
-  try {
-    return JSON.parse(clean);
-  } catch (e) {}
-
-  // 2. 문자열 내부에서 최외곽 {...} 객체 블록 추출 파싱
-  const jsonMatch = clean.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
+  // 1. rawText 내부의 모든 {...} JSON 블록 추출 시도
+  const jsonBlocks = rawText.match(/\{[\s\S]*?\}/g) || [];
+  for (const block of jsonBlocks) {
     try {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(block);
+      if (parsed) {
+        if (parsed.message) parsed.message = cleanMessage(parsed.message);
+        if (parsed.targetId) parsed.targetId = parsed.targetId.trim();
+        return parsed;
+      }
     } catch (e) {}
   }
 
-  // 3. JSON이 미완성이거나 잘렸을 경우 정규식으로 message/targetId 필드 복구
-  const messageMatch = clean.match(/"message"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i) ||
-                       clean.match(/"message"\s*:\s*'([^'\\]*(?:\\.[^'\\]*)*)'/i) ||
-                       clean.match(/"message"\s*:\s*([^,}\n]+)/i);
-  if (messageMatch) {
-    return { message: messageMatch[1].replace(/\\"/g, '"').trim() };
+  // 2. 정규식으로 "message": "..." 추출
+  const msgRegex = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/i;
+  const msgMatch = rawText.match(msgRegex);
+  if (msgMatch && msgMatch[1]) {
+    return { message: cleanMessage(msgMatch[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')) };
   }
 
-  const targetIdMatch = clean.match(/"targetId"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
-  if (targetIdMatch) {
-    return { targetId: targetIdMatch[1].trim() };
+  // 3. 정규식으로 "targetId": "..." 추출
+  const targetRegex = /"targetId"\s*:\s*"((?:[^"\\]|\\.)*)"/i;
+  const targetMatch = rawText.match(targetRegex);
+  if (targetMatch && targetMatch[1]) {
+    return { targetId: targetMatch[1].trim() };
   }
 
-  // 4. 모델이 JSON 형식을 무시하고 평문 텍스트만 보냈을 때 평문을 메시지로 자동 변환
-  if (clean.length > 0 && !clean.startsWith('{') && !clean.startsWith('[')) {
-    return { message: clean };
+  // 4. 따옴표로 감싸진 대화 추출 (예: "Copilot님 말 끊긴 거 수상한데요?")
+  const quoteMatches = [...rawText.matchAll(/"([^"\n]{4,120})"/g)];
+  if (quoteMatches.length > 0) {
+    const lastQuote = quoteMatches[quoteMatches.length - 1][1];
+    return { message: cleanMessage(lastQuote) };
+  }
+
+  // 5. 일반 평문 텍스트 클리닝 후 반환
+  const cleanPlain = cleanMessage(rawText);
+  if (cleanPlain && cleanPlain.length > 0 && !cleanPlain.includes('Draft') && !cleanPlain.includes('Refining')) {
+    return { message: cleanPlain };
   }
 
   return null;
@@ -67,6 +117,13 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     return null;
   }
 
+  // 429 Rate Limit 쿨다운 중인 경우 API 호출 건너뛰고 즉시 안전 템플릿 반환
+  if (Date.now() < rateLimitCooldownUntil) {
+    const remainSec = Math.ceil((rateLimitCooldownUntil - Date.now()) / 1000);
+    console.log(`[Gemini AI Cooldown] ⏳ 429 쿨다운 대기 중 (${remainSec}s 남음) - 기본 템플릿 사용`);
+    return null;
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const payload = {
@@ -77,7 +134,10 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     ],
     generationConfig: {
       temperature,
-      maxOutputTokens: 500
+      maxOutputTokens: 300,
+      thinkingConfig: {
+        thinkingBudget: 0
+      }
     }
   };
 
@@ -114,11 +174,24 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
         return parsed;
       }
 
-      return rawText.trim();
+      return cleanMessage(rawText);
     } catch (err) {
       const elapsed = Date.now() - startTime;
       const statusCode = err.response?.status;
       const errMsg = err.response?.data?.error?.message || err.message;
+
+      // 429 할당량 초과 시 25초 쿨다운 적용
+      if (statusCode === 429) {
+        rateLimitCooldownUntil = Date.now() + 25000;
+        console.warn(`[Gemini AI RateLimit] ⚠️ 무료 티어 호출 한도(429 Quota Exceeded) 도달. 25초간 기본 템플릿 모드로 동작합니다.`);
+        return null;
+      }
+
+      // thinkingConfig 미지원 모델로 400 에러 시 제거 후 1회 재시도
+      if (statusCode === 400 && payload.generationConfig?.thinkingConfig) {
+        delete payload.generationConfig.thinkingConfig;
+        continue;
+      }
 
       if (attempt === 1 && (err.code === 'ECONNABORTED' || err.message.includes('timeout'))) {
         console.warn(`[Gemini AI Retry] ⏱️ 1차 시도 타임아웃 (${elapsed}ms), 재시도 중...`);
@@ -183,9 +256,12 @@ ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄
 `;
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
-  if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
-    console.log(`[Mafia AI] 💬 [${bot.username} (${role})] 대화 생성 완료: "${parsed.message.trim()}"`);
-    return parsed.message.trim();
+  if (parsed && typeof parsed.message === 'string') {
+    const cleaned = cleanMessage(parsed.message);
+    if (cleaned.length >= 2) {
+      console.log(`[Mafia AI] 💬 [${bot.username} (${role})] 대화 생성 완료: "${cleaned}"`);
+      return cleaned;
+    }
   }
 
   return null;
@@ -336,9 +412,12 @@ ${recentChats || '(아직 이전 발언이 없습니다. 첫 번째 힌트를 �
 `;
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
-  if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
-    console.log(`[Liar AI] 💬 [${bot.username} (${isLiar ? '라이어' : '시민'})] 힌트 발언 생성: "${parsed.message.trim()}"`);
-    return parsed.message.trim();
+  if (parsed && typeof parsed.message === 'string') {
+    const cleaned = cleanMessage(parsed.message);
+    if (cleaned.length >= 2) {
+      console.log(`[Liar AI] 💬 [${bot.username} (${isLiar ? '라이어' : '시민'})] 힌트 발언 생성: "${cleaned}"`);
+      return cleaned;
+    }
   }
 
   return null;
