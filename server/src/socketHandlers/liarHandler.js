@@ -285,80 +285,53 @@ function startTalkPhase(io, room) {
     }
   });
 
-  // 🤖 AI 봇 힌트 발언 스케줄링 (Gemini LLM 실시간 생성 + 템플릿 폴백)
+  // 🤖 AI 봇 힌트 발언 스케줄링 (25초 이상 간격으로 1개 봇만 순차 호출)
   const bots = game.players.filter(p => p.isBot);
-  bots.forEach((bot, index) => {
-    // 1차 힌트 발언 (봇 간 5초 간격 분산)
-    const delay1 = 4000 + (index * 5500) + Math.floor(Math.random() * 2500);
-    const timeout1 = setTimeout(async () => {
-      const currentGame = liarGames.get(room);
-      if (!currentGame || currentGame.phase !== 'talk') return;
+  if (bots.length > 0) {
+    if (!game.botTimeouts) game.botTimeouts = [];
 
-      let phrase = null;
-      if (isGeminiConfigured()) {
-        phrase = await generateLiarTalkMessage({
-          bot,
-          isLiar: bot.isLiar,
-          word: bot.word,
-          wordDef: bot.wordDef,
-          players: currentGame.players,
-          chatHistory: currentGame.chatHistory || []
-        });
-      }
+    // 180초 대화 시간 동안 26초 간격으로 순차 턴 배정 (429 Rate Limit 방지)
+    const turnInterval = 26000;
+    const maxTurns = Math.min(6, Math.floor(165000 / turnInterval));
 
-      if (!phrase) {
-        const citizenFallbacks = [
-          '일상에서 누구나 쉽게 접할 수 있는 익숙한 대상이에요.',
-          '특징이나 용도가 꽤 뚜렷해서 다들 바로 아실 것 같아요.',
-          '생각보다 우리 주변에서 정말 자주 볼 수 있는 겁니다.',
-          '크기나 모양을 떠올리면 직관적으로 연상되는 대상이에요.',
-          '솔직히 다들 한 번쯤은 직접 보거나 사용해보셨을 것 같네요.'
-        ];
-        const liarFallbacks = [
-          '다들 말씀하시는 걸 들어보니 어떤 느낌인지 딱 감이 오네요!',
-          '저도 평소에 꽤 익숙하게 생각하고 자주 접하는 편입니다.',
-          '호불호가 크게 갈리지 않고 대중적으로 널리 알려진 것 같아요.',
-          '설명들을 들어보니 다들 바로 눈치채신 것 같아서 저도 공감합니다.'
-        ];
-        const pool = bot.isLiar ? liarFallbacks : citizenFallbacks;
-        phrase = pool[Math.floor(Math.random() * pool.length)];
-      }
+    for (let i = 0; i < maxTurns; i++) {
+      const bot = bots[i % bots.length];
+      const delay = 5000 + (i * turnInterval) + Math.floor(Math.random() * 2500);
 
-      const msgObj = {
-        username: bot.username,
-        message: phrase,
-        timestamp: new Date().toISOString()
-      };
+      const timeout = setTimeout(async () => {
+        const currentGame = liarGames.get(room);
+        if (!currentGame || currentGame.phase !== 'talk') return;
 
-      if (!currentGame.chatHistory) currentGame.chatHistory = [];
-      currentGame.chatHistory.push(msgObj);
-      if (currentGame.chatHistory.length > 40) currentGame.chatHistory.shift();
+        let phrase = null;
+        if (isGeminiConfigured()) {
+          phrase = await generateLiarTalkMessage({
+            bot,
+            isLiar: bot.isLiar,
+            word: bot.word,
+            wordDef: bot.wordDef,
+            players: currentGame.players,
+            chatHistory: currentGame.chatHistory || []
+          });
+        }
 
-      io.to(room).emit('liar-update', {
-        type: 'message',
-        data: msgObj
-      });
-    }, delay1);
+        if (!phrase) {
+          const citizenFallbacks = [
+            '일상에서 누구나 쉽게 접할 수 있는 익숙한 대상이에요.',
+            '특징이나 용도가 꽤 뚜렷해서 다들 바로 아실 것 같아요.',
+            '생각보다 우리 주변에서 정말 자주 볼 수 있는 겁니다.',
+            '크기나 모양을 떠올리면 직관적으로 연상되는 대상이에요.',
+            '솔직히 다들 한 번쯤은 직접 보거나 사용해보셨을 것 같네요.'
+          ];
+          const liarFallbacks = [
+            '다들 말씀하시는 걸 들어보니 어떤 느낌인지 딱 감이 오네요!',
+            '저도 평소에 꽤 익숙하게 생각하고 자주 접하는 편입니다.',
+            '호불호가 크게 갈리지 않고 대중적으로 널리 알려진 것 같아요.',
+            '설명들을 들어보니 다들 바로 눈치채신 것 같아서 저도 공감합니다.'
+          ];
+          const pool = bot.isLiar ? liarFallbacks : citizenFallbacks;
+          phrase = pool[Math.floor(Math.random() * pool.length)];
+        }
 
-    // 2차 추가 대화 발언 (45초 이후 봇 간 7초 간격 분산)
-    const delay2 = 45000 + (index * 7000) + Math.floor(Math.random() * 4000);
-    const timeout2 = setTimeout(async () => {
-      const currentGame = liarGames.get(room);
-      if (!currentGame || currentGame.phase !== 'talk') return;
-
-      let phrase = null;
-      if (isGeminiConfigured()) {
-        phrase = await generateLiarTalkMessage({
-          bot,
-          isLiar: bot.isLiar,
-          word: bot.word,
-          wordDef: bot.wordDef,
-          players: currentGame.players,
-          chatHistory: currentGame.chatHistory || []
-        });
-      }
-
-      if (phrase) {
         const msgObj = {
           username: bot.username,
           message: phrase,
@@ -373,12 +346,11 @@ function startTalkPhase(io, room) {
           type: 'message',
           data: msgObj
         });
-      }
-    }, delay2);
+      }, delay);
 
-    if (!game.botTimeouts) game.botTimeouts = [];
-    game.botTimeouts.push(timeout1, timeout2);
-  });
+      game.botTimeouts.push(timeout);
+    }
+  }
 
   game.timerInterval = setInterval(() => {
     game.timer--;

@@ -5,7 +5,7 @@ export function isGeminiConfigured() {
 }
 
 export function getGeminiModelName() {
-  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  return process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 }
 
 function getMaskedApiKey(key) {
@@ -15,6 +15,8 @@ function getMaskedApiKey(key) {
 }
 
 let rateLimitCooldownUntil = 0;
+let lastApiCallTimestamp = 0;
+const MIN_API_CALL_INTERVAL_MS = 25000; // ⚡ 봇 간 25초 최소 호출 간격 보장 (429 Quota 방지)
 
 /**
  * 🧹 따옴표, 마크다운, 내부 생각 잔여물 등을 깨끗하게 제거하는 메시지 정제기
@@ -124,6 +126,14 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     return null;
   }
 
+  // ⚡ 봇 간 25초 최소 호출 간격 검사 (25초 내에 다른 봇이 이미 API를 썼다면 안전 템플릿 사용)
+  const elapsedSinceLastCall = Date.now() - lastApiCallTimestamp;
+  if (lastApiCallTimestamp > 0 && elapsedSinceLastCall < MIN_API_CALL_INTERVAL_MS) {
+    const remainSec = Math.ceil((MIN_API_CALL_INTERVAL_MS - elapsedSinceLastCall) / 1000);
+    console.log(`[Gemini AI Throttled] ⏱️ 25초 간격 보호 중 (${remainSec}s 대기 필요) - 자연스러운 기본 대화 사용`);
+    return null;
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const payload = {
@@ -155,6 +165,7 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
         timeout: 25000
       });
 
+      lastApiCallTimestamp = Date.now();
       const elapsed = Date.now() - startTime;
       const candidate = response.data?.candidates?.[0];
       const rawText = candidate?.content?.parts?.[0]?.text;

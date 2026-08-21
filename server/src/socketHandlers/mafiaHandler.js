@@ -707,34 +707,15 @@ export function registerMafiaHandlers(io, socket) {
       `🚨 무고한 시민이 억울하게 희생되지 않도록 데이터에 기반해서 투표해주세요.`
     ];
 
-    aliveBots.forEach((bot, botIdx) => {
-      // 1. 초반 멘트 (봇 간 6초 간격 분산)
-      const t1 = 5000 + (botIdx * 6000) + Math.random() * 3000;
-      const timeout1 = setTimeout(async () => {
-        const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day' || !bot.isAlive) return;
+    // 90초 낮 대화 시간 동안 27초 간격으로 순차 턴 배정 (동시에 1개 봇만 Gemini API 호출)
+    const turnInterval = 27000;
+    const maxTurns = 3; // 6s, 33s, 60s
 
-        let content = null;
-        if (isGeminiConfigured()) {
-          content = await generateMafiaDayChat({
-            bot,
-            role: bot.role,
-            alivePlayers: current.players.filter(p => p.isAlive),
-            chatHistory: current.chatHistory || [],
-            knownInfo: current.botKnowledge?.[bot.id] || {}
-          });
-        }
+    for (let i = 0; i < maxTurns; i++) {
+      const bot = aliveBots[i % aliveBots.length];
+      const delay = 6000 + (i * turnInterval) + Math.floor(Math.random() * 2000);
 
-        if (!content) {
-          content = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
-        }
-
-        sendAiMessage(io, room, bot.username, content);
-      }, t1);
-
-      // 2. 중반 멘트 (32초 이후 봇 간 7초 간격 분산)
-      const t2 = 32000 + (botIdx * 7000) + Math.random() * 4000;
-      const timeout2 = setTimeout(async () => {
+      const timeout = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day' || !bot.isAlive) return;
 
@@ -752,43 +733,29 @@ export function registerMafiaHandlers(io, socket) {
         if (!content) {
           const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
           const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-          const phrases = target ? midPhrases(target.username) : earlyPhrases;
-          content = phrases[Math.floor(Math.random() * phrases.length)];
+          const pool = i === 0 ? earlyPhrases : (target ? (i === 1 ? midPhrases(target.username) : latePhrases(target.username)) : earlyPhrases);
+          content = pool[Math.floor(Math.random() * pool.length)];
         }
 
         sendAiMessage(io, room, bot.username, content);
-      }, t2);
-
-      // 3. 종반 멘트 (62초 이후 봇 간 6초 간격 분산)
-      const t3 = 62000 + (botIdx * 6000) + Math.random() * 4000;
-      const timeout3 = setTimeout(async () => {
-        const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day' || !bot.isAlive) return;
-
-        let content = null;
-        if (isGeminiConfigured()) {
-          content = await generateMafiaDayChat({
-            bot,
-            role: bot.role,
-            alivePlayers: current.players.filter(p => p.isAlive),
-            chatHistory: current.chatHistory || [],
-            knownInfo: current.botKnowledge?.[bot.id] || {}
-          });
-        }
-
-        if (!content) {
-          const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
-          const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-          const phrases = target ? latePhrases(target.username) : earlyPhrases;
-          content = phrases[Math.floor(Math.random() * phrases.length)];
-        }
-
-        sendAiMessage(io, room, bot.username, content);
-      }, t3);
+      }, delay);
 
       if (!game.botTimeouts) game.botTimeouts = [];
-      game.botTimeouts.push(timeout1, timeout2, timeout3);
-    });
+      game.botTimeouts.push(timeout);
+    }
+
+    // 다른 봇들의 자연스러운 중간 보조 리액션 (API 미호출 템플릿으로 방 분위기 활성화)
+    if (aliveBots.length > 1) {
+      const helperBot = aliveBots[1];
+      const helperTimeout = setTimeout(() => {
+        const current = mafiaGames.get(room);
+        if (!current || current.phase !== 'day' || !helperBot.isAlive) return;
+        const msg = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
+        sendAiMessage(io, room, helperBot.username, msg);
+      }, 19000);
+
+      game.botTimeouts.push(helperTimeout);
+    }
   }
 
   function sendAiMessage(io, room, botName, content) {
