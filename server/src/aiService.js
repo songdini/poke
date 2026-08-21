@@ -1,20 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
-
-let aiClient = null;
-
-function getAiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  if (!aiClient) {
-    try {
-      aiClient = new GoogleGenAI({ apiKey });
-    } catch (err) {
-      console.error('[Gemini AI] 클라이언트 초기화 실패:', err.message);
-      return null;
-    }
-  }
-  return aiClient;
-}
+import axios from 'axios';
 
 export function isGeminiConfigured() {
   return !!process.env.GEMINI_API_KEY;
@@ -25,12 +9,59 @@ export function getGeminiModelName() {
 }
 
 /**
+ * 🌐 Google Gemini 공식 REST API 호출 헬퍼
+ * - 별도 SDK 설치 없이 기존 axios로 직접 호출하여 Ubuntu/Linux/Docker 등 모든 환경에서 100% 호환
+ */
+async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const modelName = getGeminiModelName();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
+    ],
+    generationConfig: {
+      temperature
+    }
+  };
+
+  if (jsonMode) {
+    payload.generationConfig.responseMimeType = 'application/json';
+  }
+
+  try {
+    const response = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 12000
+    });
+
+    const candidate = response.data?.candidates?.[0];
+    const rawText = candidate?.content?.parts?.[0]?.text;
+    if (!rawText) return null;
+
+    if (jsonMode) {
+      const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJson);
+    }
+
+    return rawText.trim();
+  } catch (err) {
+    const errMsg = err.response?.data?.error?.message || err.message;
+    console.error(`[Gemini REST API Error] (${modelName}):`, errMsg);
+    return null;
+  }
+}
+
+/**
  * 🤖 마피아 낮 토론 대화 생성 (Gemini LLM)
  */
 export async function generateMafiaDayChat({ bot, role, alivePlayers, chatHistory = [], knownInfo = {} }) {
-  const ai = getAiClient();
-  const modelName = getGeminiModelName();
-  if (!ai) return null;
+  if (!isGeminiConfigured()) return null;
 
   const aliveListStr = alivePlayers.map(p => `${p.username}${p.id === bot.id ? ' (나)' : ''}`).join(', ');
   const recentChats = chatHistory.slice(-12).map(c => `[${c.player || c.username}]: ${c.content}`).join('\n');
@@ -75,23 +106,9 @@ ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄
 }
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.8
-      }
-    });
-
-    const text = response.text;
-    const parsed = JSON.parse(text);
-    if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
-      return parsed.message.trim();
-    }
-  } catch (err) {
-    console.error(`[Gemini AI] 마피아 낮 대화 생성 실패 (${bot.username}):`, err.message);
+  const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
+  if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+    return parsed.message.trim();
   }
 
   return null;
@@ -101,9 +118,7 @@ ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄
  * 🗳️ 마피아 투표 지목 대상 결정 (Gemini LLM)
  */
 export async function generateMafiaVoteTarget({ bot, role, alivePlayers, chatHistory = [], knownInfo = {} }) {
-  const ai = getAiClient();
-  const modelName = getGeminiModelName();
-  if (!ai) return null;
+  if (!isGeminiConfigured()) return null;
 
   const candidates = alivePlayers.filter(p => p.id !== bot.id);
   if (candidates.length === 0) return null;
@@ -140,22 +155,9 @@ ${recentChats || '(채팅 없음)'}
 }
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
-      }
-    });
-
-    const parsed = JSON.parse(response.text);
-    if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
-      return parsed.targetId;
-    }
-  } catch (err) {
-    console.error(`[Gemini AI] 마피아 투표 결정 실패 (${bot.username}):`, err.message);
+  const parsed = await callGeminiAPI({ prompt, temperature: 0.3, jsonMode: true });
+  if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    return parsed.targetId;
   }
 
   return null;
@@ -165,9 +167,7 @@ ${recentChats || '(채팅 없음)'}
  * 🌙 마피아 야간 행동 결정 (마피아 암살, 의사 치료, 경찰 조사)
  */
 export async function generateMafiaNightAction({ bot, role, alivePlayers, knownInfo = {} }) {
-  const ai = getAiClient();
-  const modelName = getGeminiModelName();
-  if (!ai) return null;
+  if (!isGeminiConfigured()) return null;
 
   let candidates = [];
   if (role === 'mafia') {
@@ -201,22 +201,9 @@ ${candidateListStr}
 }
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.4
-      }
-    });
-
-    const parsed = JSON.parse(response.text);
-    if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
-      return parsed.targetId;
-    }
-  } catch (err) {
-    console.error(`[Gemini AI] 마피아 야간 행동 결정 실패 (${bot.username}):`, err.message);
+  const parsed = await callGeminiAPI({ prompt, temperature: 0.4, jsonMode: true });
+  if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    return parsed.targetId;
   }
 
   return null;
@@ -226,9 +213,7 @@ ${candidateListStr}
  * 🤥 라이어 게임 발언 힌트 생성 (Gemini LLM)
  */
 export async function generateLiarTalkMessage({ bot, isLiar, word, wordDef, players, chatHistory = [] }) {
-  const ai = getAiClient();
-  const modelName = getGeminiModelName();
-  if (!ai) return null;
+  if (!isGeminiConfigured()) return null;
 
   const playerListStr = players.map(p => p.username).join(', ');
   const recentChats = chatHistory.slice(-10).map(c => `[${c.username || c.player}]: ${c.message || c.content}`).join('\n');
@@ -269,22 +254,9 @@ ${recentChats || '(아직 이전 발언이 없습니다. 첫 번째 힌트를 �
 }
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.8
-      }
-    });
-
-    const parsed = JSON.parse(response.text);
-    if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
-      return parsed.message.trim();
-    }
-  } catch (err) {
-    console.error(`[Gemini AI] 라이어 발언 생성 실패 (${bot.username}):`, err.message);
+  const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
+  if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+    return parsed.message.trim();
   }
 
   return null;
@@ -294,9 +266,7 @@ ${recentChats || '(아직 이전 발언이 없습니다. 첫 번째 힌트를 �
  * 🗳️ 라이어 게임 라이어 지목 투표 (Gemini LLM)
  */
 export async function generateLiarVoteTarget({ bot, isLiar, word, players, chatHistory = [] }) {
-  const ai = getAiClient();
-  const modelName = getGeminiModelName();
-  if (!ai) return null;
+  if (!isGeminiConfigured()) return null;
 
   const candidates = players.filter(p => p.id !== bot.id);
   if (candidates.length === 0) return null;
@@ -330,22 +300,9 @@ ${fullChats || '(발언 없음)'}
 }
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
-      }
-    });
-
-    const parsed = JSON.parse(response.text);
-    if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
-      return parsed.targetId;
-    }
-  } catch (err) {
-    console.error(`[Gemini AI] 라이어 투표 결정 실패 (${bot.username}):`, err.message);
+  const parsed = await callGeminiAPI({ prompt, temperature: 0.3, jsonMode: true });
+  if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    return parsed.targetId;
   }
 
   return null;
