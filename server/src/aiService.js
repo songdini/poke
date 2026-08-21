@@ -1,22 +1,31 @@
 import axios from 'axios';
 
 export function isGeminiConfigured() {
-  return !!process.env.GEMINI_API_KEY;
+  return !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '';
 }
 
 export function getGeminiModelName() {
   return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 }
 
+function getMaskedApiKey(key) {
+  if (!key) return '(없음)';
+  if (key.length <= 8) return '****';
+  return key.substring(0, 6) + '...' + key.substring(key.length - 4);
+}
+
 /**
  * 🌐 Google Gemini 공식 REST API 호출 헬퍼
- * - 별도 SDK 설치 없이 기존 axios로 직접 호출하여 Ubuntu/Linux/Docker 등 모든 환경에서 100% 호환
  */
 async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   const modelName = getGeminiModelName();
+
+  if (!apiKey) {
+    console.warn('[Gemini AI] ⚠️ GEMINI_API_KEY 환경변수가 설정되지 않아 AI 응답을 건너뜁니다.');
+    return null;
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const payload = {
@@ -34,15 +43,25 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     payload.generationConfig.responseMimeType = 'application/json';
   }
 
+  const startTime = Date.now();
+  console.log(`[Gemini AI] 🚀 [${modelName}] API 요청 전송 중... (Key: ${getMaskedApiKey(apiKey)})`);
+
   try {
     const response = await axios.post(url, payload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 12000
+      timeout: 15000
     });
 
+    const elapsed = Date.now() - startTime;
     const candidate = response.data?.candidates?.[0];
     const rawText = candidate?.content?.parts?.[0]?.text;
-    if (!rawText) return null;
+
+    if (!rawText) {
+      console.warn(`[Gemini AI] ⚠️ 빈 응답 수신 (${elapsed}ms)`);
+      return null;
+    }
+
+    console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
 
     if (jsonMode) {
       const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -51,8 +70,10 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
 
     return rawText.trim();
   } catch (err) {
+    const elapsed = Date.now() - startTime;
+    const statusCode = err.response?.status;
     const errMsg = err.response?.data?.error?.message || err.message;
-    console.error(`[Gemini REST API Error] (${modelName}):`, errMsg);
+    console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || 'TIMEOUT'}, ${elapsed}ms):`, errMsg);
     return null;
   }
 }
@@ -108,6 +129,7 @@ ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
   if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+    console.log(`[Mafia AI] 💬 [${bot.username} (${role})] 대화 생성 완료: "${parsed.message.trim()}"`);
     return parsed.message.trim();
   }
 
@@ -157,6 +179,8 @@ ${recentChats || '(채팅 없음)'}
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.3, jsonMode: true });
   if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    const targetPlayer = candidates.find(c => c.id === parsed.targetId);
+    console.log(`[Mafia AI] 🗳️ [${bot.username} (${role})] 투표 대상 결정: "${targetPlayer?.username}" (이유: ${parsed.reason || '없음'})`);
     return parsed.targetId;
   }
 
@@ -203,6 +227,8 @@ ${candidateListStr}
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.4, jsonMode: true });
   if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    const targetPlayer = candidates.find(c => c.id === parsed.targetId);
+    console.log(`[Mafia AI] 🌙 [${bot.username} (${role})] 야간 행동 결정: "${targetPlayer?.username}" (이유: ${parsed.reason || '없음'})`);
     return parsed.targetId;
   }
 
@@ -256,6 +282,7 @@ ${recentChats || '(아직 이전 발언이 없습니다. 첫 번째 힌트를 �
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
   if (parsed && typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+    console.log(`[Liar AI] 💬 [${bot.username} (${isLiar ? '라이어' : '시민'})] 힌트 발언 생성: "${parsed.message.trim()}"`);
     return parsed.message.trim();
   }
 
@@ -302,6 +329,8 @@ ${fullChats || '(발언 없음)'}
 
   const parsed = await callGeminiAPI({ prompt, temperature: 0.3, jsonMode: true });
   if (parsed && parsed.targetId && candidates.some(c => c.id === parsed.targetId)) {
+    const targetPlayer = candidates.find(c => c.id === parsed.targetId);
+    console.log(`[Liar AI] 🗳️ [${bot.username}] 라이어 지목 투표: "${targetPlayer?.username}" (이유: ${parsed.reason || '없음'})`);
     return parsed.targetId;
   }
 
