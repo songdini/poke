@@ -68,7 +68,12 @@ const Chat: React.FC<ChatProps> = ({ username, room, onLeaveRoom }) => {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTo({
+        top: chatMessagesRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
     setHasUnreadBelow(false);
     setIsUserScrolledUp(false);
   };
@@ -249,7 +254,7 @@ const Chat: React.FC<ChatProps> = ({ username, room, onLeaveRoom }) => {
     const isAtBottom = scrollHeight - scrollTop - clientHeight <= 100;
 
     if (isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
       setHasUnreadBelow(false);
     } else {
       setHasUnreadBelow(true);

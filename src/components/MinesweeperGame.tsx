@@ -194,7 +194,7 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
                   {row.map((cell, c) => (
                     <td
                       key={c}
-                      className={`ms-cell ${cell.isOpen ? 'opened' : 'closed'} ${cell.isOpen && cell.isMine ? 'mine-exploded' : ''}`}
+                      className={`ms-cell ${cell.isOpen ? 'opened' : 'closed'} ${cell.isFlagged ? 'flagged' : ''} ${cell.isOpen && cell.isMine ? 'mine-exploded' : ''}`}
                       onClick={() => handleCellClick(r, c)}
                       onContextMenu={(e) => handleCellContextMenu(e, r, c)}
                       onMouseEnter={() => setSelectedCell({ r, c })}

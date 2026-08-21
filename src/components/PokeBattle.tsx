@@ -174,7 +174,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   const [showTypeChartModal, setShowTypeChartModal] = useState<boolean>(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<PokemonType | 'all'>('all');
 
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
   const playerTeamRef = useRef<PlayerTeam | null>(playerTeam);
   const enemyTeamRef = useRef<PlayerTeam | null>(enemyTeam);
 
@@ -187,7 +187,9 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
   }, [enemyTeam]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   // F4 Key for Emergency Pure Stealth Toggle
@@ -1404,7 +1406,7 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
           )}
 
           {/* 📊 BATTLE AUDIT LOG TABLE */}
-          <div className="poke-log-container">
+          <div className="poke-log-container" ref={logsContainerRef}>
             <div style={{ padding: '3px 8px', background: '#f3f2f1', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #d4d4d4', color: '#605e5c' }}>
               📋 AUDIT LOG DATA STREAM (Range: A15:G50)
             </div>
@@ -1415,7 +1417,6 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
                 <span>{log.text}</span>
               </div>
             ))}
-            <div ref={logsEndRef} />
           </div>
         </div>
       )}

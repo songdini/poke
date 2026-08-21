@@ -237,50 +237,67 @@
 }
 
 .ms-cell {
-  width: 30px;
-  height: 26px;
+  width: 32px;
+  height: 30px;
+  min-width: 32px;
   text-align: center;
   vertical-align: middle;
-  font-size: 0.88rem;
-  font-weight: 700;
-  border: 1px solid #d4d4d4;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-family: 'Segoe UI', 'Consolas', monospace;
   cursor: pointer;
   box-sizing: border-box;
-  transition: background 0.1s;
+  transition: background 0.1s, border-color 0.1s;
+  user-select: none;
 }
 
-/* 미개봉 셀 (평범한 엑셀 셀 디자인) */
+/* 🟦 미개봉 셀: 확실한 입체 버튼 느낌 (누르기 전 상태 구분 극대화) */
 .ms-cell.closed {
-  background: #f8f9fa;
-  border: 1px solid #d4d4d4;
+  background: #e2e8f0;
+  border-top: 2.5px solid #ffffff;
+  border-left: 2.5px solid #ffffff;
+  border-right: 2.5px solid #94a3b8;
+  border-bottom: 2.5px solid #94a3b8;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .ms-cell.closed:hover {
-  background: #e6f2eb;
-  outline: 1.5px solid #107c41;
-  outline-offset: -1px;
+  background: #cbd5e1;
+  border-top-color: #ffffff;
+  border-left-color: #ffffff;
+  border-right-color: #64748b;
+  border-bottom-color: #64748b;
 }
 
-/* 열린 셀 */
+/* 🚩 깃발 꽂힌 셀 */
+.ms-cell.closed.flagged {
+  background: #fef2f2;
+  font-size: 1.05rem;
+}
+
+/* ⬜ 열린 셀: 바닥으로 쏙 들어간 평평하고 깔끔한 흰색 배경 */
 .ms-cell.opened {
   background: #ffffff;
-  border: 1px solid #e1dfdd;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.06);
 }
 
+/* 💥 지뢰 폭발 셀 */
 .ms-cell.mine-exploded {
-  background: #fde7e9 !important;
-  border-color: #dc2626;
+  background: #fee2e2 !important;
+  border: 2px solid #dc2626 !important;
+  font-size: 1.15rem;
 }
 
-/* 클래식 지뢰찾기 숫자 색상 (엑셀 수식 데이터처럼 정갈하게) */
-.ms-num-1 { color: #2563eb; }
-.ms-num-2 { color: #16a34a; }
-.ms-num-3 { color: #dc2626; }
-.ms-num-4 { color: #1e40af; }
-.ms-num-5 { color: #991b1b; }
-.ms-num-6 { color: #0d9488; }
-.ms-num-7 { color: #1f2937; }
-.ms-num-8 { color: #6b7280; }
+/* 🎨 선명하고 직관적인 고대비 지뢰 숫자 색상 */
+.ms-num-1 { color: #1d4ed8; text-shadow: 0 0 1px rgba(29, 78, 216, 0.3); } /* 1: 진한 파랑 */
+.ms-num-2 { color: #15803d; text-shadow: 0 0 1px rgba(21, 128, 61, 0.3); } /* 2: 선명한 초록 */
+.ms-num-3 { color: #dc2626; text-shadow: 0 0 1px rgba(220, 38, 38, 0.3); } /* 3: 강렬한 빨강 */
+.ms-num-4 { color: #7c3aed; text-shadow: 0 0 1px rgba(124, 58, 237, 0.3); } /* 4: 돋보이는 보라 */
+.ms-num-5 { color: #b45309; text-shadow: 0 0 1px rgba(180, 83, 9, 0.3); }  /* 5: 진한 호박/주황 */
+.ms-num-6 { color: #0891b2; text-shadow: 0 0 1px rgba(8, 145, 178, 0.3); } /* 6: 밝은 청록 */
+.ms-num-7 { color: #111827; text-shadow: 0 0 1px rgba(17, 24, 39, 0.3); }  /* 7: 칠흑색 */
+.ms-num-8 { color: #64748b; text-shadow: 0 0 1px rgba(100, 116, 139, 0.3); } /* 8: 슬레이트 그레이 */
 
 /* 📑 Bottom Excel Sheet Tabs */
 .minesweeper-container .excel-sheet-tab-bar {

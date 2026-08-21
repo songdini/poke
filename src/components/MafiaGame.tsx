@@ -68,7 +68,8 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
 
   const [inputMessage, setInputMessage] = useState('');
   const socketRef = useRef<Socket | null>(socket);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
   const [attackedId, setAttackedId] = useState<string | null>(null);
   const [showVotePopup, setShowVotePopup] = useState(false);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
@@ -99,9 +100,11 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     };
   }, [socket, username, room]);
 
-  // 메시지 자동 스크롤
+  // 메시지 자동 스크롤 (컨테이너 내부만 스크롤하여 창 크기 조절 시 전체 화면 점프/출렁임 방지)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (shouldAutoScrollRef.current && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [gameState.messages]);
 
   // 투표 팝업 서버 이벤트 수신 (사망자 제외)
@@ -389,15 +392,20 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight > 80) {
-      setShowScrollBtn(true);
-    } else {
-      setShowScrollBtn(false);
-    }
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    shouldAutoScrollRef.current = isNearBottom;
+    setShowScrollBtn(!isNearBottom);
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+      shouldAutoScrollRef.current = true;
+      setShowScrollBtn(false);
+    }
   };
 
   return (
@@ -704,7 +712,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
               <span className="col-user">B: User_ID</span>
               <span className="col-msg">C: Audit Log Record</span>
             </div>
-            <div className="messages" onScroll={handleScroll}>
+            <div className="messages" ref={messagesContainerRef} onScroll={handleScroll}>
               {gameState.messages.map(message => (
                 <div key={message.id} className={`message ${message.type}`}>
                   <span className="timestamp">
@@ -720,7 +728,6 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
                   <span className="content">{message.content}</span>
                 </div>
               ))}
-              <div ref={messagesEndRef} />
               {showScrollBtn && (
                 <button onClick={scrollToBottom} className="excel-scroll-btn">
                   ⬇ Bottom Cell

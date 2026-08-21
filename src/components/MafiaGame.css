@@ -587,9 +587,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 280px;
-  height: 420px;
-  resize: vertical;
+  min-height: 180px;
   overflow: hidden;
   margin-top: 0;
   border-top: none;
@@ -622,6 +620,7 @@
 .mafia-game-container .messages {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
   background: #ffffff;
   border: 1px solid #d4d4d4;

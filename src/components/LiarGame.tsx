@@ -139,7 +139,8 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
 
   // 기타 UI
   const [error, setError] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
   const socketRef = useRef<Socket | null>(socket);
 
   const resetLiarGameState = () => {
@@ -245,8 +246,16 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     };
   }, [socket, username, room]);
 
+  const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    shouldAutoScrollRef.current = isNearBottom;
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (shouldAutoScrollRef.current && chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleGameStart = () => {
@@ -466,7 +475,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
               </div>
             )}
             <div className="excel-chat-container">
-              <div className="excel-chat-messages">
+              <div className="excel-chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
                 {messages.map((msg, index) => (
                   <div key={index} className={`excel-chat-row ${msg.username === username ? 'my-row' : ''}`}>
                     <span className="excel-chat-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
@@ -474,7 +483,6 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
                     <span className="excel-chat-text">{msg.message}</span>
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
               <div className="excel-chat-input-bar">
                 <span className="prefix">fx =</span>
