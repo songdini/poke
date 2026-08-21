@@ -707,9 +707,9 @@ export function registerMafiaHandlers(io, socket) {
       `🚨 무고한 시민이 억울하게 희생되지 않도록 데이터에 기반해서 투표해주세요.`
     ];
 
-    aliveBots.forEach((bot) => {
-      // 1. 초반 멘트 (6초 ~ 18초 사이)
-      const t1 = 6000 + Math.random() * 12000;
+    aliveBots.forEach((bot, botIdx) => {
+      // 1. 초반 멘트 (봇 간 6초 간격 분산)
+      const t1 = 5000 + (botIdx * 6000) + Math.random() * 3000;
       const timeout1 = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day' || !bot.isAlive) return;
@@ -732,8 +732,8 @@ export function registerMafiaHandlers(io, socket) {
         sendAiMessage(io, room, bot.username, content);
       }, t1);
 
-      // 2. 중반 멘트 (32초 ~ 50초 사이)
-      const t2 = 32000 + Math.random() * 18000;
+      // 2. 중반 멘트 (32초 이후 봇 간 7초 간격 분산)
+      const t2 = 32000 + (botIdx * 7000) + Math.random() * 4000;
       const timeout2 = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day' || !bot.isAlive) return;
@@ -759,8 +759,8 @@ export function registerMafiaHandlers(io, socket) {
         sendAiMessage(io, room, bot.username, content);
       }, t2);
 
-      // 3. 종반 멘트 (65초 ~ 78초 사이)
-      const t3 = 65000 + Math.random() * 13000;
+      // 3. 종반 멘트 (62초 이후 봇 간 6초 간격 분산)
+      const t3 = 62000 + (botIdx * 6000) + Math.random() * 4000;
       const timeout3 = setTimeout(async () => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'day' || !bot.isAlive) return;

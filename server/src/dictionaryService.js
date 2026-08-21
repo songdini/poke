@@ -106,19 +106,6 @@ export function getWordDefinition(word, item = null) {
   return `${word}은(는) 사전에 등재된 단어입니다.`;
 }
 
-export function getDefinitionChunks(definition, chunkSize = 3) {
-  if (!definition) return ['사전정'];
-  const clean = definition.replace(/[\r\n]+/g, ' ').trim();
-  const chunks = [];
-  for (let i = 0; i < clean.length; i += chunkSize) {
-    const chunk = clean.slice(i, i + chunkSize);
-    if (chunk.length > 0) {
-      chunks.push(chunk);
-    }
-  }
-  return chunks.length > 0 ? chunks : ['사전정'];
-}
-
 export const generateRandomKoreanWord = (length = 3) => {
   const chosung = [
     'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 

@@ -35,7 +35,8 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
       }
     ],
     generationConfig: {
-      temperature
+      temperature,
+      maxOutputTokens: 200
     }
   };
 
@@ -46,36 +47,46 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
   const startTime = Date.now();
   console.log(`[Gemini AI] 🚀 [${modelName}] API 요청 전송 중... (Key: ${getMaskedApiKey(apiKey)})`);
 
-  try {
-    const response = await axios.post(url, payload, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 15000
-    });
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await axios.post(url, payload, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 25000
+      });
 
-    const elapsed = Date.now() - startTime;
-    const candidate = response.data?.candidates?.[0];
-    const rawText = candidate?.content?.parts?.[0]?.text;
+      const elapsed = Date.now() - startTime;
+      const candidate = response.data?.candidates?.[0];
+      const rawText = candidate?.content?.parts?.[0]?.text;
 
-    if (!rawText) {
-      console.warn(`[Gemini AI] ⚠️ 빈 응답 수신 (${elapsed}ms)`);
+      if (!rawText) {
+        console.warn(`[Gemini AI] ⚠️ 빈 응답 수신 (${elapsed}ms)`);
+        return null;
+      }
+
+      console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
+
+      if (jsonMode) {
+        const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJson);
+      }
+
+      return rawText.trim();
+    } catch (err) {
+      const elapsed = Date.now() - startTime;
+      const statusCode = err.response?.status;
+      const errMsg = err.response?.data?.error?.message || err.message;
+
+      if (attempt === 1 && (err.code === 'ECONNABORTED' || err.message.includes('timeout'))) {
+        console.warn(`[Gemini AI Retry] ⏱️ 1차 시도 타임아웃 (${elapsed}ms), 재시도 중...`);
+        continue;
+      }
+
+      console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || 'TIMEOUT'}, ${elapsed}ms):`, errMsg);
       return null;
     }
-
-    console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
-
-    if (jsonMode) {
-      const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      return JSON.parse(cleanJson);
-    }
-
-    return rawText.trim();
-  } catch (err) {
-    const elapsed = Date.now() - startTime;
-    const statusCode = err.response?.status;
-    const errMsg = err.response?.data?.error?.message || err.message;
-    console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || 'TIMEOUT'}, ${elapsed}ms):`, errMsg);
-    return null;
   }
+
+  return null;
 }
 
 /**

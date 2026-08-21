@@ -1,5 +1,5 @@
 import { liarGames, connectedUsers } from '../gameManager.js';
-import { getLiarGameWords, getDefinitionChunks } from '../dictionaryService.js';
+import { getLiarGameWords } from '../dictionaryService.js';
 import { sanitizeChatMessage } from '../utils/sanitize.js';
 import {
   generateLiarTalkMessage,
@@ -288,8 +288,8 @@ function startTalkPhase(io, room) {
   // 🤖 AI 봇 힌트 발언 스케줄링 (Gemini LLM 실시간 생성 + 템플릿 폴백)
   const bots = game.players.filter(p => p.isBot);
   bots.forEach((bot, index) => {
-    // 1차 힌트 발언 (4초 ~ 18초 사이 분산)
-    const delay1 = (index + 1) * 3500 + Math.floor(Math.random() * 2000);
+    // 1차 힌트 발언 (봇 간 5초 간격 분산)
+    const delay1 = 4000 + (index * 5500) + Math.floor(Math.random() * 2500);
     const timeout1 = setTimeout(async () => {
       const currentGame = liarGames.get(room);
       if (!currentGame || currentGame.phase !== 'talk') return;
@@ -307,8 +307,21 @@ function startTalkPhase(io, room) {
       }
 
       if (!phrase) {
-        const chunks = getDefinitionChunks(bot.wordDef || '사전정', 3);
-        phrase = chunks[Math.floor(Math.random() * Math.min(chunks.length, 3))] || chunks[0] || '사전정';
+        const citizenFallbacks = [
+          '일상에서 누구나 쉽게 접할 수 있는 익숙한 대상이에요.',
+          '특징이나 용도가 꽤 뚜렷해서 다들 바로 아실 것 같아요.',
+          '생각보다 우리 주변에서 정말 자주 볼 수 있는 겁니다.',
+          '크기나 모양을 떠올리면 직관적으로 연상되는 대상이에요.',
+          '솔직히 다들 한 번쯤은 직접 보거나 사용해보셨을 것 같네요.'
+        ];
+        const liarFallbacks = [
+          '다들 말씀하시는 걸 들어보니 어떤 느낌인지 딱 감이 오네요!',
+          '저도 평소에 꽤 익숙하게 생각하고 자주 접하는 편입니다.',
+          '호불호가 크게 갈리지 않고 대중적으로 널리 알려진 것 같아요.',
+          '설명들을 들어보니 다들 바로 눈치채신 것 같아서 저도 공감합니다.'
+        ];
+        const pool = bot.isLiar ? liarFallbacks : citizenFallbacks;
+        phrase = pool[Math.floor(Math.random() * pool.length)];
       }
 
       const msgObj = {
@@ -327,8 +340,8 @@ function startTalkPhase(io, room) {
       });
     }, delay1);
 
-    // 2차 추가 대화 발언 (45초 ~ 80초 사이 추가 인터랙션)
-    const delay2 = 45000 + (index * 6000) + Math.floor(Math.random() * 5000);
+    // 2차 추가 대화 발언 (45초 이후 봇 간 7초 간격 분산)
+    const delay2 = 45000 + (index * 7000) + Math.floor(Math.random() * 4000);
     const timeout2 = setTimeout(async () => {
       const currentGame = liarGames.get(room);
       if (!currentGame || currentGame.phase !== 'talk') return;
