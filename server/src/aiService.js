@@ -15,6 +15,47 @@ function getMaskedApiKey(key) {
 }
 
 /**
+ * 🛠️ LLM 응답 텍스트에서 안전하게 JSON을 추출 및 복구 파싱하는 헬퍼
+ */
+function extractAndParseJSON(rawText) {
+  if (!rawText || typeof rawText !== 'string') return null;
+  const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // 1. 순수 JSON 파싱 시도
+  try {
+    return JSON.parse(clean);
+  } catch (e) {}
+
+  // 2. 문자열 내부에서 최외곽 {...} 객체 블록 추출 파싱
+  const jsonMatch = clean.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch (e) {}
+  }
+
+  // 3. JSON이 미완성이거나 잘렸을 경우 정규식으로 message/targetId 필드 복구
+  const messageMatch = clean.match(/"message"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i) ||
+                       clean.match(/"message"\s*:\s*'([^'\\]*(?:\\.[^'\\]*)*)'/i) ||
+                       clean.match(/"message"\s*:\s*([^,}\n]+)/i);
+  if (messageMatch) {
+    return { message: messageMatch[1].replace(/\\"/g, '"').trim() };
+  }
+
+  const targetIdMatch = clean.match(/"targetId"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+  if (targetIdMatch) {
+    return { targetId: targetIdMatch[1].trim() };
+  }
+
+  // 4. 모델이 JSON 형식을 무시하고 평문 텍스트만 보냈을 때 평문을 메시지로 자동 변환
+  if (clean.length > 0 && !clean.startsWith('{') && !clean.startsWith('[')) {
+    return { message: clean };
+  }
+
+  return null;
+}
+
+/**
  * 🌐 Google Gemini 공식 REST API 호출 헬퍼
  */
 async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
@@ -36,7 +77,7 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     ],
     generationConfig: {
       temperature,
-      maxOutputTokens: 200
+      maxOutputTokens: 500
     }
   };
 
@@ -66,8 +107,11 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
       console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
 
       if (jsonMode) {
-        const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJson);
+        const parsed = extractAndParseJSON(rawText);
+        if (!parsed) {
+          console.warn(`[Gemini AI Parse Warning] ⚠️ JSON 파싱 불가, 원문: "${rawText.substring(0, 100)}..."`);
+        }
+        return parsed;
       }
 
       return rawText.trim();
@@ -81,7 +125,7 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
         continue;
       }
 
-      console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || 'TIMEOUT'}, ${elapsed}ms):`, errMsg);
+      console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || (err.code === 'ECONNABORTED' ? 'TIMEOUT' : 'REQ_ERROR')}, ${elapsed}ms):`, errMsg);
       return null;
     }
   }
