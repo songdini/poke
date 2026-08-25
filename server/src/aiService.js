@@ -18,6 +18,32 @@ let rateLimitCooldownUntil = 0;
 let lastApiCallTimestamp = 0;
 const MIN_API_CALL_INTERVAL_MS = 25000; // ⚡ 봇 간 25초 최소 호출 간격 보장 (429 Quota 방지)
 
+// 🚫 대화로 출력되면 안 되는 JSON 키 및 기술 용어 블랙리스트
+const BANNED_WORDS = new Set([
+  'message', 'targetid', 'reason', 'hint', 'hints', 'draft', 'thought', 'null', 'undefined', 'none', 'response', 'type', 'output', 'json'
+]);
+
+/**
+ * 🇰🇷 유효한 한국어 대화 문장인지 검증
+ */
+export function isValidKoreanSpeech(text) {
+  if (!text || typeof text !== 'string') return false;
+  const trimmed = text.trim();
+  if (trimmed.length < 2) return false;
+
+  // 1. 단독 일치 금지어 검사
+  const lower = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (BANNED_WORDS.has(lower)) return false;
+
+  // 2. 최소 1글자 이상의 한글이 포함되어 있어야 함
+  if (!/[가-힣]/.test(trimmed)) return false;
+
+  // 3. 영문 슬래시(/Hints for, // 등)나 주석으로 시작하는 이상 문자열 제외
+  if (/^[\/\*\#\-]/.test(trimmed)) return false;
+
+  return true;
+}
+
 /**
  * 🧹 따옴표, 마크다운, 내부 생각 잔여물 등을 깨끗하게 제거하는 메시지 정제기
  */
@@ -31,27 +57,30 @@ export function cleanMessage(text) {
   // 2. 내부 추론 과정(Thought / Draft / 1. ...) 라인 분리 및 정리
   const lines = clean.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length > 1) {
-    // 만약 여러 줄이 들어왔다면 '마지막 유의미한 대화 줄'을 선택
-    const lastCandidate = lines[lines.length - 1];
-    if (lastCandidate && !lastCandidate.startsWith('*') && !lastCandidate.startsWith('1.') && !lastCandidate.startsWith('2.') && !lastCandidate.startsWith('3.')) {
-      clean = lastCandidate;
+    // 만약 여러 줄이 들어왔다면 '한글이 포함된 마지막 유효한 줄'을 선택
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i];
+      if (/[가-힣]/.test(line) && !line.startsWith('*') && !line.startsWith('1.') && !line.startsWith('2.') && !line.startsWith('//') && !line.startsWith('/')) {
+        clean = line;
+        break;
+      }
     }
   }
 
-  // 3. 앞뒤 따옴표, 콜론, 별표, 마크다운 기호 제거
-  clean = clean.replace(/^[:"'`\s\*\-]+/, '').replace(/[:"'`\s\*\-]+$/, '').trim();
+  // 3. 앞뒤 따옴표, 콜론, 별표, 마크다운 기호, 슬래시 제거
+  clean = clean.replace(/^[:"'`\s\*\-\/\#]+/, '').replace(/[:"'`\s\*\-\/\#]+$/, '').trim();
 
   // 4. 쌍따옴표가 중복으로 씌워져 있는 경우 정리 (""Data_Bot님" -> Data_Bot님)
   while ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
     clean = clean.slice(1, -1).trim();
   }
 
-  // 5. 앞머리에 붙은 영문 접두사(/Short):*, Draft: 등) 제거
+  // 5. 앞머리에 붙은 영문 접두사(/Hints for, Short):*, Draft: 등) 제거
   clean = clean.replace(/^[\(\/\*\s]*[A-Za-z0-9_\-\/]+\s*[:\)]\s*\*?\s*/, '').trim();
-  clean = clean.replace(/^[:"'`\s\*\-]+/, '').replace(/[:"'`\s\*\-]+$/, '').trim();
+  clean = clean.replace(/^[:"'`\s\*\-\/\#]+/, '').replace(/[:"'`\s\*\-\/\#]+$/, '').trim();
 
-  // 6. 영어 내부 생각 문장만 있거나(result yet anyway...) 1글자 이하면 필터링
-  if (clean.length < 2 || (/^[A-Za-z0-9\s_\-\*\.\(\)\:\,\'\"]+$/.test(clean) && !/[가-힣]/.test(clean) && clean.length > 15)) {
+  // 6. 금지어 및 유효성 검사
+  if (!isValidKoreanSpeech(clean)) {
     return '';
   }
 
@@ -64,15 +93,20 @@ export function cleanMessage(text) {
 function extractAndParseJSON(rawText) {
   if (!rawText || typeof rawText !== 'string') return null;
 
-  // 1. rawText 내부의 모든 {...} JSON 블록 추출 시도
-  const jsonBlocks = rawText.match(/\{[\s\S]*?\}/g) || [];
-  for (const block of jsonBlocks) {
+  // 1. JSON 블록 {...} 파싱 시도
+  const cleanCodeBlock = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const startIdx = cleanCodeBlock.indexOf('{');
+  const endIdx = cleanCodeBlock.lastIndexOf('}');
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    const jsonStr = cleanCodeBlock.substring(startIdx, endIdx + 1);
     try {
-      const parsed = JSON.parse(block);
+      const parsed = JSON.parse(jsonStr);
       if (parsed) {
-        if (parsed.message) parsed.message = cleanMessage(parsed.message);
-        if (parsed.targetId) parsed.targetId = parsed.targetId.trim();
-        return parsed;
+        if (parsed.message) {
+          const msg = cleanMessage(parsed.message);
+          if (isValidKoreanSpeech(msg)) return { ...parsed, message: msg };
+        }
+        if (parsed.targetId) return { ...parsed, targetId: parsed.targetId.trim() };
       }
     } catch (e) {}
   }
@@ -81,26 +115,22 @@ function extractAndParseJSON(rawText) {
   const msgRegex = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/i;
   const msgMatch = rawText.match(msgRegex);
   if (msgMatch && msgMatch[1]) {
-    return { message: cleanMessage(msgMatch[1].replace(/\\"/g, '"').replace(/\\n/g, ' ')) };
+    const msg = cleanMessage(msgMatch[1].replace(/\\"/g, '"').replace(/\\n/g, ' '));
+    if (isValidKoreanSpeech(msg)) {
+      return { message: msg };
+    }
   }
 
   // 3. 정규식으로 "targetId": "..." 추출
-  const targetRegex = /"targetId"\s*:\s*"((?:[^"\\]|\\.)*)"/i;
+  const targetRegex = /"targetId"\s*:\s*"([A-Za-z0-9_\-]+)"/i;
   const targetMatch = rawText.match(targetRegex);
   if (targetMatch && targetMatch[1]) {
     return { targetId: targetMatch[1].trim() };
   }
 
-  // 4. 따옴표로 감싸진 대화 추출 (예: "Copilot님 말 끊긴 거 수상한데요?")
-  const quoteMatches = [...rawText.matchAll(/"([^"\n]{4,120})"/g)];
-  if (quoteMatches.length > 0) {
-    const lastQuote = quoteMatches[quoteMatches.length - 1][1];
-    return { message: cleanMessage(lastQuote) };
-  }
-
-  // 5. 일반 평문 텍스트 클리닝 후 반환
+  // 4. 일반 평문 텍스트 클리닝 후 한국어 대화 검증
   const cleanPlain = cleanMessage(rawText);
-  if (cleanPlain && cleanPlain.length > 0 && !cleanPlain.includes('Draft') && !cleanPlain.includes('Refining')) {
+  if (isValidKoreanSpeech(cleanPlain)) {
     return { message: cleanPlain };
   }
 
@@ -110,7 +140,7 @@ function extractAndParseJSON(rawText) {
 /**
  * 🌐 Google Gemini 공식 REST API 호출 헬퍼
  */
-async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
+async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jsonMode = true }) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   const modelName = getGeminiModelName();
 
@@ -144,12 +174,15 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
     ],
     generationConfig: {
       temperature,
-      maxOutputTokens: 300,
-      thinkingConfig: {
-        thinkingBudget: 0
-      }
+      maxOutputTokens: 350
     }
   };
+
+  if (systemInstruction) {
+    payload.systemInstruction = {
+      parts: [{ text: systemInstruction }]
+    };
+  }
 
   if (jsonMode) {
     payload.generationConfig.responseMimeType = 'application/json';
@@ -180,12 +213,13 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
       if (jsonMode) {
         const parsed = extractAndParseJSON(rawText);
         if (!parsed) {
-          console.warn(`[Gemini AI Parse Warning] ⚠️ JSON 파싱 불가, 원문: "${rawText.substring(0, 100)}..."`);
+          console.warn(`[Gemini AI Parse Warning] ⚠️ JSON 파싱 불가 또는 부적절한 응답, 원문: "${rawText.substring(0, 120)}..."`);
         }
         return parsed;
       }
 
-      return cleanMessage(rawText);
+      const clean = cleanMessage(rawText);
+      return isValidKoreanSpeech(clean) ? clean : null;
     } catch (err) {
       const elapsed = Date.now() - startTime;
       const statusCode = err.response?.status;
@@ -198,9 +232,9 @@ async function callGeminiAPI({ prompt, temperature = 0.7, jsonMode = true }) {
         return null;
       }
 
-      // thinkingConfig 미지원 모델로 400 에러 시 제거 후 1회 재시도
-      if (statusCode === 400 && payload.generationConfig?.thinkingConfig) {
-        delete payload.generationConfig.thinkingConfig;
+      // systemInstruction 미지원 시 제거 후 재시도
+      if (statusCode === 400 && payload.systemInstruction) {
+        delete payload.systemInstruction;
         continue;
       }
 
@@ -241,14 +275,16 @@ export async function generateMafiaDayChat({ bot, role, alivePlayers, chatHistor
     roleSecret = '당신은 무고한 시민입니다. 대화 로그를 잘 읽고 누가 부자연스럽거나 마피아처럼 유도하는지 추리하여 의견을 제시하세요.';
   }
 
-  const prompt = `
-당신은 실시간 웹 마피아 게임에 참여 중인 플레이어 "${bot.username}"입니다.
-오피스/스텔스 컨셉(엑셀 데이터 분석가, IT 직장인 톤) 또는 자연스러운 한국인 게이머 말투로 대화합니다.
+  const systemInstruction = `당신은 한국어 온라인 마피아 게임의 플레이어 "${bot.username}"입니다.
+규칙:
+1. 절대로 영어, 주석(//, /*), 'message' 등의 단어를 대화로 출력하지 마세요.
+2. 1~2문장의 자연스럽고 센스 있는 한국어 대화만 작성하세요.
+3. 반드시 {"message": "한국어 대화 내용"} 형식의 JSON으로만 출력하세요.`;
 
-[게임 상태]
-- 당신의 이름: ${bot.username}
-- 당신의 직업: ${role}
-- 현재 페이즈: 낮 대화 및 추리 토론
+  const prompt = `
+[마피아 게임 낮 토론 시간]
+- 당신의 이름: "${bot.username}"
+- 당신의 직업: "${role}"
 - 생존 플레이어: ${aliveListStr}
 
 [비밀 역할 지침]
@@ -257,19 +293,16 @@ ${roleSecret}
 [최근 채팅 로그]
 ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄우거나 첫 의견을 제시하세요.)'}
 
-[요청 사항]
-1. 실제 사람처럼 1~2문장의 짧고 임팩트 있는 한국어 채팅을 작성하세요. 너무 길거나 AI 티가 나지 않게 작성하세요.
-2. 이전 대화 맥락과 다른 플레이어들의 발언을 직접 언급하거나 반응하세요.
-3. 반드시 아래 JSON 형식으로만 출력하세요:
+반드시 아래 JSON 형식으로만 실제 한국어 대화를 출력하세요:
 {
-  "message": "채팅창에 보낼 메시지 (1~2문장)"
+  "message": "실제 채팅창에 보낼 한국어 1~2문장"
 }
 `;
 
-  const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
+  const parsed = await callGeminiAPI({ prompt, systemInstruction, temperature: 0.8, jsonMode: true });
   if (parsed && typeof parsed.message === 'string') {
     const cleaned = cleanMessage(parsed.message);
-    if (cleaned.length >= 2) {
+    if (isValidKoreanSpeech(cleaned)) {
       console.log(`[Mafia AI] 💬 [${bot.username} (${role})] 대화 생성 완료: "${cleaned}"`);
       return cleaned;
     }
@@ -384,48 +417,67 @@ export async function generateLiarTalkMessage({ bot, isLiar, word, wordDef, play
   if (!isGeminiConfigured()) return null;
 
   const playerListStr = players.map(p => p.username).join(', ');
-  const recentChats = chatHistory.slice(-10).map(c => `[${c.username || c.player}]: ${c.message || c.content}`).join('\n');
+  const recentChats = chatHistory.slice(-8).map(c => `[${c.username || c.player}]: ${c.message || c.content}`).join('\n');
 
   let roleInstruction = '';
   if (!isLiar) {
     roleInstruction = `
-당신은 '시민'입니다!
-- 진짜 제시어: "${word}" (사전 의미: ${wordDef || '일상 명사'})
-- 역할 지침: 제시어를 모르는 라이어에게 정답을 직접적으로 들키지 않으면서도, 다른 시민들은 이해할 수 있는 재치 있고 은근한 힌트(특징, 느낌, 쓰임새, 경험 등)를 1문장으로 말하세요.
-- ⚠️ 절대 단어 "${word}" 자체를 직접 언급하거나 너무 노골적인 설명은 피하세요!
+[당신의 역할: 시민 (제시어를 알고 있음)]
+- 당신이 알고 있는 제시어: "${word}"
+- 제시어 사전 정의: ${wordDef || '일상 단어'}
+- 발언 지침:
+  1. 라이어에게 단어를 직접 들키지 않도록, 단어 이름("${word}")을 절대로 직접 언급하지 마세요.
+  2. 단어의 은근한 특징, 느낌, 쓰임새, 경험담 등을 1문장으로 자연스럽게 설명하세요.
+  3. "message", "/Hints for", 영어 주석(//) 등은 절대 쓰지 마세요.
+- 좋은 예시:
+  * "우리 일상에서 정말 자주 볼 수 있고 없으면 꽤 불편하죠."
+  * "모양이나 쓰임새가 뚜렷해서 다들 한 번쯤은 직접 보셨을 거예요."
+  * "계절이나 장소에 따라 생각나는 느낌이 조금씩 다를 수 있겠네요."
 `;
   } else {
     roleInstruction = `
-당신은 '라이어(Liar)'입니다!
-- ⚠️ 당신은 진짜 제시어를 모릅니다! (당신에게 주어지는 가짜 단어는 "${word}"입니다).
-- 역할 지침: 다른 시민들의 이전 발언 로그를 주의 깊게 읽고, 대략 어떤 느낌/범주의 단어인지 눈치껏 파악하여 들키지 않도록 자연스럽고 그럴듯한 1문장 힌트를 말하세요.
-- "저도 일상에서 자주 접하는 편이에요", "약간 호불호가 갈릴 수도 있죠", "요즘 같은 때 특히 생각나네요" 같이 자연스럽게 공감대를 형성하세요.
+[당신의 역할: 라이어 (제시어를 모름)]
+- 가짜 단어: "${word}" (실제 정답은 모름)
+- 발언 지침:
+  1. 정답을 모른다는 사실을 들키지 않도록, 이전 사람들의 발언 분위기를 타며 공감하는 그럴듯한 1문장 힌트를 말하세요.
+  2. "message", "/Hints for", 영어 주석(//) 등은 절대 쓰지 마세요.
+- 좋은 예시:
+  * "다들 말씀하시는 거 들어보니까 어떤 느낌인지 딱 감이 오네요!"
+  * "저도 평소에 자주 접하는 편이라 꽤 친숙한 느낌이에요."
+  * "호불호가 크게 갈리지 않고 대중적으로 널리 알려진 것 같아요."
 `;
   }
 
+  const systemInstruction = `당신은 한국어 온라인 라이어 게임에 참여 중인 한국인 게이머입니다.
+규칙:
+1. 절대로 영어, 주석(//, /*), 'message' 등의 단어를 대화로 출력하지 마세요.
+2. 1문장의 자연스럽고 센스 있는 한국어 힌트 대화만 작성하세요.
+3. 반드시 {"message": "한국어 힌트 문장"} 형식의 JSON으로만 출력하세요.`;
+
   const prompt = `
-당신은 실시간 웹 라이어 게임에 참여 중인 플레이어 "${bot.username}"입니다.
-한국인 게이머 말투로 자연스럽고 재치 있는 1문장의 힌트 발언을 작성하세요.
+[라이어 게임 플레이어 발언 턴]
+플레이어 이름: "${bot.username}"
 
 [게임 참가자]
 ${playerListStr}
 
-[당신의 역할 및 지침]
+[역할 및 지침]
 ${roleInstruction}
 
-[지금까지의 플레이어들 발언 기록]
-${recentChats || '(아직 이전 발언이 없습니다. 첫 번째 힌트를 제시하세요.)'}
+[지금까지의 플레이어 발언 기록]
+${recentChats || '(첫 번째 발언 순서입니다)'}
 
-반드시 아래 JSON 형식으로만 출력하세요:
+⚠️ 주의: 절대로 영어 주석, 영단어(/Hints for...), 'message'라는 글자 자체를 출력하지 마세요.
+반드시 아래 JSON 형식으로만 실제 한국어 발언 1문장을 출력하세요:
 {
-  "message": "발언할 힌트 내용 (1문장, 자연스러운 한국어)"
+  "message": "실제 채팅창에 입력할 자연스러운 한국어 1문장"
 }
 `;
 
-  const parsed = await callGeminiAPI({ prompt, temperature: 0.8, jsonMode: true });
+  const parsed = await callGeminiAPI({ prompt, systemInstruction, temperature: 0.7, jsonMode: true });
   if (parsed && typeof parsed.message === 'string') {
     const cleaned = cleanMessage(parsed.message);
-    if (cleaned.length >= 2) {
+    if (isValidKoreanSpeech(cleaned)) {
       console.log(`[Liar AI] 💬 [${bot.username} (${isLiar ? '라이어' : '시민'})] 힌트 발언 생성: "${cleaned}"`);
       return cleaned;
     }
@@ -481,3 +533,4 @@ ${fullChats || '(발언 없음)'}
 
   return null;
 }
+

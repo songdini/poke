@@ -18,12 +18,14 @@ export const roomMessages = new Map();
 
 export function checkMafiaGameEnd(io, room) {
   const game = mafiaGames.get(room);
-  if (!game || !game.gameStarted || game.phase === 'game-over') return;
+  if (!game || !game.gameStarted || game.phase === 'game-over') return false;
 
-  // 세션이 살아있고 (연결 상태) isAlive === true인 유효 생존 플레이어 측정
+  // 🤖 AI 봇(p.isBot)은 소켓 세션이 없으므로 무조건 포함, 실제 유저는 소켓 연결 상태 확인
   const activeAlivePlayers = game.players.filter(p => {
+    if (!p.isAlive) return false;
+    if (p.isBot) return true;
     const session = connectedUsers.get(p.id);
-    return p.isAlive && session && session.isConnected !== false;
+    return session && session.isConnected !== false;
   });
 
   const aliveMafia = activeAlivePlayers.filter(p => p.role === 'mafia');
@@ -35,13 +37,17 @@ export function checkMafiaGameEnd(io, room) {
       type: 'game-over',
       data: { winner: 'citizens', message: '🎉 모든 마피아가 제거되었습니다! 시민 팀의 승리입니다!' }
     });
+    return true;
   } else if (aliveCitizens.length <= aliveMafia.length) {
     game.phase = 'game-over';
     io.to(room).emit('mafia-update', {
       type: 'game-over',
       data: { winner: 'mafia', message: '🕵️ 마피아 수가 시민 수 이상입니다! 마피아 팀의 승리입니다!' }
     });
+    return true;
   }
+
+  return false;
 }
 
 // 🖼️ 24시간 지난 오래된 업로드 이미지 파일 자동 정리 (디스크 용량 확보)

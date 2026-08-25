@@ -165,29 +165,33 @@ export function registerLiarHandlers(io, socket) {
 
   socket.on('liar-message', (messageData) => {
     if (!messageData || typeof messageData !== 'object') return;
-    const { room, message: rawMessage } = messageData;
-    const user = connectedUsers.get(socket.id);
+    const { room, message: rawMessage, username: fallbackUsername } = messageData;
+    if (!room || !rawMessage) return;
+
     const game = liarGames.get(room);
+    if (!game) return;
 
-    if (user && user.gameType === 'liar' && game && game.phase === 'talk' && rawMessage) {
-      const message = sanitizeChatMessage(rawMessage, 500);
-      if (!message || message.trim() === '') return;
+    const user = connectedUsers.get(socket.id);
+    const player = game.players?.find(p => p.id === socket.id);
+    const senderName = user?.username || player?.username || fallbackUsername || '플레이어';
 
-      const chatItem = {
-        username: user.username,
-        message,
-        timestamp: new Date().toISOString()
-      };
+    const message = sanitizeChatMessage(rawMessage, 500);
+    if (!message || message.trim() === '') return;
 
-      if (!game.chatHistory) game.chatHistory = [];
-      game.chatHistory.push(chatItem);
-      if (game.chatHistory.length > 40) game.chatHistory.shift();
+    const chatItem = {
+      username: senderName,
+      message,
+      timestamp: new Date().toISOString()
+    };
 
-      io.to(room).emit('liar-update', {
-        type: 'message',
-        data: chatItem
-      });
-    }
+    if (!game.chatHistory) game.chatHistory = [];
+    game.chatHistory.push(chatItem);
+    if (game.chatHistory.length > 50) game.chatHistory.shift();
+
+    io.to(room).emit('liar-update', {
+      type: 'message',
+      data: chatItem
+    });
   });
 
   socket.on('liar-vote', ({ room, targetId }) => {

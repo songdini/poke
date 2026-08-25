@@ -260,16 +260,21 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
 
   const handleGameStart = () => {
     setPhase('starting');
-    socketRef.current?.emit('liar-game-start', { room });
+    const activeSocket = socket || socketRef.current;
+    activeSocket?.emit('liar-game-start', { room });
   };
 
   const handleSendMessage = () => {
     if (!currentMessage.trim()) return;
 
-    socketRef.current?.emit('liar-message', {
-      room,
-      message: currentMessage.trim()
-    });
+    const activeSocket = socket || socketRef.current;
+    if (activeSocket) {
+      activeSocket.emit('liar-message', {
+        room,
+        username,
+        message: currentMessage.trim()
+      });
+    }
 
     setCurrentMessage('');
   };
@@ -280,73 +285,114 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     setVoteTarget(targetId);
     setHasVoted(true);
 
-    socketRef.current?.emit('liar-vote', {
+    const activeSocket = socket || socketRef.current;
+    activeSocket?.emit('liar-vote', {
       room,
       targetId
     });
   };
 
   const handleRestart = () => {
-    socketRef.current?.emit('liar-game-restart', { room });
+    const activeSocket = socket || socketRef.current;
+    activeSocket?.emit('liar-game-restart', { room });
   };
 
   const handleAddBot = () => {
-    socketRef.current?.emit('liar-add-bot', { room });
+    const activeSocket = socket || socketRef.current;
+    activeSocket?.emit('liar-add-bot', { room });
   };
 
   const handleRemoveBot = (botId?: string) => {
-    socketRef.current?.emit('liar-remove-bot', { room, botId });
+    const activeSocket = socket || socketRef.current;
+    activeSocket?.emit('liar-remove-bot', { room, botId });
   };
 
-  const myPlayer = players.find(p => p.username === username);
-  const isHost = myPlayer?.isHost || false;
+  const isHost = players.find(p => p.username === username)?.isHost ?? false;
+
+  const renderChatComponent = (customPlaceholder = '메시지를 입력하세요 (Enter)...') => (
+    <div className="excel-chat-container">
+      <div className="excel-chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
+        {messages.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#8a8886', padding: '16px', fontSize: '0.82rem' }}>
+            💬 아직 채팅 기록이 없습니다. 자유롭게 대화나 힌트를 입력해 보세요!
+          </div>
+        ) : (
+          messages.map((msg, index) => (
+            <div key={index} className={`excel-chat-row ${msg.username === username ? 'my-row' : ''}`}>
+              <span className="excel-chat-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              <span className="excel-chat-user">{msg.username}:</span>
+              <span className="excel-chat-text">{msg.message}</span>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="excel-chat-input-bar">
+        <span className="prefix">fx =</span>
+        <input
+          type="text"
+          value={currentMessage}
+          onChange={e => setCurrentMessage(e.target.value)}
+          placeholder={customPlaceholder}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+        />
+        <button className="excel-btn primary" onClick={handleSendMessage} disabled={!currentMessage.trim()}>
+          <Send size={14} /> 전송
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="liar-game-container excel-stealth-theme">
       {/* 📊 Excel Formula Bar */}
       <div className="excel-formula-bar">
-        <div className="excel-name-box">Sheet1!A1</div>
+        <div className="excel-name-box">
+          A1: LIAR_AUDIT
+        </div>
         <div className="excel-fx-icon">fx</div>
         <div className="excel-formula-input">
-          {phase === 'waiting' && `=SUM(PLAYERS_READY) & " / " & COUNT(PLAYERS_TOTAL)`}
-          {phase === 'word-input' && `=QUERY_WORD_DICTIONARY(CATEGORY_ALL)`}
-          {phase === 'word-distribute' && `=VLOOKUP(USER, SECRET_WORD_DB, 2, FALSE)`}
-          {phase === 'talk' && `=COUNTDOWN_TIMER(${timer}) & " - DISCUSS_LIAR()"`}
-          {phase === 'vote' && `=VOTE_CAST(USER_SELECTION, ACTIVE_VOTES)`}
-          {phase === 'result' && `=IF(WINNER="CITIZENS", "CITIZEN_VICTORY", "LIAR_VICTORY")`}
-          {phase === 'starting' && `=QUERY_DATABASE("WORD_DICT_INDEXING...")`}
+          =LIAR_GAME.SESSION(Phase="{phase.toUpperCase()}", Room="{room}", Members={players.length}, MyWord={showMyWord ? (myWord ? `"${myWord}"` : '"LIAR"') : '"***"'})
         </div>
       </div>
 
       {/* 📋 Sheet Header Bar */}
       <div className="game-header">
         <div className="sheet-title-info">
-          <span style={{ fontSize: '1.2rem' }}>🤥</span>
-          <h2>Sheet1_LiarCheck.xlsx</h2>
+          <h2>📊 WORKBOOK: LIAR_ANALYSIS_{room}.xlsx</h2>
         </div>
         <div className="game-info">
           <span className="excel-cell-badge phase">
-            단계: {phase === 'waiting' ? '대기 중' : phase === 'talk' ? '대화 시간' : phase === 'vote' ? '투표 진행' : phase === 'result' ? '게임 결과' : '진행 중'}
+            페이즈: {
+              phase === 'waiting' ? '대기 중' :
+              phase === 'starting' ? '세션 준비' :
+              phase === 'word-input' ? '단어 생성' :
+              phase === 'word-distribute' ? '제시어 확인' :
+              phase === 'talk' ? '대화 및 심문' :
+              phase === 'vote' ? '라이어 투표' : '결과 발표'
+            }
           </span>
           {phase === 'talk' && (
-            <span className="excel-cell-badge timer">
-              <Clock size={14} /> {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
+            <span className="excel-cell-badge timer" style={{ color: timer <= 30 ? '#a80000' : '#107c41', fontWeight: 700 }}>
+              <Clock size={14} /> {timer}초 남음
             </span>
           )}
-          <span className="excel-cell-badge">방 #{room}</span>
-          <span className="excel-cell-badge">USER: {username}</span>
           {onLeaveRoom && (
-            <button onClick={onLeaveRoom} className="excel-btn close">
-              🚪 나가기
+            <button className="excel-btn close" onClick={onLeaveRoom}>
+              ✕ 나가기 (Close)
             </button>
           )}
         </div>
       </div>
 
-      {/* ⚠️ 에러 메시지 */}
+      {/* ⚠️ 에러 알림 바 */}
       {error && (
         <div className="error-message">
-          ⚠️ {error}
+          <span>⚠️ {error}</span>
         </div>
       )}
 
@@ -430,6 +476,10 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
             {!isHost && (
               <p className="phase-description">방장이 게임을 시작할 때까지 잠시 기다려주세요.</p>
             )}
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#201f1e', marginBottom: '6px' }}>💬 대기실 채팅</div>
+              {renderChatComponent('대기실 참가자들과 대화하세요 (Enter)...')}
+            </div>
           </div>
         )}
 
@@ -454,6 +504,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
               )}
             </div>
             <p className="phase-description" style={{ textAlign: 'center', marginTop: '10px' }}>곧 대화 및 심문 단계가 시작됩니다...</p>
+            {renderChatComponent('제시어에 대한 은근한 힌트를 입력하세요 (Enter)...')}
           </div>
         )}
 
@@ -474,30 +525,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
                 </span>
               </div>
             )}
-            <div className="excel-chat-container">
-              <div className="excel-chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
-                {messages.map((msg, index) => (
-                  <div key={index} className={`excel-chat-row ${msg.username === username ? 'my-row' : ''}`}>
-                    <span className="excel-chat-time">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                    <span className="excel-chat-user">{msg.username}:</span>
-                    <span className="excel-chat-text">{msg.message}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="excel-chat-input-bar">
-                <span className="prefix">fx =</span>
-                <input
-                  type="text"
-                  value={currentMessage}
-                  onChange={e => setCurrentMessage(e.target.value)}
-                  placeholder="메시지를 입력하세요 (Enter)..."
-                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button className="excel-btn primary" onClick={handleSendMessage} disabled={!currentMessage.trim()}>
-                  <Send size={14} /> 전송
-                </button>
-              </div>
-            </div>
+            {renderChatComponent('대화 및 추론 내용을 입력하세요 (Enter)...')}
           </div>
         )}
 
@@ -516,6 +544,10 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
                 </button>
               </div>
             )}
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#201f1e', marginBottom: '6px' }}>💬 투표 토론 채팅</div>
+              {renderChatComponent('투표 관련 의견을 나눠보세요 (Enter)...')}
+            </div>
           </div>
         )}
 
@@ -538,6 +570,10 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
               <button className="excel-btn primary" onClick={handleRestart} style={{ padding: '8px 24px' }}>
                 🔄 다음 라운드 시작
               </button>
+            </div>
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#201f1e', marginBottom: '6px' }}>💬 결과 리뷰 채팅</div>
+              {renderChatComponent('게임 후기나 소감을 입력하세요 (Enter)...')}
             </div>
           </div>
         )}
