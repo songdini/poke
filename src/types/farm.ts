@@ -9,6 +9,7 @@ export interface EvolutionStage {
   sprite: string;
   showdownSprite: string;
   types: PokemonType[];
+  genCategory?: 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special';
 }
 
 export interface FarmPokemon {
@@ -94,6 +95,7 @@ export interface GraduationDiploma {
 export interface FarmState {
   ownerName: string;
   farmName: string;
+  isInitialized: boolean;
   coins: number;
   activePokemon: FarmPokemon | null;
   graduatedPokemon: GraduationDiploma[];

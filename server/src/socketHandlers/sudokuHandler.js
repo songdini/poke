@@ -39,23 +39,45 @@ function checkSudokuCompletion(state, username, io, customMsg) {
 }
 
 export function registerSudokuHandlers(io, socket) {
-  // 스도쿠 동기화 요청
+  // 스도쿠 동기화 요청 (방 상태가 없으면 쉬움 퍼즐 자동 생성)
   socket.on('sudoku-sync-request', ({ room }) => {
-    const state = sudokuRooms.get(room);
-    if (state) {
-      socket.emit('sudoku-update', {
-        phase: state.phase,
-        difficulty: state.difficulty,
-        mode: state.mode,
-        grid: state.grid,
-        fixedMask: state.fixedMask,
-        notes: state.notes,
-        completed: state.completed,
-        winner: state.winner,
-        startTime: state.startTime,
-        message: state.completed ? '🎉 이미 완성된 퍼즐입니다.' : undefined
-      });
+    let state = sudokuRooms.get(room);
+    if (!state) {
+      const generated = generateSudoku('easy');
+      const initialGrid = JSON.parse(JSON.stringify(generated.puzzle));
+      const solutionGrid = JSON.parse(JSON.stringify(generated.solution));
+      const fixedMask = initialGrid.map(row => row.map(val => val !== 0));
+
+      state = {
+        room,
+        difficulty: 'easy',
+        mode: 'coop',
+        initialGrid,
+        grid: JSON.parse(JSON.stringify(initialGrid)),
+        solutionGrid,
+        fixedMask,
+        phase: 'playing',
+        startTime: Date.now(),
+        completed: false,
+        winner: null,
+        notes: Array(9).fill(null).map(() => Array(9).fill(null).map(() => [])),
+        history: []
+      };
+      sudokuRooms.set(room, state);
     }
+
+    socket.emit('sudoku-update', {
+      phase: state.phase,
+      difficulty: state.difficulty,
+      mode: state.mode,
+      grid: state.grid,
+      fixedMask: state.fixedMask,
+      notes: state.notes,
+      completed: state.completed,
+      winner: state.winner,
+      startTime: state.startTime,
+      message: state.completed ? '🎉 이미 완성된 퍼즐입니다.' : undefined
+    });
   });
 
   // 스도쿠 게임 시작/생성
@@ -103,8 +125,8 @@ export function registerSudokuHandlers(io, socket) {
     });
   });
 
-  // 셀 값 변경 (입력)
-  socket.on('sudoku-cell-change', ({ room, row, col, value, username }) => {
+  // 셀 값 변경 (입력) 핸들러
+  const handleCellChange = ({ room, row, col, value, username }) => {
     const state = sudokuRooms.get(room);
     if (!state || state.phase !== 'playing') return;
 
@@ -128,7 +150,10 @@ export function registerSudokuHandlers(io, socket) {
       completed: false,
       lastChange: { row, col, value: numVal, username }
     });
-  });
+  };
+
+  socket.on('sudoku-cell-change', handleCellChange);
+  socket.on('sudoku-input', handleCellChange);
 
   // 힌트 요청
   socket.on('sudoku-hint', ({ room, row, col, username }) => {

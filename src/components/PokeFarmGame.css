@@ -1099,6 +1099,271 @@
   font-weight: 800;
 }
 
+/* =========================================================================
+   🐣 ONBOARDING WIZARD STYLES (농장 설립 신고서 & 스타팅 선택)
+   ========================================================================= */
+.farm-onboarding-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #e0f2fe 100%);
+}
+
+.onboarding-card {
+  background: #ffffff;
+  border: 2px solid #86efac;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.15);
+  max-width: 520px;
+  width: 100%;
+  padding: 28px 24px;
+  animation: popIn 0.35s ease;
+}
+
+.onboarding-step-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.onboarding-badge {
+  background: #10b981;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.onboarding-icon {
+  font-size: 2.5rem;
+  margin-bottom: 6px;
+}
+
+.onboarding-step-content h2 {
+  margin: 0 0 6px 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #065f46;
+}
+
+.onboarding-desc {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0 0 20px 0;
+}
+
+.onboarding-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.onboarding-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.onboarding-input-group label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.onboarding-input-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.onboarding-input-group input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.onboarding-next-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+/* Generation Filter Chips */
+.gen-filter-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 8px 0 12px 0;
+}
+
+.gen-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gen-chip:hover {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #86efac;
+}
+
+.gen-chip.active {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+/* Step 2: Starter Preview & Grid */
+.selected-starter-preview-banner {
+  background: linear-gradient(135deg, #ecfdf5, #dcfce7);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+}
+
+.preview-sprite {
+  height: 68px;
+  object-fit: contain;
+}
+
+.preview-text {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-text h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #065f46;
+}
+
+.types-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #047857;
+}
+
+.evolution-text {
+  font-size: 0.7rem;
+  color: #475569;
+}
+
+.onboarding-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.onboarding-starter-chip {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.onboarding-starter-chip:hover {
+  background: #f0fdf4;
+  border-color: #10b981;
+  transform: translateY(-2px);
+}
+
+.onboarding-starter-chip.selected {
+  background: #ecfdf5;
+  border: 2px solid #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  font-weight: 800;
+}
+
+.onboarding-starter-chip img {
+  height: 38px;
+  object-fit: contain;
+}
+
+.onboarding-starter-chip span {
+  font-size: 0.68rem;
+  color: #1e293b;
+}
+
+.onboarding-extra-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.welcome-bonus-box {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: #92400e;
+  gap: 2px;
+}
+
+.onboarding-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.onboarding-actions-row button:first-child {
+  flex: 1;
+}
+
+.onboarding-finish-btn {
+  flex: 2;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 /* 📱 Mobile Responsiveness */
 @media (max-width: 768px) {
   .farm-header {
@@ -1121,5 +1386,8 @@
   .shop-items-grid,
   .neighbors-grid {
     grid-template-columns: 1fr;
+  }
+  .onboarding-starter-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

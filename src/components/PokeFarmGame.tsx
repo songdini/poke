@@ -38,6 +38,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(username));
   const [activeTab, setActiveTab] = useState<FarmTab>('yard');
 
+  // 🐣 온보딩 위저드 상태 (농장주 이름 입력 ➔ 스타팅 포켓몬 선택)
+  const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
+  const [initOwnerName, setInitOwnerName] = useState(username || '지우');
+  const [initFarmName, setInitFarmName] = useState(`${username || '지우'}의 포켓농장`);
+  const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
+  const [starterNickname, setStarterNickname] = useState('');
+  const [genFilter, setGenFilter] = useState<'all' | 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special'>('all');
+
   // 애니메이션 & 이펙트 상태
   const [floatingHeart, setFloatingHeart] = useState<{ id: number; x: number; y: number } | null>(null);
   const [actionAlert, setActionAlert] = useState<{ text: string; type: 'success' | 'info' | 'warn' } | null>(null);
@@ -436,6 +444,193 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert('📝 방명록을 성공적으로 남겼습니다!', 'success');
   };
 
+  // 9. 온보딩 완료 처리 (농장 설립 & 첫 파트너 포켓몬 분양)
+  const handleCompleteOnboarding = () => {
+    const isShinyChance = Math.random() < 0.05; // 5% 이로치 확률
+    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
+    const cleanOwner = initOwnerName.trim() || '지우';
+    const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
+
+    setFarmState(prev => ({
+      ...prev,
+      ownerName: cleanOwner,
+      farmName: cleanFarm,
+      isInitialized: true,
+      activePokemon: newMon
+    }));
+
+    playPokemonCry(newMon.speciesId);
+    showAlert(`🎉 [${cleanFarm}]이 정식 개장되었습니다! 첫 파트너 [${newMon.name}]과(와) 함께 사랑으로 키워보세요!`, 'success');
+  };
+
+  // 🐣 만약 아직 농장이 설립되지 않았다면 온보딩 2단계 위저드 표시
+  if (!farmState.isInitialized) {
+    const selectedChain = STARTER_CHAINS[selectedStarterIdx] || STARTER_CHAINS[0];
+    const starterBaby = selectedChain[0];
+
+    return (
+      <div className="poke-farm-container excel-stealth-theme">
+        <div className="excel-formula-bar">
+          <div className="excel-name-box">Farm!Setup</div>
+          <div className="excel-fx-icon">fx</div>
+          <div className="excel-formula-input">=ESTABLISH_NEW_FARM(Step="{onboardingStep}")</div>
+        </div>
+
+        <div className="farm-onboarding-wrapper">
+          <div className="onboarding-card">
+            {onboardingStep === 'name' ? (
+              /* STEP 1: 농장주 & 농장 이름 설정 */
+              <div className="onboarding-step-content">
+                <div className="onboarding-badge">STEP 1 / 2</div>
+                <div className="onboarding-icon">🏡</div>
+                <h2>포켓농장 개설 신고서</h2>
+                <p className="onboarding-desc">
+                  쥬니버네이버 동물농장에 오신 것을 환영합니다!<br />
+                  먼저 농장주님의 닉네임과 농장 이름을 지어주세요.
+                </p>
+
+                <div className="onboarding-form">
+                  <div className="onboarding-input-group">
+                    <label>👤 농장주 닉네임</label>
+                    <input
+                      type="text"
+                      value={initOwnerName}
+                      onChange={e => {
+                        setInitOwnerName(e.target.value);
+                        setInitFarmName(`${e.target.value}의 포켓농장`);
+                      }}
+                      placeholder="예: 지우"
+                      maxLength={12}
+                    />
+                  </div>
+
+                  <div className="onboarding-input-group">
+                    <label>🏷️ 농장 이름</label>
+                    <input
+                      type="text"
+                      value={initFarmName}
+                      onChange={e => setInitFarmName(e.target.value)}
+                      placeholder="예: 지우의 힐링 포켓농장"
+                      maxLength={20}
+                    />
+                  </div>
+
+                  <button
+                    className="excel-btn primary onboarding-next-btn"
+                    onClick={() => {
+                      if (!initOwnerName.trim()) {
+                        showAlert('농장주 이름을 입력해 주세요!', 'warn');
+                        return;
+                      }
+                      setOnboardingStep('starter');
+                    }}
+                  >
+                    다음: 파트너 포켓몬 선택하기 ➔
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* STEP 2: 첫 번째 스타팅 포켓몬 선택 */
+              <div className="onboarding-step-content">
+                <div className="onboarding-badge">STEP 2 / 2</div>
+                <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
+                <p className="onboarding-desc">
+                  함께할 첫 아기 포켓몬을 선택하세요! 5% 확률로 특별한 **이로치(Shiny)**가 등장합니다.
+                </p>
+
+                {/* Selected Preview Box */}
+                <div className="selected-starter-preview-banner">
+                  <img src={starterBaby.showdownSprite || starterBaby.sprite} alt={starterBaby.name} className="preview-sprite" />
+                  <div className="preview-text">
+                    <h3>{starterBaby.name}</h3>
+                    <span className="types-text">타입: {starterBaby.types.join('/')}</span>
+                    <span className="evolution-text">진화: {selectedChain.map(c => c.name).join(' ➔ ')}</span>
+                  </div>
+                </div>
+
+                {/* Generation Filter Chips */}
+                <div className="gen-filter-chips">
+                  {[
+                    { id: 'all', label: `전체 (${STARTER_CHAINS.length}종)` },
+                    { id: 'gen1-2', label: '1~2세대' },
+                    { id: 'gen3-4', label: '3~4세대' },
+                    { id: 'gen5-6', label: '5~6세대' },
+                    { id: 'gen7-9', label: '7~9세대' },
+                    { id: 'special', label: '드래곤/희귀' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
+                      onClick={() => setGenFilter(f.id as typeof genFilter)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Starter Picker Grid */}
+                <div className="onboarding-starter-grid">
+                  {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
+                    .filter(({ chain }) => {
+                      if (genFilter === 'all') return true;
+                      const cat = chain[0].genCategory || 'gen1-2';
+                      return cat === genFilter;
+                    })
+                    .map(({ chain, originalIdx }) => {
+                      const baby = chain[0];
+                      const isSelected = originalIdx === selectedStarterIdx;
+                      return (
+                        <div
+                          key={baby.id}
+                          className={`onboarding-starter-chip ${isSelected ? 'selected' : ''}`}
+                          onClick={() => {
+                            setSelectedStarterIdx(originalIdx);
+                            playPokemonCry(baby.id);
+                          }}
+                        >
+                          <img src={baby.sprite} alt={baby.name} />
+                          <span>{baby.name}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Nickname Input & Welcome Bonus Info */}
+                <div className="onboarding-extra-section">
+                  <div className="onboarding-input-group">
+                    <label>✨ 포켓몬 닉네임 (선택 사항)</label>
+                    <input
+                      type="text"
+                      value={starterNickname}
+                      onChange={e => setStarterNickname(e.target.value)}
+                      placeholder={`기본값: ${starterBaby.name}`}
+                      maxLength={10}
+                    />
+                  </div>
+
+                  <div className="welcome-bonus-box">
+                    <strong>🎁 웰컴 스타터 개장 지원금:</strong>
+                    <span>🪙 500 코인 + 🫐 오랭열매 5개 + 🧼 거품비누 3개 + ⚽ 장난감 2개</span>
+                  </div>
+
+                  <div className="onboarding-actions-row">
+                    <button className="excel-btn" onClick={() => setOnboardingStep('name')}>
+                      ◀ 이전 단계
+                    </button>
+                    <button className="excel-btn primary onboarding-finish-btn" onClick={handleCompleteOnboarding}>
+                      🎉 포켓농장 정식 개장하기!
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="poke-farm-container excel-stealth-theme">
       {/* 📊 Excel Formula Bar (PC 위장용) */}
@@ -667,35 +862,65 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         {activeTab === 'adopt' && !visitingFarm && (
           <div className="farm-adopt-grid">
             <div className="adopt-banner">
-              <h3>🐣 쥬니버 포켓몬 분양소</h3>
-              <p>원하는 스타팅 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 **이로치(Shiny)** 포켓몬이 탄생합니다.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <h3>🐣 쥬니버 포켓몬 분양소</h3>
+                  <p>원하는 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 **이로치(Shiny)** 포켓몬이 탄생합니다.</p>
+                </div>
+                {/* Generation Filter Chips */}
+                <div className="gen-filter-chips">
+                  {[
+                    { id: 'all', label: `전체 (${STARTER_CHAINS.length}종)` },
+                    { id: 'gen1-2', label: '1~2세대' },
+                    { id: 'gen3-4', label: '3~4세대' },
+                    { id: 'gen5-6', label: '5~6세대' },
+                    { id: 'gen7-9', label: '7~9세대' },
+                    { id: 'special', label: '드래곤/희귀' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
+                      onClick={() => setGenFilter(f.id as typeof genFilter)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="starter-cards-grid">
-              {STARTER_CHAINS.map((chain, idx) => {
-                const baby = chain[0];
-                return (
-                  <div key={baby.id} className="starter-adopt-card">
-                    <div className="starter-avatar-box">
-                      <img src={baby.showdownSprite || baby.sprite} alt={baby.name} />
-                    </div>
-                    <div className="starter-info">
-                      <h4>{baby.name}</h4>
-                      <div className="type-badge-row">
-                        {baby.types.map(t => (
-                          <span key={t} className="type-tag">{t}</span>
-                        ))}
+              {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
+                .filter(({ chain }) => {
+                  if (genFilter === 'all') return true;
+                  const cat = chain[0].genCategory || 'gen1-2';
+                  return cat === genFilter;
+                })
+                .map(({ chain, originalIdx }) => {
+                  const baby = chain[0];
+                  return (
+                    <div key={baby.id} className="starter-adopt-card">
+                      <div className="starter-avatar-box">
+                        <img src={baby.showdownSprite || baby.sprite} alt={baby.name} />
                       </div>
-                      <p className="evolution-preview">
-                        진화 경로: {chain.map(c => c.name).join(' ➔ ')}
-                      </p>
+                      <div className="starter-info">
+                        <h4>{baby.name}</h4>
+                        <div className="type-badge-row">
+                          {baby.types.map(t => (
+                            <span key={t} className="type-tag">{t}</span>
+                          ))}
+                        </div>
+                        <p className="evolution-preview">
+                          진화 경로: {chain.map(c => c.name).join(' ➔ ')}
+                        </p>
+                      </div>
+                      <button className="excel-btn primary" onClick={() => handleAdoptPokemon(originalIdx)}>
+                        🐣 이 아이 입양하기
+                      </button>
                     </div>
-                    <button className="excel-btn primary" onClick={() => handleAdoptPokemon(idx)}>
-                      🐣 이 아이 입양하기
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         )}

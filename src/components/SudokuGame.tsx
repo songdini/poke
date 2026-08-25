@@ -92,18 +92,25 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
   // 셀 숫자 입력/수정
   const handleNumberInput = React.useCallback((val: number) => {
-    if (!selectedCell || phase !== 'playing' || completed) return;
+    if (completed) return;
+    if (!selectedCell) {
+      setMessage('💡 먼저 숫자를 입력할 스도쿠 칸(셀)을 클릭해 주세요!');
+      return;
+    }
     const { r, c } = selectedCell;
-    if (fixedMask[r]?.[c]) return;
+    if (fixedMask[r]?.[c]) {
+      setMessage('🔒 문제로 주어진 고정 숫자는 수정할 수 없습니다.');
+      return;
+    }
 
-    socket?.emit('sudoku-input', {
+    socket?.emit('sudoku-cell-change', {
       room,
       row: r,
       col: c,
       value: val,
       username
     });
-  }, [selectedCell, phase, completed, fixedMask, socket, room, username]);
+  }, [selectedCell, completed, fixedMask, socket, room, username]);
 
   // 키보드 입력 핸들러
   useEffect(() => {
@@ -336,14 +343,22 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         {showNumpad && (
           <div className="sudoku-controls-panel">
             <div className="sudoku-card">
-              <h3>🔢 수식 입력 패드 (1~9)</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🔢 수식 입력 패드 (1~9)</h3>
+                {selectedCell && (
+                  <span style={{ fontSize: '0.78rem', color: '#107c41', fontWeight: 700 }}>
+                    선택 셀: {String.fromCharCode(65 + selectedCell.c)}{selectedCell.r + 1}
+                  </span>
+                )}
+              </div>
               <div className="numpad-grid">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                   <button
                     key={num}
+                    type="button"
                     className="numpad-btn"
                     onClick={() => handleNumberInput(num)}
-                    disabled={phase !== 'playing' || completed}
+                    disabled={completed}
                   >
                     {num}
                   </button>
@@ -351,11 +366,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               </div>
               <div style={{ marginTop: '8px', textAlign: 'center' }}>
                 <button
+                  type="button"
                   className="excel-btn"
                   onClick={() => handleNumberInput(0)}
-                  disabled={phase !== 'playing' || completed || !selectedCell}
+                  disabled={completed}
+                  style={{ width: '100%', padding: '6px 12px' }}
                 >
-                  🧽 선택 셀 지우기
+                  🧽 선택 셀 지우기 (0/Backspace)
                 </button>
               </div>
             </div>
