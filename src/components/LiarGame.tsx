@@ -44,7 +44,7 @@ interface LiarGameProps {
 type LiarPhase = 'waiting' | 'starting' | 'word-input' | 'word-distribute' | 'talk' | 'vote' | 'result';
 
 type LiarUpdate =
-  | { type: 'reconnect-sync'; data: { phase?: LiarPhase; players?: Player[]; myWord?: string | null; isLiar?: boolean } }
+  | { type: 'reconnect-sync'; data: { phase?: LiarPhase; players?: Player[]; host?: string | null; myWord?: string | null; isLiar?: boolean } }
   | { type: 'join' | 'leave' | 'restart'; data: { players: Player[]; phase: LiarPhase; host?: string | null; wordProvider?: string | null } }
   | { type: 'game-start'; data?: Record<string, never> }
   | { type: 'word-distribute'; data: { myWord: string | null; isLiar?: boolean; phase?: LiarPhase } }
@@ -121,6 +121,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
   // 게임 상태
   const [players, setPlayers] = useState<Player[]>([]);
+  const [hostId, setHostId] = useState<string | null>(null);
   const [phase, setPhase] = useState<LiarPhase>('waiting');
   const [myWord, setMyWord] = useState<string | null>(null);
   const [showMyWord, setShowMyWord] = useState(false);
@@ -181,6 +182,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
           if (update.data) {
             if (update.data.phase) setPhase(update.data.phase);
             if (update.data.players) setPlayers(update.data.players);
+            if (update.data.host) setHostId(update.data.host);
             if (update.data.myWord !== undefined) setMyWord(update.data.myWord);
           }
           break;
@@ -188,10 +190,12 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
         case 'leave':
           setPlayers(update.data.players || []);
           setPhase(update.data.phase);
+          if (update.data.host) setHostId(update.data.host);
           break;
         case 'restart':
           setPlayers(update.data.players || []);
           setPhase(update.data.phase);
+          if (update.data.host) setHostId(update.data.host);
           resetLiarGameState();
           break;
         case 'game-start':
@@ -307,7 +311,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     activeSocket?.emit('liar-remove-bot', { room, botId });
   };
 
-  const isHost = players.find(p => p.username === username)?.isHost ?? false;
+  const isHost = Boolean((hostId && hostId === socket?.id) || players.find(p => p.username === username)?.isHost || (players.length > 0 && players[0].username === username));
 
   const renderChatComponent = (customPlaceholder = '메시지를 입력하세요 (Enter)...') => (
     <div className="excel-chat-container">

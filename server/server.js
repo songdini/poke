@@ -49,22 +49,30 @@ const isAllowedOrigin = (origin) => {
   // 1. Explicitly configured origins (Set)
   if (allowedOrigins.has(cleanOrigin)) return true;
 
-  // 2. Localhost & Any IPv4 Address (Public/Private, e.g., http://3.34.198.156:5173, http://192.168.1.5)
-  if (/^https?:\/\/(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(cleanOrigin)) {
+  // 2. Localhost & Any IPv4 / IPv6 Address
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(cleanOrigin)) {
     return true;
   }
 
-  return false;
+  return true;
 };
 
 const corsOptions = {
   origin: (origin, callback) => {
-    callback(isAllowedOrigin(origin) ? null : new Error(`Origin not allowed by CORS: ${origin}`), isAllowedOrigin(origin));
+    callback(null, true);
   },
-  methods: ['GET', 'POST']
+  methods: ['GET', 'POST'],
+  credentials: true
 };
 
-const io = new Server(server, { cors: corsOptions });
+const io = new Server(server, { 
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  },
+  pingTimeout: 20000,
+  pingInterval: 25000
+});
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));

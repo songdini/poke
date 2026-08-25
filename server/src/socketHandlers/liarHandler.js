@@ -15,13 +15,25 @@ export function clearBotTimers(game) {
   if (game) game.botTimeouts = [];
 }
 
+function checkIsLiarHost(game, socketId) {
+  if (!game) return false;
+  if (!game.host || !game.players.some(p => p.id === game.host)) {
+    const firstHuman = game.players.find(p => !p.isBot);
+    if (firstHuman) {
+      game.host = firstHuman.id;
+      firstHuman.isHost = true;
+    }
+  }
+  const player = game.players.find(p => p.id === socketId);
+  return game.host === socketId || player?.isHost || (game.players.length > 0 && game.players[0].id === socketId);
+}
+
 export function registerLiarHandlers(io, socket) {
   socket.on('liar-add-bot', ({ room }) => {
     const game = liarGames.get(room);
     if (!game || game.gameStarted || game.phase !== 'waiting') return;
 
-    const user = connectedUsers.get(socket.id);
-    if (!user || game.host !== socket.id) return;
+    if (!checkIsLiarHost(game, socket.id)) return;
 
     if (game.players.length >= 10) {
       socket.emit('liar-error', { message: '최대 10명까지 참여 가능합니다.' });
@@ -57,8 +69,7 @@ export function registerLiarHandlers(io, socket) {
     const game = liarGames.get(room);
     if (!game || game.gameStarted || game.phase !== 'waiting') return;
 
-    const user = connectedUsers.get(socket.id);
-    if (!user || game.host !== socket.id) return;
+    if (!checkIsLiarHost(game, socket.id)) return;
 
     let targetBotIndex = -1;
     if (botId) {
@@ -90,8 +101,7 @@ export function registerLiarHandlers(io, socket) {
     const game = liarGames.get(room);
     if (!game || game.gameStarted) return;
 
-    const user = connectedUsers.get(socket.id);
-    if (!user || game.host !== socket.id) return;
+    if (!checkIsLiarHost(game, socket.id)) return;
 
     if (game.players.length < 3) {
       socket.emit('liar-error', { message: '최소 3명이 필요합니다.' });

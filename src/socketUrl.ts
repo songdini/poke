@@ -11,13 +11,13 @@ export const getChatServerUrl = () => {
     return `http://localhost:${DEFAULT_CHAT_SERVER_PORT}`;
   }
 
-  // Vite 로컬 개발 포트(5173/3000)일 경우 백엔드 3001 포트로 직접 접속
-  if (window.location.port === '5173' || window.location.port === '3000') {
-    return `${window.location.protocol}//${window.location.hostname}:${DEFAULT_CHAT_SERVER_PORT}`;
+  // 1. 프로덕션 배포(80, 443, 빈 포트)이거나 백엔드 서버(3001)에서 서빙되는 경우 동일 오리진 사용
+  if (window.location.port === DEFAULT_CHAT_SERVER_PORT || window.location.port === '' || window.location.port === '80' || window.location.port === '443') {
+    return window.location.origin;
   }
 
-  // 프로덕션 / Docker 배포 환경 (Nginx 역프록시 적용)
-  return window.location.origin;
+  // 2. 개발 환경(5173, 5174, 4173, 3000 등)에서는 3001 포트의 백엔드로 직접 연결
+  return `${window.location.protocol}//${window.location.hostname}:${DEFAULT_CHAT_SERVER_PORT}`;
 };
 
 export const resolveImageUrl = (url: string) => {

@@ -20,17 +20,27 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const serverUrl = getChatServerUrl();
     const newSocket = io(serverUrl, {
       autoConnect: true,
-      reconnectionAttempts: 5,
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
     });
 
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
+      console.log('[Socket] ✅ 서버에 연결되었습니다:', newSocket.id);
       setIsConnected(true);
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on('disconnect', (reason) => {
+      console.warn('[Socket] ⚠️ 연결이 끊어졌습니다 (사유:', reason, ')');
+      setIsConnected(false);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.warn('[Socket Error] ❌ 연결 오류 발생 (재시도 중):', err.message);
       setIsConnected(false);
     });
 

@@ -275,11 +275,19 @@ export function registerJoinDisconnectHandlers(io, socket) {
           voted: false
         });
       }
-      if (game.players.length === 1) game.host = socket.id;
+
+      // 👑 방장 권한 확실히 부여
+      if (!game.host || !game.players.some(p => p.id === game.host)) {
+        const firstHuman = game.players.find(p => !p.isBot);
+        if (firstHuman) {
+          game.host = firstHuman.id;
+          firstHuman.isHost = true;
+        }
+      }
 
       io.to(room).emit('liar-update', {
         type: 'join',
-        data: { 
+        data: {
           players: game.players,
           phase: game.phase,
           host: game.host,
