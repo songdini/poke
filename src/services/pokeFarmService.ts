@@ -1263,8 +1263,8 @@ export function getInitialFarmState(ownerName: string): FarmState {
     guestbook: [
       {
         id: 'gb_welcome',
-        author: '농장 관리인 로토무',
-        message: '포켓농장에 오신 것을 환영합니다 로토! 포켓몬을 지극정성으로 키워 멋지게 졸업시켜 보세요 로토! 🐾',
+        author: '농장 관리인 김두부',
+        message: '포켓농장에 오신 것을 환영합니다 둡둡! 포켓몬을 지극정성으로 키워 멋지게 졸업시켜 보세요 둡둡! 🐾',
         timestamp: new Date().toISOString()
       }
     ],

@@ -279,7 +279,160 @@
   text-shadow: 0 0 4px #ffffff;
   animation: floatHeart 1s ease-out forwards;
   pointer-events: none;
+  z-index: 20;
+}
+
+/* 🌟 Farm Yard Pet Skill Motion Effects */
+.pet-skill-jump {
+  animation: petSkillJump 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+@keyframes petSkillJump {
+  0% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-24px) scale(1.15) rotate(-3deg); }
+  65% { transform: translateY(-20px) scale(1.1) rotate(3deg); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Skill Pop-up Banner */
+.pet-skill-banner {
+  position: absolute;
+  top: -42px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  animation: skillBannerPop 1.3s ease-out forwards;
   z-index: 10;
+  white-space: nowrap;
+}
+
+@keyframes skillBannerPop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.7); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
+  75% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.8); }
+}
+
+.pet-skill-banner.skill-water {
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #ffffff;
+  border: 1.5px solid #bae6fd;
+}
+
+.pet-skill-banner.skill-fire {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: #ffffff;
+  border: 1.5px solid #fed7aa;
+}
+
+.pet-skill-banner.skill-grass {
+  background: linear-gradient(135deg, #16a34a, #4ade80);
+  color: #ffffff;
+  border: 1.5px solid #bbf7d0;
+}
+
+.pet-skill-banner.skill-electric {
+  background: linear-gradient(135deg, #ca8a04, #eab308);
+  color: #0f172a;
+  border: 1.5px solid #fef08a;
+}
+
+.pet-skill-banner.skill-fairy {
+  background: linear-gradient(135deg, #db2777, #f472b6);
+  color: #ffffff;
+  border: 1.5px solid #fbcfe8;
+}
+
+.pet-skill-banner.skill-dragon {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  color: #ffffff;
+  border: 1.5px solid #99f6e4;
+}
+
+.pet-skill-banner.skill-psychic {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #ffffff;
+  border: 1.5px solid #e9d5ff;
+}
+
+.pet-skill-banner.skill-fighting {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #ffffff;
+  border: 1.5px solid #fecaca;
+}
+
+.pet-skill-banner.skill-normal {
+  background: linear-gradient(135deg, #475569, #64748b);
+  color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+}
+
+/* Burst Aura Ring & Swirling Particles */
+.pet-skill-aura-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.pet-skill-aura-ring.aura-water {
+  box-shadow: 0 0 25px 8px rgba(56, 189, 248, 0.6);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-fire {
+  box-shadow: 0 0 25px 8px rgba(249, 115, 22, 0.65);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-electric {
+  box-shadow: 0 0 25px 8px rgba(250, 204, 21, 0.7);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-grass {
+  box-shadow: 0 0 25px 8px rgba(74, 222, 128, 0.6);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-fairy {
+  box-shadow: 0 0 25px 8px rgba(244, 114, 182, 0.65);
+  animation: auraPulse 1s ease-out;
+}
+
+@keyframes auraPulse {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+.skill-particle {
+  position: absolute;
+  font-size: 1.4rem;
+  animation: particleScatter 1s ease-out forwards;
+}
+
+.skill-particle.pt-1 { top: 0%; left: 10%; animation-delay: 0.05s; }
+.skill-particle.pt-2 { top: 10%; right: 10%; animation-delay: 0.1s; }
+.skill-particle.pt-3 { bottom: 15%; left: 0%; animation-delay: 0.15s; }
+.skill-particle.pt-4 { bottom: 10%; right: 5%; animation-delay: 0.2s; }
+.skill-particle.pt-5 { top: -15%; left: 45%; animation-delay: 0.1s; }
+
+@keyframes particleScatter {
+  0% { opacity: 1; transform: translateY(0) scale(0.8); }
+  60% { opacity: 1; transform: translateY(-16px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.6); }
 }
 
 @keyframes floatHeart {
@@ -1364,6 +1517,470 @@
   font-weight: 800;
 }
 
+/* =========================================================================
+   💼 PART-TIME JOB INTERACTIVE STAGE & MODAL STYLES
+   ========================================================================= */
+.job-shift-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.job-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.job-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.job-badge-icon {
+  font-size: 1.3rem;
+}
+
+/* 🎬 Job Stage View (배경 및 현장 애니메이션 캔버스) */
+.job-stage-view {
+  height: 220px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 20px;
+}
+
+/* 1. 사내 화단 물주기 알바 배경 */
+.job-stage-view.stage-job_garden {
+  background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 50%, #86efac 75%, #4ade80 100%);
+}
+
+.garden-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.garden-flowerbed {
+  position: absolute;
+  bottom: 8px;
+  right: 18px;
+  display: flex;
+  gap: 10px;
+  font-size: 1.8rem;
+  animation: flowerBloom 1.2s ease-in-out infinite alternate;
+}
+
+/* 물포켓몬 스킬: 물대포/파도타기 */
+.water-skill-effect {
+  position: absolute;
+  bottom: 50px;
+  left: 35%;
+  display: flex;
+  align-items: center;
+  animation: waterSpray 0.8s ease-in-out infinite;
+}
+
+.water-wave {
+  font-size: 2.2rem;
+  animation: waveSurge 0.6s ease-in-out infinite alternate;
+}
+
+.water-drop {
+  font-size: 1.5rem;
+  animation: dropSplash 0.5s ease-out infinite;
+}
+
+/* 일반 포켓몬: 귀여운 물뿌리개 */
+.watering-can-tool {
+  position: absolute;
+  top: 30px;
+  right: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: canTilt 1.2s ease-in-out infinite alternate;
+}
+
+.can-icon {
+  font-size: 2.8rem;
+}
+
+.grass-skill-effect {
+  position: absolute;
+  top: 40px;
+  right: 60px;
+  display: flex;
+  gap: 8px;
+  font-size: 1.8rem;
+  animation: leafSpin 1.5s linear infinite;
+}
+
+/* 2. 사내 우편물 배달 */
+.job-stage-view.stage-job_mail {
+  background: linear-gradient(180deg, #fed7aa 0%, #ffedd5 50%, #e2e8f0 85%, #cbd5e1 100%);
+}
+
+.mail-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.office-hallway-bg {
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  font-size: 1.8rem;
+}
+
+.dash-courier-effect,
+.flying-courier-effect,
+.psychic-courier-effect {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  font-size: 2rem;
+  animation: floatBounce 1s ease-in-out infinite alternate;
+}
+
+/* 3. 탕비실 커피 로스팅 */
+.job-stage-view.stage-job_coffee {
+  background: linear-gradient(180deg, #fed7aa 0%, #fef3c7 60%, #d97706 90%, #92400e 100%);
+}
+
+.coffee-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.coffee-counter-bg {
+  position: absolute;
+  bottom: 12px;
+  right: 24px;
+  display: flex;
+  gap: 10px;
+  font-size: 1.8rem;
+}
+
+.fire-roast-effect,
+.drip-coffee-effect {
+  position: absolute;
+  top: 35px;
+  right: 60px;
+  font-size: 2rem;
+  animation: fireGlow 0.8s ease-in-out infinite alternate;
+}
+
+/* 4. 데이터센터 발전기 가동 */
+.job-stage-view.stage-job_generator {
+  background: linear-gradient(180deg, #1e1b4b 0%, #312e81 60%, #1e293b 100%);
+}
+
+.generator-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.server-room-bg {
+  position: absolute;
+  bottom: 14px;
+  right: 24px;
+  display: flex;
+  gap: 12px;
+  font-size: 2rem;
+}
+
+.lightning-charge-effect,
+.wheel-charge-effect {
+  position: absolute;
+  top: 30px;
+  right: 50px;
+  font-size: 2.2rem;
+  animation: electricPulse 0.4s ease-in-out infinite alternate;
+}
+
+/* 5. CEO 경호 */
+.job-stage-view.stage-job_ceo_security {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+}
+
+.security-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.penthouse-bg {
+  position: absolute;
+  bottom: 14px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  font-size: 2rem;
+}
+
+.security-guard-effect {
+  position: absolute;
+  top: 30px;
+  right: 60px;
+  font-size: 2.2rem;
+  animation: shieldGlow 1.2s ease-in-out infinite alternate;
+}
+
+/* 🐾 일하고 있는 포켓몬 스프라이트 */
+.working-pokemon-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+}
+
+.working-pokemon-sprite {
+  height: 95px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.working-motion {
+  animation: workerWork 0.7s ease-in-out infinite alternate;
+}
+
+.done-bounce {
+  animation: pet-bounce 0.8s ease-in-out infinite;
+}
+
+.worker-tag {
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-top: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* 📊 Work Progress & Status Section */
+.job-status-section {
+  padding: 16px 20px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-bubble {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.status-bubble p {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.job-progress-bar-wrap {
+  background: #e2e8f0;
+  border-radius: 999px;
+  height: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.job-progress-fill {
+  background: linear-gradient(90deg, #10b981, #059669);
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.28s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+}
+
+.progress-percent {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* 💰 Settlement / Actions */
+.job-working-actions {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.cheer-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.cheer-btn:hover {
+  background: #fde68a;
+  transform: translateY(-2px);
+}
+
+.job-salary-receipt {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: popIn 0.3s ease;
+}
+
+.receipt-header {
+  border-bottom: 2px dashed #cbd5e1;
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.receipt-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.receipt-header span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.receipt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.receipt-row.gain {
+  color: #047857;
+  font-weight: 700;
+}
+
+.receipt-row.cost {
+  color: #b91c1c;
+}
+
+.job-levelup-badge {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b;
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  animation: popIn 0.3s ease;
+}
+
+.confirm-receipt-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+/* Animations for Stage Effects */
+@keyframes canTilt {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-30deg) translateY(4px); }
+}
+
+@keyframes waterSpray {
+  0% { transform: translateX(0) scale(0.9); opacity: 0.7; }
+  50% { transform: translateX(12px) scale(1.1); opacity: 1; }
+  100% { transform: translateX(20px) scale(1); opacity: 0.8; }
+}
+
+@keyframes waveSurge {
+  0% { transform: scale(0.95) translateY(0); }
+  100% { transform: scale(1.1) translateY(-4px); }
+}
+
+@keyframes dropSplash {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(8px); opacity: 0.2; }
+}
+
+@keyframes flowerBloom {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes workerWork {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-8px) rotate(4deg); }
+}
+
+@keyframes electricPulse {
+  0% { transform: scale(0.9); filter: drop-shadow(0 0 4px #eab308); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 14px #fde047); }
+}
+
+@keyframes fireGlow {
+  0% { transform: scale(0.95); filter: drop-shadow(0 0 4px #ef4444); }
+  100% { transform: scale(1.2); filter: drop-shadow(0 0 12px #f97316); }
+}
+
+@keyframes shieldGlow {
+  0% { opacity: 0.7; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 8px #38bdf8); }
+}
+
+@keyframes leafSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes floatBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px); }
+}
+
 /* 📱 Mobile Responsiveness */
 @media (max-width: 768px) {
   .farm-header {
@@ -1391,3 +2008,4 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+

@@ -16,6 +16,24 @@ function generateSecretNumber() {
   return result.join('');
 }
 
+// 🤖 AI 후보군 전체 생성 (4자리 중복 없는 0~9 순열 4536/5040개)
+function generateAllCandidates() {
+  const candidates = [];
+  for (let a = 0; a <= 9; a++) {
+    for (let b = 0; b <= 9; b++) {
+      if (b === a) continue;
+      for (let c = 0; c <= 9; c++) {
+        if (c === a || c === b) continue;
+        for (let d = 0; d <= 9; d++) {
+          if (d === a || d === b || d === c) continue;
+          candidates.push(`${a}${b}${c}${d}`);
+        }
+      }
+    }
+  }
+  return candidates;
+}
+
 // ⚾ 스트라이크/볼 판정 함수
 function calculateStrikeBall(secret, guess) {
   let strike = 0;
@@ -45,6 +63,7 @@ export function registerNumberBaseballHandlers(io, socket) {
         phase: 'waiting',
         history: [],
         secretNumbers: {},
+        aiCandidates: [],
         currentTurnIndex: 0,
         winner: null,
       };
@@ -52,21 +71,25 @@ export function registerNumberBaseballHandlers(io, socket) {
     }
 
     game.mode = mode || 'single';
-    game.phase = 'playing';
     game.history = [];
     game.winner = null;
 
     if (game.mode === 'single') {
-      // 솔로/AI 모드: 서버가 비밀 숫자 생성
-      game.secretNumbers[socket.id] = generateSecretNumber();
+      // 🤖 솔로 vs 알파봇(AI) 1v1 대결 모드: 사용자 비밀 숫자 설정 단계로 진입
+      game.secretNumbers = {};
+      game.secretNumbers['ai_bot'] = generateSecretNumber();
+      game.aiCandidates = generateAllCandidates();
+      game.phase = 'set-secret';
+
       socket.emit('baseball-update', {
-        phase: 'playing',
+        phase: 'set-secret',
         mode: 'single',
         history: [],
-        message: '🎲 4자리 비밀 숫자가 생성되었습니다! 추측값을 입력하세요.'
+        message: '🔑 🤖 알파봇(AI)이 맞출 당신의 4자리 비밀 숫자를 입력해주세요!'
       });
     } else {
-      // 1v1 배틀 모드: 방의 플레이어들에게 비밀 숫자 입력 안내
+      // ⚔️ 1v1 멀티 플레이어 배틀 모드
+      game.phase = 'set-secret';
       io.to(room).emit('baseball-update', {
         phase: 'set-secret',
         mode: 'battle',
@@ -76,7 +99,7 @@ export function registerNumberBaseballHandlers(io, socket) {
     }
   });
 
-  // 🔑 비밀 숫자 등록 (배틀 모드)
+  // 🔑 비밀 숫자 등록
   socket.on('baseball-set-secret', ({ room, secret }) => {
     const user = connectedUsers.get(socket.id);
     if (!user || user.room !== room) return;
@@ -91,12 +114,28 @@ export function registerNumberBaseballHandlers(io, socket) {
 
     game.secretNumbers[socket.id] = secret;
 
+    if (game.mode === 'single') {
+      game.phase = 'playing';
+      game.history = [];
+      game.currentTurnIndex = 0;
+      socket.emit('baseball-update', {
+        phase: 'playing',
+        mode: 'single',
+        currentTurnPlayer: { id: socket.id, username: user.username },
+        mySecret: secret,
+        history: [],
+        message: '🎮 🤖 알파봇과의 1v1 지능 대결 시작! 먼저 알파봇의 비밀 숫자를 추측해보세요!'
+      });
+      return;
+    }
+
     const readyPlayerCount = Object.keys(game.secretNumbers).length;
     if (readyPlayerCount >= game.players.length && game.players.length >= 2) {
       game.phase = 'playing';
       game.currentTurnIndex = 0;
       io.to(room).emit('baseball-update', {
         phase: 'playing',
+        mode: 'battle',
         currentTurnPlayer: game.players[game.currentTurnIndex],
         message: `🎮 배틀 시작! ${game.players[0].username}님의 턴입니다.`
       });
@@ -121,44 +160,108 @@ export function registerNumberBaseballHandlers(io, socket) {
     }
 
     if (game.mode === 'single') {
-      // 1인/AI 모드
-      const secret = game.secretNumbers[socket.id];
-      if (!secret) return;
+      // 1. 유저의 추측 채점 (알파봇의 비밀 숫자 대상)
+      const aiSecret = game.secretNumbers['ai_bot'];
+      const userSecret = game.secretNumbers[socket.id];
+      if (!aiSecret || !userSecret) return;
 
-      const result = calculateStrikeBall(secret, guess);
-      const attemptCount = game.history.length + 1;
+      const userResult = calculateStrikeBall(aiSecret, guess);
+      const userAttempt = game.history.filter(h => h.guesser === user.username).length + 1;
 
-      const record = {
-        id: Date.now().toString(),
-        attempt: attemptCount,
+      const userRecord = {
+        id: `user-${Date.now()}`,
+        attempt: userAttempt,
         guesser: user.username,
         guess,
-        strike: result.strike,
-        ball: result.ball,
-        isOut: result.isOut,
-        timestamp: new Date()
+        strike: userResult.strike,
+        ball: userResult.ball,
+        isOut: userResult.isOut,
+        timestamp: new Date().toISOString()
       };
 
-      game.history.push(record);
+      game.history.push(userRecord);
 
-      if (result.strike === 4) {
+      if (userResult.strike === 4) {
         game.phase = 'game-over';
         game.winner = user.username;
-        socket.emit('baseball-update', {
+        return socket.emit('baseball-update', {
           phase: 'game-over',
+          mode: 'single',
           history: game.history,
           winner: user.username,
-          secretNumber: secret,
-          message: `🎉 정답 축하합니다! ${attemptCount}회 시도 만에 4 Strike 성공!`
-        });
-      } else {
-        socket.emit('baseball-update', {
-          phase: 'playing',
-          history: game.history,
-          lastRecord: record,
-          message: `${guess} ➔ ${result.strike}S ${result.ball}B`
+          secretNumber: aiSecret,
+          message: `🎉 정답 축하합니다! ${userAttempt}회 시도 만에 알파봇의 숫자를 맞추고 승리하셨습니다!`
         });
       }
+
+      // 유저 턴 기록 전송 + 알파봇 턴 알림
+      socket.emit('baseball-update', {
+        phase: 'playing',
+        mode: 'single',
+        history: game.history,
+        currentTurnPlayer: { id: 'ai_bot', username: '🤖 알파봇 (AI)' },
+        message: `내 추측: ${guess} ➔ ${userResult.strike}S ${userResult.ball}B | 🤖 알파봇이 당신의 숫자를 추론하는 중...`
+      });
+
+      // 2. 알파봇(AI)의 지능형 추측 수행 (750ms 딜레이)
+      setTimeout(() => {
+        const curGame = baseballGames.get(room);
+        if (!curGame || curGame.phase !== 'playing') return;
+
+        // 알파봇 후보군에서 추측값 선택
+        let aiGuess = '';
+        if (curGame.aiCandidates && curGame.aiCandidates.length > 0) {
+          const randIdx = Math.floor(Math.random() * Math.min(5, curGame.aiCandidates.length));
+          aiGuess = curGame.aiCandidates[randIdx] || curGame.aiCandidates[0];
+        } else {
+          aiGuess = generateSecretNumber();
+        }
+
+        const aiResult = calculateStrikeBall(userSecret, aiGuess);
+        const aiAttempt = curGame.history.filter(h => h.guesser === '🤖 알파봇 (AI)').length + 1;
+
+        // 알파봇 후보군 필터링 (Constraint elimination)
+        if (curGame.aiCandidates) {
+          curGame.aiCandidates = curGame.aiCandidates.filter(cand => {
+            const r = calculateStrikeBall(cand, aiGuess);
+            return r.strike === aiResult.strike && r.ball === aiResult.ball;
+          });
+        }
+
+        const aiRecord = {
+          id: `ai-${Date.now()}`,
+          attempt: aiAttempt,
+          guesser: '🤖 알파봇 (AI)',
+          guess: aiGuess,
+          strike: aiResult.strike,
+          ball: aiResult.ball,
+          isOut: aiResult.isOut,
+          timestamp: new Date().toISOString()
+        };
+
+        curGame.history.push(aiRecord);
+
+        if (aiResult.strike === 4) {
+          curGame.phase = 'game-over';
+          curGame.winner = '🤖 알파봇 (AI)';
+          socket.emit('baseball-update', {
+            phase: 'game-over',
+            mode: 'single',
+            history: curGame.history,
+            winner: '🤖 알파봇 (AI)',
+            secretNumber: aiSecret,
+            message: `🤖 알파봇이 ${aiAttempt}회 만에 당신의 비밀 숫자(${userSecret})를 맞추었습니다! 알파봇 승리!`
+          });
+        } else {
+          socket.emit('baseball-update', {
+            phase: 'playing',
+            mode: 'single',
+            history: curGame.history,
+            currentTurnPlayer: { id: socket.id, username: user.username },
+            message: `🤖 알파봇의 추측: ${aiGuess} ➔ ${aiResult.strike}S ${aiResult.ball}B | 당신의 턴입니다!`
+          });
+        }
+      }, 750);
     } else {
       // 1v1 배틀 모드
       const turnPlayer = game.players[game.currentTurnIndex];
@@ -184,7 +287,7 @@ export function registerNumberBaseballHandlers(io, socket) {
         strike: result.strike,
         ball: result.ball,
         isOut: result.isOut,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       };
 
       game.history.push(record);
@@ -194,6 +297,7 @@ export function registerNumberBaseballHandlers(io, socket) {
         game.winner = user.username;
         io.to(room).emit('baseball-update', {
           phase: 'game-over',
+          mode: 'battle',
           history: game.history,
           winner: user.username,
           secretNumber: secret,
@@ -206,6 +310,7 @@ export function registerNumberBaseballHandlers(io, socket) {
 
         io.to(room).emit('baseball-update', {
           phase: 'playing',
+          mode: 'battle',
           history: game.history,
           currentTurnPlayer: nextPlayer,
           lastRecord: record,
@@ -226,6 +331,7 @@ export function registerNumberBaseballHandlers(io, socket) {
     game.phase = 'waiting';
     game.history = [];
     game.secretNumbers = {};
+    game.aiCandidates = [];
     game.winner = null;
 
     io.to(room).emit('baseball-update', {
@@ -237,3 +343,4 @@ export function registerNumberBaseballHandlers(io, socket) {
     });
   });
 }
+

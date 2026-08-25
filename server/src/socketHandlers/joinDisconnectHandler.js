@@ -170,6 +170,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
           phase: 'waiting',
           history: [],
           secretNumbers: {},
+          aiCandidates: [],
           currentTurnIndex: 0,
           winner: null,
         });
@@ -181,6 +182,16 @@ export function registerJoinDisconnectHandlers(io, socket) {
         existingPlayer.id = socket.id;
       } else {
         game.players.push({ id: socket.id, username });
+
+        // 🚨 솔로 모드가 진행 중이거나 종료된 방에 새로운 참가자가 들어왔을 경우:
+        // 다른 참가자가 이전 솔로 게임에 강제 진입되는 버그를 방지하고 깨끗한 대기실로 자동 초기화
+        if (game.mode === 'single' || game.phase === 'game-over') {
+          game.phase = 'waiting';
+          game.history = [];
+          game.secretNumbers = {};
+          game.aiCandidates = [];
+          game.winner = null;
+        }
       }
 
       if (!game.hostId) game.hostId = socket.id;
@@ -191,6 +202,7 @@ export function registerJoinDisconnectHandlers(io, socket) {
         phase: game.phase,
         mode: game.mode || 'single',
         history: game.history || [],
+        message: game.phase === 'waiting' && !existingPlayer ? `👥 ${username}님이 입장하셨습니다. 모드를 선택하고 시작하세요!` : undefined
       });
     } else if (gameType === 'mafia') {
       if (!mafiaGames.has(room)) {
@@ -366,11 +378,22 @@ function executePermanentDisconnectCleanup(io, socketId, user) {
         if (wasHost && game.players.length > 0) {
           game.hostId = game.players[0].id;
         }
+
+        // 남은 인원이 있더라도 솔로 모드이거나 종료 상태였으면 대기실로 리셋
+        if (game.mode === 'single' || game.phase === 'game-over') {
+          game.phase = 'waiting';
+          game.history = [];
+          game.secretNumbers = {};
+          game.aiCandidates = [];
+          game.winner = null;
+        }
+
         io.to(user.room).emit('baseball-update', {
           players: game.players,
           hostId: game.hostId,
           phase: game.phase,
           mode: game.mode || 'single',
+          history: game.history || [],
         });
       }
     }

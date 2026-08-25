@@ -233,6 +233,28 @@
   color: #0b5a2f;
 }
 
+.turn-badge.ai-turn {
+  background: #f5f3ff;
+  border-color: #7c3aed;
+  color: #5b21b6;
+  animation: aiThinkingPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes aiThinkingPulse {
+  0% { opacity: 0.85; transform: scale(0.99); }
+  100% { opacity: 1; transform: scale(1.01); box-shadow: 0 0 8px rgba(124, 58, 237, 0.25); }
+}
+
+.my-secret-badge {
+  background: #fdf4ff;
+  border: 1px solid #d946ef;
+  color: #86198f;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .guess-input-section {
   display: flex;
   align-items: center;
@@ -241,6 +263,12 @@
   border: 1px solid #d4d4d4;
   padding: 10px 14px;
   border-radius: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.guess-input-section.disabled-turn {
+  opacity: 0.65;
+  background: #f3f4f6;
 }
 
 .guess-input-section .prefix {
@@ -301,6 +329,17 @@
   border-right: 2px solid #106ebe !important;
 }
 
+/* 🤖 알파봇 시도 행 (AI Row) - 연보라 배경 */
+.excel-grid-table tr.ai-row {
+  background-color: #faf5ff !important;
+}
+
+.excel-grid-table tr.ai-row .row-num {
+  background-color: #ede9fe !important;
+  color: #5b21b6 !important;
+  border-right: 2px solid #7c3aed !important;
+}
+
 /* 마우스 호버 효과 */
 .excel-grid-table tbody tr.my-row:hover {
   background-color: #d8edd9 !important;
@@ -308,6 +347,10 @@
 
 .excel-grid-table tbody tr.opponent-row:hover {
   background-color: #eaf1f8 !important;
+}
+
+.excel-grid-table tbody tr.ai-row:hover {
+  background-color: #f3e8ff !important;
 }
 
 .excel-grid-table tr.win-row {
@@ -333,6 +376,13 @@
   background: #eff6fc;
   color: #005a9e;
   border: 1px solid #106ebe;
+}
+
+.user-badge.ai-bot {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #8b5cf6;
+  font-weight: 700;
 }
 
 .guess-col {

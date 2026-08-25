@@ -34,6 +34,7 @@ interface BaseballUpdatePayload {
   currentTurnPlayer?: Player | null;
   winner?: string | null;
   secretNumber?: string | null;
+  mySecret?: string | null;
   message?: string;
 }
 
@@ -46,6 +47,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
   const [myId, setMyId] = useState('');
 
   const [secretInput, setSecretInput] = useState('');
+  const [mySecret, setMySecret] = useState<string | null>(null);
   const [guessInput, setGuessInput] = useState('');
   const [history, setHistory] = useState<AttemptRecord[]>([]);
   const [currentTurnPlayer, setCurrentTurnPlayer] = useState<Player | null>(null);
@@ -79,6 +81,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       if (data.currentTurnPlayer !== undefined) setCurrentTurnPlayer(data.currentTurnPlayer);
       if (data.winner) setWinner(data.winner);
       if (data.secretNumber) setSecretNumberRevealed(data.secretNumber);
+      if (data.mySecret) setMySecret(data.mySecret);
       if (data.message) setMessage(data.message);
     };
 
@@ -99,6 +102,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
   }, [socket, username, room]);
 
   const handleStartGame = (selectedMode: 'single' | 'battle') => {
+    setMySecret(null);
     socket?.emit('baseball-start', { room, mode: selectedMode });
   };
 
@@ -108,11 +112,13 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       setTimeout(() => setError(''), 3000);
       return;
     }
+    setMySecret(secretInput);
     socket?.emit('baseball-set-secret', { room, secret: secretInput });
     setSecretInput('');
   };
 
   const handleGuessSubmit = () => {
+    if (currentTurnPlayer && currentTurnPlayer.id === 'ai_bot') return;
     if (!/^\d{4}$/.test(guessInput) || new Set(guessInput).size !== 4) {
       setError('중복 없는 4자리 숫자를 입력해야 합니다 (예: 7192).');
       setTimeout(() => setError(''), 3000);
@@ -123,8 +129,13 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
   };
 
   const handleResetGame = () => {
+    setMySecret(null);
     socket?.emit('baseball-reset', { room });
   };
+
+  const isMyTurn = mode === 'single'
+    ? currentTurnPlayer?.id !== 'ai_bot'
+    : currentTurnPlayer?.id === myId;
 
   return (
     <div className="number-baseball-container excel-stealth-theme">
@@ -145,7 +156,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
         </div>
         <div className="game-info">
           <span className="excel-cell-badge phase">
-            {phase === 'waiting' ? '대기 중' : phase === 'playing' ? '진행 중' : '결과 발표'}
+            {phase === 'waiting' ? '대기 중' : phase === 'playing' ? (mode === 'single' ? '🤖 vs AI 대결 중' : '⚔️ 배틀 중') : '결과 발표'}
           </span>
           {onLeaveRoom && (
             <button onClick={onLeaveRoom} className="excel-btn close">
@@ -163,8 +174,8 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
 
           <div className="mode-selection-grid">
             <button onClick={() => handleStartGame('single')} className="excel-btn primary">
-              🤖 솔로 / AI 추리 모드 (1인 연습)
-              <span className="sub-desc">서버가 생성한 비밀 숫자를 혼자서 최소 시도로 맞추기</span>
+              🤖 솔로 / AI 1v1 대결 모드 (1인 플레이)
+              <span className="sub-desc">알파봇과 서로의 비밀 숫자를 번갈아 맞추는 두뇌 대결!</span>
             </button>
 
             <button
@@ -172,7 +183,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               disabled={players.length < 2}
               className="excel-btn secondary"
             >
-              ⚔️ 1v1 대결 모드 (2인 플레이)
+              ⚔️ 1v1 멀티 대결 모드 (2인 플레이)
               <span className="sub-desc">상대방의 비밀 숫자를 번갈아가며 먼저 맞추기 (최소 2인)</span>
             </button>
           </div>
@@ -191,11 +202,17 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
         </div>
       )}
 
-      {/* 🔑 Secret Setting Phase (Battle Mode) */}
+      {/* 🔑 Secret Setting Phase (Single vs AI / Battle Mode) */}
       {phase === 'set-secret' && (
         <div className="baseball-secret-section">
           <h3>🔑 비밀 숫자 설정</h3>
-          <p>상대방이 맞추어야 할 <strong>중복 없는 4자리 숫자</strong>를 입력하세요 (예: 3824).</p>
+          <p>
+            {mode === 'single' ? (
+              <>🤖 <strong>알파봇(AI)</strong>이 맞추어야 할 <strong>중복 없는 4자리 비밀 숫자</strong>를 입력하세요.</>
+            ) : (
+              <>상대방이 맞추어야 할 <strong>중복 없는 4자리 비밀 숫자</strong>를 입력하세요.</>
+            )}
+          </p>
           <div className="input-group">
             <input
               type="text"
@@ -205,7 +222,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               value={secretInput}
               onChange={e => setSecretInput(e.target.value.replace(/[^0-9]/g, ''))}
               onKeyDown={e => e.key === 'Enter' && handleSetSecret()}
-              placeholder="4자리 숫자 입력"
+              placeholder="4자리 숫자 입력 (예: 3824)"
               className="excel-input"
             />
             <button onClick={handleSetSecret} className="excel-btn primary">
@@ -226,18 +243,32 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       {/* ⚾ Playing & Game Over Phase */}
       {(phase === 'playing' || phase === 'game-over') && (
         <div className="baseball-game-body">
+          {/* Status and Turn Banner */}
           <div className="status-bar">
-            {message && <span className="status-msg">{message}</span>}
+            {mySecret && (
+              <span className="my-secret-badge">
+                🔒 내 비밀 숫자: <strong>{mySecret}</strong>
+              </span>
+            )}
+
+            {mode === 'single' && phase === 'playing' && (
+              <span className={`turn-badge ${isMyTurn ? 'my-turn' : 'ai-turn'}`}>
+                {isMyTurn ? '🎯 [내 턴] 알파봇의 4자리 숫자를 추측하세요!' : '🤖 알파봇이 당신의 숫자를 치열하게 분석 중... 💭'}
+              </span>
+            )}
+
             {mode === 'battle' && currentTurnPlayer && phase === 'playing' && (
               <span className={`turn-badge ${currentTurnPlayer.id === myId ? 'my-turn' : ''}`}>
                 🎯 현재 턴: {currentTurnPlayer.username}님 {currentTurnPlayer.id === myId ? '(내 턴!)' : ''}
               </span>
             )}
+
+            {message && <span className="status-msg">{message}</span>}
           </div>
 
           {/* Input Box */}
-          {phase === 'playing' && (mode === 'single' || currentTurnPlayer?.id === myId) && (
-            <div className="guess-input-section">
+          {phase === 'playing' && (
+            <div className={`guess-input-section ${!isMyTurn ? 'disabled-turn' : ''}`}>
               <span className="prefix">Input =</span>
               <input
                 type="text"
@@ -245,12 +276,17 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
                 pattern="[0-9]*"
                 maxLength={4}
                 value={guessInput}
+                disabled={!isMyTurn}
                 onChange={e => setGuessInput(e.target.value.replace(/[^0-9]/g, ''))}
                 onKeyDown={e => e.key === 'Enter' && handleGuessSubmit()}
-                placeholder="4자리 추측 숫자 입력 (Enter)"
+                placeholder={isMyTurn ? '4자리 추측 숫자 입력 (Enter)' : '상대방 턴 진행 중...'}
                 className="excel-input"
               />
-              <button onClick={handleGuessSubmit} className="excel-btn primary">
+              <button
+                onClick={handleGuessSubmit}
+                disabled={!isMyTurn}
+                className="excel-btn primary"
+              >
                 ▶ Execute Guess Check
               </button>
             </div>
@@ -264,7 +300,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               <thead>
                 <tr>
                   <th style={{ width: '60px' }}>Row</th>
-                  {mode === 'battle' && <th>Player</th>}
+                  <th>Player (추측 주체)</th>
                   <th>Guess_Digits</th>
                   <th>Strike (S)</th>
                   <th>Ball (B)</th>
@@ -274,26 +310,25 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               <tbody>
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan={mode === 'battle' ? 6 : 5} style={{ textAlign: 'center', color: '#a19f9d', padding: '20px' }}>
-                      아직 추측 기록이 없습니다. 4자리 숫자를 입력해보세요!
+                    <td colSpan={6} style={{ textAlign: 'center', color: '#a19f9d', padding: '20px' }}>
+                      아직 추측 기록이 없습니다. 4자리 숫자를 입력하여 먼저 상대 숫자를 맞춰보세요!
                     </td>
                   </tr>
                 ) : (
                   history.slice().reverse().map((record) => {
                     const isMe = record.guesser === username;
+                    const isAi = record.guesser.includes('알파봇') || record.guesser.includes('AI');
                     return (
                       <tr
                         key={record.id}
-                        className={`${record.strike === 4 ? 'win-row' : ''} ${isMe ? 'my-row' : 'opponent-row'}`}
+                        className={`${record.strike === 4 ? 'win-row' : ''} ${isMe ? 'my-row' : isAi ? 'ai-row' : 'opponent-row'}`}
                       >
                         <td className="row-num">#{record.attempt}</td>
-                        {mode === 'battle' && (
-                          <td className="user-col">
-                            <span className={`user-badge ${isMe ? 'me' : 'opponent'}`}>
-                              {record.guesser} {isMe ? '(나)' : ''}
-                            </span>
-                          </td>
-                        )}
+                        <td className="user-col">
+                          <span className={`user-badge ${isMe ? 'me' : isAi ? 'ai-bot' : 'opponent'}`}>
+                            {record.guesser} {isMe ? '(나)' : ''}
+                          </span>
+                        </td>
                         <td className="guess-col">{record.guess}</td>
                         <td>
                           <span className={`badge strike ${record.strike > 0 ? 'active' : ''}`}>
@@ -307,7 +342,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
                         </td>
                         <td>
                           {record.strike === 4 ? (
-                            <span className="status-tag win">🏆 PERFECT 4S (승리)</span>
+                            <span className="status-tag win">🏆 PERFECT 4S ({record.guesser} 승리!)</span>
                           ) : record.isOut ? (
                             <span className="status-tag out">🚫 OUT</span>
                           ) : (
@@ -326,8 +361,13 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
           {phase === 'game-over' && (
             <div className="game-over-box">
               <h3>🎉 GAME OVER</h3>
-              <p>우승자: <strong>{winner}</strong>님!</p>
-              {secretNumberRevealed && <p className="secret-reveal">정답 비밀 숫자: <strong>{secretNumberRevealed}</strong></p>}
+              <p>우승자: <strong>{winner}</strong>!</p>
+              {secretNumberRevealed && (
+                <p className="secret-reveal">
+                  {mode === 'single' ? '🤖 알파봇의 비밀 숫자: ' : '상대방 비밀 숫자: '}
+                  <strong>{secretNumberRevealed}</strong>
+                </p>
+              )}
               <button onClick={handleResetGame} className="excel-btn primary">
                 🔄 대기실로 돌아가기 (다시하기)
               </button>
@@ -340,3 +380,4 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
 };
 
 export default NumberBaseballGame;
+

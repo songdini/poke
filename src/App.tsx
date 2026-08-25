@@ -37,7 +37,7 @@ const GAMES_LIST: GameMeta[] = [
     name: '포켓농장 (동물농장)',
     excelName: 'Poke_Asset_Lifecycle_Management.xlsx',
     icon: '🏡',
-    desc: '쥬니버 동물농장 감성! 아기 포켓몬 분양, 육성, 진화 & 감동의 졸업식',
+    desc: '아기 포켓몬 분양, 육성, 진화 & 감동의 졸업식',
     badge: 'NEW',
     themeColor: '#10b981'
   },

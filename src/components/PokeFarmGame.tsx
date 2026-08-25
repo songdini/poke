@@ -53,6 +53,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [graduatingModal, setGraduatingModal] = useState<GraduationDiploma | null>(null);
   const [selectedDiploma, setSelectedDiploma] = useState<GraduationDiploma | null>(null);
 
+  // 💼 아르바이트 현장 체험 애니메이션 모달 상태
+  const [jobShiftModal, setJobShiftModal] = useState<{
+    active: boolean;
+    job: PartTimeJob;
+    progress: number;
+    statusText: string;
+    isDone: boolean;
+    rewardGained: {
+      coins: number;
+      exp: number;
+      levelUp: boolean;
+      newLevel: number;
+    } | null;
+  } | null>(null);
+
+  // 🌟 팜 쓰다듬기 고유 스킬 모션 상태
+  const [petSkillEffect, setPetSkillEffect] = useState<{
+    id: number;
+    skillName: string;
+    type: string;
+    icon: string;
+    particles: string[];
+  } | null>(null);
+  const [isPetJumping, setIsPetJumping] = useState(false);
+
   // 이웃 탐방 상태
   const [neighborList, setNeighborList] = useState<NeighborFarmData[]>([]);
   const [visitingFarm, setVisitingFarm] = useState<{ owner: string; farm: NeighborFarmData; guestbook: GuestbookEntry[] } | null>(null);
@@ -135,15 +160,77 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   const pmon = farmState.activePokemon;
 
-  // 1. 포켓몬 쓰다듬기 & 하트 이펙트
+  // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트
   const handlePetPokemon = (e?: React.MouseEvent) => {
     if (!pmon) return;
     playPokemonCry(pmon.speciesId);
 
+    // 스킬 모션 정보 결정
+    let skillName = '애교부리기';
+    let skillType = 'normal';
+    let skillIcon = '⭐';
+    let particles = ['⭐', '✨', '💛', '💖', '🎉'];
+
+    if (pmon.types.includes('water')) {
+      skillName = pmon.level >= 30 ? '하이드로펌프' : '물대포';
+      skillType = 'water';
+      skillIcon = '🌊';
+      particles = ['🌊', '💦', '🫧', '💧', '✨'];
+    } else if (pmon.types.includes('fire')) {
+      skillName = pmon.level >= 30 ? '화염방사' : '불꽃세례';
+      skillType = 'fire';
+      skillIcon = '🔥';
+      particles = ['🔥', '💥', '☄️', '♨️', '✨'];
+    } else if (pmon.types.includes('grass')) {
+      skillName = pmon.level >= 30 ? '솔라빔' : '잎날가르기';
+      skillType = 'grass';
+      skillIcon = '🍃';
+      particles = ['🍃', '🌸', '🌿', '🌱', '✨'];
+    } else if (pmon.types.includes('electric')) {
+      skillName = pmon.level >= 30 ? '볼트태클' : '10만볼트';
+      skillType = 'electric';
+      skillIcon = '⚡';
+      particles = ['⚡', '⚡', '🌟', '💛', '✨'];
+    } else if (pmon.types.includes('fairy')) {
+      skillName = '문포스';
+      skillType = 'fairy';
+      skillIcon = '💖';
+      particles = ['💖', '🌙', '🌸', '✨', '💕'];
+    } else if (pmon.types.includes('dragon')) {
+      skillName = '용의파동';
+      skillType = 'dragon';
+      skillIcon = '🐉';
+      particles = ['🐉', '☄️', '💫', '🔷', '✨'];
+    } else if (pmon.types.includes('ghost') || pmon.types.includes('psychic')) {
+      skillName = '사이코키네시스';
+      skillType = 'psychic';
+      skillIcon = '🔮';
+      particles = ['🔮', '🌌', '👻', '💜', '✨'];
+    } else if (pmon.types.includes('fighting')) {
+      skillName = '인파이트';
+      skillType = 'fighting';
+      skillIcon = '🥊';
+      particles = ['🥊', '💥', '⚡', '💪', '✨'];
+    }
+
+    setPetSkillEffect({
+      id: Date.now(),
+      skillName,
+      type: skillType,
+      icon: skillIcon,
+      particles
+    });
+    setIsPetJumping(true);
+
     const clientX = e ? e.clientX : window.innerWidth / 2;
     const clientY = e ? e.clientY : window.innerHeight / 2;
     setFloatingHeart({ id: Date.now(), x: clientX, y: clientY });
-    setTimeout(() => setFloatingHeart(null), 1000);
+
+    setTimeout(() => setIsPetJumping(false), 700);
+    setTimeout(() => {
+      setFloatingHeart(null);
+      setPetSkillEffect(null);
+    }, 1400);
 
     setFarmState(prev => {
       if (!prev.activePokemon) return prev;
@@ -233,7 +320,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert(`✨ [${item.name}]을(를) 사용했습니다!`, 'success');
   };
 
-  // 3. 아르바이트 수행
+  // 3. 아르바이트 수행 (체험 모달 개시)
   const handleWorkJob = (job: PartTimeJob) => {
     if (!pmon) return;
     if (pmon.level < job.minLevel) {
@@ -249,39 +336,118 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       return;
     }
 
-    setFarmState(prev => {
-      if (!prev.activePokemon) return prev;
-      const target = prev.activePokemon;
-
-      let newExp = target.exp + job.expReward;
-      let newLevel = target.level;
-      let maxExp = target.maxExp;
-
-      while (newExp >= maxExp) {
-        newExp -= maxExp;
-        newLevel += 1;
-        maxExp = Math.round(maxExp * 1.3);
-      }
-
-      return {
-        ...prev,
-        coins: prev.coins + job.rewardCoins,
-        activePokemon: {
-          ...target,
-          energy: Math.max(0, target.energy - job.energyCost),
-          hunger: Math.max(0, target.hunger - job.hungerCost),
-          cleanliness: Math.max(0, target.cleanliness - job.cleanlinessCost),
-          level: newLevel,
-          exp: newExp,
-          maxExp,
-          jobsCompleted: target.jobsCompleted + 1
-        }
-      };
-    });
-
     playPokemonCry(pmon.speciesId);
-    showAlert(`💼 [${job.title}] 완료! +${job.rewardCoins} 코인 & +${job.expReward} EXP 획득!`, 'success');
+
+    // 알바 작업 모달 개시
+    setJobShiftModal({
+      active: true,
+      job,
+      progress: 0,
+      statusText: '🏢 현장 도착! 업무를 준비하고 있습니다...',
+      isDone: false,
+      rewardGained: null
+    });
   };
+
+  // 💼 아르바이트 현장 진행 애니메이션 타이머
+  useEffect(() => {
+    if (!jobShiftModal || !jobShiftModal.active || jobShiftModal.isDone) return;
+
+    const interval = setInterval(() => {
+      setJobShiftModal(prev => {
+        if (!prev || prev.isDone) return prev;
+        const nextProgress = Math.min(100, prev.progress + 14);
+
+        let statusText = '🏢 현장 도착! 업무 준비 중...';
+        const isWater = pmon?.types.includes('water');
+        const isGrass = pmon?.types.includes('grass');
+        const isFire = pmon?.types.includes('fire');
+        const isElectric = pmon?.types.includes('electric');
+
+        if (nextProgress >= 20 && nextProgress < 65) {
+          if (prev.job.id === 'job_garden') {
+            statusText = isWater
+              ? '🌊 [물대포/파도타기] 기술로 꽃밭에 시원한 물줄기를 뿜어냅니다!'
+              : isGrass
+              ? '🍃 [광합성 & 덩굴채찍]으로 싱그러운 정원을 정성스레 가꿉니다!'
+              : '🚿 귀여운 물뿌리개로 꽃 하나하나에 촉촉하게 물을 주는 중!';
+          } else if (prev.job.id === 'job_mail') {
+            statusText = '📬 사내 중요 서류를 신속 정확하게 배달하는 중! 🏃‍♂️💨';
+          } else if (prev.job.id === 'job_coffee') {
+            statusText = isFire
+              ? '🔥 [불꽃세례]로 장인의 프리미엄 원두를 로스팅 중!'
+              : '☕ 향긋한 프리미엄 핸드드립 커피를 정성껏 추출 중! ☕✨';
+          } else if (prev.job.id === 'job_generator') {
+            statusText = isElectric
+              ? '⚡ [10만볼트] 고출력 전기 충전으로 배터리를 급속 충전 중!'
+              : '🔋 에너지 가득 다이나모 발전 휠을 힘차게 돌리는 중!';
+          } else {
+            statusText = '🕶️ VIP 대표님을 빈틈없이 든든하게 에스코트 경호 중!';
+          }
+        } else if (nextProgress >= 65 && nextProgress < 95) {
+          statusText = '✨ 마무리 품질 검수 및 현장 정리 정돈 중...';
+        } else if (nextProgress >= 100) {
+          statusText = '🎉 업무 완수! 급여 명세서가 발급되었습니다.';
+        }
+
+        if (nextProgress >= 100) {
+          if (pmon) {
+            let newExp = pmon.exp + prev.job.expReward;
+            let newLevel = pmon.level;
+            let maxExp = pmon.maxExp;
+            let didLevelUp = false;
+
+            while (newExp >= maxExp) {
+              newExp -= maxExp;
+              newLevel += 1;
+              maxExp = Math.round(maxExp * 1.3);
+              didLevelUp = true;
+            }
+
+            setFarmState(fPrev => {
+              if (!fPrev.activePokemon) return fPrev;
+              const target = fPrev.activePokemon;
+              return {
+                ...fPrev,
+                coins: fPrev.coins + prev.job.rewardCoins,
+                activePokemon: {
+                  ...target,
+                  energy: Math.max(0, target.energy - prev.job.energyCost),
+                  hunger: Math.max(0, target.hunger - prev.job.hungerCost),
+                  cleanliness: Math.max(0, target.cleanliness - prev.job.cleanlinessCost),
+                  level: newLevel,
+                  exp: newExp,
+                  maxExp,
+                  jobsCompleted: target.jobsCompleted + 1
+                }
+              };
+            });
+
+            return {
+              ...prev,
+              progress: 100,
+              statusText: '🎉 업무 완수! 급여 명세서가 발급되었습니다.',
+              isDone: true,
+              rewardGained: {
+                coins: prev.job.rewardCoins,
+                exp: prev.job.expReward,
+                levelUp: didLevelUp,
+                newLevel
+              }
+            };
+          }
+        }
+
+        return {
+          ...prev,
+          progress: nextProgress,
+          statusText
+        };
+      });
+    }, 280);
+
+    return () => clearInterval(interval);
+  }, [jobShiftModal?.active, jobShiftModal?.isDone, pmon]);
 
   // 4. 상점 아이템 구매
   const handleBuyItem = (item: FarmItem) => {
@@ -485,7 +651,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 <div className="onboarding-icon">🏡</div>
                 <h2>포켓농장 개설 신고서</h2>
                 <p className="onboarding-desc">
-                  쥬니버네이버 동물농장에 오신 것을 환영합니다!<br />
+                  포켓농장에 오신 것을 환영합니다!<br />
                   먼저 농장주님의 닉네임과 농장 이름을 지어주세요.
                 </p>
 
@@ -648,7 +814,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           <span className="farm-logo">🏡</span>
           <div>
             <h2>{farmState.farmName}</h2>
-            <span className="farm-sub">농장주: <strong>{farmState.ownerName}</strong> | 쥬니버 포켓농장 라이프</span>
+            <span className="farm-sub">농장주: <strong>{farmState.ownerName}</strong> | 포켓농장 라이프</span>
           </div>
         </div>
 
@@ -709,13 +875,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 <div className="farm-pasture-screen" onClick={handlePetPokemon}>
                   <div className="pasture-clouds">☁️ ☀️ ☁️</div>
                   <div className="pasture-ground">
-                    {/* Pokémon Visual Sprite */}
+                    {/* Pokémon Visual Sprite & Skill FX */}
                     <div className="farm-pokemon-stage">
                       {pmon.isShiny && <span className="shiny-sparkle-tag">✨ SHINY</span>}
+
+                      {/* 🌟 Pet Skill Pop Banner */}
+                      {petSkillEffect && (
+                        <div className={`pet-skill-banner skill-${petSkillEffect.type}`}>
+                          <span className="skill-icon-anim">{petSkillEffect.icon}</span>
+                          <span className="skill-name-text">[{petSkillEffect.skillName}] 발동!</span>
+                        </div>
+                      )}
+
+                      {/* 💥 Skill Aura & Burst Particles */}
+                      {petSkillEffect && (
+                        <div className={`pet-skill-aura-ring aura-${petSkillEffect.type}`}>
+                          {petSkillEffect.particles.map((pt, i) => (
+                            <span key={i} className={`skill-particle pt-${i + 1}`}>
+                              {pt}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <img
                         src={pmon.sprites.showdownFront || pmon.sprites.front}
                         alt={pmon.nickname}
-                        className="farm-active-sprite"
+                        className={`farm-active-sprite ${isPetJumping ? 'pet-skill-jump' : ''}`}
                       />
                       <div className="pet-shadow"></div>
                       <div className="pet-nametag">
@@ -729,13 +915,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
                   {/* Floating Heart Effect */}
                   {floatingHeart && (
-                    <div className="floating-heart" style={{ left: '50%', top: '40%' }}>
-                      💖 +하트!
+                    <div className="floating-heart" style={{ left: '50%', top: '35%' }}>
+                      💖 +5 애정도!
                     </div>
                   )}
 
                   <div className="pasture-touch-hint">
-                    💡 포켓몬을 터치/클릭하면 예뻐해주기 & 친밀도가 상승합니다!
+                    💡 포켓몬을 터치/클릭하면 고유 스킬 모션과 함께 애정도(+5) 및 EXP(+10)가 상승합니다!
                   </div>
                 </div>
 
@@ -864,7 +1050,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             <div className="adopt-banner">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <h3>🐣 쥬니버 포켓몬 분양소</h3>
+                  <h3>🐣 둡박사 포켓몬 분양소</h3>
                   <p>원하는 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 **이로치(Shiny)** 포켓몬이 탄생합니다.</p>
                 </div>
                 {/* Generation Filter Chips */}
@@ -1061,7 +1247,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         {activeTab === 'shop' && !visitingFarm && (
           <div className="farm-shop-layout">
             <div className="shop-banner">
-              <h3>🛍️ 쥬니버 포켓몬 마트</h3>
+              <h3>🛍️ 둡박사의 포켓몬 마트</h3>
               <p>맛있는 나무열매와 목욕 용품, 활력 비타민을 구매하여 포켓몬을 돌보세요!</p>
             </div>
 
@@ -1257,6 +1443,220 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         )}
       </div>
 
+      {/* 💼 PART-TIME JOB INTERACTIVE SHIFT MODAL */}
+      {jobShiftModal && (
+        <div className="farm-modal-overlay">
+          <div className="job-shift-modal-card">
+            <div className="job-modal-header">
+              <div className="job-badge">
+                <span className="job-badge-icon">{jobShiftModal.job.icon}</span>
+                <strong>{jobShiftModal.job.title}</strong>
+              </div>
+              {jobShiftModal.isDone && (
+                <button className="modal-close-btn" onClick={() => setJobShiftModal(null)}>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* 🎬 Dynamic Job Stage View */}
+            <div className={`job-stage-view stage-${jobShiftModal.job.id}`}>
+              {/* Stage Specific Environment Props */}
+              {jobShiftModal.job.id === 'job_garden' && (
+                <div className="garden-env">
+                  <div className="garden-flowerbed">
+                    <span className="flower f1">🌸</span>
+                    <span className="flower f2">🌻</span>
+                    <span className="flower f3">🌷</span>
+                    <span className="flower f4">🌼</span>
+                    <span className="flower f5">🌹</span>
+                  </div>
+                  {/* Skill/Tool Action */}
+                  {pmon?.types.includes('water') ? (
+                    <div className="water-skill-effect">
+                      <span className="water-wave">🌊</span>
+                      <span className="water-drop d1">💦</span>
+                      <span className="water-drop d2">💧</span>
+                      <span className="water-drop d3">💦</span>
+                    </div>
+                  ) : pmon?.types.includes('grass') ? (
+                    <div className="grass-skill-effect">
+                      <span className="leaf l1">🍃</span>
+                      <span className="leaf l2">🌿</span>
+                      <span className="leaf l3">✨</span>
+                    </div>
+                  ) : (
+                    <div className="watering-can-tool">
+                      <span className="can-icon">🚿</span>
+                      <span className="water-drop d1">💧</span>
+                      <span className="water-drop d2">💧</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {jobShiftModal.job.id === 'job_mail' && (
+                <div className="mail-env">
+                  <div className="office-hallway-bg">
+                    <span className="post-box">📮</span>
+                    <span className="mail-parcel p1">📦</span>
+                    <span className="mail-parcel p2">✉️</span>
+                  </div>
+                  {pmon?.types.includes('flying') ? (
+                    <div className="flying-courier-effect">
+                      <span className="wing-wind">💨</span>
+                      <span className="floating-envelope">✉️</span>
+                    </div>
+                  ) : pmon?.types.includes('psychic') || pmon?.types.includes('ghost') ? (
+                    <div className="psychic-courier-effect">
+                      <span className="psychic-aura">🔮</span>
+                      <span className="floating-box">📦</span>
+                    </div>
+                  ) : (
+                    <div className="dash-courier-effect">
+                      <span className="speed-lines">💨💨</span>
+                      <span className="courier-bag">🎒</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {jobShiftModal.job.id === 'job_coffee' && (
+                <div className="coffee-env">
+                  <div className="coffee-counter-bg">
+                    <span className="espresso-machine">☕</span>
+                    <span className="coffee-beans">🫘</span>
+                    <span className="coffee-cup">🥤</span>
+                  </div>
+                  {pmon?.types.includes('fire') ? (
+                    <div className="fire-roast-effect">
+                      <span className="fire-flame">🔥</span>
+                      <span className="coffee-steam">♨️</span>
+                    </div>
+                  ) : (
+                    <div className="drip-coffee-effect">
+                      <span className="coffee-pot">🫖</span>
+                      <span className="coffee-steam">♨️</span>
+                      <span className="coffee-heart">🤎</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {jobShiftModal.job.id === 'job_generator' && (
+                <div className="generator-env">
+                  <div className="server-room-bg">
+                    <span className="server-rack">🖥️</span>
+                    <span className="battery-icon">🔋</span>
+                  </div>
+                  {pmon?.types.includes('electric') ? (
+                    <div className="lightning-charge-effect">
+                      <span className="bolt b1">⚡</span>
+                      <span className="bolt b2">⚡</span>
+                      <span className="sparkle">✨</span>
+                    </div>
+                  ) : (
+                    <div className="wheel-charge-effect">
+                      <span className="gear-spin">⚙️</span>
+                      <span className="charge-spark">💡</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {jobShiftModal.job.id === 'job_ceo_security' && (
+                <div className="security-env">
+                  <div className="penthouse-bg">
+                    <span className="skyline">🏙️</span>
+                    <span className="luxury-desk">💼</span>
+                  </div>
+                  <div className="security-guard-effect">
+                    <span className="sunglasses-icon">🕶️</span>
+                    <span className="shield-aura">🛡️</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 🐾 Active Working Pokémon Sprite */}
+              <div className={`working-pokemon-wrapper ${jobShiftModal.isDone ? 'done-bounce' : 'working-motion'}`}>
+                <img
+                  src={pmon?.sprites.showdownFront || pmon?.sprites.front}
+                  alt={pmon?.name}
+                  className="working-pokemon-sprite"
+                />
+                <div className="worker-tag">
+                  <span>Lv.{pmon?.level} {pmon?.nickname}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 📊 Work Progress & Status */}
+            <div className="job-status-section">
+              <div className="status-bubble">
+                <p>{jobShiftModal.statusText}</p>
+              </div>
+
+              <div className="job-progress-bar-wrap">
+                <div className="job-progress-fill" style={{ width: `${jobShiftModal.progress}%` }}>
+                  <span className="progress-percent">{jobShiftModal.progress}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 💰 Settlement / Actions */}
+            {!jobShiftModal.isDone ? (
+              <div className="job-working-actions">
+                <button
+                  className="excel-btn cheer-btn"
+                  onClick={() => {
+                    setJobShiftModal(prev => prev ? { ...prev, progress: Math.min(99, prev.progress + 20) } : null);
+                    if (pmon) playPokemonCry(pmon.speciesId);
+                  }}
+                >
+                  ❤️ 신나게 응원하기! (+속도 UP)
+                </button>
+              </div>
+            ) : (
+              <div className="job-salary-receipt">
+                <div className="receipt-header">
+                  <h4>🧾 아르바이트 급여 정산서</h4>
+                  <span>{jobShiftModal.job.title} 완수</span>
+                </div>
+                <div className="receipt-grid">
+                  <div className="receipt-row gain">
+                    <span>🪙 수당 지급:</span>
+                    <strong>+{jobShiftModal.rewardGained?.coins} P</strong>
+                  </div>
+                  <div className="receipt-row gain">
+                    <span>⭐ 경험치 획득:</span>
+                    <strong>+{jobShiftModal.rewardGained?.exp} EXP</strong>
+                  </div>
+                  <div className="receipt-row cost">
+                    <span>⚡ 체력 소모:</span>
+                    <span>-{jobShiftModal.job.energyCost}</span>
+                  </div>
+                  <div className="receipt-row cost">
+                    <span>🍎 배고픔 소모:</span>
+                    <span>-{jobShiftModal.job.hungerCost}</span>
+                  </div>
+                </div>
+                {jobShiftModal.rewardGained?.levelUp && (
+                  <div className="job-levelup-badge">
+                    🎊 LEVEL UP! Lv.{jobShiftModal.rewardGained.newLevel} 달성!
+                  </div>
+                )}
+                <button
+                  className="excel-btn primary confirm-receipt-btn"
+                  onClick={() => setJobShiftModal(null)}
+                >
+                  💰 급여 수령 및 확인
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ✨ EVOLUTION DRAMATIC MODAL */}
       {evolvingModal && (
         <div className="farm-modal-overlay">
@@ -1311,7 +1711,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 </p>
                 <div className="cert-footer">
                   <span>졸업일시: {(graduatingModal || selectedDiploma)?.graduatedAt}</span>
-                  <strong className="cert-principal">쥬니버 포켓농장 학장 로토무 (인)</strong>
+                  <strong className="cert-principal">포켓농장 학장 김두부 (인)</strong>
                 </div>
               </div>
             </div>
