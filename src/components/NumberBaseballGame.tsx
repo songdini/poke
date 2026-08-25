@@ -25,6 +25,18 @@ interface NumberBaseballGameProps {
   onLeaveRoom?: () => void;
 }
 
+interface BaseballUpdatePayload {
+  players?: Player[];
+  hostId?: string;
+  phase?: 'waiting' | 'set-secret' | 'waiting-opponent-secret' | 'playing' | 'game-over';
+  mode?: 'single' | 'battle';
+  history?: AttemptRecord[];
+  currentTurnPlayer?: Player | null;
+  winner?: string | null;
+  secretNumber?: string | null;
+  message?: string;
+}
+
 const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -56,7 +68,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       joinRoom();
     }
 
-    const handleUpdate = (data: any) => {
+    const handleUpdate = (data: BaseballUpdatePayload) => {
       if (data.players) setPlayers(data.players);
       if (data.hostId) {
         setHostId(data.hostId);
@@ -64,7 +76,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
       if (data.phase) setPhase(data.phase);
       if (data.mode) setMode(data.mode);
       if (data.history) setHistory(data.history);
-      if (data.currentTurnPlayer) setCurrentTurnPlayer(data.currentTurnPlayer);
+      if (data.currentTurnPlayer !== undefined) setCurrentTurnPlayer(data.currentTurnPlayer);
       if (data.winner) setWinner(data.winner);
       if (data.secretNumber) setSecretNumberRevealed(data.secretNumber);
       if (data.message) setMessage(data.message);
@@ -187,9 +199,12 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
           <div className="input-group">
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={4}
               value={secretInput}
               onChange={e => setSecretInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onKeyDown={e => e.key === 'Enter' && handleSetSecret()}
               placeholder="4자리 숫자 입력"
               className="excel-input"
             />
@@ -226,10 +241,12 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
               <span className="prefix">Input =</span>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={4}
                 value={guessInput}
                 onChange={e => setGuessInput(e.target.value.replace(/[^0-9]/g, ''))}
-                onKeyPress={e => e.key === 'Enter' && handleGuessSubmit()}
+                onKeyDown={e => e.key === 'Enter' && handleGuessSubmit()}
                 placeholder="4자리 추측 숫자 입력 (Enter)"
                 className="excel-input"
               />

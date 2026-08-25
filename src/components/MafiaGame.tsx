@@ -35,7 +35,7 @@ interface GameMessage {
 
 type MafiaUpdateMessage =
   | { type: 'join'; data: { player?: Player; players?: Player[] } }
-  | { type: 'reconnect-sync'; data: { players: Player[]; phase: GameState['phase']; gameStarted: boolean; timeLeft?: number; voteUsed?: boolean } }
+  | { type: 'reconnect-sync'; data: { players: Player[]; phase: GameState['phase']; gameStarted: boolean; timeLeft?: number; voteUsed?: boolean; mafiaCount?: number } }
   | { type: 'leave'; data: { playerId: string } }
   | { type: 'message'; data: GameMessage }
   | { type: 'game-start'; data: { players: Player[]; phase?: GameState['phase']; timeLeft?: number } }
@@ -179,7 +179,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
         break;
 
       case 'reconnect-sync':
-        if ((data as any).mafiaCount) setMafiaCount((data as any).mafiaCount);
+        if (data.mafiaCount) setMafiaCount(data.mafiaCount);
         setGameState(prev => ({
           ...prev,
           players: data.players || prev.players,

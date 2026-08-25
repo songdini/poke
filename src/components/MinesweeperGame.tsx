@@ -18,6 +18,17 @@ interface CellData {
 
 type Difficulty = 'beginner' | 'intermediate' | 'expert';
 
+interface MinesweeperUpdatePayload {
+  board?: CellData[][];
+  phase?: 'playing' | 'won' | 'lost';
+  difficulty?: Difficulty;
+  rows?: number;
+  cols?: number;
+  mines?: number;
+  flagsCount?: number;
+  message?: string;
+}
+
 const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -32,6 +43,7 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
   const [elapsedTime, setElapsedTime] = useState(0);
   const [selectedCell, setSelectedCell] = useState<{ r: number; c: number } | null>(null);
   const [message, setMessage] = useState('');
+  const [isFlagMode, setIsFlagMode] = useState(false);
 
   // 타이머
   useEffect(() => {
@@ -61,7 +73,7 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
       joinRoom();
     }
 
-    const handleUpdate = (data: any) => {
+    const handleUpdate = (data: MinesweeperUpdatePayload) => {
       if (data.board) setBoard(data.board);
       if (data.phase) setPhase(data.phase);
       if (data.difficulty) setDifficulty(data.difficulty);
@@ -88,13 +100,17 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
     socket?.emit('minesweeper-start', { room, difficulty: diff });
   };
 
-  // 좌클릭: 셀 개봉
+  // 좌클릭: 셀 개봉 또는 깃발 (모바일 토글 모드 지원)
   const handleCellClick = (r: number, c: number) => {
     if (phase !== 'playing') return;
-    socket?.emit('minesweeper-open', { room, row: r, col: c, username });
+    if (isFlagMode) {
+      socket?.emit('minesweeper-flag', { room, row: r, col: c });
+    } else {
+      socket?.emit('minesweeper-open', { room, row: r, col: c, username });
+    }
   };
 
-  // 우클릭: 깃발 토글
+  // 우클릭: 깃발 토글 (PC 환경)
   const handleCellContextMenu = (e: React.MouseEvent, r: number, c: number) => {
     e.preventDefault();
     if (phase !== 'playing') return;
@@ -145,9 +161,9 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
 
       {/* 📱 Main Workspace */}
       <div className="minesweeper-workspace">
-        {/* 난이도 선택 리본 */}
+        {/* 난이도 & 터치 모드 선택 리본 */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#605e5c' }}>난이도 선택:</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#605e5c' }}>난이도:</span>
           {(['beginner', 'intermediate', 'expert'] as Difficulty[]).map(diff => (
             <button
               key={diff}
@@ -157,6 +173,14 @@ const MinesweeperGame: React.FC<MinesweeperGameProps> = ({ username, room, onLea
               {diff === 'beginner' ? '🌱 초급 (9x9)' : diff === 'intermediate' ? '⚡ 중급 (16x16)' : '🔥 고급 (16x30)'}
             </button>
           ))}
+          <button
+            className={`excel-btn ${isFlagMode ? 'warning' : ''}`}
+            onClick={() => setIsFlagMode(!isFlagMode)}
+            style={{ fontWeight: 700 }}
+            title="터치 시 깃발 꽂기 모드로 전환"
+          >
+            {isFlagMode ? '🚩 깃발 꽂기 모드 (ON)' : '⛏️ 셀 개봉 모드 (ON)'}
+          </button>
         </div>
 
         {/* 📊 Excel KPI Status Bar */}

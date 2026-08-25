@@ -333,7 +333,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
           </div>
         </div>;
 
-      case 'drawing':
+      case 'drawing': {
         const isCopyMode = currentBookPage?.type === 'drawing';
         return <div className="telestrations-phase-container">
           <h3>{isCopyMode ? '🖼️ 그림 보고 따라 그리기' : '🎨 그림 그리기'}</h3>
@@ -409,6 +409,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
             ▶ 그림 제출 완료
           </button>
         </div>;
+      }
 
       case 'guessing':
         return <div className="telestrations-phase-container">

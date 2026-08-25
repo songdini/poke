@@ -11,6 +11,16 @@ interface SudokuGameProps {
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
+interface SudokuUpdatePayload {
+  grid?: number[][];
+  fixedMask?: boolean[][];
+  phase?: 'waiting' | 'playing' | 'completed';
+  difficulty?: Difficulty;
+  completed?: boolean;
+  winner?: string | null;
+  message?: string;
+}
+
 const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -27,10 +37,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [winner, setWinner] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // 셀 선택 및 토글 옵션
+  // 셀 선택 및 토글 옵션 (모바일에서는 기본값으로 가상 키패드 활성화)
   const [selectedCell, setSelectedCell] = useState<{ r: number; c: number } | null>(null);
   const [message, setMessage] = useState('');
-  const [showNumpad, setShowNumpad] = useState(false); // 기본값: 숨김으로 설정하여 100% 엑셀 셀처럼 연출
+  const [showNumpad, setShowNumpad] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
   // 타이머
   useEffect(() => {
@@ -61,7 +71,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       joinRoom();
     }
 
-    const handleUpdate = (data: any) => {
+    const handleUpdate = (data: SudokuUpdatePayload) => {
       if (data.grid) setGrid(data.grid);
       if (data.fixedMask) setFixedMask(data.fixedMask);
       if (data.phase) setPhase(data.phase);
@@ -79,6 +89,21 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       socket.off('sudoku-update', handleUpdate);
     };
   }, [socket, username, room]);
+
+  // 셀 숫자 입력/수정
+  const handleNumberInput = React.useCallback((val: number) => {
+    if (!selectedCell || phase !== 'playing' || completed) return;
+    const { r, c } = selectedCell;
+    if (fixedMask[r]?.[c]) return;
+
+    socket?.emit('sudoku-input', {
+      room,
+      row: r,
+      col: c,
+      value: val,
+      username
+    });
+  }, [selectedCell, phase, completed, fixedMask, socket, room, username]);
 
   // 키보드 입력 핸들러
   useEffect(() => {
@@ -105,29 +130,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, phase, completed]);
+  }, [selectedCell, phase, completed, handleNumberInput]);
 
   // 퍼즐 시작
   const handleStartGame = (diff: Difficulty) => {
     setDifficulty(diff);
     setElapsedTime(0);
     socket?.emit('sudoku-start', { room, difficulty: diff });
-  };
-
-  // 셀 숫자 입력/수정
-  const handleNumberInput = (val: number) => {
-    if (!selectedCell || phase !== 'playing' || completed) return;
-    const { r, c } = selectedCell;
-
-    if (fixedMask[r][c]) return;
-
-    socket?.emit('sudoku-cell-change', {
-      room,
-      row: r,
-      col: c,
-      value: val,
-      username
-    });
   };
 
   // 힌트 사용

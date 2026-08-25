@@ -17,6 +17,15 @@ const KEYBOARD_ROWS = [
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
 ];
 
+interface WordleUpdatePayload {
+  phase?: 'playing' | 'won' | 'lost';
+  attempts?: string[];
+  results?: CellStatus[][];
+  targetWord?: string | null;
+  winner?: string | null;
+  message?: string;
+}
+
 const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -29,8 +38,8 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // ⌨️ 가상 키보드 표시 여부 (기본값: 숨김으로 설정하여 엑셀 셀만 표시)
-  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+  // ⌨️ 가상 키보드 표시 여부 (모바일에서는 기본 활성화)
+  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
   // 소켓 연동
   useEffect(() => {
@@ -49,7 +58,7 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
       joinRoom();
     }
 
-    const handleUpdate = (data: any) => {
+    const handleUpdate = (data: WordleUpdatePayload) => {
       if (data.phase) setPhase(data.phase);
       if (data.attempts) setAttempts(data.attempts);
       if (data.results) setResults(data.results);
@@ -74,6 +83,32 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
     };
   }, [socket, username, room]);
 
+  // 키보드 글자 입력
+  const handleKeyPress = React.useCallback((char: string) => {
+    if (phase !== 'playing') return;
+    if (currentInput.length < 5) {
+      setCurrentInput(prev => prev + char);
+    }
+  }, [phase, currentInput.length]);
+
+  // 백스페이스
+  const handleBackspace = React.useCallback(() => {
+    setCurrentInput(prev => prev.slice(0, -1));
+  }, []);
+
+  // 단어 제출
+  const handleSubmitGuess = React.useCallback(() => {
+    if (phase !== 'playing') return;
+    if (currentInput.length !== 5) {
+      setError('5글자 단어를 입력해야 합니다.');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    socket?.emit('wordle-submit-guess', { room, guess: currentInput, username });
+    setCurrentInput('');
+  }, [phase, currentInput, socket, room, username]);
+
   // 물리 키보드 입력 핸들러
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -90,33 +125,7 @@ const WordleGame: React.FC<WordleGameProps> = ({ username, room, onLeaveRoom }) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentInput, phase]);
-
-  // 키보드 글자 입력
-  const handleKeyPress = (char: string) => {
-    if (phase !== 'playing') return;
-    if (currentInput.length < 5) {
-      setCurrentInput(prev => prev + char);
-    }
-  };
-
-  // 백스페이스
-  const handleBackspace = () => {
-    setCurrentInput(prev => prev.slice(0, -1));
-  };
-
-  // 단어 제출
-  const handleSubmitGuess = () => {
-    if (phase !== 'playing') return;
-    if (currentInput.length !== 5) {
-      setError('5글자 단어를 입력해야 합니다.');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    socket?.emit('wordle-submit-guess', { room, guess: currentInput, username });
-    setCurrentInput('');
-  };
+  }, [phase, handleSubmitGuess, handleBackspace, handleKeyPress]);
 
   // 게임 재시작
   const handleStartGame = () => {
