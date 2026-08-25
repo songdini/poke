@@ -272,45 +272,6 @@
   }
 }
 
-/* 모바일 반응형 개선 */
-@media (max-width: 768px) {
-  .chat-container {
-    height: 100vh;
-    border-radius: 0;
-  }
-  .chat-main {
-    flex-direction: column;
-  }
-  .chat-sidebar {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #333;
-    margin-top: 10px;
-  }
-  .chat-messages {
-    max-height: 40vh;
-    min-height: 200px;
-  }
-  .chat-container .message {
-    max-width: 95vw;
-    font-size: 1rem;
-  }
-  .chat-input {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .chat-input-row {
-    flex-wrap: wrap;
-  }
-  .chat-input textarea {
-    flex-basis: 100%;
-    order: 2;
-  }
-  .chat-input-row > button:last-child {
-    flex: 1;
-    order: 3;
-  }
-}
 
 .chat-container .message.own-message {
   margin-left: auto;
@@ -745,66 +706,79 @@
   background: #94a3b8;
 }
 
-/* 반응형 디자인 */
 @media (max-width: 768px) {
   .chat-container {
-    height: 100vh;
-    border-radius: 0;
-  }
-  
-  .chat-main {
-    flex-direction: column;
-  }
-  
-  .chat-sidebar {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #333;
-  }
-  
-  .chat-container .message {
-    max-width: 85%;
-  }
-} 
-
-.emoji-btn {
-  padding: 0;
-  width: 44px;
-  height: 44px;
-  background: #fff;
-  color: #fbbf24;
-  border: 2px solid #fbbf24;
-  border-radius: 50%;
-  font-size: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, color 0.2s, border 0.2s, transform 0.15s;
-}
-.emoji-btn:hover {
-  background: #fbbf24;
-  color: #fff;
-  border-color: #fbbf24;
-  transform: scale(1.12);
-}
-
-@media (max-width: 768px) {
-  .chat-container {
-    height: calc(100vh - 110px);
+    height: auto !important;
+    min-height: 100%;
     border: none;
     border-radius: 0;
+    box-shadow: none;
+    width: 100%;
   }
+
   .chat-container .excel-formula-bar {
     display: none !important;
   }
-  .chat-main {
-    flex-direction: column-reverse;
+
+  .chat-header {
+    padding: 10px 12px;
   }
+
+  .chat-main {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .chat-messages {
+    max-height: 240px;
+    height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-right: none;
+    border-bottom: 1px solid #e1dfdd;
+  }
+
   .chat-sidebar {
     width: 100%;
-    max-height: 120px;
+    max-height: none;
     border-left: none;
     border-top: 1px solid #e1dfdd;
+    padding: 8px 10px;
   }
+
+  .users-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .user-item {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .chat-input {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .chat-input-row {
+    gap: 6px;
+  }
+
+  .chat-input textarea {
+    padding: 8px 10px;
+    font-size: 14px;
+    min-height: 38px;
+  }
+
+  .excel-col-head.row-idx { width: 28px; min-width: 28px; }
+  .excel-col-head.col-user { width: 80px; min-width: 70px; }
+  .excel-col-head.col-time { width: 65px; min-width: 60px; }
+  .cell-row-num { width: 28px; min-width: 28px; font-size: 0.68rem; }
+  .cell-col.col-user { width: 80px; min-width: 70px; font-size: 0.76rem; padding: 4px 6px; }
+  .cell-col.col-time { width: 65px; min-width: 60px; font-size: 0.68rem; padding: 4px 4px; }
+  .cell-col.col-msg { font-size: 0.8rem; padding: 4px 6px; }
 }
+
 

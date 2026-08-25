@@ -564,13 +564,60 @@
 }
 
 @media (max-width: 768px) {
-  .liar-game-container {
+  .liar-game-container.excel-stealth-theme {
     border: none;
     border-radius: 0;
     box-shadow: none;
     width: 100%;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
   }
-  .liar-game-container .excel-formula-bar {
+  .liar-game-container .excel-formula-bar,
+  .liar-game-container .excel-sheet-tab-bar {
     display: none !important;
+  }
+  .liar-game-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .liar-game-main {
+    padding: 8px;
+    gap: 10px;
+  }
+  .excel-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .excel-grid-table th,
+  .excel-grid-table td {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  .excel-phase-card {
+    padding: 10px;
+  }
+  .excel-chat-container {
+    padding: 8px;
+  }
+  .excel-chat-messages {
+    height: 180px;
+    max-height: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .excel-chat-input-bar {
+    gap: 4px;
+  }
+  .excel-chat-input-bar input {
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+  .liar-loading-container {
+    width: 90vw;
+    max-width: 360px;
   }
 }

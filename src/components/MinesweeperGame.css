@@ -336,20 +336,39 @@
 }
 
 @media (max-width: 768px) {
-  .minesweeper-container {
+  .minesweeper-container.excel-stealth-theme {
     border: none;
     border-radius: 0;
     box-shadow: none;
     width: 100%;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
   }
   .minesweeper-container .excel-formula-bar,
   .minesweeper-container .excel-sheet-tab-bar {
     display: none !important;
   }
+  .minesweeper-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .minesweeper-main-workspace {
+    padding: 8px 4px;
+    gap: 10px;
+  }
   .minesweeper-board-wrapper {
     overflow-x: auto;
     max-width: 100%;
-    padding: 8px;
+    padding: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .minesweeper-cell {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
 }
+
 

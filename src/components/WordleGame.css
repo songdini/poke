@@ -361,23 +361,43 @@
 }
 
 @media (max-width: 768px) {
-  .wordle-container {
+  .wordle-container.excel-stealth-theme {
     border: none;
     border-radius: 0;
     box-shadow: none;
     width: 100%;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
   }
   .wordle-container .excel-formula-bar,
   .wordle-container .excel-sheet-tab-bar {
     display: none !important;
   }
-  .wordle-grid {
-    gap: 4px;
+  .wordle-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
-  .wordle-tile {
+  .wordle-workspace {
+    padding: 8px 4px;
+    gap: 10px;
+  }
+  .wordle-board-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px;
+  }
+  .wordle-cell {
     width: 44px;
-    height: 44px;
-    font-size: 1.2rem;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+  .wordle-keyboard {
+    max-width: 100%;
+    padding: 6px 2px;
+    gap: 4px;
   }
   .keyboard-row {
     gap: 3px;
@@ -388,5 +408,10 @@
     font-size: 0.8rem;
     padding: 0 4px;
   }
+  .key-btn.wide {
+    min-width: 44px;
+    font-size: 0.72rem;
+  }
 }
+
 

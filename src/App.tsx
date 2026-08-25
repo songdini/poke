@@ -205,47 +205,47 @@ function App() {
     if (!selectedGame) return null;
     return (
       <div className={`excel-game-viewport ${isMobileMode ? 'mobile-game-viewport' : ''}`}>
-        <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.catchmind && (
             <Chat username={gameSessions.catchmind.username} room={gameSessions.catchmind.room} onLeaveRoom={() => handleLeaveGame('catchmind')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'mafia' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'mafia' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.mafia && (
             <MafiaGame username={gameSessions.mafia.username} room={gameSessions.mafia.room} onLeaveRoom={() => handleLeaveGame('mafia')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'liar' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'liar' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.liar && (
             <LiarGame username={gameSessions.liar.username} room={gameSessions.liar.room} onLeaveRoom={() => handleLeaveGame('liar')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'telestrations' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'telestrations' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.telestrations && (
             <TelestrationsGame username={gameSessions.telestrations.username} room={gameSessions.telestrations.room} onLeaveRoom={() => handleLeaveGame('telestrations')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'numberbaseball' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'numberbaseball' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.numberbaseball && (
             <NumberBaseballGame username={gameSessions.numberbaseball.username} room={gameSessions.numberbaseball.room} onLeaveRoom={() => handleLeaveGame('numberbaseball')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'sudoku' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'sudoku' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.sudoku && (
             <SudokuGame username={gameSessions.sudoku.username} room={gameSessions.sudoku.room} onLeaveRoom={() => handleLeaveGame('sudoku')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'minesweeper' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'minesweeper' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.minesweeper && (
             <MinesweeperGame username={gameSessions.minesweeper.username} room={gameSessions.minesweeper.room} onLeaveRoom={() => handleLeaveGame('minesweeper')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'wordle' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'wordle' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.wordle && (
             <WordleGame username={gameSessions.wordle.username} room={gameSessions.wordle.room} onLeaveRoom={() => handleLeaveGame('wordle')} />
           )}
         </div>
-        <div style={{ display: selectedGame === 'pokebattle' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: selectedGame === 'pokebattle' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.pokebattle && (
             <PokeBattle username={gameSessions.pokebattle.username} room={gameSessions.pokebattle.room} onLeaveRoom={() => handleLeaveGame('pokebattle')} />
           )}

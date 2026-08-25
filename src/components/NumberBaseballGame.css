@@ -406,26 +406,102 @@
 }
 
 @media (max-width: 768px) {
-  .number-baseball-container {
+  .number-baseball-container.excel-stealth-theme {
     border: none;
     border-radius: 0;
     box-shadow: none;
     width: 100%;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 100%;
   }
   .number-baseball-container .excel-formula-bar,
   .number-baseball-container .excel-sheet-tab-bar {
     display: none !important;
   }
-  .input-form {
-    flex-direction: column;
+  .number-baseball-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
-  .digit-inputs {
+  .baseball-waiting-room {
+    padding: 16px 10px;
+  }
+  .mode-selection-grid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .mode-selection-grid .excel-btn {
+    width: 100%;
+    padding: 14px 10px;
+  }
+  .baseball-secret-section, .baseball-waiting-opponent {
+    padding: 20px 10px;
+  }
+  .baseball-secret-section .input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .baseball-secret-section .excel-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 1.1rem;
+    padding: 10px;
+  }
+  .baseball-secret-section .excel-btn {
+    width: 100%;
+    padding: 10px;
+  }
+  .baseball-game-body {
+    padding: 10px 8px;
+    overflow: visible;
+  }
+  .status-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 6px 8px;
+  }
+  .guess-input-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px;
+  }
+  .guess-input-section .prefix {
+    font-size: 0.85rem;
+  }
+  .guess-input-section .excel-input {
+    width: 100% !important;
+    box-sizing: border-box;
+    font-size: 1.1rem;
+    padding: 10px;
+    text-align: center;
+  }
+  .guess-input-section .excel-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
     justify-content: center;
   }
-  .digit-inputs input {
-    width: 48px;
-    height: 48px;
-    font-size: 1.4rem;
+  .excel-table-container {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 4px;
+  }
+  .excel-grid-table th,
+  .excel-grid-table td {
+    padding: 6px 6px;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+  .guess-col {
+    font-size: 0.95rem;
+    letter-spacing: 2px;
   }
 }
+
 

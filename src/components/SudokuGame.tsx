@@ -54,6 +54,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         gameType: 'sudoku',
         sessionToken: getSessionToken('sudoku')
       });
+      socket.emit('sudoku-sync-request', { room });
     };
 
     if (socket.connected) {
@@ -267,7 +268,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             <button
               className="excel-btn"
               onClick={handleUseHint}
-              disabled={phase !== 'playing' || completed}
+              disabled={phase !== 'playing' || completed || fixedMask[selectedCell.r][selectedCell.c]}
+              title={fixedMask[selectedCell.r][selectedCell.c] ? '이미 초기 고정된 셀입니다.' : '정답 힌트 확인'}
             >
               💡 힌트
             </button>

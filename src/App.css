@@ -568,6 +568,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   background-color: #0f172a;
   color: #f8fafc;
@@ -713,9 +714,12 @@ body {
 .mobile-main-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: #0f172a;
   position: relative;
   -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 1. Mobile Home View */
@@ -974,13 +978,15 @@ body {
 /* 3. Mobile Game Viewport */
 .mobile-game-viewport {
   width: 100%;
-  height: 100%;
-  min-height: calc(100vh - 110px);
+  flex: 1;
+  min-height: 100%;
   background: #ffffff;
-  overflow: auto;
+  overflow: visible;
   border: none;
   border-radius: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ----------------------------------------------------
@@ -989,12 +995,14 @@ body {
 @media (max-width: 768px) {
   .excel-app-window {
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
   }
 
   .excel-title-bar {
     font-size: 11px;
     padding: 0 6px;
+    height: 32px;
   }
 
   .excel-search-box {
@@ -1005,27 +1013,75 @@ body {
     display: none;
   }
 
+  .excel-ribbon-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 30px;
+  }
+
+  .ribbon-tab {
+    padding: 4px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
   .excel-ribbon-toolbar {
     display: flex;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 36px;
+    padding: 4px 8px;
+    gap: 6px;
   }
 
   .excel-formula-bar {
     font-size: 11px;
+    height: 26px;
   }
 
   .excel-name-box {
     width: 45px;
+    line-height: 26px;
+  }
+
+  .excel-fx-btn {
+    width: 24px;
+    line-height: 26px;
+  }
+
+  .excel-formula-input {
+    line-height: 26px;
+    font-size: 11px;
+    padding: 0 6px;
   }
 
   .excel-col-headers {
-    overflow-x: auto;
+    display: none;
+  }
+
+  .excel-row-numbers {
+    display: none;
+  }
+
+  .excel-main-content-cell {
+    padding: 6px 4px;
+    background-image: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .excel-sheet-content {
-    padding: 12px;
+    padding: 12px 8px;
     margin: 0;
     border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .excel-game-viewport {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .game-option {
@@ -1048,5 +1104,18 @@ body {
   .excel-cell-tag {
     font-size: 9px;
   }
+
+  .excel-sheet-footer {
+    height: auto;
+  }
+
+  .excel-sheet-tabs {
+    height: 28px;
+  }
+
+  .excel-status-bar {
+    display: none;
+  }
 }
+
 

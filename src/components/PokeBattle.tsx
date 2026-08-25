@@ -1138,95 +1138,216 @@ const PokeBattle: React.FC<PokeBattleProps> = ({ username, room = 'default_room'
       {/* ⚔️ BATTLE ARENA */}
       {(phase === 'battle' || phase === 'result') && pActiveMon && eActiveMon && (
         <div className="poke-battle-arena">
-          {/* EXCEL WORKSHEET GRID TABLE */}
-          <table className="excel-grid-table">
-            <thead>
-              <tr>
-                <th className="excel-row-header">#</th>
-                <th style={{ width: '120px' }}>Column A (ID)</th>
-                <th style={{ width: '180px' }}>Column B (Model_Name)</th>
-                <th style={{ width: '140px' }}>Column C (Type_Class)</th>
-                <th style={{ width: '120px' }}>Column D (Level)</th>
-                <th>Column E (Sparkline_Bar / Status)</th>
-                {!isPureStealth && <th style={{ width: '100px' }}>Graphic_Ref</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {/* Row 4: Opponent Pokemon */}
-              <tr>
-                <td className="excel-row-header">4</td>
-                <td>TARGET_01</td>
-                <td style={{ fontWeight: 700, color: '#d13438' }}>
-                  🤖 {enemyTeam?.trainerName}: {eActiveMon.koreanName}
-                </td>
-                <td>
-                  <div className="type-badge-container">
-                    {eActiveMon.types.map(t => (
-                      <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
-                        {KOREAN_TYPE_NAMES[t] || t}
-                      </span>
-                    ))}
+          {/* 🏟️ 3D PERSPECTIVE POKÉMON BATTLE STAGE (캐릭터 중심 생생한 배틀 필드) */}
+          {!isPureStealth && (
+            <div className="pokemon-battle-stage">
+              {/* 🔴 TOP: OPPONENT POKÉMON & HUD */}
+              <div className="arena-side opponent-side">
+                <div className="pokemon-hud opponent-hud">
+                  <div className="hud-header">
+                    <span className="trainer-tag">🤖 {enemyTeam?.trainerName}</span>
+                    <span className="pokemon-name">{eActiveMon.koreanName}</span>
+                    <span className="level-badge">Lv.50</span>
                   </div>
-                </td>
-                <td>Lv. 50</td>
-                <td>
-                  {renderSparklineText(eActiveMon.currentHp, eActiveMon.maxHp)}
-                  {enemyDamageFloater && (
-                    <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
-                      {enemyDamageFloater.text}
-                    </span>
-                  )}
-                </td>
-                {!isPureStealth && (
-                  <td style={{ textAlign: 'center' }}>
-                    <img 
-                      src={eActiveMon.sprites.showdownFront || eActiveMon.sprites.front} 
-                      alt={eActiveMon.koreanName}
-                      className={enemyShake ? 'shake' : ''}
-                      style={{ height: 42, objectFit: 'contain' }}
-                    />
-                  </td>
-                )}
-              </tr>
+                  <div className="hud-type-row">
+                    <div className="type-badge-container">
+                      {eActiveMon.types.map(t => (
+                        <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
+                          {KOREAN_TYPE_NAMES[t] || t}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="team-pokeballs" title="상대 남은 포켓몬">
+                      {enemyTeam?.pokemonList.map((p, i) => (
+                        <span key={i} className={`pokeball-dot ${p.status === 'fainted' ? 'fainted' : i === enemyTeam.activeIndex ? 'active' : 'alive'}`}>
+                          {p.status === 'fainted' ? '⚪' : '🔴'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="hp-bar-container">
+                    <div className="hp-label-row">
+                      <span className="hp-label">HP</span>
+                      <span className="hp-text">{Math.max(0, eActiveMon.currentHp)} / {eActiveMon.maxHp}</span>
+                    </div>
+                    <div className="hp-track">
+                      <div
+                        className="hp-fill"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, Math.round((eActiveMon.currentHp / eActiveMon.maxHp) * 100)))}%`,
+                          backgroundColor: (eActiveMon.currentHp / eActiveMon.maxHp > 0.5) ? '#22c55e' : (eActiveMon.currentHp / eActiveMon.maxHp > 0.2) ? '#f59e0b' : '#ef4444'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-              {/* Row 8: Player Pokemon */}
-              <tr className="excel-cell-active">
-                <td className="excel-row-header">8</td>
-                <td>ACTIVE_01</td>
-                <td style={{ fontWeight: 700, color: '#107c41' }}>
-                  👤 {playerTeam?.trainerName}: {pActiveMon.koreanName}
-                </td>
-                <td>
-                  <div className="type-badge-container">
-                    {pActiveMon.types.map(t => (
-                      <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
-                        {KOREAN_TYPE_NAMES[t] || t}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>Lv. 50</td>
-                <td>
-                  {renderSparklineText(pActiveMon.currentHp, pActiveMon.maxHp)}
-                  {playerDamageFloater && (
-                    <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
-                      {playerDamageFloater.text}
-                    </span>
+                <div className="pokemon-visual-wrapper opponent-visual">
+                  {enemyDamageFloater && (
+                    <div key={enemyDamageFloater.id} className="damage-floater enemy-floater">
+                      {enemyDamageFloater.text}
+                    </div>
                   )}
-                </td>
-                {!isPureStealth && (
-                  <td style={{ textAlign: 'center' }}>
-                    <img 
-                      src={pActiveMon.sprites.showdownBack || pActiveMon.sprites.back || pActiveMon.sprites.front} 
-                      alt={pActiveMon.koreanName}
-                      className={playerShake ? 'shake' : ''}
-                      style={{ height: 46, objectFit: 'contain' }}
-                    />
+                  <div className="battle-platform opponent-platform"></div>
+                  <img 
+                    src={eActiveMon.sprites.showdownFront || eActiveMon.sprites.front} 
+                    alt={eActiveMon.koreanName}
+                    className={`pokemon-sprite opponent-sprite ${enemyShake ? 'shake hit-flash' : ''}`}
+                  />
+                </div>
+              </div>
+
+              {/* 🟢 BOTTOM: PLAYER POKÉMON & HUD */}
+              <div className="arena-side player-side">
+                <div className="pokemon-visual-wrapper player-visual">
+                  {playerDamageFloater && (
+                    <div key={playerDamageFloater.id} className="damage-floater player-floater">
+                      {playerDamageFloater.text}
+                    </div>
+                  )}
+                  <div className="battle-platform player-platform"></div>
+                  <img 
+                    src={pActiveMon.sprites.showdownBack || pActiveMon.sprites.back || pActiveMon.sprites.front} 
+                    alt={pActiveMon.koreanName}
+                    className={`pokemon-sprite player-sprite ${playerShake ? 'shake hit-flash' : ''}`}
+                  />
+                </div>
+
+                <div className="pokemon-hud player-hud">
+                  <div className="hud-header">
+                    <span className="trainer-tag">👤 {playerTeam?.trainerName}</span>
+                    <span className="pokemon-name">{pActiveMon.koreanName}</span>
+                    <span className="level-badge">Lv.50</span>
+                  </div>
+                  <div className="hud-type-row">
+                    <div className="type-badge-container">
+                      {pActiveMon.types.map(t => (
+                        <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
+                          {KOREAN_TYPE_NAMES[t] || t}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="team-pokeballs" title="내 남은 포켓몬">
+                      {playerTeam?.pokemonList.map((p, i) => (
+                        <span key={i} className={`pokeball-dot ${p.status === 'fainted' ? 'fainted' : i === playerTeam.activeIndex ? 'active' : 'alive'}`}>
+                          {p.status === 'fainted' ? '⚪' : '🔴'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="hp-bar-container">
+                    <div className="hp-label-row">
+                      <span className="hp-label">HP</span>
+                      <span className="hp-text">{Math.max(0, pActiveMon.currentHp)} / {pActiveMon.maxHp}</span>
+                    </div>
+                    <div className="hp-track">
+                      <div
+                        className="hp-fill"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, Math.round((pActiveMon.currentHp / pActiveMon.maxHp) * 100)))}%`,
+                          backgroundColor: (pActiveMon.currentHp / pActiveMon.maxHp > 0.5) ? '#22c55e' : (pActiveMon.currentHp / pActiveMon.maxHp > 0.2) ? '#f59e0b' : '#ef4444'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* EXCEL WORKSHEET GRID TABLE (스텔스 모드용) */}
+          {isPureStealth && (
+            <div className="excel-stealth-battle-table" style={{ display: 'block' }}>
+            <table className="excel-grid-table">
+              <thead>
+                <tr>
+                  <th className="excel-row-header">#</th>
+                  <th style={{ width: '120px' }}>Column A (ID)</th>
+                  <th style={{ width: '180px' }}>Column B (Model_Name)</th>
+                  <th style={{ width: '140px' }}>Column C (Type_Class)</th>
+                  <th style={{ width: '120px' }}>Column D (Level)</th>
+                  <th>Column E (Sparkline_Bar / Status)</th>
+                  {!isPureStealth && <th style={{ width: '100px' }}>Graphic_Ref</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Row 4: Opponent Pokemon */}
+                <tr>
+                  <td className="excel-row-header">4</td>
+                  <td>TARGET_01</td>
+                  <td style={{ fontWeight: 700, color: '#d13438' }}>
+                    🤖 {enemyTeam?.trainerName}: {eActiveMon.koreanName}
                   </td>
-                )}
-              </tr>
-            </tbody>
-          </table>
+                  <td>
+                    <div className="type-badge-container">
+                      {eActiveMon.types.map(t => (
+                        <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
+                          {KOREAN_TYPE_NAMES[t] || t}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>Lv. 50</td>
+                  <td>
+                    {renderSparklineText(eActiveMon.currentHp, eActiveMon.maxHp)}
+                    {enemyDamageFloater && (
+                      <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
+                        {enemyDamageFloater.text}
+                      </span>
+                    )}
+                  </td>
+                  {!isPureStealth && (
+                    <td style={{ textAlign: 'center' }}>
+                      <img 
+                        src={eActiveMon.sprites.showdownFront || eActiveMon.sprites.front} 
+                        alt={eActiveMon.koreanName}
+                        className={enemyShake ? 'shake' : ''}
+                        style={{ height: 42, objectFit: 'contain' }}
+                      />
+                    </td>
+                  )}
+                </tr>
+
+                {/* Row 8: Player Pokemon */}
+                <tr className="excel-cell-active">
+                  <td className="excel-row-header">8</td>
+                  <td>ACTIVE_01</td>
+                  <td style={{ fontWeight: 700, color: '#107c41' }}>
+                    👤 {playerTeam?.trainerName}: {pActiveMon.koreanName}
+                  </td>
+                  <td>
+                    <div className="type-badge-container">
+                      {pActiveMon.types.map(t => (
+                        <span key={t} className="type-badge" style={{ background: TYPE_COLORS[t].bg, color: TYPE_COLORS[t].text }}>
+                          {KOREAN_TYPE_NAMES[t] || t}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>Lv. 50</td>
+                  <td>
+                    {renderSparklineText(pActiveMon.currentHp, pActiveMon.maxHp)}
+                    {playerDamageFloater && (
+                      <span style={{ color: '#d13438', fontWeight: 'bold', marginLeft: 8 }}>
+                        {playerDamageFloater.text}
+                      </span>
+                    )}
+                  </td>
+                  {!isPureStealth && (
+                    <td style={{ textAlign: 'center' }}>
+                      <img 
+                        src={pActiveMon.sprites.showdownBack || pActiveMon.sprites.back || pActiveMon.sprites.front} 
+                        alt={pActiveMon.koreanName}
+                        className={playerShake ? 'shake' : ''}
+                        style={{ height: 46, objectFit: 'contain' }}
+                      />
+                    </td>
+                  )}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          )}
 
           {/* ⚡ Beginner Turn & Speed Status Banner */}
           {phase === 'battle' && (

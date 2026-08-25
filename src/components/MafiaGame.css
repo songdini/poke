@@ -13,7 +13,7 @@
   height: 80vh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-border;
+  box-sizing: border-box;
   overflow: hidden;
   border-radius: 4px;
 }
@@ -782,10 +782,133 @@
 
 /* 📱 Responsive */
 @media (max-width: 768px) {
+  .mafia-game-container.excel-stealth-theme {
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+  }
+
+  .mafia-game-container .excel-formula-bar {
+    display: none !important;
+  }
+
+  .mafia-game-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .waiting-room {
+    padding: 12px 8px;
+    gap: 12px;
+  }
+
+  .waiting-room-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .waiting-room-actions .excel-btn {
+    width: 100%;
+    padding: 10px;
+  }
+
   .game-area {
     grid-template-columns: 1fr;
+    padding: 8px 10px;
+    gap: 10px;
+    flex: none;
   }
-  .excel-formula-bar {
-    display: none;
+
+  .player-grid-section {
+    border-radius: 4px;
+  }
+
+  .player-grid {
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+    gap: 6px;
+    padding: 6px;
+    max-height: 190px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .player-card {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+  }
+
+  .player-card .player-name {
+    font-size: 0.76rem;
+  }
+
+  .role-badge {
+    font-size: 0.68rem;
+    padding: 1px 4px;
+  }
+
+  .action-area {
+    padding: 10px 12px;
+  }
+
+  .mafia-game-container .chat-area {
+    display: flex !important;
+    flex-direction: column;
+    padding: 8px 10px 16px 10px;
+    height: auto;
+    min-height: 280px;
+    overflow: visible;
+  }
+
+  .mafia-game-container .messages {
+    height: 190px;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.8rem;
+  }
+
+  .mafia-game-container .message {
+    padding: 4px 6px;
+    font-size: 0.78rem;
+    gap: 4px;
+  }
+
+  .mafia-game-container .message .timestamp {
+    width: 58px;
+    font-size: 0.68rem;
+  }
+
+  .mafia-game-container .message .player {
+    width: 72px;
+    font-size: 0.76rem;
+  }
+
+  .mafia-game-container .message-input {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-top: 6px;
+  }
+
+  .mafia-game-container .message-input input {
+    flex: 1;
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .mafia-game-container .message-input .excel-btn {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .excel-dialog-box {
+    width: 94vw;
+    max-width: 94vw;
   }
 }

@@ -361,25 +361,61 @@
 }
 
 @media (max-width: 768px) {
-  .sudoku-container {
+  .sudoku-container.excel-stealth-theme {
     border: none;
     border-radius: 0;
     box-shadow: none;
     width: 100%;
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible !important;
   }
   .sudoku-container .excel-formula-bar,
   .sudoku-container .excel-sheet-tab-bar {
     display: none !important;
   }
-  .sudoku-grid-wrapper {
+  .sudoku-container .game-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .sudoku-main-workspace {
+    padding: 8px 4px;
+    gap: 10px;
+  }
+  .sudoku-board-wrapper {
     max-width: 100%;
     overflow-x: auto;
-    padding: 6px;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px;
+  }
+  .sudoku-grid-table th {
+    width: 32px;
+    height: 22px;
+    font-size: 0.72rem;
+  }
+  .sudoku-grid-table th.corner-cell,
+  .sudoku-grid-table td.row-header {
+    width: 22px;
+    font-size: 0.72rem;
   }
   .sudoku-cell {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+  .sudoku-controls-panel {
+    max-width: 100%;
+    padding: 0 4px;
+  }
+  .numpad-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .numpad-btn {
+    height: 38px;
     font-size: 1rem;
   }
 }
+
 

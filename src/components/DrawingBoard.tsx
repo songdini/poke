@@ -87,16 +87,20 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ onSend, onClose }) => {
   };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasRef.current.width / (rect.width || 1);
+    const scaleY = canvasRef.current.height / (rect.height || 1);
+
     if ('touches' in e && e.touches.length > 0) {
       return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY,
       };
     } else if ('clientX' in e) {
       return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
       };
     }
     return { x: 0, y: 0 };
