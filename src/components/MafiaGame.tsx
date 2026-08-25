@@ -95,6 +95,7 @@ const MafiaGame: React.FC<{ username: string; room: string; onLeaveRoom?: () => 
     socket.on('mafia-update', handleUpdate);
 
     return () => {
+      socket.emit('leave', { room, gameType: 'mafia' });
       socket.off('connect', joinRoom);
       socket.off('mafia-update', handleUpdate);
     };

@@ -112,6 +112,7 @@ const TelestrationsGame: React.FC<TelestrationsGameProps> = ({ username, room, o
     socket.on('telestrations-error', handleError);
 
     return () => {
+      socket.emit('leave', { room, gameType: 'telestrations' });
       socket.off('connect', joinRoom);
       socket.off('telestrations-update', handleUpdate);
       socket.off('telestrations-error', handleError);

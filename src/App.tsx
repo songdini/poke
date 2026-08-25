@@ -217,7 +217,8 @@ function App() {
   };
 
   const generateRandomRoom = () => {
-    setFormRoom('ROOM1');
+    const randRoom = Math.floor(100 + Math.random() * 900);
+    setFormRoom(`ROOM_${randRoom}`);
   };
 
   const renderActiveGameViewport = () => {

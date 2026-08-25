@@ -54,7 +54,11 @@ export function cleanMessage(text) {
   // 1. 코드블록 마크다운 제거
   clean = clean.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-  // 2. 내부 추론 과정(Thought / Draft / 1. ...) 라인 분리 및 정리
+  // 2. 앞부분에 혹시 남아있는 JSON 키 접두사 및 뒷부분 괄호 제거
+  clean = clean.replace(/^\s*\{\s*"message"\s*:\s*"?/i, '');
+  clean = clean.replace(/["\}\s]+$/, '').trim();
+
+  // 3. 내부 추론 과정(Thought / Draft / 1. ...) 라인 분리 및 정리
   const lines = clean.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length > 1) {
     // 만약 여러 줄이 들어왔다면 '한글이 포함된 마지막 유효한 줄'을 선택
@@ -67,19 +71,19 @@ export function cleanMessage(text) {
     }
   }
 
-  // 3. 앞뒤 따옴표, 콜론, 별표, 마크다운 기호, 슬래시 제거
-  clean = clean.replace(/^[:"'`\s\*\-\/\#]+/, '').replace(/[:"'`\s\*\-\/\#]+$/, '').trim();
+  // 4. 앞뒤 따옴표, 콜론, 별표, 마크다운 기호, 슬래시 제거
+  clean = clean.replace(/^[:"'`\s\*\-\/\#\{]+/, '').replace(/[:"'`\s\*\-\/\#\}]+$/, '').trim();
 
-  // 4. 쌍따옴표가 중복으로 씌워져 있는 경우 정리 (""Data_Bot님" -> Data_Bot님)
+  // 5. 쌍따옴표가 중복으로 씌워져 있는 경우 정리 (""Data_Bot님" -> Data_Bot님)
   while ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
     clean = clean.slice(1, -1).trim();
   }
 
-  // 5. 앞머리에 붙은 영문 접두사(/Hints for, Short):*, Draft: 등) 제거
+  // 6. 앞머리에 붙은 영문 접두사(/Hints for, Short):*, Draft: 등) 제거
   clean = clean.replace(/^[\(\/\*\s]*[A-Za-z0-9_\-\/]+\s*[:\)]\s*\*?\s*/, '').trim();
-  clean = clean.replace(/^[:"'`\s\*\-\/\#]+/, '').replace(/[:"'`\s\*\-\/\#]+$/, '').trim();
+  clean = clean.replace(/^[:"'`\s\*\-\/\#\{]+/, '').replace(/[:"'`\s\*\-\/\#\}]+$/, '').trim();
 
-  // 6. 금지어 및 유효성 검사
+  // 7. 금지어 및 유효성 검사
   if (!isValidKoreanSpeech(clean)) {
     return '';
   }
@@ -93,8 +97,9 @@ export function cleanMessage(text) {
 function extractAndParseJSON(rawText) {
   if (!rawText || typeof rawText !== 'string') return null;
 
-  // 1. JSON 블록 {...} 파싱 시도
   const cleanCodeBlock = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // 1. JSON 블록 {...} 완전 파싱 시도
   const startIdx = cleanCodeBlock.indexOf('{');
   const endIdx = cleanCodeBlock.lastIndexOf('}');
   if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
@@ -111,7 +116,7 @@ function extractAndParseJSON(rawText) {
     } catch (e) {}
   }
 
-  // 2. 정규식으로 "message": "..." 추출
+  // 2. 정규식으로 완전한 "message": "..." 추출
   const msgRegex = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/i;
   const msgMatch = rawText.match(msgRegex);
   if (msgMatch && msgMatch[1]) {
@@ -121,15 +126,28 @@ function extractAndParseJSON(rawText) {
     }
   }
 
-  // 3. 정규식으로 "targetId": "..." 추출
+  // 3. 토큰 제한 등으로 잘린 미완성 "message": "..." 복구 파싱
+  const partialMsgRegex = /"message"\s*:\s*"([^"\r\n]+)/i;
+  const partialMatch = rawText.match(partialMsgRegex);
+  if (partialMatch && partialMatch[1]) {
+    const msg = cleanMessage(partialMatch[1].replace(/\\"/g, '"').replace(/\\n/g, ' '));
+    if (isValidKoreanSpeech(msg)) {
+      return { message: msg };
+    }
+  }
+
+  // 4. 정규식으로 "targetId": "..." 추출
   const targetRegex = /"targetId"\s*:\s*"([A-Za-z0-9_\-]+)"/i;
   const targetMatch = rawText.match(targetRegex);
   if (targetMatch && targetMatch[1]) {
     return { targetId: targetMatch[1].trim() };
   }
 
-  // 4. 일반 평문 텍스트 클리닝 후 한국어 대화 검증
-  const cleanPlain = cleanMessage(rawText);
+  // 5. 일반 평문 텍스트 클리닝 후 한국어 대화 복구 검증
+  let plain = cleanCodeBlock;
+  plain = plain.replace(/^\s*\{\s*"message"\s*:\s*"?/i, '');
+  plain = plain.replace(/["\}\s]+$/, '');
+  const cleanPlain = cleanMessage(plain);
   if (isValidKoreanSpeech(cleanPlain)) {
     return { message: cleanPlain };
   }
@@ -149,10 +167,10 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
     return null;
   }
 
-  // 429 Rate Limit 쿨다운 중인 경우 API 호출 건너뛰고 즉시 안전 템플릿 반환
+  // 429/503 Rate Limit 쿨다운 중인 경우 API 호출 건너뛰고 즉시 안전 템플릿 반환
   if (Date.now() < rateLimitCooldownUntil) {
     const remainSec = Math.ceil((rateLimitCooldownUntil - Date.now()) / 1000);
-    console.log(`[Gemini AI Cooldown] ⏳ 429 쿨다운 대기 중 (${remainSec}s 남음) - 기본 템플릿 사용`);
+    console.log(`[Gemini AI Cooldown] ⏳ 쿨다운 대기 중 (${remainSec}s 남음) - 기본 템플릿 사용`);
     return null;
   }
 
@@ -174,7 +192,7 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
     ],
     generationConfig: {
       temperature,
-      maxOutputTokens: 350
+      maxOutputTokens: 1024
     }
   };
 
@@ -225,10 +243,10 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
       const statusCode = err.response?.status;
       const errMsg = err.response?.data?.error?.message || err.message;
 
-      // 429 할당량 초과 시 25초 쿨다운 적용
-      if (statusCode === 429) {
-        rateLimitCooldownUntil = Date.now() + 25000;
-        console.warn(`[Gemini AI RateLimit] ⚠️ 무료 티어 호출 한도(429 Quota Exceeded) 도달. 25초간 기본 템플릿 모드로 동작합니다.`);
+      // 429 할당량 초과 및 503 서버 과부하 시 15초 쿨다운 적용
+      if (statusCode === 429 || statusCode === 503) {
+        rateLimitCooldownUntil = Date.now() + 15000;
+        console.warn(`[Gemini AI ${statusCode}] ⚠️ Google API 일시적 과부하/할당량(상태코드: ${statusCode}). 15초간 자연스러운 기본 템플릿 모드로 동작합니다.`);
         return null;
       }
 

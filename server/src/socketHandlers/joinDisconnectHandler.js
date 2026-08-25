@@ -19,6 +19,26 @@ export function registerJoinDisconnectHandlers(io, socket) {
       return socket.emit('join-error', { message: '유효한 이름과 방 이름을 2자 이상 입력해주세요.' });
     }
 
+    // 🚨 이전 방 소켓 채널에서 완전히 나가기 (다른 방 메시지 유출 원천 차단)
+    for (const r of socket.rooms) {
+      if (r !== socket.id) {
+        socket.leave(r);
+      }
+    }
+
+    const prevUser = connectedUsers.get(socket.id);
+    if (prevUser && prevUser.room && (prevUser.room !== room || prevUser.gameType !== gameType)) {
+      socket.to(prevUser.room).emit('userLeft', {
+        username: prevUser.username,
+        message: `${prevUser.username}님이 퇴장하셨습니다.`,
+        timestamp: new Date().toISOString()
+      });
+      const oldRoomUsers = Array.from(connectedUsers.values())
+        .filter(u => u.room === prevUser.room && u.socketId !== socket.id)
+        .map(u => u.username);
+      io.to(prevUser.room).emit('userList', oldRoomUsers);
+    }
+
     const sessionKey = sessionToken ? `${sessionToken}_${gameType || 'chat'}` : null;
 
     // sessionToken이 존재하고 기존 세션이 있다면 세션 복구 처리
@@ -310,6 +330,49 @@ export function registerJoinDisconnectHandlers(io, socket) {
       if (roomMessages.has(room)) {
         socket.emit('chatHistory', roomMessages.get(room));
       }
+    }
+  });
+
+  // 🚪 명시적 방 나가기 처리 (다른 방으로 이동하거나 나갈 때 이전 소켓 방 즉시 해제)
+  socket.on('leave', (leaveData) => {
+    const user = connectedUsers.get(socket.id);
+    const targetRoom = leaveData?.room || user?.room;
+    const targetGameType = leaveData?.gameType || user?.gameType;
+
+    // 모든 소켓 룸(socket.id 제외)에서 명시적 나가기
+    for (const r of socket.rooms) {
+      if (r !== socket.id) {
+        socket.leave(r);
+      }
+    }
+
+    if (user) {
+      if (user.disconnectTimeout) {
+        clearTimeout(user.disconnectTimeout);
+        user.disconnectTimeout = null;
+      }
+
+      if (targetRoom) {
+        socket.to(targetRoom).emit('userLeft', {
+          username: user.username,
+          message: `${user.username}님이 퇴장하셨습니다.`,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      connectedUsers.delete(socket.id);
+      if (user.sessionKey) sessions.delete(user.sessionKey);
+
+      if (targetRoom) {
+        const remainingUsers = Array.from(connectedUsers.values())
+          .filter(u => u.room === targetRoom)
+          .map(u => u.username);
+        io.to(targetRoom).emit('userList', remainingUsers);
+      }
+    }
+
+    if (targetRoom && targetGameType) {
+      executePermanentDisconnectCleanup(io, socket.id, { room: targetRoom, gameType: targetGameType, username: user?.username });
     }
   });
 

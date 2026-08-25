@@ -95,6 +95,7 @@ const NumberBaseballGame: React.FC<NumberBaseballGameProps> = ({ username, room,
     socket.on('baseball-error', handleError);
 
     return () => {
+      socket.emit('leave', { room, gameType: 'baseball' });
       socket.off('connect', joinRoom);
       socket.off('baseball-update', handleUpdate);
       socket.off('baseball-error', handleError);

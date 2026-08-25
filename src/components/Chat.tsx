@@ -134,6 +134,7 @@ const Chat: React.FC<ChatProps> = ({ username, room, onLeaveRoom }) => {
     socket.on('chatHistory', handleChatHistory);
 
     return () => {
+      socket.emit('leave', { room, gameType: 'catchmind' });
       socket.off('connect', joinRoom);
       socket.off('newMessage', handleNewMessage);
       socket.off('userJoined', handleUserJoined);

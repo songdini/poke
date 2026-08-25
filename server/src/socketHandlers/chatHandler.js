@@ -7,7 +7,13 @@ export function registerChatHandlers(io, socket) {
     const { message: rawMessage, room, isImage } = messageData;
     const user = connectedUsers.get(socket.id);
 
-    if (user && rawMessage) {
+    // 🚨 방 일치 검증: 발신자의 실제 접속 방과 대상 방이 다르면 다른 방으로 메시지 누출 차단!
+    if (!user || user.room !== room) {
+      console.warn(`[Chat Security] 다른 방 메시지 전송 시도 차단: User(${user?.username}, room=${user?.room}) -> TargetRoom(${room})`);
+      return;
+    }
+
+    if (rawMessage) {
       const message = isImage ? rawMessage : sanitizeChatMessage(rawMessage, 500);
       if (!message || message.trim() === '') return;
 
@@ -34,7 +40,7 @@ export function registerChatHandlers(io, socket) {
 
   socket.on('typing', (data) => {
     const user = connectedUsers.get(socket.id);
-    if (user) {
+    if (user && user.room === data.room) {
       socket.to(data.room).emit('userTyping', {
         username: user.username,
         isTyping: data.isTyping

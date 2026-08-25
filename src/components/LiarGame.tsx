@@ -244,6 +244,7 @@ const LiarGame: React.FC<LiarGameProps> = ({ username, room, onLeaveRoom }) => {
     socket.on('liar-error', handleLiarError);
 
     return () => {
+      socket.emit('leave', { room, gameType: 'liar' });
       socket.off('connect', joinRoom);
       socket.off('liar-update', handleLiarUpdate);
       socket.off('liar-error', handleLiarError);
