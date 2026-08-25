@@ -9,10 +9,11 @@ import SudokuGame from './components/SudokuGame';
 import MinesweeperGame from './components/MinesweeperGame';
 import WordleGame from './components/WordleGame';
 import PokeBattle from './components/PokeBattle';
+import { PokeFarmGame } from './components/PokeFarmGame';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle' | 'pokebattle';
+type GameKey = 'pokefarm' | 'pokebattle' | 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle';
 
 interface GameSession {
   username: string;
@@ -31,6 +32,15 @@ interface GameMeta {
 }
 
 const GAMES_LIST: GameMeta[] = [
+  {
+    key: 'pokefarm',
+    name: '포켓농장 (동물농장)',
+    excelName: 'Poke_Asset_Lifecycle_Management.xlsx',
+    icon: '🏡',
+    desc: '쥬니버 동물농장 감성! 아기 포켓몬 분양, 육성, 진화 & 감동의 졸업식',
+    badge: 'NEW',
+    themeColor: '#10b981'
+  },
   {
     key: 'pokebattle',
     name: '포켓몬 3v3 배틀',
@@ -131,6 +141,7 @@ function App() {
   const [formRoom, setFormRoom] = useState('');
 
   const [gameSessions, setGameSessions] = useState<Record<GameKey, GameSession | null>>({
+    pokefarm: null,
     catchmind: null,
     mafia: null,
     liar: null,
@@ -165,6 +176,14 @@ function App() {
 
   const handleGameSelection = (gameType: GameKey) => {
     setSelectedGame(gameType);
+    if (gameType === 'pokefarm') {
+      const farmUser = formUsername.trim() || localStorage.getItem('pokefarm_saved_owner') || `농장주_${Math.floor(100 + Math.random() * 900)}`;
+      localStorage.setItem('pokefarm_saved_owner', farmUser);
+      setGameSessions(prev => ({
+        ...prev,
+        pokefarm: { username: farmUser, room: 'local', gameType: 'pokefarm' }
+      }));
+    }
   };
 
   const handleJoinChat = (e: React.FormEvent<HTMLFormElement>) => {
@@ -205,6 +224,11 @@ function App() {
     if (!selectedGame) return null;
     return (
       <div className={`excel-game-viewport ${isMobileMode ? 'mobile-game-viewport' : ''}`}>
+        <div style={{ display: selectedGame === 'pokefarm' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
+          {gameSessions.pokefarm && (
+            <PokeFarmGame username={gameSessions.pokefarm.username} onLeaveRoom={() => handleLeaveGame('pokefarm')} />
+          )}
+        </div>
         <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.catchmind && (
             <Chat username={gameSessions.catchmind.username} room={gameSessions.catchmind.room} onLeaveRoom={() => handleLeaveGame('catchmind')} />

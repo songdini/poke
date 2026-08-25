@@ -18,6 +18,7 @@ import { registerSudokuHandlers } from './src/socketHandlers/sudokuHandler.js';
 import { registerMinesweeperHandlers } from './src/socketHandlers/minesweeperHandler.js';
 import { registerWordleHandlers } from './src/socketHandlers/wordleHandler.js';
 import { registerPokeBattleHandlers } from './src/socketHandlers/pokeBattleHandler.js';
+import { registerFarmHandlers } from './src/socketHandlers/farmHandler.js';
 import { isGeminiConfigured, getGeminiModelName } from './src/aiService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +118,7 @@ io.on('connection', (socket) => {
   registerMinesweeperHandlers(io, socket);
   registerWordleHandlers(io, socket);
   registerPokeBattleHandlers(io, socket);
+  registerFarmHandlers(io, socket);
 });
 
 // 주기적 서버 메모리 가비지 컬렉터 구동

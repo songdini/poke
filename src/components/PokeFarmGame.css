@@ -1,0 +1,1125 @@
+/* 🏡 POKÉFARM (포켓농장) STYLES - 쥬니버 동물농장 감성 + 엑셀 스텔스 */
+
+.poke-farm-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+  color: #1e293b;
+}
+
+/* 📋 Farm Header */
+.farm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: linear-gradient(to right, #f0fdf4, #ecfdf5);
+  border-bottom: 1px solid #cbd5e1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.farm-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.farm-logo {
+  font-size: 1.6rem;
+}
+
+.farm-title-box h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #065f46;
+}
+
+.farm-sub {
+  font-size: 0.75rem;
+  color: #047857;
+}
+
+.farm-kpi-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kpi-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpi-chip.coins {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.kpi-chip.hearts {
+  background: #fce7f3;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
+.kpi-chip.diplomas {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+/* 🧭 Farm Navigation Tabs */
+.farm-nav-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 12px 0 12px;
+  gap: 4px;
+}
+
+.farm-tab {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.farm-tab:hover {
+  color: #059669;
+  background: #f1f5f9;
+}
+
+.farm-tab.active {
+  color: #059669;
+  border-bottom-color: #059669;
+  background: #ffffff;
+}
+
+/* ⚠️ Toast Alert */
+.farm-toast-alert {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 700;
+  animation: slideDown 0.3s ease;
+}
+
+.farm-toast-alert.success {
+  background: #dcfce7;
+  color: #166534;
+  border-bottom: 1px solid #86efac;
+}
+
+.farm-toast-alert.info {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-bottom: 1px solid #7dd3fc;
+}
+
+.farm-toast-alert.warn {
+  background: #fef3c7;
+  color: #92400e;
+  border-bottom: 1px solid #fde68a;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* 📱 Main Workspace Body */
+.farm-workspace-body {
+  padding: 12px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================================
+   TAB 1: 🏡 Farm Yard Layout
+   ========================================================================= */
+.farm-yard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.farm-pasture-screen {
+  background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 50%, #86efac 51%, #4ade80 100%);
+  border: 2px solid #93c5fd;
+  border-radius: 14px;
+  height: 240px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.pasture-clouds {
+  padding: 8px 12px;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.pasture-ground {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 20px;
+}
+
+.farm-pokemon-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.shiny-sparkle-tag {
+  position: absolute;
+  top: -16px;
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.4);
+}
+
+.farm-active-sprite {
+  height: 100px;
+  max-width: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.2));
+  animation: pet-bounce 2.4s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes pet-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.pet-shadow {
+  width: 90px;
+  height: 22px;
+  background: radial-gradient(ellipse at center, rgba(22, 101, 52, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  margin-top: -10px;
+}
+
+.pet-nametag {
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 3;
+}
+
+.cry-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #0284c7;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.pasture-touch-hint {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #14532d;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 3px 0;
+}
+
+.floating-heart {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #ec4899;
+  text-shadow: 0 0 4px #ffffff;
+  animation: floatHeart 1s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes floatHeart {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+  30% { opacity: 1; transform: translate(-50%, -20px) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -45px) scale(1); }
+}
+
+/* 📊 Status & Gauges Panel */
+.farm-status-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-header-row h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gauge-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gauge-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.gauge-track {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.gauge-fill.exp {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.gauges-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.gauge-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 🍎 Quick Care Actions */
+.quick-actions-bar {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
+}
+
+.inventory-chips-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.care-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.care-item-btn.available:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+  transform: translateY(-1px);
+}
+
+.care-item-btn.empty {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.item-qty {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+}
+
+/* Empty Yard */
+.empty-yard-card {
+  text-align: center;
+  padding: 40px 16px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+}
+
+/* =========================================================================
+   TAB 2: 🐣 Adoption Center
+   ========================================================================= */
+.adopt-banner,
+.jobs-banner,
+.shop-banner,
+.diplomas-banner {
+  margin-bottom: 12px;
+}
+
+.adopt-banner h3,
+.jobs-banner h3,
+.shop-banner h3,
+.diplomas-banner h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.adopt-banner p,
+.jobs-banner p,
+.shop-banner p,
+.diplomas-banner p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.starter-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.starter-adopt-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.starter-adopt-card:hover {
+  border-color: #10b981;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.12);
+  transform: translateY(-2px);
+}
+
+.starter-avatar-box img {
+  height: 60px;
+  object-fit: contain;
+}
+
+.starter-info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.type-badge-row {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.type-tag {
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.evolution-preview {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* =========================================================================
+   TAB 3: ✨ Evolution Chamber
+   ========================================================================= */
+.farm-evolve-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding: 10px;
+}
+
+.evolve-stages-diagram {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stage-node {
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.stage-node.current {
+  border-color: #10b981;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 2px #86efac;
+}
+
+.stage-node.passed {
+  border-color: #94a3b8;
+  opacity: 0.7;
+}
+
+.stage-node.locked {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.stage-node img {
+  height: 56px;
+  object-fit: contain;
+}
+
+.stage-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.stage-req {
+  font-size: 0.68rem;
+  color: #64748b;
+}
+
+.current-tag {
+  position: absolute;
+  top: -8px;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 999px;
+}
+
+.stage-arrow {
+  font-size: 1.2rem;
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.stage-arrow.passed {
+  color: #10b981;
+}
+
+.evolve-action-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 360px;
+  width: 100%;
+}
+
+.req-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.check-item.checked {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.evolve-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+/* =========================================================================
+   TAB 4: 💼 Jobs
+   ========================================================================= */
+.jobs-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.job-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.job-emoji {
+  font-size: 1.8rem;
+}
+
+.job-details {
+  flex: 1;
+}
+
+.job-details h4 {
+  margin: 0 0 2px 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.job-desc {
+  margin: 0 0 4px 0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.job-costs-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: #e11d48;
+  font-weight: 700;
+}
+
+.job-reward-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.reward-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #b45309;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* =========================================================================
+   TAB 5: 🛍️ Shop
+   ========================================================================= */
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.shop-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.item-icon-box {
+  font-size: 2rem;
+  margin-bottom: 2px;
+}
+
+.shop-item-card h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.item-desc {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #64748b;
+  min-height: 28px;
+}
+
+.item-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.price-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #b45309;
+}
+
+/* =========================================================================
+   TAB 6: 🎓 Diplomas & Hall of Fame
+   ========================================================================= */
+.diplomas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.diploma-card {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #fde68a;
+  border-radius: 12px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.diploma-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(217, 119, 6, 0.2);
+}
+
+.diploma-cap-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 1rem;
+}
+
+.diploma-sprite {
+  height: 60px;
+  object-fit: contain;
+}
+
+.diploma-card h4 {
+  margin: 4px 0 2px 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.diploma-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.diploma-date {
+  font-size: 0.62rem;
+  color: #92400e;
+  margin-top: 2px;
+}
+
+/* =========================================================================
+   TAB 7: 🚶‍♂️ Social & Neighbors
+   ========================================================================= */
+.farm-social-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.neighbors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.neighbors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.neighbor-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.neighbor-avatar img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.neighbor-info {
+  flex: 1;
+}
+
+.neighbor-info h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.owner-tag {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.stats-badges {
+  display: flex;
+  gap: 4px;
+  font-size: 0.65rem;
+  color: #475569;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.my-guestbook-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.guestbook-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+.guestbook-form {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.guestbook-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.guestbook-entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.guestbook-item {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.gb-author {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.gb-message {
+  font-size: 0.8rem;
+  color: #0f172a;
+}
+
+.visiting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* =========================================================================
+   MODALS: Evolution & Graduation Diploma
+   ========================================================================= */
+.farm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.evolution-modal-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: popIn 0.3s ease;
+}
+
+.evolve-sparkle-icon {
+  color: #eab308;
+  animation: spinSlow 4s linear infinite;
+  margin-bottom: 8px;
+}
+
+.evolving-glow-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fef08a 0%, #38bdf8 50%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0;
+  animation: glowPulse 0.5s ease-in-out infinite alternate;
+}
+
+.glow-sprite {
+  height: 90px;
+  filter: brightness(2) drop-shadow(0 0 16px #ffffff);
+}
+
+.evolved-sprite-box {
+  margin: 16px 0;
+}
+
+.evolved-sprite {
+  height: 110px;
+  animation: pet-bounce 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  from { transform: scale(0.9); filter: brightness(1.2); }
+  to { transform: scale(1.1); filter: brightness(2); }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* 🎓 Graduation Diploma Certificate Frame */
+.diploma-modal-frame {
+  background: linear-gradient(135deg, #78350f, #b45309, #78350f);
+  padding: 12px;
+  border-radius: 16px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  position: relative;
+  animation: popIn 0.3s ease;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.diploma-inner-certificate {
+  background: #fffdf5;
+  border: 4px double #d97706;
+  border-radius: 8px;
+  padding: 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cert-seal {
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+}
+
+.cert-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #78350f;
+  letter-spacing: 2px;
+}
+
+.cert-no {
+  font-size: 0.68rem;
+  color: #92400e;
+}
+
+.cert-pokemon-sprite {
+  height: 90px;
+  object-fit: contain;
+  margin: 12px 0 6px 0;
+}
+
+.cert-name-block {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.cert-text {
+  font-size: 0.76rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+  border-top: 1px dashed #fde68a;
+  border-bottom: 1px dashed #fde68a;
+  padding: 10px 4px;
+}
+
+.cert-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #92400e;
+}
+
+.cert-principal {
+  font-size: 0.85rem;
+  color: #78350f;
+  font-weight: 800;
+}
+
+/* 📱 Mobile Responsiveness */
+@media (max-width: 768px) {
+  .farm-header {
+    padding: 8px 10px;
+  }
+  .farm-workspace-body {
+    padding: 8px;
+  }
+  .farm-pasture-screen {
+    height: 200px;
+  }
+  .farm-active-sprite {
+    height: 80px;
+  }
+  .gauges-grid {
+    grid-template-columns: 1fr;
+  }
+  .starter-cards-grid,
+  .jobs-list-grid,
+  .shop-items-grid,
+  .neighbors-grid {
+    grid-template-columns: 1fr;
+  }
+}
