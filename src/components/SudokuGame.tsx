@@ -299,6 +299,19 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           </button>
         </div>
 
+        {/* 🎨 셀 구분 범례 (Legend) */}
+        <div className="sudoku-legend-bar">
+          <span className="legend-item fixed">
+            <span className="legend-sample fixed">5</span> 문제 (고정)
+          </span>
+          <span className="legend-item user">
+            <span className="legend-sample user">7</span> 내가 입력한 숫자
+          </span>
+          <span className="legend-item conflict">
+            <span className="legend-sample conflict">3</span> 중복 오류
+          </span>
+        </div>
+
         {/* 🧩 9x9 Sudoku Grid Table (Authentic Compact Excel Cells) */}
         <div className="sudoku-board-wrapper">
           <table className="sudoku-grid-table">
