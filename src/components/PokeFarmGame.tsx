@@ -1093,13 +1093,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       return;
     }
 
+    const isTargetShiny = pmon.isShiny;
+    const evolvedFront = isTargetShiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${nextStage.id}.png`
+      : nextStage.sprite;
+    const evolvedShowdown = isTargetShiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${nextStage.id}.gif`
+      : nextStage.showdownSprite;
+
     // 진화 애니메이션 모달 시작
     setEvolvingModal({
       active: true,
       stage: 'flashing',
       oldName: pmon.name,
       newName: nextStage.name,
-      sprite: nextStage.showdownSprite
+      sprite: evolvedShowdown
     });
 
     setTimeout(() => {
@@ -1119,8 +1127,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             stageIndex: nextIndex,
             types: nextStage.types,
             sprites: {
-              front: nextStage.sprite,
-              showdownFront: nextStage.showdownSprite
+              front: evolvedFront,
+              showdownFront: evolvedShowdown
             }
           }
         };

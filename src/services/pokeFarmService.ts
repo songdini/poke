@@ -1391,8 +1391,12 @@ export function createNewFarmPokemon(chainIndex: number, nickname?: string, isSh
     isShiny,
     types: firstStage.types,
     sprites: {
-      front: firstStage.sprite,
-      showdownFront: firstStage.showdownSprite
+      front: isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${firstStage.id}.png`
+        : firstStage.sprite,
+      showdownFront: isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${firstStage.id}.gif`
+        : firstStage.showdownSprite
     },
     evolutionChain: chain,
     adoptedAt: new Date().toISOString(),
@@ -1538,6 +1542,20 @@ export function loadFarmState(ownerName?: string): FarmState {
       if (parsed.isInitialized === undefined) {
         parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
       }
+
+      // ✨ 이로치 포켓몬의 스프라이트 URL이 일반 URL인 경우 최신 이로치 URL로 자동 보정
+      const fixShinySprites = (mon: FarmPokemon) => {
+        if (mon && mon.isShiny) {
+          if (mon.sprites?.front && !mon.sprites.front.includes('/shiny/')) {
+            mon.sprites.front = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${mon.speciesId}.png`;
+          }
+          if (mon.sprites?.showdownFront && !mon.sprites.showdownFront.includes('/shiny/')) {
+            mon.sprites.showdownFront = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${mon.speciesId}.gif`;
+          }
+        }
+      };
+      if (parsed.activePokemon) fixShinySprites(parsed.activePokemon);
+      parsed.reservePokemon?.forEach(fixShinySprites);
 
       // 🎰 일일 복권 상태 날짜 체크 및 무료 스핀 리셋
       const today = getTodayDateString();
