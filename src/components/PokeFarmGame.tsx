@@ -8,7 +8,8 @@ import {
   loadFarmState, 
   saveFarmState, 
   createNewFarmPokemon, 
-  playPokemonCry 
+  playPokemonCry,
+  getMaxExpForLevel 
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, Send, CheckCircle2, AlertCircle, X
@@ -235,15 +236,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     setFarmState(prev => {
       if (!prev.activePokemon) return prev;
       const newHappiness = Math.min(100, prev.activePokemon.happiness + 5);
-      const newExp = prev.activePokemon.exp + 10;
+      // 🌟 Lv 16 이상일 때 쓰다듬기 경험치 살짝 추가 (15 EXP)
+      const expGain = prev.activePokemon.level >= 16 ? 15 : 10;
+      const newExp = prev.activePokemon.exp + expGain;
       let newLevel = prev.activePokemon.level;
       let curExp = newExp;
-      let maxExp = prev.activePokemon.maxExp;
+      let maxExp = getMaxExpForLevel(newLevel);
 
-      if (curExp >= maxExp) {
+      while (curExp >= maxExp) {
         curExp -= maxExp;
         newLevel += 1;
-        maxExp = Math.round(maxExp * 1.3);
+        maxExp = getMaxExpForLevel(newLevel);
         showAlert(`🎉 레벨업! [${prev.activePokemon.nickname}]이(가) Lv.${newLevel}이 되었습니다!`, 'success');
       }
 
@@ -289,12 +292,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
       let newExp = target.exp + (effect.exp || 0);
       let newLevel = target.level;
-      let maxExp = target.maxExp;
+      let maxExp = getMaxExpForLevel(newLevel);
 
       while (newExp >= maxExp) {
         newExp -= maxExp;
         newLevel += 1;
-        maxExp = Math.round(maxExp * 1.3);
+        maxExp = getMaxExpForLevel(newLevel);
       }
 
       return {
@@ -394,13 +397,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           if (pmon) {
             let newExp = pmon.exp + prev.job.expReward;
             let newLevel = pmon.level;
-            let maxExp = pmon.maxExp;
+            let maxExp = getMaxExpForLevel(newLevel);
             let didLevelUp = false;
 
             while (newExp >= maxExp) {
               newExp -= maxExp;
               newLevel += 1;
-              maxExp = Math.round(maxExp * 1.3);
+              maxExp = getMaxExpForLevel(newLevel);
               didLevelUp = true;
             }
 

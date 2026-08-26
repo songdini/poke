@@ -1171,7 +1171,7 @@ export const FARM_JOBS: PartTimeJob[] = [
     icon: '☕',
     desc: '회사 임직원들을 위한 고소한 원두를 볶고 음료를 준비합니다.',
     rewardCoins: 180,
-    expReward: 90,
+    expReward: 110,
     energyCost: 40,
     hungerCost: 30,
     cleanlinessCost: 25,
@@ -1183,7 +1183,7 @@ export const FARM_JOBS: PartTimeJob[] = [
     icon: '⚡',
     desc: '대규모 전산망 유지를 위해 비상 전력을 힘차게 충전합니다.',
     rewardCoins: 250,
-    expReward: 140,
+    expReward: 180,
     energyCost: 50,
     hungerCost: 40,
     cleanlinessCost: 30,
@@ -1195,13 +1195,32 @@ export const FARM_JOBS: PartTimeJob[] = [
     icon: '🕶️',
     desc: '중요 VIP 회의에 참석하는 대표님을 든든하게 경호합니다.',
     rewardCoins: 400,
-    expReward: 250,
+    expReward: 320,
     energyCost: 60,
     hungerCost: 45,
     cleanlinessCost: 35,
     minLevel: 30
   }
 ];
+
+/**
+ * 📈 레벨별 필요 경험치 계산 공식
+ * - 기존 1.3배 지수 폭증 공식 대신, 부드럽고 합리적인 레벨링 곡선 적용
+ * - Lv 16 이상 진화/육성 구간에서 경험치 요구량이 비현실적으로 치솟는 문제 해결
+ */
+export function getMaxExpForLevel(level: number): number {
+  if (level <= 1) return 100;
+  if (level <= 15) {
+    // Lv 1~15: 100 ~ 520 (레벨당 30씩 증가)
+    return Math.round(100 + (level - 1) * 30);
+  }
+  if (level <= 35) {
+    // Lv 16~35: 570 ~ 1520 (레벨당 50씩 증가 - 기존 5,000~200,000에서 대폭 완화!)
+    return Math.round(520 + (level - 15) * 50);
+  }
+  // Lv 36~50+: 1600 ~ 2800 (레벨당 80씩 증가)
+  return Math.round(1520 + (level - 35) * 80);
+}
 
 // PokeAPI 공식 울음소리 오디오 재생
 export function playPokemonCry(speciesId: number) {
@@ -1227,7 +1246,7 @@ export function createNewFarmPokemon(chainIndex: number, nickname?: string, isSh
     stageIndex: 0,
     level: 1,
     exp: 0,
-    maxExp: 100,
+    maxExp: getMaxExpForLevel(1),
     hunger: 80,
     happiness: 60,
     cleanliness: 90,
@@ -1280,6 +1299,16 @@ export function loadFarmState(ownerName: string): FarmState {
       const parsed = JSON.parse(raw) as FarmState;
       if (parsed.isInitialized === undefined) {
         parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
+      }
+      // 🌟 기존 세이브 데이터의 과도하게 뻥튀기된 maxExp를 새 공식으로 즉시 보정
+      if (parsed.activePokemon) {
+        const expectedMaxExp = getMaxExpForLevel(parsed.activePokemon.level);
+        if (parsed.activePokemon.maxExp !== expectedMaxExp) {
+          parsed.activePokemon.maxExp = expectedMaxExp;
+          if (parsed.activePokemon.exp >= expectedMaxExp) {
+            parsed.activePokemon.exp = Math.min(parsed.activePokemon.exp, expectedMaxExp - 1);
+          }
+        }
       }
       return parsed;
     }
