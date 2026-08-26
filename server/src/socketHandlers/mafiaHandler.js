@@ -569,114 +569,82 @@ export function registerMafiaHandlers(io, socket) {
     }
   }
 
-  // 🤖 AI 봇 야간 자동 액션 (마피아, 의사, 경찰)
+  // 🤖 AI 봇 야간 자동 액션 (서버 룰 기반 지능형 처리 - API 미호출로 429 원천 차단)
   function handleAiNightActions(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'night') return;
 
-    // 1. AI 의사 치료
+    // 1. AI 의사 치료 (자신 또는 동료 생존자 지능형 보호)
     const aiDoctor = game.players.find(p => p.role === 'doctor' && p.isAlive && p.isBot);
     if (aiDoctor) {
-      const t = setTimeout(async () => {
+      const t = setTimeout(() => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night') return;
         const alivePlayers = current.players.filter(p => p.isAlive);
         if (alivePlayers.length === 0) return;
 
-        let healTargetId = null;
-        if (isGeminiConfigured()) {
-          healTargetId = await generateMafiaNightAction({
-            bot: aiDoctor,
-            role: 'doctor',
-            alivePlayers,
-            knownInfo: current.botKnowledge?.[aiDoctor.id] || {}
-          });
-        }
-        if (!healTargetId) {
-          healTargetId = alivePlayers[Math.floor(Math.random() * alivePlayers.length)]?.id;
-        }
+        // 50% 확률로 본인 보호, 50% 확률로 다른 무작위 생존자 보호
+        const healTarget = Math.random() < 0.5
+          ? aiDoctor
+          : alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
 
-        current.doctorTargetId = healTargetId;
-      }, 2000 + Math.random() * 1500);
+        current.doctorTargetId = healTarget.id;
+      }, 1500 + Math.random() * 1000);
 
       if (!game.botTimeouts) game.botTimeouts = [];
       game.botTimeouts.push(t);
     }
 
-    // 2. AI 경찰 조사
+    // 2. AI 경찰 조사 (미조사 대상 우선 순차 기밀 조사)
     const aiPolice = game.players.find(p => p.role === 'police' && p.isAlive && p.isBot);
     if (aiPolice) {
-      const t = setTimeout(async () => {
+      const t = setTimeout(() => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night') return;
         const aliveCandidates = current.players.filter(p => p.isAlive && p.id !== aiPolice.id);
         if (aliveCandidates.length === 0) return;
 
-        let investigateTargetId = null;
-        if (isGeminiConfigured()) {
-          investigateTargetId = await generateMafiaNightAction({
-            bot: aiPolice,
-            role: 'police',
-            alivePlayers: aliveCandidates,
-            knownInfo: current.botKnowledge?.[aiPolice.id] || {}
-          });
-        }
-        if (!investigateTargetId) {
-          investigateTargetId = aliveCandidates[Math.floor(Math.random() * aliveCandidates.length)]?.id;
-        }
+        if (!current.botKnowledge) current.botKnowledge = {};
+        if (!current.botKnowledge[aiPolice.id]) current.botKnowledge[aiPolice.id] = { investigations: [] };
+        const investigatedIds = new Set(current.botKnowledge[aiPolice.id].investigations.map(inv => inv.targetId));
 
-        const target = current.players.find(p => p.id === investigateTargetId);
-        if (target) {
-          if (!current.botKnowledge) current.botKnowledge = {};
-          if (!current.botKnowledge[aiPolice.id]) current.botKnowledge[aiPolice.id] = { investigations: [] };
-          current.botKnowledge[aiPolice.id].investigations.push({
-            targetId: target.id,
-            targetName: target.username,
-            isMafia: target.role === 'mafia'
-          });
-        }
-      }, 2500 + Math.random() * 1500);
+        // 아직 조사하지 않은 생존자 우선 선택
+        const uninvestigated = aliveCandidates.filter(c => !investigatedIds.has(c.id));
+        const target = uninvestigated.length > 0
+          ? uninvestigated[Math.floor(Math.random() * uninvestigated.length)]
+          : aliveCandidates[Math.floor(Math.random() * aliveCandidates.length)];
+
+        current.botKnowledge[aiPolice.id].investigations.push({
+          targetId: target.id,
+          targetName: target.username,
+          isMafia: target.role === 'mafia'
+        });
+      }, 2000 + Math.random() * 1000);
 
       if (!game.botTimeouts) game.botTimeouts = [];
       game.botTimeouts.push(t);
     }
 
-    // 3. AI 마피아 공격
+    // 3. AI 마피아 공격 (시민 진영 타겟팅)
     const aiMafia = game.players.find(p => p.role === 'mafia' && p.isAlive && p.isBot);
     if (aiMafia) {
-      const t = setTimeout(async () => {
+      const t = setTimeout(() => {
         const current = mafiaGames.get(room);
         if (!current || current.phase !== 'night' || current.nightAttackExecuted) return;
 
         const aliveTargets = current.players.filter(p => p.isAlive && p.role !== 'mafia');
         if (aliveTargets.length === 0) return;
 
-        let attackTargetId = null;
-        if (isGeminiConfigured()) {
-          attackTargetId = await generateMafiaNightAction({
-            bot: aiMafia,
-            role: 'mafia',
-            alivePlayers: aliveTargets,
-            knownInfo: current.botKnowledge?.[aiMafia.id] || {}
-          });
-        }
-        if (!attackTargetId) {
-          const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-          attackTargetId = randomTarget?.id;
-        }
-
-        const targetPlayer = current.players.find(p => p.id === attackTargetId && p.isAlive);
-        if (targetPlayer) {
-          executeMafiaAttack(io, room, targetPlayer.id, targetPlayer);
-        }
-      }, 4500 + Math.random() * 2000);
+        const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+        executeMafiaAttack(io, room, randomTarget.id, randomTarget);
+      }, 3500 + Math.random() * 1500);
 
       if (!game.botTimeouts) game.botTimeouts = [];
       game.botTimeouts.push(t);
     }
   }
 
-  // 🤖 AI 봇 낮 대화 멘트 (LLM 실시간 생성 + 템플릿 폴백) - 초반, 중반 2회만 발언
+  // 🤖 AI 봇 낮 대화 멘트 (LLM 실시간 생성 + 템플릿 폴백) - 초반(8초), 중반(45초) 딱 2회만 발언
   function triggerAiDayChat(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'day') return;
@@ -701,10 +669,10 @@ export function registerMafiaHandlers(io, socket) {
       `⚙️ 저를 투표로 탈락시키시면 시민 진영의 분석력이 크게 손실됩니다. 신중히 판단해주세요!`
     ];
 
-    // ☀️ 90초 낮 대화 시간 동안 [초반: 약 6~8초], [중반: 약 36~38초] 총 2번만 발언
+    // ☀️ 90초 낮 대화 시간 동안 [초반: 8초], [중반: 45초] 약 37초 간격으로 딱 2번만 발언
     const turnDelays = [
-      6000 + Math.floor(Math.random() * 2000),  // 1차: 초반 탐색 발언 (약 6~8초)
-      36000 + Math.floor(Math.random() * 2000)  // 2차: 중반 추리/의심 발언 (약 36~38초)
+      8000 + Math.floor(Math.random() * 2000),   // 1차: 초반 탐색 발언 (약 8~10초)
+      45000 + Math.floor(Math.random() * 3000)  // 2차: 중반 추리/의심 발언 (약 45~48초)
     ];
 
     turnDelays.forEach((delay, turnIndex) => {
@@ -764,7 +732,7 @@ export function registerMafiaHandlers(io, socket) {
     });
   }
 
-  // 🤖 AI 봇 자동 투표 처리 함수 (Gemini LLM 추리 기반)
+  // 🤖 AI 봇 자동 투표 처리 함수 (서버 추리 룰 기반 - API 미호출로 429 원천 차단)
   function handleAiBotVotes(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'voting') return;
@@ -785,17 +753,26 @@ export function registerMafiaHandlers(io, socket) {
         if (aliveTargets.length === 0) return;
 
         let targetId = null;
-        if (isGeminiConfigured()) {
-          targetId = await generateMafiaVoteTarget({
-            bot,
-            role: bot.role,
-            alivePlayers: current.players.filter(p => p.isAlive),
-            chatHistory: current.chatHistory || [],
-            knownInfo: current.botKnowledge?.[bot.id] || {}
-          });
+
+        // 👮 경찰 봇: 기밀 조사에서 마피아로 확인된 생존자가 있다면 무조건 그 마피아를 100% 지목!
+        if (bot.role === 'police') {
+          const investigations = current.botKnowledge?.[bot.id]?.investigations || [];
+          const foundMafia = investigations.find(inv => inv.isMafia && aliveTargets.some(t => t.id === inv.targetId));
+          if (foundMafia) {
+            targetId = foundMafia.targetId;
+          }
         }
 
-        if (!targetId || !aliveTargets.some(t => t.id === targetId)) {
+        // 🕵️ 마피아 봇: 시민 진영 플레이어 중 1명을 골라 지목 (동료 마피아 절대 제외)
+        if (!targetId && bot.role === 'mafia') {
+          const citizenTargets = aliveTargets.filter(t => t.role !== 'mafia');
+          if (citizenTargets.length > 0) {
+            targetId = citizenTargets[Math.floor(Math.random() * citizenTargets.length)].id;
+          }
+        }
+
+        // 🧑 일반 시민/의사 봇: 생존 후보 중 자연스럽게 분산 투표
+        if (!targetId) {
           const randomTarget = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
           targetId = randomTarget.id;
         }

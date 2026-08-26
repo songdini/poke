@@ -5,7 +5,7 @@ export function isGeminiConfigured() {
 }
 
 export function getGeminiModelName() {
-  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 }
 
 function getMaskedApiKey(key) {
@@ -16,7 +16,7 @@ function getMaskedApiKey(key) {
 
 let rateLimitCooldownUntil = 0;
 let lastApiCallTimestamp = 0;
-const MIN_API_CALL_INTERVAL_MS = 15000; // ⚡ 봇 간 15초 최소 호출 간격 보장 (429 Quota 방지)
+const MIN_API_CALL_INTERVAL_MS = 30000; // ⚡ 봇 간 30초 최소 호출 간격 보장 (무료 티어 Quota 방지)
 
 // 🚫 대화로 출력되면 안 되는 JSON 키 및 기술 용어 블랙리스트
 const BANNED_WORDS = new Set([
@@ -174,11 +174,11 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
     return null;
   }
 
-  // ⚡ 봇 간 15초 최소 호출 간격 검사 (15초 내에 다른 봇이 이미 API를 썼다면 안전 템플릿 사용)
+  // ⚡ 봇 간 30초 최소 호출 간격 검사 (30초 내에 다른 봇이 이미 API를 썼다면 안전 템플릿 사용)
   const elapsedSinceLastCall = Date.now() - lastApiCallTimestamp;
   if (lastApiCallTimestamp > 0 && elapsedSinceLastCall < MIN_API_CALL_INTERVAL_MS) {
     const remainSec = Math.ceil((MIN_API_CALL_INTERVAL_MS - elapsedSinceLastCall) / 1000);
-    console.log(`[Gemini AI Throttled] ⏱️ 15초 간격 보호 중 (${remainSec}s 대기 필요) - 자연스러운 기본 대화 사용`);
+    console.log(`[Gemini AI Throttled] ⏱️ 30초 간격 보호 중 (${remainSec}s 대기 필요) - 자연스러운 기본 대화 사용`);
     return null;
   }
 
@@ -209,62 +209,50 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
   const startTime = Date.now();
   console.log(`[Gemini AI] 🚀 [${modelName}] API 요청 전송 중... (Key: ${getMaskedApiKey(apiKey)})`);
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const response = await axios.post(url, payload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 25000
-      });
+  try {
+    const response = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 25000
+    });
 
-      lastApiCallTimestamp = Date.now();
-      const elapsed = Date.now() - startTime;
-      const candidate = response.data?.candidates?.[0];
-      const rawText = candidate?.content?.parts?.[0]?.text;
+    lastApiCallTimestamp = Date.now();
+    const elapsed = Date.now() - startTime;
+    const candidate = response.data?.candidates?.[0];
+    const rawText = candidate?.content?.parts?.[0]?.text;
 
-      if (!rawText) {
-        console.warn(`[Gemini AI] ⚠️ 빈 응답 수신 (${elapsed}ms)`);
-        return null;
-      }
-
-      console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
-
-      if (jsonMode) {
-        const parsed = extractAndParseJSON(rawText);
-        if (!parsed) {
-          console.warn(`[Gemini AI Parse Warning] ⚠️ JSON 파싱 불가 또는 부적절한 응답, 원문: "${rawText.substring(0, 120)}..."`);
-        }
-        return parsed;
-      }
-
-      const clean = cleanMessage(rawText);
-      return isValidKoreanSpeech(clean) ? clean : null;
-    } catch (err) {
-      const elapsed = Date.now() - startTime;
-      const statusCode = err.response?.status;
-      const errMsg = err.response?.data?.error?.message || err.message;
-
-      // 429 할당량 초과 및 503 서버 과부하 시 15초 쿨다운 적용
-      if (statusCode === 429 || statusCode === 503) {
-        rateLimitCooldownUntil = Date.now() + 15000;
-        console.warn(`[Gemini AI ${statusCode}] ⚠️ Google API 일시적 과부하/할당량(상태코드: ${statusCode}). 15초간 자연스러운 기본 템플릿 모드로 동작합니다.`);
-        return null;
-      }
-
-      // systemInstruction 미지원 시 제거 후 재시도
-      if (statusCode === 400 && payload.systemInstruction) {
-        delete payload.systemInstruction;
-        continue;
-      }
-
-      if (attempt === 1 && (err.code === 'ECONNABORTED' || err.message.includes('timeout'))) {
-        console.warn(`[Gemini AI Retry] ⏱️ 1차 시도 타임아웃 (${elapsed}ms), 재시도 중...`);
-        continue;
-      }
-
-      console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || (err.code === 'ECONNABORTED' ? 'TIMEOUT' : 'REQ_ERROR')}, ${elapsed}ms):`, errMsg);
+    if (!rawText) {
+      console.warn(`[Gemini AI] ⚠️ 빈 응답 수신 (${elapsed}ms)`);
       return null;
     }
+
+    console.log(`[Gemini AI] ✅ [${modelName}] 응답 수신 성공! (소요 시간: ${elapsed}ms)`);
+
+    if (jsonMode) {
+      const parsed = extractAndParseJSON(rawText);
+      if (!parsed) {
+        console.warn(`[Gemini AI Parse Warning] ⚠️ JSON 파싱 불가 또는 부적절한 응답, 원문: "${rawText.substring(0, 120)}..."`);
+      }
+      return parsed;
+    }
+
+    const clean = cleanMessage(rawText);
+    return isValidKoreanSpeech(clean) ? clean : null;
+  } catch (err) {
+    const elapsed = Date.now() - startTime;
+    const statusCode = err.response?.status;
+    const errMsg = err.response?.data?.error?.message || err.message;
+
+    // 429 할당량 초과 및 503 서버 과부하 시 60초(1분) 동안 완전 쿨다운 적용
+    if (statusCode === 429 || statusCode === 503) {
+      rateLimitCooldownUntil = Date.now() + 60000;
+      console.warn(`[Gemini AI ${statusCode}] ⚠️ Google API 할당량/속도제한 초과 (${statusCode}): "${errMsg}". 60초간 대기하며 기본 템플릿 모드로 동작합니다.`);
+      return null;
+    }
+
+    console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || (err.code === 'ECONNABORTED' ? 'TIMEOUT' : 'REQ_ERROR')}, ${elapsed}ms):`, errMsg);
+    return null;
   }
+}
 
   return null;
 }
