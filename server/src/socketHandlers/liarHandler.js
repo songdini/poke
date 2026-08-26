@@ -399,7 +399,7 @@ function startVotePhase(io, room) {
     }
   });
 
-  // 🤖 AI 봇 자동 투표 (Gemini 추리 기반)
+  // 🤖 AI 봇 자동 투표 (LLM 추리 기반)
   const bots = game.players.filter(p => p.isBot);
   bots.forEach((bot, index) => {
     const voteDelay = 2000 + (index * 1500) + Math.floor(Math.random() * 2000);

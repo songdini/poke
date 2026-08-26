@@ -676,7 +676,7 @@ export function registerMafiaHandlers(io, socket) {
     }
   }
 
-  // 🤖 AI 봇 낮 대화 멘트 (Gemini LLM 실시간 생성 + 템플릿 폴백)
+  // 🤖 AI 봇 낮 대화 멘트 (LLM 실시간 생성 + 템플릿 폴백) - 초반, 중반 2회만 발언
   function triggerAiDayChat(io, room) {
     const game = mafiaGames.get(room);
     if (!game || !game.gameStarted || game.phase !== 'day') return;
@@ -701,19 +701,14 @@ export function registerMafiaHandlers(io, socket) {
       `⚙️ 저를 투표로 탈락시키시면 시민 진영의 분석력이 크게 손실됩니다. 신중히 판단해주세요!`
     ];
 
-    const latePhrases = (targetName) => [
-      `⏰ 곧 투표 시간이 다가옵니다. 저는 ${targetName}님을 유력한 마피아 후보로 생각하고 있습니다.`,
-      `🧐 데이터를 종합한 최종 결론입니다. 이번 표결에서는 ${targetName}님을 유심히 보아야 합니다.`,
-      `🚨 무고한 시민이 억울하게 희생되지 않도록 데이터에 기반해서 투표해주세요.`
+    // ☀️ 90초 낮 대화 시간 동안 [초반: 약 6~8초], [중반: 약 36~38초] 총 2번만 발언
+    const turnDelays = [
+      6000 + Math.floor(Math.random() * 2000),  // 1차: 초반 탐색 발언 (약 6~8초)
+      36000 + Math.floor(Math.random() * 2000)  // 2차: 중반 추리/의심 발언 (약 36~38초)
     ];
 
-    // 90초 낮 대화 시간 동안 27초 간격으로 순차 턴 배정 (동시에 1개 봇만 Gemini API 호출)
-    const turnInterval = 27000;
-    const maxTurns = 3; // 6s, 33s, 60s
-
-    for (let i = 0; i < maxTurns; i++) {
-      const bot = aliveBots[i % aliveBots.length];
-      const delay = 6000 + (i * turnInterval) + Math.floor(Math.random() * 2000);
+    turnDelays.forEach((delay, turnIndex) => {
+      const bot = aliveBots[turnIndex % aliveBots.length];
 
       const timeout = setTimeout(async () => {
         const current = mafiaGames.get(room);
@@ -733,7 +728,7 @@ export function registerMafiaHandlers(io, socket) {
         if (!content) {
           const aliveOthers = current.players.filter(p => p.isAlive && p.id !== bot.id);
           const target = aliveOthers[Math.floor(Math.random() * aliveOthers.length)];
-          const pool = i === 0 ? earlyPhrases : (target ? (i === 1 ? midPhrases(target.username) : latePhrases(target.username)) : earlyPhrases);
+          const pool = turnIndex === 0 ? earlyPhrases : (target ? midPhrases(target.username) : earlyPhrases);
           content = pool[Math.floor(Math.random() * pool.length)];
         }
 
@@ -742,20 +737,7 @@ export function registerMafiaHandlers(io, socket) {
 
       if (!game.botTimeouts) game.botTimeouts = [];
       game.botTimeouts.push(timeout);
-    }
-
-    // 다른 봇들의 자연스러운 중간 보조 리액션 (API 미호출 템플릿으로 방 분위기 활성화)
-    if (aliveBots.length > 1) {
-      const helperBot = aliveBots[1];
-      const helperTimeout = setTimeout(() => {
-        const current = mafiaGames.get(room);
-        if (!current || current.phase !== 'day' || !helperBot.isAlive) return;
-        const msg = earlyPhrases[Math.floor(Math.random() * earlyPhrases.length)];
-        sendAiMessage(io, room, helperBot.username, msg);
-      }, 19000);
-
-      game.botTimeouts.push(helperTimeout);
-    }
+    });
   }
 
   function sendAiMessage(io, room, botName, content) {

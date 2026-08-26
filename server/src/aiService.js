@@ -5,7 +5,7 @@ export function isGeminiConfigured() {
 }
 
 export function getGeminiModelName() {
-  return process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 }
 
 function getMaskedApiKey(key) {
@@ -16,7 +16,7 @@ function getMaskedApiKey(key) {
 
 let rateLimitCooldownUntil = 0;
 let lastApiCallTimestamp = 0;
-const MIN_API_CALL_INTERVAL_MS = 25000; // ⚡ 봇 간 25초 최소 호출 간격 보장 (429 Quota 방지)
+const MIN_API_CALL_INTERVAL_MS = 15000; // ⚡ 봇 간 15초 최소 호출 간격 보장 (429 Quota 방지)
 
 // 🚫 대화로 출력되면 안 되는 JSON 키 및 기술 용어 블랙리스트
 const BANNED_WORDS = new Set([
@@ -174,11 +174,11 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
     return null;
   }
 
-  // ⚡ 봇 간 25초 최소 호출 간격 검사 (25초 내에 다른 봇이 이미 API를 썼다면 안전 템플릿 사용)
+  // ⚡ 봇 간 15초 최소 호출 간격 검사 (15초 내에 다른 봇이 이미 API를 썼다면 안전 템플릿 사용)
   const elapsedSinceLastCall = Date.now() - lastApiCallTimestamp;
   if (lastApiCallTimestamp > 0 && elapsedSinceLastCall < MIN_API_CALL_INTERVAL_MS) {
     const remainSec = Math.ceil((MIN_API_CALL_INTERVAL_MS - elapsedSinceLastCall) / 1000);
-    console.log(`[Gemini AI Throttled] ⏱️ 25초 간격 보호 중 (${remainSec}s 대기 필요) - 자연스러운 기본 대화 사용`);
+    console.log(`[Gemini AI Throttled] ⏱️ 15초 간격 보호 중 (${remainSec}s 대기 필요) - 자연스러운 기본 대화 사용`);
     return null;
   }
 
@@ -270,7 +270,7 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
 }
 
 /**
- * 🤖 마피아 낮 토론 대화 생성 (Gemini LLM)
+ * 🤖 마피아 낮 토론 대화 생성 (Google Gemini LLM)
  */
 export async function generateMafiaDayChat({ bot, role, alivePlayers, chatHistory = [], knownInfo = {} }) {
   if (!isGeminiConfigured()) return null;
@@ -330,7 +330,7 @@ ${recentChats || '(아직 이전 채팅이 없습니다. 먼저 분위기를 띄
 }
 
 /**
- * 🗳️ 마피아 투표 지목 대상 결정 (Gemini LLM)
+ * 🗳️ 마피아 투표 지목 대상 결정 (Google Gemini LLM)
  */
 export async function generateMafiaVoteTarget({ bot, role, alivePlayers, chatHistory = [], knownInfo = {} }) {
   if (!isGeminiConfigured()) return null;
@@ -381,7 +381,7 @@ ${recentChats || '(채팅 없음)'}
 }
 
 /**
- * 🌙 마피아 야간 행동 결정 (마피아 암살, 의사 치료, 경찰 조사)
+ * 🌙 마피아 야간 행동 결정 (마피아 암살, 의사 치료, 경찰 조사 - Google Gemini LLM)
  */
 export async function generateMafiaNightAction({ bot, role, alivePlayers, knownInfo = {} }) {
   if (!isGeminiConfigured()) return null;
@@ -429,7 +429,7 @@ ${candidateListStr}
 }
 
 /**
- * 🤥 라이어 게임 발언 힌트 생성 (Gemini LLM)
+ * 🤥 라이어 게임 발언 힌트 생성 (Google Gemini LLM)
  */
 export async function generateLiarTalkMessage({ bot, isLiar, word, wordDef, players, chatHistory = [] }) {
   if (!isGeminiConfigured()) return null;
@@ -505,7 +505,7 @@ ${recentChats || '(첫 번째 발언 순서입니다)'}
 }
 
 /**
- * 🗳️ 라이어 게임 라이어 지목 투표 (Gemini LLM)
+ * 🗳️ 라이어 게임 라이어 지목 투표 (Google Gemini LLM)
  */
 export async function generateLiarVoteTarget({ bot, isLiar, word, players, chatHistory = [] }) {
   if (!isGeminiConfigured()) return null;
@@ -551,4 +551,3 @@ ${fullChats || '(발언 없음)'}
 
   return null;
 }
-

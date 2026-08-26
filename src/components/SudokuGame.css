@@ -243,6 +243,25 @@
   border-color: #93c5fd;
 }
 
+.legend-sample.marked {
+  background: #faf5ff;
+  color: #7e22ce;
+  font-weight: 900;
+  border-color: #d8b4fe;
+  position: relative;
+}
+
+.legend-sample.marked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background-color: #9333ea;
+  border-radius: 50%;
+}
+
 .legend-sample.conflict {
   background: #fee2e2;
   color: #dc2626;
@@ -261,6 +280,9 @@
   position: relative;
   transition: all 0.12s ease;
   background: #ffffff;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* 3x3 블록 엑셀 경계선 */
@@ -279,7 +301,7 @@
   font-weight: 900;
 }
 
-/* ✍️ 내가 입력한 숫자 (선명한 로열 블루, 부드러운 하늘색 배경, 우상단 블루 포인트) */
+/* ✍️ 내가 입력한 확정 숫자 (선명한 로열 블루, 부드러운 하늘색 배경, 우상단 블루 포인트) */
 .sudoku-cell.user-input {
   background: #eff6ff;
   color: #1d4ed8;
@@ -298,10 +320,46 @@
   border-radius: 50%;
 }
 
+/* 🟣 헷갈리는 입력칸 / 가설 표시 (선명한 바이올렛 퍼플, 부드러운 라벤더 배경, 우상단 퍼플 포인트) */
+.sudoku-cell.marked {
+  background: #faf5ff;
+}
+
+.sudoku-cell.marked::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #9333ea;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(147, 51, 234, 0.4);
+}
+
+.sudoku-cell.user-input.marked {
+  background: #faf5ff;
+  color: #7e22ce;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.sudoku-cell.user-input.marked::after {
+  background-color: #9333ea;
+}
+
 /* 선택된 셀 (선명한 블루 하이라이트) */
 .sudoku-cell.selected {
   background: #dbeafe !important;
   outline: 2.5px solid #2563eb !important;
+  outline-offset: -2px;
+  z-index: 3;
+}
+
+/* 선택된 마킹 셀 */
+.sudoku-cell.marked.selected {
+  background: #f3e8ff !important;
+  outline: 2.5px solid #9333ea !important;
   outline-offset: -2px;
   z-index: 3;
 }
@@ -313,6 +371,14 @@
 
 .sudoku-cell.user-input.related {
   background: #e0f2fe;
+}
+
+.sudoku-cell.marked.related {
+  background: #fbf8ff;
+}
+
+.sudoku-cell.user-input.marked.related {
+  background: #f5edff;
 }
 
 /* 같은 숫자 하이라이트 (선명한 골드 옐로우) */
@@ -332,7 +398,7 @@
 /* 🎛️ Numpad & Controls Panel (Toggleable) */
 .sudoku-controls-panel {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -346,10 +412,61 @@
 }
 
 .sudoku-card h3 {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 0.88rem;
   color: #107c41;
   font-weight: 600;
+}
+
+/* 🎨 입력 모드 토글 그룹 */
+.input-mode-toggle-group {
+  display: inline-flex;
+  background: #f3f2f1;
+  padding: 2px;
+  border-radius: 3px;
+  border: 1px solid #d4d4d4;
+  gap: 2px;
+}
+
+.mode-toggle-btn {
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #605e5c;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mode-toggle-btn.active-normal {
+  background: #ffffff;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mode-toggle-btn.active-marked {
+  background: #ffffff;
+  color: #7e22ce;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(126, 34, 206, 0.15);
+}
+
+.excel-btn.marked-btn-active {
+  background: #f3e8ff;
+  border-color: #9333ea;
+  color: #6b21a8;
+  font-weight: 700;
+}
+
+.excel-btn.marked-btn-active:hover:not(:disabled) {
+  background: #e9d5ff;
+  border-color: #7e22ce;
 }
 
 .numpad-grid {
@@ -375,6 +492,34 @@
   background: #107c41;
   color: #ffffff;
   border-color: #0b5a2f;
+}
+
+.numpad-btn.marked-mode-btn {
+  border-color: #d8b4fe;
+  color: #7e22ce;
+  background: #faf5ff;
+}
+
+.numpad-btn.marked-mode-btn:hover {
+  background: #9333ea;
+  color: #ffffff;
+  border-color: #7e22ce;
+}
+
+.numpad-action-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sudoku-guide-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #605e5c;
+  text-align: center;
+  line-height: 1.4;
 }
 
 .action-tools-grid {

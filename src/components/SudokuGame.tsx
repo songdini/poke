@@ -31,6 +31,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [fixedMask, setFixedMask] = useState<boolean[][]>(
     Array(9).fill(false).map(() => Array(9).fill(false))
   );
+  // 🟣 헷갈리는 입력칸/가설 마킹 상태 (9x9 boolean)
+  const [markedMask, setMarkedMask] = useState<boolean[][]>(
+    Array(9).fill(false).map(() => Array(9).fill(false))
+  );
+  // 입력 모드: 'normal' (일반 파란색) | 'marked' (헷갈림 보라색)
+  const [inputMode, setInputMode] = useState<'normal' | 'marked'>('normal');
+
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [phase, setPhase] = useState<'waiting' | 'playing' | 'completed'>('waiting');
   const [completed, setCompleted] = useState(false);
@@ -42,6 +49,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [message, setMessage] = useState('');
   const [showNumpad, setShowNumpad] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
+  // 모바일 롱프레스(길게 누르기) 감지용 Ref
+  const touchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPosRef = React.useRef<{ x: number; y: number } | null>(null);
+
   // 타이머
   useEffect(() => {
     let timerInterval: ReturnType<typeof setInterval>;
@@ -52,6 +63,26 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     }
     return () => clearInterval(timerInterval);
   }, [phase, completed]);
+
+  // 마킹(헷갈림 색상) 토글 함수
+  const toggleMarkCell = React.useCallback((r: number, c: number) => {
+    if (fixedMask[r]?.[c]) {
+      setMessage('🔒 고정 문제는 마킹할 수 없습니다.');
+      return;
+    }
+    setMarkedMask(prev => {
+      const next = prev.map(row => [...row]);
+      const nextVal = !next[r][c];
+      next[r][c] = nextVal;
+      const cellName = `${String.fromCharCode(65 + c)}${r + 1}`;
+      if (nextVal) {
+        setMessage(`🟣 [${cellName}] 셀이 '헷갈림(보라색)'으로 표시되었습니다.`);
+      } else {
+        setMessage(`🔵 [${cellName}] 셀이 '일반(파란색)'으로 변경되었습니다.`);
+      }
+      return next;
+    });
+  }, [fixedMask]);
 
   // 소켓 연결 및 이벤트 핸들링
   useEffect(() => {
@@ -103,6 +134,17 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       return;
     }
 
+    // 헷갈림 모드이거나 이미 마킹된 상태에서 숫자를 입력할 때 마킹 상태 업데이트
+    if (val !== 0) {
+      if (inputMode === 'marked') {
+        setMarkedMask(prev => {
+          const next = prev.map(row => [...row]);
+          next[r][c] = true;
+          return next;
+        });
+      }
+    }
+
     socket?.emit('sudoku-cell-change', {
       room,
       row: r,
@@ -110,9 +152,9 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       value: val,
       username
     });
-  }, [selectedCell, completed, fixedMask, socket, room, username]);
+  }, [selectedCell, completed, fixedMask, inputMode, socket, room, username]);
 
-  // 키보드 입력 핸들러
+  // 키보드 입력 핸들러 (M / H 키로 마킹 토글 지원)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedCell || phase !== 'playing' || completed) return;
@@ -132,17 +174,21 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         setSelectedCell({ r, c: Math.max(0, c - 1) });
       } else if (e.key === 'ArrowRight') {
         setSelectedCell({ r, c: Math.min(8, c + 1) });
+      } else if (e.key === 'm' || e.key === 'M' || e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleMarkCell(r, c);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, phase, completed, handleNumberInput]);
+  }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell]);
 
   // 퍼즐 시작
   const handleStartGame = (diff: Difficulty) => {
     setDifficulty(diff);
     setElapsedTime(0);
+    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
     socket?.emit('sudoku-start', { room, difficulty: diff });
   };
 
@@ -156,7 +202,56 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
   // 퍼즐 초기화
   const handleReset = () => {
+    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
     socket?.emit('sudoku-reset', { room });
+  };
+
+  // PC 마우스 우클릭 핸들러 (헷갈림 색상 토글)
+  const handleCellContextMenu = (r: number, c: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (phase !== 'playing' || completed) return;
+    setSelectedCell({ r, c });
+    toggleMarkCell(r, c);
+  };
+
+  // 모바일 터치 (Long Press) 핸들러
+  const handleTouchStart = (r: number, c: number, e: React.TouchEvent) => {
+    if (phase !== 'playing' || completed) return;
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = setTimeout(() => {
+      // 햅틱 진동 피드백 (지원 디바이스)
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch {
+          // ignore
+        }
+      }
+      setSelectedCell({ r, c });
+      toggleMarkCell(r, c);
+      touchTimerRef.current = null;
+    }, 450);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current || !touchTimerRef.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+    if (dx > 10 || dy > 10) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
   };
 
   // 오류 체크
@@ -188,6 +283,11 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
     if (c === 2 || c === 5) classes.push('border-right-thick');
     if (r === 2 || r === 5) classes.push('border-bottom-thick');
+
+    const isMarked = markedMask[r]?.[c];
+    if (isMarked) {
+      classes.push('marked');
+    }
 
     if (fixedMask[r][c]) {
       classes.push('fixed');
@@ -221,6 +321,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   };
 
   const selectedVal = selectedCell ? grid[selectedCell.r][selectedCell.c] : null;
+  const isSelectedCellMarked = selectedCell ? markedMask[selectedCell.r]?.[selectedCell.c] : false;
 
   return (
     <div className="sudoku-container excel-stealth-theme">
@@ -232,7 +333,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         <div className="excel-fx-icon">fx</div>
         <div className="excel-formula-input">
           {selectedCell
-            ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0})`
+            ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0}${isSelectedCellMarked ? ', [STATUS: UNSURE_HYPOTHESIS]' : ''})`
             : '=SUDOKU_MATRIX_SOLVER(Easy, Medium, Hard)'}
         </div>
       </div>
@@ -280,6 +381,15 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           >
             {showNumpad ? '🔢 수식 패드 숨기기' : '🔢 수식 패드 보이기'}
           </button>
+          {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
+            <button
+              className={`excel-btn ${isSelectedCellMarked ? 'marked-btn-active' : ''}`}
+              onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c)}
+              title="선택된 셀의 헷갈림(보라색) 색상을 전환합니다"
+            >
+              {isSelectedCellMarked ? '🟣 헷갈림 해제' : '🟣 헷갈림 표시'}
+            </button>
+          )}
           {selectedCell && (
             <button
               className="excel-btn"
@@ -305,10 +415,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             <span className="legend-sample fixed">5</span> 문제 (고정)
           </span>
           <span className="legend-item user">
-            <span className="legend-sample user">7</span> 내가 입력한 숫자
+            <span className="legend-sample user">7</span> 확정 입력 (파랑)
+          </span>
+          <span className="legend-item marked">
+            <span className="legend-sample marked">4</span> 헷갈림/가설 (보라)
           </span>
           <span className="legend-item conflict">
-            <span className="legend-sample conflict">3</span> 중복 오류
+            <span className="legend-sample conflict">3</span> 중복 오류 (빨강)
           </span>
         </div>
 
@@ -332,6 +445,18 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                       key={c}
                       className={getCellClassName(r, c)}
                       onClick={() => setSelectedCell({ r, c })}
+                      onContextMenu={(e) => handleCellContextMenu(r, c, e)}
+                      onTouchStart={(e) => handleTouchStart(r, c, e)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onTouchCancel={handleTouchEnd}
+                      title={
+                        fixedMask[r][c]
+                          ? '고정 문제 셀'
+                          : markedMask[r][c]
+                          ? '헷갈림(가설) 표시된 셀 - 우클릭/길게누르기로 해제'
+                          : '클릭하여 선택 | 우클릭/길게누르기로 헷갈림 표시'
+                      }
                     >
                       {val !== 0 ? val : ''}
                     </td>
@@ -356,20 +481,36 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         {showNumpad && (
           <div className="sudoku-controls-panel">
             <div className="sudoku-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🔢 수식 입력 패드 (1~9)</h3>
-                {selectedCell && (
-                  <span style={{ fontSize: '0.78rem', color: '#107c41', fontWeight: 700 }}>
-                    선택 셀: {String.fromCharCode(65 + selectedCell.c)}{selectedCell.r + 1}
-                  </span>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: '6px' }}>
+                <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🔢 수식 입력 패드</h3>
+                
+                {/* 입력 모드 토글 (일반 파랑 vs 헷갈림 보라) */}
+                <div className="input-mode-toggle-group">
+                  <button
+                    type="button"
+                    className={`mode-toggle-btn ${inputMode === 'normal' ? 'active-normal' : ''}`}
+                    onClick={() => setInputMode('normal')}
+                    title="일반 확정 숫자 입력 모드 (파란색)"
+                  >
+                    🔵 일반 확정
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-toggle-btn ${inputMode === 'marked' ? 'active-marked' : ''}`}
+                    onClick={() => setInputMode('marked')}
+                    title="헷갈리는 가설 숫자 입력 모드 (보라색)"
+                  >
+                    🟣 헷갈림 모드
+                  </button>
+                </div>
               </div>
+
               <div className="numpad-grid">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                   <button
                     key={num}
                     type="button"
-                    className="numpad-btn"
+                    className={`numpad-btn ${inputMode === 'marked' ? 'marked-mode-btn' : ''}`}
                     onClick={() => handleNumberInput(num)}
                     disabled={completed}
                   >
@@ -377,16 +518,27 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: '8px', textAlign: 'center' }}>
+
+              <div className="numpad-action-row">
                 <button
                   type="button"
                   className="excel-btn"
                   onClick={() => handleNumberInput(0)}
                   disabled={completed}
-                  style={{ width: '100%', padding: '6px 12px' }}
+                  style={{ flex: 1, padding: '6px 8px' }}
                 >
-                  🧽 선택 셀 지우기 (0/Backspace)
+                  🧽 셀 지우기
                 </button>
+                {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
+                  <button
+                    type="button"
+                    className={`excel-btn ${isSelectedCellMarked ? 'marked-btn-active' : ''}`}
+                    onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c)}
+                    style={{ flex: 1, padding: '6px 8px' }}
+                  >
+                    {isSelectedCellMarked ? '🟣 색상 원복 (파랑)' : '🟣 헷갈림 표시 (보라)'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -398,8 +550,9 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           </div>
         )}
 
-        <div style={{ fontSize: '0.78rem', color: '#605e5c', textAlign: 'center' }}>
-          💡 방향키(`↑` `↓` `←` `→`)로 셀 이동 | 숫자 키(`1`~`9`) 입력 | `Backspace` / `Delete` 지우기
+        <div className="sudoku-guide-tip">
+          <span>💡 <b>숫자 입력</b>: 가상패드 또는 키보드(1~9) | <b>지우기</b>: Backspace / 0</span>
+          <span>🎨 <b>헷갈림 색상(보라색) 전환</b>: 🖱️ PC는 <b>우클릭</b>(또는 M키) | 📱 모바일은 <b>길게 누르기</b> 또는 <b>[🟣헷갈림]</b> 버튼</span>
         </div>
       </div>
 
