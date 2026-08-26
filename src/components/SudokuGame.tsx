@@ -9,7 +9,7 @@ interface SudokuGameProps {
   onLeaveRoom?: () => void;
 }
 
-type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'legendary';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'legendary' | 'god';
 
 interface SudokuUpdatePayload {
   grid?: number[][];
@@ -387,7 +387,11 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         <div className="excel-formula-input">
           {selectedCell
             ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0}${isSelectedCellMarked ? ', [STATUS: UNSURE_HYPOTHESIS]' : ''})`
-            : '=SUDOKU_MATRIX_SOLVER(Easy, Medium, Hard)'}
+            : difficulty === 'god'
+            ? '=ASCEND_TO_DIVINITY(Matrix=INFINITY, AI_Escargot=TRUE)'
+            : difficulty === 'legendary'
+            ? '=LEGENDARY_MINIMUM_CLUES(Clues=17, Unique_Solution=TRUE)'
+            : '=SUDOKU_MATRIX_SOLVER(Easy, Medium, Hard, Expert, Legendary, God)'}
         </div>
       </div>
 
@@ -419,13 +423,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       <div className="sudoku-main-workspace">
         {/* 난이도 선택 & 패드 토글 리본 */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {(['easy', 'medium', 'hard', 'expert', 'legendary'] as Difficulty[]).map(diff => (
+          {(['easy', 'medium', 'hard', 'expert', 'legendary', 'god'] as Difficulty[]).map(diff => (
             <button
               key={diff}
-              className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'legendary' ? 'legendary' : diff === 'expert' ? 'expert' : 'primary') : ''}`}
+              className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'god' ? 'god' : diff === 'legendary' ? 'legendary' : diff === 'expert' ? 'expert' : 'primary') : ''}`}
               onClick={() => handleStartGame(diff)}
             >
-              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : diff === 'expert' ? '💀 짱어려움' : '👑 전설의 스도쿠왕'}
+              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : diff === 'expert' ? '💀 짱어려움' : diff === 'legendary' ? '👑 전설의 스도쿠왕' : '🌌 신(神)의 영역'}
             </button>
           ))}
           <button

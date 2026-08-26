@@ -164,6 +164,26 @@
   border-color: #451a03;
 }
 
+.sudoku-container .excel-btn.god {
+  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #ec4899 100%);
+  color: #ffffff;
+  border-color: #3b0764;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  animation: godGlowPulse 2s infinite alternate;
+}
+
+.sudoku-container .excel-btn.god:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3b0764 0%, #6d28d9 50%, #db2777 100%);
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.7);
+}
+
+@keyframes godGlowPulse {
+  0% { box-shadow: 0 0 6px rgba(124, 58, 237, 0.4); }
+  100% { box-shadow: 0 0 14px rgba(236, 72, 153, 0.7); }
+}
+
 .sudoku-container .excel-btn.close {
   background: #fde7e9;
   color: #a80000;
