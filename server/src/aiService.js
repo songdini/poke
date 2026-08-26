@@ -250,11 +250,7 @@ async function callGeminiAPI({ prompt, systemInstruction, temperature = 0.7, jso
     }
 
     console.error(`[Gemini AI Error] ❌ (${modelName}, Status: ${statusCode || (err.code === 'ECONNABORTED' ? 'TIMEOUT' : 'REQ_ERROR')}, ${elapsed}ms):`, errMsg);
-    return null;
   }
-}
-
-  return null;
 }
 
 /**
