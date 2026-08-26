@@ -92,15 +92,62 @@ export interface GraduationDiploma {
   title: string;
 }
 
+export interface ExpeditionArea {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  durationSec: number; // 소요 시간 (초)
+  minLevel: number;
+  energyCost: number;
+  hungerCost: number;
+  cleanlinessCost: number;
+  rewardCoinsMin: number;
+  rewardCoinsMax: number;
+  rewardExpMin: number;
+  rewardExpMax: number;
+  dropItems: {
+    itemId: string;
+    chance: number; // 0.0 ~ 1.0 (확률)
+  }[];
+}
+
+export interface ExpeditionSession {
+  areaId: string;
+  startedAt: number;
+  durationSec: number;
+  areaName: string;
+  areaIcon: string;
+}
+
+export interface IncubatingEgg {
+  id: string;
+  name: string;
+  icon: string;
+  isGolden: boolean;
+  progress: number; // 0 ~ 100
+  acquiredAt: string;
+}
+
+export interface DailyLotteryState {
+  lastDate: string; // YYYY-MM-DD
+  freeSpinsLeft: number; // 일일 잔여 무료 스핀
+  jackpotPool: number; // 사내 누적 잭팟 상금
+}
+
 export interface FarmState {
   ownerName: string;
   farmName: string;
   isInitialized: boolean;
   coins: number;
   activePokemon: FarmPokemon | null;
+  reservePokemon: FarmPokemon[]; // 🌟 보육소 목장에 보관된 다른 파트너 포켓몬들
+  incubatingEgg?: IncubatingEgg | null; // 🌟 현재 부화기에 품고 있는 알
   graduatedPokemon: GraduationDiploma[];
   inventory: Record<string, number>; // itemId -> count
   guestbook: GuestbookEntry[];
   heartsCount: number;
+  activeExpedition?: ExpeditionSession | null;
+  lotteryState?: DailyLotteryState; // 🎰 일일 럭키 사내 복권 상태
   lastDailyRewardAt?: string;
 }

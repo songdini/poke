@@ -135,16 +135,17 @@ function countSolutions(grid, limit = 2) {
 
 /**
  * 난이도별 스도쿠 생성 함수
- * @param {'easy' | 'medium' | 'hard' | 'expert'} difficulty
+ * @param {'easy' | 'medium' | 'hard' | 'expert' | 'legendary'} difficulty
  * @returns {{ puzzle: number[][], solution: number[][], clues: number }}
  */
 export function generateSudoku(difficulty = 'easy') {
   // 난이도별 남길 힌트 숫자 개수
   const targetClues = {
-    easy: 38,    // 🌱 쉬움: ~38개 힌트
-    medium: 30,  // ⚡ 보통: ~30개 힌트
-    hard: 26,    // 🔥 어려움: ~26개 힌트
-    expert: 21   // 💀 짱어려움: ~21개 힌트 (후보 숫자 마킹과 고급 기법이 필수적인 극한 난이도)
+    easy: 38,       // 🌱 쉬움: ~38개 힌트
+    medium: 30,     // ⚡ 보통: ~30개 힌트
+    hard: 26,       // 🔥 어려움: ~26개 힌트
+    expert: 21,     // 💀 짱어려움: ~21개 힌트
+    legendary: 17   // 👑 전설의 스도쿠왕: ~17~19개 힌트 (수학적 이론상 최소 한계치!)
   }[difficulty] || 38;
 
   // 1. 완전한 스도쿠 솔루션 보드 생성
@@ -164,8 +165,8 @@ export function generateSudoku(difficulty = 'easy') {
   }
 
   // 3. 목표 힌트 수까지 하나씩 숫자를 제거하며 유일해(unique solution) 유지 여부 검증
-  // 짱어려움(expert)의 경우 2패스 셔플을 돌아 최대한 21개 근접까지 파고듦
-  const maxPasses = difficulty === 'expert' ? 2 : 1;
+  // 전설의 스도쿠왕(legendary)의 경우 4패스, 짱어려움(expert)은 2패스로 극한까지 파고듦
+  const maxPasses = difficulty === 'legendary' ? 4 : difficulty === 'expert' ? 2 : 1;
   let currentClues = 81;
 
   for (let pass = 0; pass < maxPasses; pass++) {

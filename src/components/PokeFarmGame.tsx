@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
   FARM_JOBS, 
+  EXPEDITION_AREAS,
+  LOTTERY_SYMBOLS,
+  drawLotteryReels,
   loadFarmState, 
   saveFarmState, 
   createNewFarmPokemon, 
+  hatchBabyPokemon,
   playPokemonCry,
   getMaxExpForLevel 
 } from '../services/pokeFarmService';
@@ -21,7 +25,7 @@ interface PokeFarmGameProps {
   onLeaveRoom?: () => void;
 }
 
-type FarmTab = 'yard' | 'adopt' | 'evolve' | 'jobs' | 'shop' | 'diplomas' | 'neighbors';
+type FarmTab = 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas' | 'neighbors';
 
 interface NeighborFarmData {
   username: string;
@@ -67,6 +71,43 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       levelUp: boolean;
       newLevel: number;
     } | null;
+  } | null>(null);
+
+  // 🌲 사내 탐험 진행 애니메이션 모달 상태
+  const [expeditionModal, setExpeditionModal] = useState<{
+    active: boolean;
+    area: ExpeditionArea;
+    progress: number;
+    statusText: string;
+    isDone: boolean;
+    rewardGained: {
+      coins: number;
+      exp: number;
+      levelUp: boolean;
+      newLevel: number;
+      foundItems: { item: FarmItem; qty: number }[];
+    } | null;
+  } | null>(null);
+
+  // 🥚 알 부화 드라마틱 모달 상태
+  const [hatchingModal, setHatchingModal] = useState<{
+    active: boolean;
+    stage: 'wobble' | 'crack' | 'hatched';
+    eggName: string;
+    isGolden: boolean;
+    babyPokemon: FarmPokemon | null;
+    nicknameInput: string;
+  } | null>(null);
+
+  // 🎰 일일 럭키 사내 복권 슬롯 상태
+  const [slotReels, setSlotReels] = useState<[string, string, string]>(['⚡', '⚡', '⚡']);
+  const [isSlotSpinning, setIsSlotSpinning] = useState(false);
+  const [slotSpinResult, setSlotSpinResult] = useState<{
+    title: string;
+    desc: string;
+    coinsWon: number;
+    isJackpot: boolean;
+    wonItem?: FarmItem;
   } | null>(null);
 
   // 🌟 팜 쓰다듬기 고유 스킬 모션 상태
@@ -159,12 +200,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     setTimeout(() => setActionAlert(null), 3500);
   };
 
+  // 🥚 알 부화기 온기 증가 헬퍼
+  const addEggWarmth = (amount: number, reason: string) => {
+    setFarmState(prev => {
+      if (!prev.incubatingEgg || prev.incubatingEgg.progress >= 100) return prev;
+      const nextProgress = Math.min(100, prev.incubatingEgg.progress + amount);
+      if (nextProgress >= 100) {
+        showAlert(`🐣 인큐베이터의 [${prev.incubatingEgg.name}]이(가) 온기를 가득 머금고 부화할 준비가 되었습니다! (${reason})`, 'success');
+      }
+      return {
+        ...prev,
+        incubatingEgg: {
+          ...prev.incubatingEgg,
+          progress: nextProgress
+        }
+      };
+    });
+  };
+
   const pmon = farmState.activePokemon;
 
   // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트
   const handlePetPokemon = (e?: React.MouseEvent) => {
     if (!pmon) return;
     playPokemonCry(pmon.speciesId);
+    addEggWarmth(5, '포켓몬 쓰다듬기');
 
     // 스킬 모션 정보 결정
     let skillName = '애교부리기';
@@ -271,6 +331,71 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     if (currentQty <= 0) {
       showAlert(`아이템 [${item.name}]이 부족합니다. 상점에서 구매해 주세요!`, 'warn');
       return;
+    }
+
+    // 🍬 1. 이상한사탕 특수 효과 (즉시 1레벨업!)
+    if (item.id === 'rare_candy') {
+      setFarmState(prev => {
+        if (!prev.activePokemon) return prev;
+        const target = prev.activePokemon;
+        const newLevel = target.level + 1;
+        const maxExp = getMaxExpForLevel(newLevel);
+        return {
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            [item.id]: currentQty - 1
+          },
+          activePokemon: {
+            ...target,
+            level: newLevel,
+            exp: 0,
+            maxExp,
+            happiness: Math.min(100, target.happiness + 30)
+          }
+        };
+      });
+      playPokemonCry(pmon.speciesId);
+      showAlert(`🎉 [이상한사탕]의 신비한 힘으로 [${pmon.nickname}]이(가) 즉시 Lv.${pmon.level + 1}이 되었습니다!`, 'success');
+      return;
+    }
+
+    // 💎 2. 반짝이는 원석 매각 (300 코인 획득)
+    if (item.id === 'shiny_stone') {
+      setFarmState(prev => ({
+        ...prev,
+        coins: prev.coins + 300,
+        inventory: {
+          ...prev.inventory,
+          [item.id]: currentQty - 1
+        }
+      }));
+      showAlert(`💎 [반짝이는 원석]을 사내 보석상에 매각하여 300 코인을 획득했습니다!`, 'success');
+      return;
+    }
+
+    // 👑 3. 전설의 황금 왕관 매각 (1,000 코인 획득)
+    if (item.id === 'gold_crown') {
+      setFarmState(prev => ({
+        ...prev,
+        coins: prev.coins + 1000,
+        inventory: {
+          ...prev.inventory,
+          [item.id]: currentQty - 1
+        }
+      }));
+      showAlert(`👑 [전설의 황금 왕관]을 사내 역사관에 기증하여 1,000 코인을 획득했습니다!`, 'success');
+      return;
+    }
+
+    // 🥚 4. 의문의 알 / 황금알 인큐베이터 입고
+    if (item.id === 'mystery_egg' || item.id === 'golden_egg') {
+      handlePlaceEggInIncubator(item);
+      return;
+    }
+
+    if (item.id === 'mild_soap') {
+      addEggWarmth(15, '따뜻한 거품 목욕');
     }
 
     setFarmState(prev => {
@@ -426,6 +551,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               };
             });
 
+            addEggWarmth(20, '아르바이트 완수');
+
             return {
               ...prev,
               progress: 100,
@@ -451,6 +578,485 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     return () => clearInterval(interval);
   }, [jobShiftModal?.active, jobShiftModal?.isDone, pmon]);
+
+  // 🌲 3-2. 사내 뒷산 탐험 개시
+  const handleStartExpedition = (area: ExpeditionArea) => {
+    if (!pmon) return;
+    if (pmon.level < area.minLevel) {
+      showAlert(`탐험 참여 조건 부족: Lv.${area.minLevel} 이상 필요합니다.`, 'warn');
+      return;
+    }
+    if (pmon.energy < area.energyCost) {
+      showAlert('체력이 부족합니다! 비타민 음료를 먹이거나 휴식을 취해주세요.', 'warn');
+      return;
+    }
+    if (pmon.hunger < area.hungerCost) {
+      showAlert('배가 너무 고파서 탐험을 떠날 수 없습니다! 열매를 먹여주세요.', 'warn');
+      return;
+    }
+
+    playPokemonCry(pmon.speciesId);
+
+    setExpeditionModal({
+      active: true,
+      area,
+      progress: 0,
+      statusText: '🎒 탐험 배낭을 메고 목적지로 출발합니다!',
+      isDone: false,
+      rewardGained: null
+    });
+  };
+
+  // 🌲 사내 뒷산 탐험 진행 애니메이션 타이머
+  useEffect(() => {
+    if (!expeditionModal || !expeditionModal.active || expeditionModal.isDone) return;
+
+    const interval = setInterval(() => {
+      setExpeditionModal(prev => {
+        if (!prev || prev.isDone) return prev;
+        const nextProgress = Math.min(100, prev.progress + 12);
+
+        let statusText = '🗺️ 목적지에 도착하여 주변 지형을 정찰 중...';
+        if (nextProgress >= 20 && nextProgress < 50) {
+          statusText = '🔍 수풀과 덤불 사이를 조심스럽게 헤치며 숨겨진 길을 탐색하는 중...';
+        } else if (nextProgress >= 50 && nextProgress < 75) {
+          statusText = '✨ 앗! 바위 틈과 보관함에서 무언가 반짝이는 보물 상자를 발견했습니다! 🎁';
+        } else if (nextProgress >= 75 && nextProgress < 95) {
+          statusText = '🏃‍♂️ 발각되지 않도록 전리품을 배낭에 단단히 챙겨 본부로 귀환하는 중!';
+        } else if (nextProgress >= 100) {
+          statusText = '🎉 탐험 대성공! 전리품 보고서가 도착했습니다.';
+        }
+
+        if (nextProgress >= 100) {
+          if (pmon) {
+            const gainedCoins = Math.floor(Math.random() * (prev.area.rewardCoinsMax - prev.area.rewardCoinsMin + 1)) + prev.area.rewardCoinsMin;
+            const gainedExp = Math.floor(Math.random() * (prev.area.rewardExpMax - prev.area.rewardExpMin + 1)) + prev.area.rewardExpMin;
+
+            const foundItems: { item: FarmItem; qty: number }[] = [];
+            const inventoryAdd: Record<string, number> = {};
+
+            prev.area.dropItems.forEach(drop => {
+              if (Math.random() < drop.chance) {
+                const itemObj = FARM_ITEMS.find(i => i.id === drop.itemId);
+                if (itemObj) {
+                  foundItems.push({ item: itemObj, qty: 1 });
+                  inventoryAdd[drop.itemId] = (inventoryAdd[drop.itemId] || 0) + 1;
+                }
+              }
+            });
+
+            let newExp = pmon.exp + gainedExp;
+            let newLevel = pmon.level;
+            let maxExp = getMaxExpForLevel(newLevel);
+            let didLevelUp = false;
+
+            while (newExp >= maxExp) {
+              newExp -= maxExp;
+              newLevel += 1;
+              maxExp = getMaxExpForLevel(newLevel);
+              didLevelUp = true;
+            }
+
+            setFarmState(fPrev => {
+              if (!fPrev.activePokemon) return fPrev;
+              const target = fPrev.activePokemon;
+              const nextInv = { ...fPrev.inventory };
+              Object.entries(inventoryAdd).forEach(([k, v]) => {
+                nextInv[k] = (nextInv[k] || 0) + v;
+              });
+
+              return {
+                ...fPrev,
+                coins: fPrev.coins + gainedCoins,
+                inventory: nextInv,
+                activePokemon: {
+                  ...target,
+                  energy: Math.max(0, target.energy - prev.area.energyCost),
+                  hunger: Math.max(0, target.hunger - prev.area.hungerCost),
+                  cleanliness: Math.max(0, target.cleanliness - prev.area.cleanlinessCost),
+                  level: newLevel,
+                  exp: newExp,
+                  maxExp
+                }
+              };
+            });
+
+            addEggWarmth(25, '탐험 완수');
+
+            return {
+              ...prev,
+              progress: 100,
+              statusText: '🎉 탐험 대성공! 전리품 보고서가 도착했습니다.',
+              isDone: true,
+              rewardGained: {
+                coins: gainedCoins,
+                exp: gainedExp,
+                levelUp: didLevelUp,
+                newLevel,
+                foundItems
+              }
+            };
+          }
+        }
+
+        return {
+          ...prev,
+          progress: nextProgress,
+          statusText
+        };
+      });
+    }, 280);
+
+    return () => clearInterval(interval);
+  }, [expeditionModal?.active, expeditionModal?.isDone, pmon]);
+
+  // 🥚 3-3. 인큐베이터에 알 넣기
+  const handlePlaceEggInIncubator = (eggItem: FarmItem) => {
+    if (farmState.incubatingEgg) {
+      showAlert('인큐베이터에 이미 품고 있는 알이 있습니다! 먼저 부화시켜 주세요.', 'warn');
+      return;
+    }
+    const currentQty = farmState.inventory[eggItem.id] || 0;
+    if (currentQty <= 0) {
+      showAlert(`보유 중인 [${eggItem.name}]이 없습니다. 상점이나 탐험에서 획득해 보세요!`, 'warn');
+      return;
+    }
+
+    const isGolden = eggItem.id === 'golden_egg';
+    const newEgg: IncubatingEgg = {
+      id: `egg_${Date.now()}`,
+      name: eggItem.name,
+      icon: eggItem.icon,
+      isGolden,
+      progress: 0,
+      acquiredAt: new Date().toISOString()
+    };
+
+    setFarmState(prev => ({
+      ...prev,
+      inventory: {
+        ...prev.inventory,
+        [eggItem.id]: currentQty - 1
+      },
+      incubatingEgg: newEgg
+    }));
+
+    showAlert(`🥚 [${eggItem.name}]을(를) 인큐베이터에 넣었습니다! 쓰다듬기, 목욕, 알바, 탐험으로 온기를 모아주세요!`, 'success');
+  };
+
+  // 🐣 3-4. 알 부화 시작 (모달 오픈 & 3단계 연출)
+  const handleStartHatching = () => {
+    if (!farmState.incubatingEgg || farmState.incubatingEgg.progress < 100) {
+      showAlert('알의 온기가 아직 부족합니다! (100% 도달 필요)', 'warn');
+      return;
+    }
+
+    const egg = farmState.incubatingEgg;
+    const { chainIdx, isShiny } = hatchBabyPokemon(egg.isGolden);
+    const newBaby = createNewFarmPokemon(chainIdx, undefined, isShiny);
+
+    setHatchingModal({
+      active: true,
+      stage: 'wobble',
+      eggName: egg.name,
+      isGolden: egg.isGolden,
+      babyPokemon: newBaby,
+      nicknameInput: newBaby.name
+    });
+
+    // 1단계 -> 2단계: 금 가기
+    setTimeout(() => {
+      setHatchingModal(prev => prev ? { ...prev, stage: 'crack' } : null);
+    }, 1400);
+
+    // 2단계 -> 3단계: 부화 완료!
+    setTimeout(() => {
+      setHatchingModal(prev => prev ? { ...prev, stage: 'hatched' } : null);
+      playPokemonCry(newBaby.speciesId);
+    }, 2800);
+  };
+
+  // 🎉 3-5. 부화된 아기 포켓몬 수령 (대표 파트너로 교체 or 보육소에 보관)
+  const handleConfirmHatch = (choice: 'setActive' | 'sendToReserve') => {
+    if (!hatchingModal || !hatchingModal.babyPokemon) return;
+
+    const baby = {
+      ...hatchingModal.babyPokemon,
+      nickname: hatchingModal.nicknameInput.trim() || hatchingModal.babyPokemon.name
+    };
+
+    setFarmState(prev => {
+      let nextActive = prev.activePokemon;
+      const nextReserve = [...(prev.reservePokemon || [])];
+
+      if (choice === 'setActive') {
+        if (prev.activePokemon) {
+          nextReserve.unshift(prev.activePokemon);
+        }
+        nextActive = baby;
+      } else {
+        nextReserve.unshift(baby);
+      }
+
+      return {
+        ...prev,
+        activePokemon: nextActive,
+        reservePokemon: nextReserve,
+        incubatingEgg: null
+      };
+    });
+
+    setHatchingModal(null);
+    showAlert(
+      choice === 'setActive'
+        ? `🌟 갓 태어난 [${baby.nickname}]이(가) 내 새로운 대표 파트너가 되었습니다!`
+        : `🏡 [${baby.nickname}]이(가) 보육소 목장에 안전하게 등록되었습니다!`,
+      'success'
+    );
+  };
+
+  // 🔄 3-6. 보육소 목장의 포켓몬으로 대표 파트너 교체하기
+  const handleSwitchActivePokemon = (targetUid: string) => {
+    setFarmState(prev => {
+      const reserves = [...(prev.reservePokemon || [])];
+      const targetIdx = reserves.findIndex(p => p.uid === targetUid);
+      if (targetIdx === -1) return prev;
+
+      const targetMon = reserves[targetIdx];
+      reserves.splice(targetIdx, 1);
+
+      if (prev.activePokemon) {
+        reserves.unshift(prev.activePokemon);
+      }
+
+      return {
+        ...prev,
+        activePokemon: targetMon,
+        reservePokemon: reserves
+      };
+    });
+
+    showAlert('✨ 대표 파트너 포켓몬을 성공적으로 교체했습니다!', 'success');
+  };
+
+  // 🎰 3-7. 일일 럭키 사내 복권 슬롯 추첨
+  const handleSpinLottery = () => {
+    if (isSlotSpinning) return;
+
+    const lottery = farmState.lotteryState || {
+      lastDate: new Date().toISOString().split('T')[0],
+      freeSpinsLeft: 3,
+      jackpotPool: 2000
+    };
+
+    const isFree = lottery.freeSpinsLeft > 0;
+    const cost = isFree ? 0 : 50;
+
+    if (!isFree && farmState.coins < cost) {
+      showAlert('복권 추첨 비용(50P)이 부족합니다! 알바나 탐험으로 코인을 모아보세요.', 'warn');
+      return;
+    }
+
+    if (pmon) playPokemonCry(pmon.speciesId);
+    setIsSlotSpinning(true);
+    setSlotSpinResult(null);
+
+    // 비용 차감 및 잭팟 풀 적립 (유료인 경우 25P는 잭팟 풀로 누적)
+    setFarmState(prev => {
+      const prevLottery = prev.lotteryState || lottery;
+      return {
+        ...prev,
+        coins: prev.coins - cost,
+        lotteryState: {
+          ...prevLottery,
+          freeSpinsLeft: Math.max(0, prevLottery.freeSpinsLeft - (isFree ? 1 : 0)),
+          jackpotPool: prevLottery.jackpotPool + (!isFree ? 25 : 5)
+        }
+      };
+    });
+
+    // 릴 셔플 애니메이션 인터벌
+    const icons = LOTTERY_SYMBOLS.map(s => s.icon);
+    let counter = 0;
+    const shuffleTimer = setInterval(() => {
+      counter++;
+      setSlotReels([
+        icons[Math.floor(Math.random() * icons.length)],
+        icons[Math.floor(Math.random() * icons.length)],
+        icons[Math.floor(Math.random() * icons.length)]
+      ]);
+    }, 100);
+
+    // 1.8초 후 최종 당첨 결과 결정
+    setTimeout(() => {
+      clearInterval(shuffleTimer);
+      const drawn = drawLotteryReels();
+      setSlotReels([drawn[0].icon, drawn[1].icon, drawn[2].icon]);
+      setIsSlotSpinning(false);
+
+      // 온기 +5% 보너스
+      addEggWarmth(5, '사내 복권 참여');
+
+      // 당첨 규칙 판정
+      const [s1, s2, s3] = drawn;
+      const currentJackpot = farmState.lotteryState?.jackpotPool || 2000;
+
+      // 1. 대박 잭팟: 777 피카츄 3개!
+      if (s1.id === 'jackpot' && s2.id === 'jackpot' && s3.id === 'jackpot') {
+        const jackpotWin = currentJackpot;
+        const goldenEggItem = FARM_ITEMS.find(i => i.id === 'golden_egg');
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + jackpotWin,
+          inventory: {
+            ...prev.inventory,
+            golden_egg: (prev.inventory.golden_egg || 0) + 1
+          },
+          lotteryState: {
+            ...prev.lotteryState!,
+            jackpotPool: 1000
+          }
+        }));
+        setSlotSpinResult({
+          title: '🚨 MEGA JACKPOT 대박 잭팟 달성! 🚨',
+          desc: `사내 누적 잭팟 상금 ${jackpotWin.toLocaleString()}P 전액 수령! 추가로 🌟 황금빛 전설의 알을 획득했습니다!`,
+          coinsWon: jackpotWin,
+          isJackpot: true,
+          wonItem: goldenEggItem
+        });
+        showAlert(`🎉 MEGA JACKPOT! 사내 잭팟 상금 ${jackpotWin.toLocaleString()}P 당첨!`, 'success');
+        return;
+      }
+
+      // 2. 이상한사탕 3개
+      if (s1.id === 'candy' && s2.id === 'candy' && s3.id === 'candy') {
+        const candyItem = FARM_ITEMS.find(i => i.id === 'rare_candy');
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + 300,
+          inventory: {
+            ...prev.inventory,
+            rare_candy: (prev.inventory.rare_candy || 0) + 1
+          }
+        }));
+        setSlotSpinResult({
+          title: '🍬 스위트 캔디 잭팟!',
+          desc: '즉시 1레벨을 올려주는 🍬 이상한사탕 1개와 🪙 300P를 획득했습니다!',
+          coinsWon: 300,
+          isJackpot: false,
+          wonItem: candyItem
+        });
+        return;
+      }
+
+      // 3. 의문의 알 3개
+      if (s1.id === 'egg' && s2.id === 'egg' && s3.id === 'egg') {
+        const eggItem = FARM_ITEMS.find(i => i.id === 'mystery_egg');
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + 400,
+          inventory: {
+            ...prev.inventory,
+            mystery_egg: (prev.inventory.mystery_egg || 0) + 1
+          }
+        }));
+        setSlotSpinResult({
+          title: '🥚 미스터리 에그 잭팟!',
+          desc: '부화기에 품을 수 있는 🥚 의문의 포켓몬 알과 🪙 400P를 획득했습니다!',
+          coinsWon: 400,
+          isJackpot: false,
+          wonItem: eggItem
+        });
+        return;
+      }
+
+      // 4. 거품비누 3개
+      if (s1.id === 'soap' && s2.id === 'soap' && s3.id === 'soap') {
+        const soapItem = FARM_ITEMS.find(i => i.id === 'mild_soap');
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + 250,
+          inventory: {
+            ...prev.inventory,
+            mild_soap: (prev.inventory.mild_soap || 0) + 2
+          }
+        }));
+        setSlotSpinResult({
+          title: '🧼 버블버블 클린 잭팟!',
+          desc: '깨끗한 거품비누 2개와 🪙 250P를 획득했습니다!',
+          coinsWon: 250,
+          isJackpot: false,
+          wonItem: soapItem
+        });
+        return;
+      }
+
+      // 5. 오랭열매 3개
+      if (s1.id === 'berry' && s2.id === 'berry' && s3.id === 'berry') {
+        const berryItem = FARM_ITEMS.find(i => i.id === 'oran_berry');
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + 150,
+          inventory: {
+            ...prev.inventory,
+            oran_berry: (prev.inventory.oran_berry || 0) + 3
+          }
+        }));
+        setSlotSpinResult({
+          title: '🫐 달콤한 오랭열매 파티!',
+          desc: '맛있는 오랭열매 3개와 🪙 150P를 획득했습니다!',
+          coinsWon: 150,
+          isJackpot: false,
+          wonItem: berryItem
+        });
+        return;
+      }
+
+      // 6. 커피 3개
+      if (s1.id === 'coffee' && s2.id === 'coffee' && s3.id === 'coffee') {
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + 80
+        }));
+        setSlotSpinResult({
+          title: '☕ 탕비실 바리스타 상',
+          desc: '회사 탕비실 커피 3잔 일치! 🪙 80P를 획득했습니다.',
+          coinsWon: 80,
+          isJackpot: false
+        });
+        return;
+      }
+
+      // 7. 2개 일치 (소박 당첨)
+      if (s1.id === s2.id || s2.id === s3.id || s1.id === s3.id) {
+        const reward = 40;
+        setFarmState(prev => ({
+          ...prev,
+          coins: prev.coins + reward
+        }));
+        setSlotSpinResult({
+          title: '✨ 2개 심볼 일치 (소박 당첨)',
+          desc: `아깝습니다! 심볼 2개 일치로 🪙 ${reward}P를 획득했습니다.`,
+          coinsWon: reward,
+          isJackpot: false
+        });
+        return;
+      }
+
+      // 8. 불일치 (위로금)
+      const consolation = 10;
+      setFarmState(prev => ({
+        ...prev,
+        coins: prev.coins + consolation
+      }));
+      setSlotSpinResult({
+        title: '🌱 꽝! 다음 기회에...',
+        desc: `아쉽게도 일치하지 않았습니다. 위로금 🪙 ${consolation}P가 지급되었습니다.`,
+        coinsWon: consolation,
+        isJackpot: false
+      });
+    }, 1800);
+  };
 
   // 4. 상점 아이템 구매
   const handleBuyItem = (item: FarmItem) => {
@@ -564,7 +1170,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       return;
     }
 
-    const isShinyChance = Math.random() < 0.05; // 5% 이로치 확률
+    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
     const newMon = createNewFarmPokemon(chainIndex, undefined, isShinyChance);
 
     setFarmState(prev => ({
@@ -574,7 +1180,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     setActiveTab('yard');
     playPokemonCry(newMon.speciesId);
-    showAlert(`🐣 [${newMon.name}]을(를) 성공적으로 분양받았습니다! ${isShinyChance ? '✨ [이로치 포켓몬] 당첨!' : ''}`, 'success');
+    showAlert(`🐣 [${newMon.name}]을(를) 성공적으로 분양받았습니다! ${isShinyChance ? '✨ [전설의 포켓몬] 당첨!' : ''}`, 'success');
   };
 
   // 8. 이웃 농장 방문 & 쓰다듬기
@@ -615,7 +1221,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   // 9. 온보딩 완료 처리 (농장 설립 & 첫 파트너 포켓몬 분양)
   const handleCompleteOnboarding = () => {
-    const isShinyChance = Math.random() < 0.05; // 5% 이로치 확률
+    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
     const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
     const cleanOwner = initOwnerName.trim() || '지우';
     const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
@@ -706,7 +1312,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 <div className="onboarding-badge">STEP 2 / 2</div>
                 <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
                 <p className="onboarding-desc">
-                  함께할 첫 아기 포켓몬을 선택하세요! 5% 확률로 특별한 **이로치(Shiny)**가 등장합니다.
+                  함께할 첫 아기 포켓몬을 선택하세요! 5% 확률로 특별한 전설의 포켓몬이 등장합니다.
                 </p>
 
                 {/* Selected Preview Box */}
@@ -848,6 +1454,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         </button>
         <button className={`farm-tab ${activeTab === 'jobs' ? 'active' : ''}`} onClick={() => { setActiveTab('jobs'); setVisitingFarm(null); }}>
           💼 아르바이트 (Jobs)
+        </button>
+        <button className={`farm-tab ${activeTab === 'expedition' ? 'active' : ''}`} onClick={() => { setActiveTab('expedition'); setVisitingFarm(null); }}>
+          🌲 사내 탐험 (Expedition)
+        </button>
+        <button className={`farm-tab ${activeTab === 'daycare' ? 'active' : ''}`} onClick={() => { setActiveTab('daycare'); setVisitingFarm(null); }}>
+          🥚 알 부화소 (Daycare)
+        </button>
+        <button className={`farm-tab ${activeTab === 'lottery' ? 'active' : ''}`} onClick={() => { setActiveTab('lottery'); setVisitingFarm(null); }}>
+          🎰 행운 복권 (Lottery)
         </button>
         <button className={`farm-tab ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { setActiveTab('shop'); setVisitingFarm(null); }}>
           🛍️ 열매 상점 (Shop)
@@ -1056,7 +1671,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <h3>🐣 둡박사 포켓몬 분양소</h3>
-                  <p>원하는 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 **이로치(Shiny)** 포켓몬이 탄생합니다.</p>
+                  <p>원하는 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 전설의 포켓몬이 탄생합니다.</p>
                 </div>
                 {/* Generation Filter Chips */}
                 <div className="gen-filter-chips">
@@ -1247,7 +1862,382 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         )}
 
         {/* =========================================================================
-            TAB 5: 🛍️ 열매 상점 (Item Shop)
+            TAB 5: 🌲 사내 뒷산 탐험 (Expedition)
+           ========================================================================= */}
+        {activeTab === 'expedition' && !visitingFarm && (
+          <div className="farm-expedition-layout">
+            <div className="expedition-banner">
+              <div className="expedition-banner-icon">🗺️</div>
+              <div>
+                <h3>🌲 신비의 사내 뒷산 탐험대 (Office Expedition)</h3>
+                <p>
+                  포켓몬을 파견하여 회사 안팎의 숨겨진 비밀 장소를 탐험시키세요! 
+                  고액 코인과 경험치, 그리고 즉시 레벨업하는 <strong>🍬 이상한사탕</strong>과 <strong>👑 전설의 황금 왕관</strong>을 물어옵니다!
+                </p>
+              </div>
+            </div>
+
+            <div className="expedition-list-grid">
+              {EXPEDITION_AREAS.map(area => {
+                const canExplore = pmon && pmon.level >= area.minLevel && pmon.energy >= area.energyCost && pmon.hunger >= area.hungerCost;
+                return (
+                  <div key={area.id} className="expedition-card">
+                    <div className="expedition-header-row">
+                      <span className="expedition-emoji">{area.icon}</span>
+                      <div className="expedition-meta">
+                        <h4>{area.name}</h4>
+                        <span className="expedition-duration-badge">⏱️ {area.durationSec}초 코스</span>
+                      </div>
+                    </div>
+
+                    <p className="expedition-desc">{area.desc}</p>
+
+                    <div className="expedition-costs-row">
+                      <span>⚡ 체력 -{area.energyCost}</span>
+                      <span>🍎 배고픔 -{area.hungerCost}</span>
+                      <span>🧼 청결 -{area.cleanlinessCost}</span>
+                      <span className={pmon && pmon.level >= area.minLevel ? 'level-ok' : 'level-warn'}>
+                        최소 Lv.{area.minLevel}
+                      </span>
+                    </div>
+
+                    <div className="expedition-drops-row">
+                      <span className="drops-label">🎁 발견 가능 전리품:</span>
+                      <div className="drops-badges">
+                        {area.dropItems.map(d => {
+                          const itemObj = FARM_ITEMS.find(i => i.id === d.itemId);
+                          return (
+                            <span key={d.itemId} className="drop-badge" title={`${itemObj?.name || d.itemId} (발견 확률: ${Math.round(d.chance * 100)}%)`}>
+                              {itemObj?.icon} {itemObj?.name}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="expedition-footer-row">
+                      <div className="expedition-reward-preview">
+                        <span className="coin-preview">🪙 {area.rewardCoinsMin}~{area.rewardCoinsMax} P</span>
+                        <span className="exp-preview">✨ {area.rewardExpMin}~{area.rewardExpMax} EXP</span>
+                      </div>
+                      <button
+                        className="excel-btn primary expedition-go-btn"
+                        onClick={() => handleStartExpedition(area)}
+                        disabled={!canExplore}
+                      >
+                        🎒 탐험 출발
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 6: 🥚 알 부화소 & 보육소 (Daycare & Incubator)
+           ========================================================================= */}
+        {activeTab === 'daycare' && !visitingFarm && (
+          <div className="farm-daycare-layout">
+            {/* Banner */}
+            <div className="daycare-banner">
+              <div className="daycare-banner-icon">🥚</div>
+              <div>
+                <h3>🥚 포켓 데이케어 & 알 인큐베이터 (Egg Incubator)</h3>
+                <p>
+                  상점이나 탐험에서 발견한 <strong>의문의 알</strong>을 품어 귀여운 아기 포켓몬으로 부화시키세요!
+                  쓰다듬기(+5%), 목욕(+15%), 알바(+20%), 탐험(+25%)을 통해 온기를 100% 모으면 알이 깨어납니다!
+                </p>
+              </div>
+            </div>
+
+            {/* Top Section: Incubator Chamber */}
+            <div className="incubator-chamber-card">
+              <div className="chamber-header">
+                <h4>🌡️ 첨단 보온 인큐베이터 (Current Incubator)</h4>
+                <span className="chamber-badge">
+                  {farmState.incubatingEgg ? '가동 중 (Active)' : '비어 있음 (Empty)'}
+                </span>
+              </div>
+
+              {farmState.incubatingEgg ? (
+                <div className="incubator-active-view">
+                  <div className="egg-display-pod">
+                    <div className={`incubator-egg-avatar ${farmState.incubatingEgg.isGolden ? 'golden-egg' : 'normal-egg'} ${farmState.incubatingEgg.progress >= 100 ? 'ready-shake' : 'incubating-float'}`}>
+                      <span className="egg-symbol">{farmState.incubatingEgg.icon}</span>
+                      <div className="warmth-heat-waves">
+                        <span>♨️</span>
+                        <span>♨️</span>
+                      </div>
+                    </div>
+
+                    <div className="incubator-egg-info">
+                      <h3>{farmState.incubatingEgg.name}</h3>
+                      <span className="egg-rarity-tag">
+                        {farmState.incubatingEgg.isGolden ? '🌟 전설의 황금알 (100% 이로치)' : '🐣 신비의 포켓몬 알'}
+                      </span>
+                      <p className="egg-warmth-status">
+                        {farmState.incubatingEgg.progress >= 100
+                          ? '🎉 온기가 가득 찼습니다! 알이 기우뚱거리며 깨어날 준비를 마쳤습니다!'
+                          : `🔥 부화 온기 충전 중... (${Math.round(farmState.incubatingEgg.progress)}% 달성)`}
+                      </p>
+
+                      {/* Warmth Progress Bar */}
+                      <div className="warmth-bar-track">
+                        <div
+                          className={`warmth-bar-fill ${farmState.incubatingEgg.isGolden ? 'golden' : ''}`}
+                          style={{ width: `${farmState.incubatingEgg.progress}%` }}
+                        />
+                      </div>
+
+                      <div className="warmth-tips-row">
+                        <span>💡 온기 획득법: 쓰다듬기(+5%) | 거품목욕(+15%) | 알바(+20%) | 탐험(+25%)</span>
+                      </div>
+
+                      {farmState.incubatingEgg.progress >= 100 && (
+                        <button
+                          className="excel-btn primary hatch-action-btn"
+                          onClick={handleStartHatching}
+                        >
+                          🐣 지금 바로 알 부화시키기!
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="incubator-empty-view">
+                  <div className="empty-pod-icon">🪹</div>
+                  <div className="empty-pod-info">
+                    <h5>현재 인큐베이터가 비어 있습니다</h5>
+                    <p>보유 중인 의문의 알이나 황금빛 전설의 알을 넣어 정성껏 품어보세요!</p>
+
+                    <div className="place-egg-actions">
+                      {(farmState.inventory['mystery_egg'] || 0) > 0 && (
+                        <button
+                          className="excel-btn primary"
+                          onClick={() => {
+                            const item = FARM_ITEMS.find(i => i.id === 'mystery_egg');
+                            if (item) handlePlaceEggInIncubator(item);
+                          }}
+                        >
+                          🥚 의문의 알 넣기 (보유: {farmState.inventory['mystery_egg']}개)
+                        </button>
+                      )}
+                      {(farmState.inventory['golden_egg'] || 0) > 0 && (
+                        <button
+                          className="excel-btn primary golden-btn"
+                          onClick={() => {
+                            const item = FARM_ITEMS.find(i => i.id === 'golden_egg');
+                            if (item) handlePlaceEggInIncubator(item);
+                          }}
+                        >
+                          🌟 황금빛 전설의 알 넣기 (보유: {farmState.inventory['golden_egg']}개)
+                        </button>
+                      )}
+                      {(farmState.inventory['mystery_egg'] || 0) <= 0 && (farmState.inventory['golden_egg'] || 0) <= 0 && (
+                        <button
+                          className="excel-btn"
+                          onClick={() => setActiveTab('shop')}
+                        >
+                          🛍️ 상점에서 알 구하러 가기
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Section: Reserve Daycare Pasture */}
+            <div className="daycare-reserve-card">
+              <div className="chamber-header">
+                <h4>🏡 보육소 목장 (대기실 포켓몬 목록)</h4>
+                <span className="chamber-badge">
+                  보관 중인 파트너: {farmState.reservePokemon?.length || 0}마리
+                </span>
+              </div>
+
+              {farmState.reservePokemon && farmState.reservePokemon.length > 0 ? (
+                <div className="reserve-pokemon-grid">
+                  {farmState.reservePokemon.map(mon => (
+                    <div key={mon.uid} className="reserve-mon-card">
+                      <img
+                        src={mon.sprites.showdownFront || mon.sprites.front}
+                        alt={mon.name}
+                        className="reserve-sprite"
+                      />
+                      <div className="reserve-mon-info">
+                        <h5>{mon.nickname} {mon.isShiny && '✨'}</h5>
+                        <span className="reserve-level">Lv.{mon.level} {mon.name}</span>
+                        <div className="reserve-types">
+                          {mon.types.map(t => (
+                            <span key={t} className={`type-tag ${t}`}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        className="excel-btn primary switch-partner-btn"
+                        onClick={() => handleSwitchActivePokemon(mon.uid)}
+                      >
+                        ⭐ 대표 파트너로 교체
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-reserve-box">
+                  <p>보육소 목장에 쉬고 있는 다른 포켓몬이 없습니다. 알을 부화시켜 더 많은 친구들을 만나보세요!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 7: 🎰 일일 럭키 사내 복권 (Lottery & Slot)
+           ========================================================================= */}
+        {activeTab === 'lottery' && !visitingFarm && (
+          <div className="farm-lottery-layout">
+            {/* Banner */}
+            <div className="lottery-banner">
+              <div className="lottery-banner-icon">🎰</div>
+              <div>
+                <h3>🎰 일일 럭키 사내 복권 (Office Lucky Slot)</h3>
+                <p>
+                  매일 3회 무료 추첨! 엑셀 난수 생성 알고리즘으로 돌아가는 사내 슬롯머신입니다.
+                  <strong> 777 피카츄 잭팟</strong>이 터지면 사내 누적 잭팟 상금과 <strong>🌟 황금빛 전설의 알</strong>을 획득합니다!
+                </p>
+              </div>
+            </div>
+
+            {/* Jackpot Display Board */}
+            <div className="jackpot-display-board">
+              <div className="jackpot-neon-label">
+                <span>🔥 ACCUMULATED JACKPOT POOL 🔥</span>
+              </div>
+              <div className="jackpot-prize-number">
+                🪙 {(farmState.lotteryState?.jackpotPool || 2000).toLocaleString()} P
+              </div>
+              <span className="jackpot-sub-notice">
+                * 유료 복권 구매 시마다 상금 풀에 25P씩 실시간 누적 적립됩니다! (복권 참여 시 알 온기 +5%)
+              </span>
+            </div>
+
+            {/* Main Slot Machine Chamber */}
+            <div className="slot-machine-frame">
+              <div className="slot-screen-bezel">
+                <div className="slot-reels-container">
+                  <div className={`slot-reel-cell ${isSlotSpinning ? 'spinning' : ''}`}>
+                    <span className="reel-symbol">{slotReels[0]}</span>
+                  </div>
+                  <div className={`slot-reel-cell ${isSlotSpinning ? 'spinning delay-1' : ''}`}>
+                    <span className="reel-symbol">{slotReels[1]}</span>
+                  </div>
+                  <div className={`slot-reel-cell ${isSlotSpinning ? 'spinning delay-2' : ''}`}>
+                    <span className="reel-symbol">{slotReels[2]}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Spin Control Panel */}
+              <div className="slot-controls-panel">
+                <div className="spins-status-info">
+                  <span className="free-spins-badge">
+                    🎁 오늘 남은 무료 추첨: <strong>{farmState.lotteryState?.freeSpinsLeft || 0}회</strong>
+                  </span>
+                  <span className="coin-cost-badge">
+                    {(farmState.lotteryState?.freeSpinsLeft || 0) > 0 ? '무료 (Free)' : '회당 🪙 50 P'}
+                  </span>
+                </div>
+
+                <button
+                  className={`excel-btn primary spin-lottery-btn ${isSlotSpinning ? 'spinning' : ''}`}
+                  onClick={handleSpinLottery}
+                  disabled={isSlotSpinning || ((farmState.lotteryState?.freeSpinsLeft || 0) <= 0 && farmState.coins < 50)}
+                >
+                  {isSlotSpinning ? '🎲 슬롯 회전 중...!' : '🎰 복권 추첨 레버 당기기!'}
+                </button>
+              </div>
+
+              {/* Spin Result Alert Box */}
+              {slotSpinResult && (
+                <div className={`slot-result-alert-box ${slotSpinResult.isJackpot ? 'jackpot-alert' : ''}`}>
+                  <h4>{slotSpinResult.title}</h4>
+                  <p>{slotSpinResult.desc}</p>
+                  {slotSpinResult.wonItem && (
+                    <div className="lottery-won-item-tag">
+                      {slotSpinResult.wonItem.icon} <strong>{slotSpinResult.wonItem.name}</strong> 획득!
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Payout Guide Table */}
+            <div className="lottery-payout-table-card">
+              <div className="chamber-header">
+                <h4>📜 복권 당첨 상금 및 전리품 안내표</h4>
+                <span className="chamber-badge">배당률 표</span>
+              </div>
+              <div className="payout-grid">
+                <div className="payout-row jackpot">
+                  <span className="payout-symbols">⚡ ⚡ ⚡</span>
+                  <div className="payout-desc">
+                    <strong>MEGA JACKPOT (777 피카츄)</strong>
+                    <span>사내 누적 잭팟 상금 전액 + 🌟 황금빛 전설의 알</span>
+                  </div>
+                </div>
+                <div className="payout-row">
+                  <span className="payout-symbols">🍬 🍬 🍬</span>
+                  <div className="payout-desc">
+                    <strong>스위트 캔디 잭팟</strong>
+                    <span>🍬 이상한사탕 1개 (즉시 1레벨업!) + 🪙 300 P</span>
+                  </div>
+                </div>
+                <div className="payout-row">
+                  <span className="payout-symbols">🥚 🥚 🥚</span>
+                  <div className="payout-desc">
+                    <strong>미스터리 에그 잭팟</strong>
+                    <span>🥚 의문의 포켓몬 알 1개 + 🪙 400 P</span>
+                  </div>
+                </div>
+                <div className="payout-row">
+                  <span className="payout-symbols">🧼 🧼 🧼</span>
+                  <div className="payout-desc">
+                    <strong>버블버블 클린 잭팟</strong>
+                    <span>🧼 거품비누 2개 + 🪙 250 P</span>
+                  </div>
+                </div>
+                <div className="payout-row">
+                  <span className="payout-symbols">🫐 🫐 🫐</span>
+                  <div className="payout-desc">
+                    <strong>달콤한 오랭열매 파티</strong>
+                    <span>🫐 오랭열매 3개 + 🪙 150 P</span>
+                  </div>
+                </div>
+                <div className="payout-row">
+                  <span className="payout-symbols">☕ ☕ ☕</span>
+                  <div className="payout-desc">
+                    <strong>탕비실 바리스타 상</strong>
+                    <span>🪙 80 P</span>
+                  </div>
+                </div>
+                <div className="payout-row sub">
+                  <span className="payout-symbols">아무 심볼 2개 일치</span>
+                  <div className="payout-desc">
+                    <strong>소박 행운상</strong>
+                    <span>🪙 40 P</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            TAB 8: 🛍️ 열매 상점 (Item Shop)
            ========================================================================= */}
         {activeTab === 'shop' && !visitingFarm && (
           <div className="farm-shop-layout">
@@ -1656,6 +2646,213 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 >
                   💰 급여 수령 및 확인
                 </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 🌲 EXPEDITION LIVE PROGRESS MODAL */}
+      {expeditionModal && expeditionModal.active && (
+        <div className="farm-modal-overlay">
+          <div className="job-shift-modal-box expedition-modal-box">
+            {/* Modal Header */}
+            <div className="shift-modal-header">
+              <span className="shift-title-icon">{expeditionModal.area.icon}</span>
+              <div>
+                <h3>{expeditionModal.area.name} 탐험 중</h3>
+                <span className="shift-sub">파견 대원: <strong>{pmon?.nickname || '포켓몬'}</strong> | 신비의 사내 탐험대</span>
+              </div>
+            </div>
+
+            {/* Animation Stage */}
+            <div className="shift-stage-viewport expedition-stage-viewport">
+              {/* Background Theme */}
+              <div className={`expedition-bg-theme ${expeditionModal.area.id}`}>
+                {expeditionModal.area.id === 'exp_pantry' && (
+                  <div className="pantry-decor">
+                    <span className="decor-item">☕</span>
+                    <span className="decor-item">🍪</span>
+                    <span className="decor-item">🧃</span>
+                  </div>
+                )}
+                {expeditionModal.area.id === 'exp_rooftop' && (
+                  <div className="rooftop-decor">
+                    <span className="decor-item">🌸</span>
+                    <span className="decor-item">☀️</span>
+                    <span className="decor-item">🌿</span>
+                  </div>
+                )}
+                {expeditionModal.area.id === 'exp_server_room' && (
+                  <div className="server-decor">
+                    <span className="decor-item">🖥️</span>
+                    <span className="decor-item">🗄️</span>
+                    <span className="decor-item">⚡</span>
+                  </div>
+                )}
+                {expeditionModal.area.id === 'exp_mountain' && (
+                  <div className="mountain-decor">
+                    <span className="decor-item">🌲</span>
+                    <span className="decor-item">⛰️</span>
+                    <span className="decor-item">✨</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Walking Pokemon Sprite */}
+              <div className={`worker-pokemon-sprite ${expeditionModal.isDone ? 'done-celebrate' : 'expedition-walking'}`}>
+                <img
+                  src={pmon?.sprites.showdownFront || pmon?.sprites.front}
+                  alt="탐험 포켓몬"
+                  className="shift-active-sprite"
+                />
+                {!expeditionModal.isDone && (
+                  <div className="expedition-walk-dust">
+                    <span>💨</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Live Status Description */}
+            <div className="shift-status-bubble">
+              <p>{expeditionModal.statusText}</p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="shift-progress-wrapper">
+              <div className="shift-progress-track">
+                <div
+                  className="shift-progress-fill expedition-fill"
+                  style={{ width: `${expeditionModal.progress}%` }}
+                />
+              </div>
+              <div className="shift-progress-labels">
+                <span>🎒 탐험 진행률</span>
+                <strong>{Math.round(expeditionModal.progress)}%</strong>
+              </div>
+            </div>
+
+            {/* Completion Result & Claim Button */}
+            {expeditionModal.isDone && expeditionModal.rewardGained && (
+              <div className="shift-reward-result-card">
+                <div className="result-header">
+                  <CheckCircle2 size={24} color="#107c41" />
+                  <h4>🌲 탐험 완료 & 전리품 획득!</h4>
+                </div>
+                <div className="result-values-row">
+                  <span className="reward-chip coin">🪙 +{expeditionModal.rewardGained.coins} P</span>
+                  <span className="reward-chip exp">✨ +{expeditionModal.rewardGained.exp} EXP</span>
+                  {expeditionModal.rewardGained.levelUp && (
+                    <span className="reward-chip levelup">🎉 Lv.{expeditionModal.rewardGained.newLevel} 레벨업!</span>
+                  )}
+                </div>
+
+                {/* Found Items List */}
+                {expeditionModal.rewardGained.foundItems.length > 0 ? (
+                  <div className="found-items-box">
+                    <span className="found-title">🎁 획득한 보물 아이템:</span>
+                    <div className="found-items-list">
+                      {expeditionModal.rewardGained.foundItems.map((fi, idx) => (
+                        <span key={idx} className="found-item-chip">
+                          {fi.item.icon} <strong>{fi.item.name}</strong> x{fi.qty}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="no-items-text">아쉽게도 이번엔 특별한 보물 아이템을 발견하지 못했습니다.</p>
+                )}
+
+                <button
+                  className="excel-btn primary claim-shift-btn"
+                  onClick={() => setExpeditionModal(null)}
+                >
+                  전리품 수령 완료
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 🥚 EGG HATCHING DRAMATIC MODAL */}
+      {hatchingModal && hatchingModal.active && (
+        <div className="farm-modal-overlay">
+          <div className={`hatching-modal-box ${hatchingModal.stage}`}>
+            <Sparkles size={36} className="hatch-sparkle-icon" />
+
+            {hatchingModal.stage === 'wobble' && (
+              <div className="hatch-phase-view">
+                <h2>어라...?! 알의 상태가...!</h2>
+                <div className="hatch-egg-pod wobble">
+                  <span className="pod-egg-graphic">{hatchingModal.isGolden ? '🌟' : '🥚'}</span>
+                </div>
+                <p>알이 따스한 온기를 뿜으며 기우뚱기우뚱 흔들리고 있습니다...!</p>
+              </div>
+            )}
+
+            {hatchingModal.stage === 'crack' && (
+              <div className="hatch-phase-view">
+                <h2>금이 가기 시작했다...!!</h2>
+                <div className="hatch-egg-pod crack">
+                  <span className="pod-egg-graphic">{hatchingModal.isGolden ? '🌟' : '🥚'}</span>
+                  <div className="crack-burst-lines">💥✨⚡</div>
+                </div>
+                <p>알 껍질 사이로 눈부신 빛이 새어 나옵니다...!</p>
+              </div>
+            )}
+
+            {hatchingModal.stage === 'hatched' && hatchingModal.babyPokemon && (
+              <div className="hatch-phase-view hatched">
+                <h2>축하합니다! 새로운 생명이 탄생했습니다! 🎉</h2>
+                <div className="hatched-baby-pod">
+                  <img
+                    src={hatchingModal.babyPokemon.sprites.showdownFront || hatchingModal.babyPokemon.sprites.front}
+                    alt="아기 포켓몬"
+                    className="hatched-baby-sprite"
+                  />
+                  {hatchingModal.babyPokemon.isShiny && (
+                    <span className="shiny-badge-floating">✨ SHINY!</span>
+                  )}
+                </div>
+
+                <div className="hatched-details">
+                  <h3>
+                    [{hatchingModal.babyPokemon.name}]이(가) 알에서 태어났습니다!
+                  </h3>
+                  <div className="hatched-types-row">
+                    {hatchingModal.babyPokemon.types.map(t => (
+                      <span key={t} className={`type-tag ${t}`}>{t}</span>
+                    ))}
+                  </div>
+
+                  <div className="hatched-name-input-box">
+                    <label>✨ 아기 포켓몬 닉네임 설정:</label>
+                    <input
+                      type="text"
+                      value={hatchingModal.nicknameInput}
+                      onChange={e => setHatchingModal({ ...hatchingModal, nicknameInput: e.target.value })}
+                      placeholder={hatchingModal.babyPokemon.name}
+                      maxLength={10}
+                    />
+                  </div>
+
+                  <div className="hatched-action-buttons">
+                    <button
+                      className="excel-btn primary choice-btn"
+                      onClick={() => handleConfirmHatch('setActive')}
+                    >
+                      ⭐ 지금 바로 내 대표 파트너로 교체!
+                    </button>
+                    <button
+                      className="excel-btn choice-btn"
+                      onClick={() => handleConfirmHatch('sendToReserve')}
+                    >
+                      🏡 보육소 목장에 등록하기
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

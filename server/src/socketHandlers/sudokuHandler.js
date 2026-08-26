@@ -82,7 +82,7 @@ export function registerSudokuHandlers(io, socket) {
 
   // 스도쿠 게임 시작/생성
   socket.on('sudoku-start', ({ room, difficulty = 'easy', mode = 'coop' }) => {
-    const validDiff = ['easy', 'medium', 'hard', 'expert'].includes(difficulty) ? difficulty : 'easy';
+    const validDiff = ['easy', 'medium', 'hard', 'expert', 'legendary'].includes(difficulty) ? difficulty : 'easy';
     const generated = generateSudoku(validDiff);
 
     // 9x9 플레이어 그리드 복사 (0은 빈 셀)
@@ -110,7 +110,11 @@ export function registerSudokuHandlers(io, socket) {
 
     sudokuRooms.set(room, gameState);
 
-    const diffLabel = validDiff === 'easy' ? '쉬움' : validDiff === 'medium' ? '보통' : validDiff === 'hard' ? '어려움' : '🔥 짱어려움';
+    const diffLabel = validDiff === 'easy' ? '쉬움'
+      : validDiff === 'medium' ? '보통'
+      : validDiff === 'hard' ? '어려움'
+      : validDiff === 'expert' ? '짱어려움'
+      : '👑 전설의 스도쿠왕';
 
     io.to(room).emit('sudoku-update', {
       phase: 'playing',

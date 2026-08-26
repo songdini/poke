@@ -1,4 +1,4 @@
-import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState } from '../types/farm';
+import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea } from '../types/farm';
 
 export const FARM_STORAGE_KEY = 'pokefarm_save_data_v1';
 
@@ -1136,6 +1136,143 @@ export const FARM_ITEMS: FarmItem[] = [
     description: '모든 상태이상을 완벽 치료하고 모든 게이지를 100으로 완전 회복시킵니다.',
     price: 200,
     effect: { hunger: 100, happiness: 100, cleanliness: 100, energy: 100, exp: 100 }
+  },
+  {
+    id: 'rare_candy',
+    name: '이상한사탕',
+    icon: '🍬',
+    category: 'special',
+    description: '신비한 에너지의 사탕. 포켓몬에게 먹이면 즉시 레벨이 1 오릅니다!',
+    price: 350,
+    effect: { happiness: 50, exp: 99999 }
+  },
+  {
+    id: 'shiny_stone',
+    name: '반짝이는 원석',
+    icon: '💎',
+    category: 'special',
+    description: '탐험에서 발굴한 영롱한 광물. 상점에 300코인에 매각할 수 있습니다.',
+    price: 300,
+    effect: { happiness: 10 }
+  },
+  {
+    id: 'gold_crown',
+    name: '전설의 황금 왕관',
+    icon: '👑',
+    category: 'special',
+    description: '뒷산 깊은 곳에서 발견된 전설의 보물! 상점에 1,000코인에 매각할 수 있습니다.',
+    price: 1000,
+    effect: { happiness: 100 }
+  },
+  {
+    id: 'mystery_egg',
+    name: '의문의 포켓몬 알',
+    icon: '🥚',
+    category: 'special',
+    description: '신비한 기운의 알. 인큐베이터에 넣고 정성으로 돌보면 귀여운 아기 포켓몬이 탄생합니다!',
+    price: 300,
+    effect: { happiness: 15 }
+  },
+  {
+    id: 'golden_egg',
+    name: '황금빛 전설의 알',
+    icon: '🌟',
+    category: 'special',
+    description: '영롱한 황금빛으로 빛나는 알. 부화 시 100% 확률로 반짝이는 이로치(Shiny) 포켓몬이 탄생합니다!',
+    price: 800,
+    effect: { happiness: 30 }
+  }
+];
+
+// 🌲 사내 뒷산 탐험 구역 목록 (Expedition Areas)
+export const EXPEDITION_AREAS: ExpeditionArea[] = [
+  {
+    id: 'exp_pantry',
+    name: '탕비실 스낵 서고',
+    icon: '☕',
+    desc: '임직원 탕비실 찬장과 서랍을 몰래 탐색하여 달콤한 간식과 보급품을 찾아옵니다.',
+    durationSec: 15,
+    minLevel: 1,
+    energyCost: 15,
+    hungerCost: 15,
+    cleanlinessCost: 10,
+    rewardCoinsMin: 40,
+    rewardCoinsMax: 90,
+    rewardExpMin: 35,
+    rewardExpMax: 65,
+    dropItems: [
+      { itemId: 'oran_berry', chance: 0.6 },
+      { itemId: 'sitrus_berry', chance: 0.35 },
+      { itemId: 'mystery_egg', chance: 0.2 },
+      { itemId: 'poffin_cake', chance: 0.15 }
+    ]
+  },
+  {
+    id: 'exp_rooftop',
+    name: '옥상 하늘정원',
+    icon: '🌿',
+    desc: '초록빛 잔디와 화단이 만발한 옥상정원에서 희귀 열매와 장난감을 채집합니다.',
+    durationSec: 30,
+    minLevel: 8,
+    energyCost: 25,
+    hungerCost: 20,
+    cleanlinessCost: 15,
+    rewardCoinsMin: 90,
+    rewardCoinsMax: 160,
+    rewardExpMin: 70,
+    rewardExpMax: 120,
+    dropItems: [
+      { itemId: 'sitrus_berry', chance: 0.5 },
+      { itemId: 'toy_ball', chance: 0.35 },
+      { itemId: 'mystery_egg', chance: 0.3 },
+      { itemId: 'energy_drink', chance: 0.25 },
+      { itemId: 'shiny_stone', chance: 0.2 }
+    ]
+  },
+  {
+    id: 'exp_server_room',
+    name: '지하 전산 문서고',
+    icon: '🗄️',
+    desc: '서버 랙과 먼지 쌓인 캐비닛 사이에서 고가치 보급품과 이상한사탕을 탐색합니다.',
+    durationSec: 45,
+    minLevel: 18,
+    energyCost: 35,
+    hungerCost: 30,
+    cleanlinessCost: 25,
+    rewardCoinsMin: 180,
+    rewardCoinsMax: 280,
+    rewardExpMin: 130,
+    rewardExpMax: 200,
+    dropItems: [
+      { itemId: 'energy_drink', chance: 0.4 },
+      { itemId: 'mystery_egg', chance: 0.35 },
+      { itemId: 'full_heal', chance: 0.3 },
+      { itemId: 'shiny_stone', chance: 0.3 },
+      { itemId: 'rare_candy', chance: 0.2 }
+    ]
+  },
+  {
+    id: 'exp_mountain',
+    name: '사옥 뒷산 신비의 숲길',
+    icon: '⛰️',
+    desc: '사옥 뒤편 울창한 안개 숲길 깊은 곳을 개척하여 전설의 황금 유물을 발굴합니다.',
+    durationSec: 60,
+    minLevel: 28,
+    energyCost: 50,
+    hungerCost: 40,
+    cleanlinessCost: 35,
+    rewardCoinsMin: 320,
+    rewardCoinsMax: 500,
+    rewardExpMin: 220,
+    rewardExpMax: 350,
+    dropItems: [
+      { itemId: 'full_heal', chance: 0.45 },
+      { itemId: 'mystery_egg', chance: 0.4 },
+      { itemId: 'rare_candy', chance: 0.35 },
+      { itemId: 'shiny_stone', chance: 0.4 },
+      { itemId: 'gold_crown', chance: 0.2 },
+      { itemId: 'golden_egg', chance: 0.15 }
+    ]
   }
 ];
 
@@ -1265,6 +1402,52 @@ export function createNewFarmPokemon(chainIndex: number, nickname?: string, isSh
   };
 }
 
+/**
+ * 🥚 알에서 태어날 아기 포켓몬 결정 함수
+ * @param isGolden 황금알 여부
+ */
+export function hatchBabyPokemon(isGolden: boolean = false): {
+  chainIdx: number;
+  isShiny: boolean;
+} {
+  const chainIdx = Math.floor(Math.random() * STARTER_CHAINS.length);
+  const isShiny = isGolden ? true : Math.random() < 0.08;
+  return { chainIdx, isShiny };
+}
+
+export interface LotterySymbol {
+  id: string;
+  name: string;
+  icon: string;
+  weight: number;
+}
+
+export const LOTTERY_SYMBOLS: LotterySymbol[] = [
+  { id: 'coffee', name: '탕비실 커피', icon: '☕', weight: 35 },
+  { id: 'berry', name: '오랭열매', icon: '🫐', weight: 25 },
+  { id: 'soap', name: '거품비누', icon: '🧼', weight: 18 },
+  { id: 'candy', name: '이상한사탕', icon: '🍬', weight: 10 },
+  { id: 'egg', name: '의문의 알', icon: '🥚', weight: 8 },
+  { id: 'jackpot', name: '777 피카츄', icon: '⚡', weight: 4 }
+];
+
+export function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+export function drawLotteryReels(): [LotterySymbol, LotterySymbol, LotterySymbol] {
+  const totalWeight = LOTTERY_SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
+  const pickOne = (): LotterySymbol => {
+    let rand = Math.random() * totalWeight;
+    for (const sym of LOTTERY_SYMBOLS) {
+      if (rand < sym.weight) return sym;
+      rand -= sym.weight;
+    }
+    return LOTTERY_SYMBOLS[0];
+  };
+  return [pickOne(), pickOne(), pickOne()];
+}
+
 // 초기 농장 상태 생성 (온보딩 전)
 export function getInitialFarmState(ownerName: string): FarmState {
   return {
@@ -1273,6 +1456,13 @@ export function getInitialFarmState(ownerName: string): FarmState {
     isInitialized: false, // 처음 접속 시 농장 이름 & 스타팅 포켓몬 선택 온보딩 진행
     coins: 500, // 웰컴 스타터 지원금
     activePokemon: null,
+    reservePokemon: [], // 🌟 보육소 목장 보관 포켓몬 리스트
+    incubatingEgg: null, // 🌟 현재 인큐베이터에 품고 있는 알
+    lotteryState: {
+      lastDate: getTodayDateString(),
+      freeSpinsLeft: 3,
+      jackpotPool: 2000
+    },
     graduatedPokemon: [],
     inventory: {
       oran_berry: 5,
@@ -1343,9 +1533,26 @@ export function loadFarmState(ownerName?: string): FarmState {
     }
 
     if (parsed) {
+      parsed.reservePokemon = parsed.reservePokemon || [];
+      if (parsed.incubatingEgg === undefined) parsed.incubatingEgg = null;
       if (parsed.isInitialized === undefined) {
         parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
       }
+
+      // 🎰 일일 복권 상태 날짜 체크 및 무료 스핀 리셋
+      const today = getTodayDateString();
+      if (!parsed.lotteryState) {
+        parsed.lotteryState = {
+          lastDate: today,
+          freeSpinsLeft: 3,
+          jackpotPool: 2000
+        };
+      } else if (parsed.lotteryState.lastDate !== today) {
+        parsed.lotteryState.lastDate = today;
+        parsed.lotteryState.freeSpinsLeft = 3;
+      }
+      parsed.lotteryState.jackpotPool = Math.max(1000, parsed.lotteryState.jackpotPool || 2000);
+
       // 🌟 기존 세이브 데이터의 과도하게 뻥튀기된 maxExp를 새 공식으로 즉시 보정
       if (parsed.activePokemon) {
         const expectedMaxExp = getMaxExpForLevel(parsed.activePokemon.level);

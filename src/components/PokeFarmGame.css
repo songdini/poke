@@ -2009,3 +2009,1014 @@
   }
 }
 
+/* 🌲 Office Expedition Styles */
+.farm-expedition-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.expedition-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.expedition-banner-icon {
+  font-size: 2.2rem;
+  background: #ffffff;
+  border: 1px solid #6ee7b7;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+}
+
+.expedition-banner h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: #065f46;
+  font-weight: 800;
+}
+
+.expedition-banner p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #047857;
+  line-height: 1.4;
+}
+
+.expedition-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.expedition-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.expedition-card:hover {
+  border-color: #107c41;
+  box-shadow: 0 4px 12px rgba(16, 124, 65, 0.12);
+  transform: translateY(-2px);
+}
+
+.expedition-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.expedition-emoji {
+  font-size: 1.8rem;
+  background: #f3f2f1;
+  border-radius: 6px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expedition-meta h4 {
+  margin: 0 0 2px;
+  font-size: 0.98rem;
+  color: #201f1e;
+  font-weight: 700;
+}
+
+.expedition-duration-badge {
+  font-size: 0.75rem;
+  color: #0b5a2f;
+  background: #e6f2eb;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.expedition-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #605e5c;
+  line-height: 1.35;
+}
+
+.expedition-costs-row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #49454f;
+  flex-wrap: wrap;
+  background: #faf9f8;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #edebe9;
+}
+
+.expedition-costs-row .level-ok {
+  color: #107c41;
+  font-weight: 700;
+}
+
+.expedition-costs-row .level-warn {
+  color: #a80000;
+  font-weight: 700;
+}
+
+.expedition-drops-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drops-label {
+  font-size: 0.72rem;
+  color: #605e5c;
+  font-weight: 600;
+}
+
+.drops-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.drop-badge {
+  font-size: 0.7rem;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #ffedd5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.expedition-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f3f2f1;
+}
+
+.expedition-reward-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.expedition-reward-preview .coin-preview {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.expedition-reward-preview .exp-preview {
+  font-size: 0.74rem;
+  color: #107c41;
+  font-weight: 700;
+}
+
+.expedition-go-btn {
+  padding: 6px 14px;
+}
+
+/* Modal Stage Styles for Expedition */
+.expedition-stage-viewport {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%) !important;
+}
+
+.expedition-fill {
+  background: linear-gradient(90deg, #10b981, #059669) !important;
+}
+
+.expedition-walking {
+  animation: expeditionWalk 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes expeditionWalk {
+  0% { transform: translateY(0) rotate(-2deg); }
+  100% { transform: translateY(-8px) rotate(2deg); }
+}
+
+.expedition-walk-dust {
+  position: absolute;
+  bottom: 0;
+  right: -10px;
+  font-size: 1rem;
+  opacity: 0.8;
+  animation: floatDust 0.6s infinite;
+}
+
+@keyframes floatDust {
+  0% { transform: scale(0.6) translateX(0); opacity: 0.8; }
+  100% { transform: scale(1.2) translateX(10px); opacity: 0; }
+}
+
+.found-items-box {
+  margin-top: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.found-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.found-items-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.found-item-chip {
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 🥚 Daycare & Egg Incubator Styles */
+.farm-daycare-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.daycare-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.daycare-banner-icon {
+  font-size: 2.2rem;
+  background: #ffffff;
+  border: 1px solid #f59e0b;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+}
+
+.daycare-banner h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: #92400e;
+  font-weight: 800;
+}
+
+.daycare-banner p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #b45309;
+  line-height: 1.4;
+}
+
+.incubator-chamber-card,
+.daycare-reserve-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.chamber-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #edebe9;
+  padding-bottom: 8px;
+}
+
+.chamber-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #201f1e;
+  font-weight: 700;
+}
+
+.chamber-badge {
+  font-size: 0.75rem;
+  background: #f3f2f1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #605e5c;
+  font-weight: 600;
+}
+
+/* Incubator Pod */
+.egg-display-pod {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #fdfbf7;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.incubator-egg-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.incubator-egg-avatar.normal-egg {
+  background: radial-gradient(circle, #fff7ed 0%, #ffedd5 100%);
+  border: 3px solid #fbbf24;
+}
+
+.incubator-egg-avatar.golden-egg {
+  background: radial-gradient(circle, #fef08a 0%, #facc15 100%);
+  border: 3px solid #eab308;
+  animation: goldenPulse 1.5s infinite alternate;
+}
+
+@keyframes goldenPulse {
+  0% { box-shadow: 0 0 8px #facc15; }
+  100% { box-shadow: 0 0 22px #eab308; }
+}
+
+.incubator-egg-avatar.incubating-float {
+  animation: eggFloat 2s infinite ease-in-out;
+}
+
+.incubator-egg-avatar.ready-shake {
+  animation: eggShake 0.4s infinite ease-in-out;
+}
+
+@keyframes eggFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes eggShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.warmth-heat-waves {
+  position: absolute;
+  top: -10px;
+  display: flex;
+  gap: 8px;
+  font-size: 1rem;
+  animation: floatHeat 1.2s infinite ease-in-out;
+}
+
+@keyframes floatHeat {
+  0% { opacity: 0.4; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(-6px); }
+}
+
+.incubator-egg-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.incubator-egg-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #78350f;
+  font-weight: 800;
+}
+
+.egg-rarity-tag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.egg-warmth-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #451a03;
+  font-weight: 600;
+}
+
+.warmth-bar-track {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.warmth-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  transition: width 0.3s ease;
+}
+
+.warmth-bar-fill.golden {
+  background: linear-gradient(90deg, #eab308, #f59e0b);
+}
+
+.warmth-tips-row {
+  font-size: 0.72rem;
+  color: #78716c;
+}
+
+.hatch-action-btn {
+  margin-top: 6px;
+  align-self: flex-start;
+  font-weight: 800;
+  background: #c2410c !important;
+  border-color: #9a3412 !important;
+  animation: hatchBtnGlow 1s infinite alternate;
+}
+
+@keyframes hatchBtnGlow {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); box-shadow: 0 0 10px rgba(194, 65, 12, 0.4); }
+}
+
+/* Empty Incubator */
+.incubator-empty-view {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #fafaf9;
+  border: 1px dashed #d6d3d1;
+  border-radius: 8px;
+}
+
+.empty-pod-icon {
+  font-size: 2.5rem;
+}
+
+.empty-pod-info h5 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: #44403c;
+}
+
+.empty-pod-info p {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: #78716c;
+}
+
+.place-egg-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.golden-btn {
+  background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+  border-color: #b45309 !important;
+  color: #ffffff !important;
+}
+
+/* Reserve Pokemon Grid */
+.reserve-pokemon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.reserve-mon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px;
+  gap: 8px;
+  text-align: center;
+}
+
+.reserve-sprite {
+  height: 64px;
+  object-fit: contain;
+}
+
+.reserve-mon-info h5 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.reserve-level {
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.reserve-types {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.switch-partner-btn {
+  width: 100%;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.empty-reserve-box {
+  text-align: center;
+  padding: 24px;
+  color: #94a3b8;
+  font-size: 0.84rem;
+}
+
+/* Hatching Dramatic Modal */
+.hatching-modal-box {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 460px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hatch-sparkle-icon {
+  color: #f59e0b;
+  margin-bottom: 8px;
+  animation: spin 3s linear infinite;
+}
+
+.hatch-phase-view h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  color: #1e293b;
+  font-weight: 800;
+}
+
+.hatch-egg-pod {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 16px;
+  background: radial-gradient(circle, #fef3c7 0%, #fde68a 100%);
+  border: 3px solid #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pod-egg-graphic {
+  font-size: 4rem;
+}
+
+.hatch-egg-pod.wobble {
+  animation: eggModalWobble 0.3s infinite alternate;
+}
+
+.hatch-egg-pod.crack {
+  animation: eggModalCrack 0.15s infinite;
+  box-shadow: 0 0 20px #f59e0b;
+}
+
+@keyframes eggModalWobble {
+  0% { transform: rotate(-12deg); }
+  100% { transform: rotate(12deg); }
+}
+
+@keyframes eggModalCrack {
+  0% { transform: scale(1) rotate(-4deg); }
+  50% { transform: scale(1.1) rotate(4deg); filter: brightness(1.3); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.crack-burst-lines {
+  position: absolute;
+  font-size: 1.6rem;
+  animation: burstFade 0.4s infinite;
+}
+
+@keyframes burstFade {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.3); }
+}
+
+.hatched-baby-pod {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.hatched-baby-sprite {
+  height: 96px;
+  object-fit: contain;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.shiny-badge-floating {
+  position: absolute;
+  top: -10px;
+  right: -20px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.hatched-details h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.hatched-types-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.hatched-name-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.hatched-name-input-box label {
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.hatched-name-input-box input {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.hatched-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.hatched-action-buttons .choice-btn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+}
+
+/* 🎰 Lucky Lottery & Slot Styles */
+.farm-lottery-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lottery-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+  border: 1px solid #f0abfc;
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.lottery-banner-icon {
+  font-size: 2.2rem;
+  background: #ffffff;
+  border: 1px solid #c026d3;
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(192, 38, 211, 0.15);
+}
+
+.lottery-banner h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: #86198f;
+  font-weight: 800;
+}
+
+.lottery-banner p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #a21caf;
+  line-height: 1.4;
+}
+
+/* Jackpot Display Board */
+.jackpot-display-board {
+  background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+  border: 2px solid #eab308;
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.jackpot-neon-label {
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #fde047;
+  text-shadow: 0 0 8px #eab308;
+}
+
+.jackpot-prize-number {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #fef08a;
+  text-shadow: 0 0 14px #eab308, 0 0 24px #f59e0b;
+  font-family: 'Consolas', monospace;
+}
+
+.jackpot-sub-notice {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+/* Slot Machine Frame */
+.slot-machine-frame {
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.slot-screen-bezel {
+  background: #0f172a;
+  border: 4px solid #334155;
+  border-radius: 10px;
+  padding: 14px 20px;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.slot-reels-container {
+  display: flex;
+  gap: 14px;
+}
+
+.slot-reel-cell {
+  width: 85px;
+  height: 95px;
+  background: #ffffff;
+  border: 2px solid #94a3b8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.reel-symbol {
+  font-size: 3.2rem;
+}
+
+.slot-reel-cell.spinning .reel-symbol {
+  animation: reelSpinFast 0.1s infinite linear;
+}
+
+.slot-reel-cell.spinning.delay-1 .reel-symbol {
+  animation-duration: 0.12s;
+}
+
+.slot-reel-cell.spinning.delay-2 .reel-symbol {
+  animation-duration: 0.14s;
+}
+
+@keyframes reelSpinFast {
+  0% { transform: translateY(-40px); opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { transform: translateY(40px); opacity: 0.4; }
+}
+
+/* Slot Controls Panel */
+.slot-controls-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.spins-status-info {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.free-spins-badge {
+  color: #0b5a2f;
+  font-weight: 700;
+  background: #dcfce7;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.coin-cost-badge {
+  color: #b45309;
+  font-weight: 700;
+  background: #fef3c7;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.spin-lottery-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+}
+
+.spin-lottery-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d28d9, #9333ea) !important;
+}
+
+.spin-lottery-btn.spinning {
+  opacity: 0.7;
+}
+
+/* Result Alert Box */
+.slot-result-alert-box {
+  background: #fdfbf7;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  width: 100%;
+  max-width: 380px;
+}
+
+.slot-result-alert-box h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #9a3412;
+  font-weight: 800;
+}
+
+.slot-result-alert-box p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #78350f;
+}
+
+.slot-result-alert-box.jackpot-alert {
+  background: #fef08a;
+  border: 2px solid #eab308;
+  animation: jackpotBlink 0.4s infinite alternate;
+}
+
+@keyframes jackpotBlink {
+  0% { box-shadow: 0 0 10px #facc15; }
+  100% { box-shadow: 0 0 25px #eab308; }
+}
+
+.lottery-won-item-tag {
+  margin-top: 6px;
+  display: inline-block;
+  background: #ffffff;
+  border: 1px solid #ca8a04;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #854d0e;
+  font-weight: 700;
+}
+
+/* Payout Table Card */
+.lottery-payout-table-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payout-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  gap: 14px;
+}
+
+.payout-row.jackpot {
+  background: #fefce8;
+  border-color: #fde047;
+}
+
+.payout-symbols {
+  font-size: 1.2rem;
+  min-width: 90px;
+  font-weight: 700;
+}
+
+.payout-desc {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+}
+
+.payout-desc strong {
+  color: #1e293b;
+}
+
+.payout-desc span {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+
+
