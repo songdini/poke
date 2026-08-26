@@ -9,7 +9,7 @@ interface SudokuGameProps {
   onLeaveRoom?: () => void;
 }
 
-type Difficulty = 'easy' | 'medium' | 'hard';
+type Difficulty = 'easy' | 'medium' | 'hard' | 'expert';
 
 interface SudokuUpdatePayload {
   grid?: number[][];
@@ -366,13 +366,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       <div className="sudoku-main-workspace">
         {/* 난이도 선택 & 패드 토글 리본 */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {(['easy', 'medium', 'hard'] as Difficulty[]).map(diff => (
+          {(['easy', 'medium', 'hard', 'expert'] as Difficulty[]).map(diff => (
             <button
               key={diff}
-              className={`excel-btn ${difficulty === diff && phase === 'playing' ? 'primary' : ''}`}
+              className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'expert' ? 'expert' : 'primary') : ''}`}
               onClick={() => handleStartGame(diff)}
             >
-              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : '🔥 어려움'}
+              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : '💀 짱어려움'}
             </button>
           ))}
           <button

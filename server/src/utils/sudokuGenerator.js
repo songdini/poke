@@ -135,15 +135,16 @@ function countSolutions(grid, limit = 2) {
 
 /**
  * 난이도별 스도쿠 생성 함수
- * @param {'easy' | 'medium' | 'hard'} difficulty
+ * @param {'easy' | 'medium' | 'hard' | 'expert'} difficulty
  * @returns {{ puzzle: number[][], solution: number[][], clues: number }}
  */
 export function generateSudoku(difficulty = 'easy') {
   // 난이도별 남길 힌트 숫자 개수
   const targetClues = {
-    easy: 38,    // 쉬움: ~38개 힌트
-    medium: 30,  // 보통: ~30개 힌트
-    hard: 24     // 어려움: ~24~26개 힌트
+    easy: 38,    // 🌱 쉬움: ~38개 힌트
+    medium: 30,  // ⚡ 보통: ~30개 힌트
+    hard: 26,    // 🔥 어려움: ~26개 힌트
+    expert: 21   // 💀 짱어려움: ~21개 힌트 (후보 숫자 마킹과 고급 기법이 필수적인 극한 난이도)
   }[difficulty] || 38;
 
   // 1. 완전한 스도쿠 솔루션 보드 생성
@@ -161,22 +162,29 @@ export function generateSudoku(difficulty = 'easy') {
       positions.push([r, c]);
     }
   }
-  const shuffledPositions = shuffle(positions);
 
   // 3. 목표 힌트 수까지 하나씩 숫자를 제거하며 유일해(unique solution) 유지 여부 검증
+  // 짱어려움(expert)의 경우 2패스 셔플을 돌아 최대한 21개 근접까지 파고듦
+  const maxPasses = difficulty === 'expert' ? 2 : 1;
   let currentClues = 81;
-  for (const [r, c] of shuffledPositions) {
-    if (currentClues <= targetClues) break;
 
-    const temp = puzzle[r][c];
-    puzzle[r][c] = 0;
+  for (let pass = 0; pass < maxPasses; pass++) {
+    const shuffledPositions = shuffle(positions);
+    for (const [r, c] of shuffledPositions) {
+      if (currentClues <= targetClues) break;
+      if (puzzle[r][c] === 0) continue;
 
-    const tempGrid = copyGrid(puzzle);
-    if (countSolutions(tempGrid, 2) !== 1) {
-      puzzle[r][c] = temp; // 유일해 아니면 복원
-    } else {
-      currentClues--;
+      const temp = puzzle[r][c];
+      puzzle[r][c] = 0;
+
+      const tempGrid = copyGrid(puzzle);
+      if (countSolutions(tempGrid, 2) !== 1) {
+        puzzle[r][c] = temp; // 유일해 아니면 복원
+      } else {
+        currentClues--;
+      }
     }
+    if (currentClues <= targetClues) break;
   }
 
   return { puzzle, solution, clues: currentClues };

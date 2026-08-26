@@ -139,6 +139,17 @@
   background: #0b5a2f;
 }
 
+.sudoku-container .excel-btn.expert {
+  background: #c50f1f;
+  color: #ffffff;
+  border-color: #a80000;
+  box-shadow: 0 1px 3px rgba(197, 15, 31, 0.3);
+}
+
+.sudoku-container .excel-btn.expert:hover:not(:disabled) {
+  background: #a80000;
+}
+
 .sudoku-container .excel-btn.close {
   background: #fde7e9;
   color: #a80000;
