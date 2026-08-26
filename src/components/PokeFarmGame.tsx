@@ -620,6 +620,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const cleanOwner = initOwnerName.trim() || '지우';
     const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
 
+    localStorage.setItem('pokefarm_saved_owner', cleanOwner);
+
     setFarmState(prev => ({
       ...prev,
       ownerName: cleanOwner,

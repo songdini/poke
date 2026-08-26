@@ -125,7 +125,13 @@ const GAMES_LIST: GameMeta[] = [
 ];
 
 function App() {
-  const [selectedGame, setSelectedGame] = useState<GameKey | null>(null);
+  const [selectedGame, setSelectedGame] = useState<GameKey | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('poke_active_game') as GameKey;
+      if (saved) return saved;
+    }
+    return null;
+  });
   const [activeTab, setActiveTab] = useState('Home');
   const [isBossMode, setIsBossMode] = useState(false);
 
@@ -140,17 +146,20 @@ function App() {
   const [formUsername, setFormUsername] = useState('');
   const [formRoom, setFormRoom] = useState('');
 
-  const [gameSessions, setGameSessions] = useState<Record<GameKey, GameSession | null>>({
-    pokefarm: null,
-    catchmind: null,
-    mafia: null,
-    liar: null,
-    telestrations: null,
-    numberbaseball: null,
-    sudoku: null,
-    minesweeper: null,
-    wordle: null,
-    pokebattle: null
+  const [gameSessions, setGameSessions] = useState<Record<GameKey, GameSession | null>>(() => {
+    const savedOwner = (typeof window !== 'undefined' && localStorage.getItem('pokefarm_saved_owner')) || '지우';
+    return {
+      pokefarm: { username: savedOwner, room: 'local', gameType: 'pokefarm' },
+      catchmind: null,
+      mafia: null,
+      liar: null,
+      telestrations: null,
+      numberbaseball: null,
+      sudoku: null,
+      minesweeper: null,
+      wordle: null,
+      pokebattle: null
+    };
   });
 
   // Handle window resize auto-switch if user hasn't explicitly set preference
@@ -176,8 +185,10 @@ function App() {
 
   const handleGameSelection = (gameType: GameKey) => {
     setSelectedGame(gameType);
+    localStorage.setItem('poke_active_game', gameType);
     if (gameType === 'pokefarm') {
-      const farmUser = formUsername.trim() || localStorage.getItem('pokefarm_saved_owner') || `농장주_${Math.floor(100 + Math.random() * 900)}`;
+      // 🌟 기존에 육성하던 농장주 이름 우선 복원
+      const farmUser = localStorage.getItem('pokefarm_saved_owner') || formUsername.trim() || '지우';
       localStorage.setItem('pokefarm_saved_owner', farmUser);
       setGameSessions(prev => ({
         ...prev,
@@ -201,6 +212,9 @@ function App() {
   };
 
   const handleLeaveGame = (gameKey: GameKey) => {
+    if (selectedGame === gameKey) {
+      localStorage.removeItem('poke_active_game');
+    }
     setGameSessions(prev => ({
       ...prev,
       [gameKey]: null
@@ -209,6 +223,7 @@ function App() {
 
   const handleBackToMainSheet = () => {
     setSelectedGame(null);
+    localStorage.removeItem('poke_active_game');
   };
 
   const generateRandomName = () => {

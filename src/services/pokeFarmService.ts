@@ -1291,12 +1291,58 @@ export function getInitialFarmState(ownerName: string): FarmState {
   };
 }
 
-// 로컬스토리지 로드
-export function loadFarmState(ownerName: string): FarmState {
+export const FARM_CURRENT_SAVE_KEY = 'pokefarm_save_data_current_active';
+
+// 로컬스토리지 로드 (새로고침, 닉네임 불일치 등에도 농장 데이터 절대 유실 방지)
+export function loadFarmState(ownerName?: string): FarmState {
   try {
-    const raw = localStorage.getItem(`${FARM_STORAGE_KEY}_${ownerName}`);
-    if (raw) {
-      const parsed = JSON.parse(raw) as FarmState;
+    // 1순위: 가장 최근에 플레이하던 내 브라우저 통합 세이브 데이터
+    const currentActiveRaw = localStorage.getItem(FARM_CURRENT_SAVE_KEY);
+    let parsed: FarmState | null = null;
+
+    if (currentActiveRaw) {
+      try {
+        parsed = JSON.parse(currentActiveRaw) as FarmState;
+      } catch (e) {
+        parsed = null;
+      }
+    }
+
+    // 2순위: ownerName별 세이브 데이터
+    if ((!parsed || !parsed.isInitialized) && ownerName) {
+      const ownerRaw = localStorage.getItem(`${FARM_STORAGE_KEY}_${ownerName}`);
+      if (ownerRaw) {
+        try {
+          parsed = JSON.parse(ownerRaw) as FarmState;
+        } catch (e) {
+          parsed = null;
+        }
+      }
+    }
+
+    // 3순위: 브라우저에 저장된 이전의 모든 pokefarm_save_data_ 키 자동 스캔 & 복구
+    if (!parsed || !parsed.isInitialized) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(FARM_STORAGE_KEY)) {
+          const candidateRaw = localStorage.getItem(key);
+          if (candidateRaw) {
+            try {
+              const candidate = JSON.parse(candidateRaw) as FarmState;
+              if (candidate && (candidate.isInitialized || candidate.activePokemon || (candidate.graduatedPokemon && candidate.graduatedPokemon.length > 0))) {
+                parsed = candidate;
+                console.log(`[PokeFarm] 🌟 기존 농장 세이브 데이터 자동 복구 성공 (Key: ${key})`);
+                break;
+              }
+            } catch (e) {
+              // continue
+            }
+          }
+        }
+      }
+    }
+
+    if (parsed) {
       if (parsed.isInitialized === undefined) {
         parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
       }
@@ -1310,18 +1356,34 @@ export function loadFarmState(ownerName: string): FarmState {
           }
         }
       }
+
+      // 통합 키에도 동기화
+      localStorage.setItem(FARM_CURRENT_SAVE_KEY, JSON.stringify(parsed));
+      if (parsed.ownerName) {
+        localStorage.setItem('pokefarm_saved_owner', parsed.ownerName);
+      }
+
       return parsed;
     }
   } catch (err) {
     console.error('Failed to load farm state from localStorage:', err);
   }
-  return getInitialFarmState(ownerName);
+
+  const fallbackOwner = ownerName || localStorage.getItem('pokefarm_saved_owner') || '지우';
+  return getInitialFarmState(fallbackOwner);
 }
 
-// 로컬스토리지 저장
+// 로컬스토리지 저장 (통합 키 + 개별 키 동시 저장으로 완벽 보존)
 export function saveFarmState(state: FarmState): void {
   try {
-    localStorage.setItem(`${FARM_STORAGE_KEY}_${state.ownerName}`, JSON.stringify(state));
+    const jsonStr = JSON.stringify(state);
+    // 1. 현재 브라우저 활성 농장 통합 키 저장
+    localStorage.setItem(FARM_CURRENT_SAVE_KEY, jsonStr);
+    // 2. 농장주 이름별 키 저장
+    if (state.ownerName) {
+      localStorage.setItem(`${FARM_STORAGE_KEY}_${state.ownerName}`, jsonStr);
+      localStorage.setItem('pokefarm_saved_owner', state.ownerName);
+    }
   } catch (err) {
     console.error('Failed to save farm state to localStorage:', err);
   }
