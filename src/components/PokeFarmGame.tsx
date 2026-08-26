@@ -13,7 +13,8 @@ import {
   createNewFarmPokemon, 
   hatchBabyPokemon,
   playPokemonCry,
-  getMaxExpForLevel 
+  getMaxExpForLevel,
+  getAllPokedexEntries
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, Send, CheckCircle2, AlertCircle, X
@@ -120,6 +121,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   } | null>(null);
   const [isPetJumping, setIsPetJumping] = useState(false);
 
+  // 🏡 보육소 목장 정렬 및 필터 상태
+  const [daycareSort, setDaycareSort] = useState<'recent' | 'species' | 'shiny' | 'type' | 'level'>('species');
+  const [daycareFilter, setDaycareFilter] = useState<string>('all');
+  const [daycareSearch, setDaycareSearch] = useState<string>('');
+
+  // 📖 포켓몬 졸업 도감 상태
+  const [pokedexSubView, setPokedexSubView] = useState<'pokedex' | 'diplomas'>('pokedex');
+  const [pokedexFilter, setPokedexFilter] = useState<'all' | 'unlocked' | 'locked' | 'shiny'>('all');
+  const [pokedexHoverId, setPokedexHoverId] = useState<number | null>(null);
+
   // 이웃 탐방 상태
   const [neighborList, setNeighborList] = useState<NeighborFarmData[]>([]);
   const [visitingFarm, setVisitingFarm] = useState<{ owner: string; farm: NeighborFarmData; guestbook: GuestbookEntry[] } | null>(null);
@@ -224,7 +235,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const handlePetPokemon = (e?: React.MouseEvent) => {
     if (!pmon) return;
     playPokemonCry(pmon.speciesId);
-    addEggWarmth(5, '포켓몬 쓰다듬기');
+    addEggWarmth(1, '포켓몬 쓰다듬기');
 
     // 스킬 모션 정보 결정
     let skillName = '애교부리기';
@@ -395,7 +406,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }
 
     if (item.id === 'mild_soap') {
-      addEggWarmth(15, '따뜻한 거품 목욕');
+      addEggWarmth(3, '따뜻한 거품 목욕');
     }
 
     setFarmState(prev => {
@@ -551,7 +562,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               };
             });
 
-            addEggWarmth(20, '아르바이트 완수');
+            addEggWarmth(5, '아르바이트 완수');
 
             return {
               ...prev,
@@ -681,7 +692,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               };
             });
 
-            addEggWarmth(25, '탐험 완수');
+            addEggWarmth(10, '탐험 완수');
 
             return {
               ...prev,
@@ -894,8 +905,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       setSlotReels([drawn[0].icon, drawn[1].icon, drawn[2].icon]);
       setIsSlotSpinning(false);
 
-      // 온기 +5% 보너스
-      addEggWarmth(5, '사내 복권 참여');
+      // 온기 +2% 보너스
+      addEggWarmth(2, '사내 복권 참여');
 
       // 당첨 규칙 판정
       const [s1, s2, s3] = drawn;
@@ -1476,7 +1487,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           🛍️ 열매 상점 (Shop)
         </button>
         <button className={`farm-tab ${activeTab === 'diplomas' ? 'active' : ''}`} onClick={() => { setActiveTab('diplomas'); setVisitingFarm(null); }}>
-          🎓 명예의 전당 (Hall of Fame)
+          📖 포켓몬 도감 (Pokedex)
         </button>
         <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => setActiveTab('neighbors')}>
           🚶‍♂️ 이웃 농장 (Social)
@@ -2000,7 +2011,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       </div>
 
                       <div className="warmth-tips-row">
-                        <span>💡 온기 획득법: 쓰다듬기(+5%) | 거품목욕(+15%) | 알바(+20%) | 탐험(+25%)</span>
+                        <span>💡 온기 획득법: 쓰다듬기(+1%) | 거품목욕(+3%) | 알바완수(+5%) | 탐험완수(+10%) | 복권(+2%)</span>
                       </div>
 
                       {farmState.incubatingEgg.progress >= 100 && (
@@ -2061,44 +2072,183 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             {/* Bottom Section: Reserve Daycare Pasture */}
             <div className="daycare-reserve-card">
               <div className="chamber-header">
-                <h4>🏡 보육소 목장 (대기실 포켓몬 목록)</h4>
-                <span className="chamber-badge">
-                  보관 중인 파트너: {farmState.reservePokemon?.length || 0}마리
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h4>🏡 보육소 목장 (대기실 포켓몬 목록)</h4>
+                  <span className="chamber-badge">
+                    보관 중: {farmState.reservePokemon?.length || 0}마리
+                  </span>
+                </div>
               </div>
 
-              {farmState.reservePokemon && farmState.reservePokemon.length > 0 ? (
-                <div className="reserve-pokemon-grid">
-                  {farmState.reservePokemon.map(mon => (
-                    <div key={mon.uid} className="reserve-mon-card">
-                      <img
-                        src={mon.sprites.showdownFront || mon.sprites.front}
-                        alt={mon.name}
-                        className="reserve-sprite"
-                      />
-                      <div className="reserve-mon-info">
-                        <h5>{mon.nickname} {mon.isShiny && '✨'}</h5>
-                        <span className="reserve-level">Lv.{mon.level} {mon.name}</span>
-                        <div className="reserve-types">
-                          {mon.types.map(t => (
-                            <span key={t} className={`type-tag ${t}`}>{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <button
-                        className="excel-btn primary switch-partner-btn"
-                        onClick={() => handleSwitchActivePokemon(mon.uid)}
-                      >
-                        ⭐ 대표 파트너로 교체
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-reserve-box">
-                  <p>보육소 목장에 쉬고 있는 다른 포켓몬이 없습니다. 알을 부화시켜 더 많은 친구들을 만나보세요!</p>
+              {/* 🎛️ 보육소 스마트 정렬 & 필터 컨트롤 바 */}
+              {farmState.reservePokemon && farmState.reservePokemon.length > 0 && (
+                <div className="daycare-controls-bar">
+                  <div className="daycare-sort-chips">
+                    <span className="controls-label">정렬:</span>
+                    <button
+                      className={`daycare-chip-btn ${daycareSort === 'species' ? 'active' : ''}`}
+                      onClick={() => setDaycareSort('species')}
+                      title="같은 포켓몬끼리 나란히 묶어서 비교합니다"
+                    >
+                      🐾 종류별 (중복 비교)
+                    </button>
+                    <button
+                      className={`daycare-chip-btn ${daycareSort === 'shiny' ? 'active' : ''}`}
+                      onClick={() => setDaycareSort('shiny')}
+                      title="반짝이는 이로치 포켓몬을 맨 앞으로 모읍니다"
+                    >
+                      ✨ 이로치 우선
+                    </button>
+                    <button
+                      className={`daycare-chip-btn ${daycareSort === 'type' ? 'active' : ''}`}
+                      onClick={() => setDaycareSort('type')}
+                      title="같은 속성(타입)끼리 묶어서 정렬합니다"
+                    >
+                      🎨 타입별
+                    </button>
+                    <button
+                      className={`daycare-chip-btn ${daycareSort === 'level' ? 'active' : ''}`}
+                      onClick={() => setDaycareSort('level')}
+                      title="레벨이 높은 순서대로 정렬합니다"
+                    >
+                      ⭐ 레벨순
+                    </button>
+                    <button
+                      className={`daycare-chip-btn ${daycareSort === 'recent' ? 'active' : ''}`}
+                      onClick={() => setDaycareSort('recent')}
+                      title="최근에 부화/등록된 순서대로 정렬합니다"
+                    >
+                      🕒 최근순
+                    </button>
+                  </div>
+
+                  <div className="daycare-filter-inputs">
+                    <select
+                      value={daycareFilter}
+                      onChange={e => setDaycareFilter(e.target.value)}
+                      className="daycare-select"
+                    >
+                      <option value="all">모든 속성</option>
+                      <option value="shiny">✨ 이로치만</option>
+                      <option value="fire">🔥 불꽃</option>
+                      <option value="water">💧 물</option>
+                      <option value="grass">🍃 풀</option>
+                      <option value="electric">⚡ 전기</option>
+                      <option value="dragon">🐉 드래곤</option>
+                      <option value="ghost">👻 고스트</option>
+                      <option value="poison">☠️ 독</option>
+                      <option value="fairy">💖 페어리</option>
+                      <option value="fighting">🥊 격투</option>
+                      <option value="flying">🕊️ 비행</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="이름/닉네임 검색..."
+                      value={daycareSearch}
+                      onChange={e => setDaycareSearch(e.target.value)}
+                      className="daycare-search-box"
+                    />
+                  </div>
                 </div>
               )}
+
+              {(() => {
+                let list = [...(farmState.reservePokemon || [])];
+
+                // 1. 검색어 필터
+                if (daycareSearch.trim()) {
+                  const q = daycareSearch.trim().toLowerCase();
+                  list = list.filter(m => m.name.toLowerCase().includes(q) || m.nickname.toLowerCase().includes(q));
+                }
+
+                // 2. 타입 및 이로치 필터
+                if (daycareFilter === 'shiny') {
+                  list = list.filter(m => m.isShiny);
+                } else if (daycareFilter !== 'all') {
+                  list = list.filter(m => (m.types as string[]).includes(daycareFilter));
+                }
+
+                // 3. 정렬 옵션 적용
+                if (daycareSort === 'species') {
+                  list.sort((a, b) => {
+                    if (a.speciesId !== b.speciesId) return a.speciesId - b.speciesId;
+                    if (a.isShiny !== b.isShiny) return (b.isShiny ? 1 : 0) - (a.isShiny ? 1 : 0);
+                    return b.level - a.level;
+                  });
+                } else if (daycareSort === 'shiny') {
+                  list.sort((a, b) => {
+                    if (a.isShiny !== b.isShiny) return (b.isShiny ? 1 : 0) - (a.isShiny ? 1 : 0);
+                    if (a.speciesId !== b.speciesId) return a.speciesId - b.speciesId;
+                    return b.level - a.level;
+                  });
+                } else if (daycareSort === 'type') {
+                  list.sort((a, b) => {
+                    const typeA = a.types[0] || '';
+                    const typeB = b.types[0] || '';
+                    if (typeA !== typeB) return typeA.localeCompare(typeB);
+                    if (a.speciesId !== b.speciesId) return a.speciesId - b.speciesId;
+                    return b.level - a.level;
+                  });
+                } else if (daycareSort === 'level') {
+                  list.sort((a, b) => {
+                    if (b.level !== a.level) return b.level - a.level;
+                    if (a.isShiny !== b.isShiny) return (b.isShiny ? 1 : 0) - (a.isShiny ? 1 : 0);
+                    return a.speciesId - b.speciesId;
+                  });
+                } else if (daycareSort === 'recent') {
+                  list.reverse();
+                }
+
+                if (list.length === 0) {
+                  return (
+                    <div className="empty-reserve-box">
+                      <p>
+                        {farmState.reservePokemon?.length === 0
+                          ? '보육소 목장에 쉬고 있는 다른 포켓몬이 없습니다. 알을 부화시켜 더 많은 친구들을 만나보세요!'
+                          : '조건에 일치하는 보육소 포켓몬이 없습니다.'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="reserve-pokemon-grid">
+                    {list.map(mon => (
+                      <div key={mon.uid} className={`reserve-mon-card ${mon.isShiny ? 'shiny-card' : ''}`}>
+                        <div className="reserve-sprite-wrapper">
+                          <img
+                            src={mon.sprites.showdownFront || mon.sprites.front}
+                            alt={mon.name}
+                            className="reserve-sprite"
+                          />
+                          {mon.isShiny && (
+                            <span className="shiny-badge-ribbon">✨ SHINY</span>
+                          )}
+                        </div>
+                        <div className="reserve-mon-info">
+                          <h5>
+                            {mon.nickname} {mon.isShiny && <span style={{ color: '#f59e0b' }}>✨</span>}
+                          </h5>
+                          <span className="reserve-level">
+                            #{String(mon.speciesId).padStart(3, '0')} Lv.{mon.level} {mon.name}
+                          </span>
+                          <div className="reserve-types">
+                            {mon.types.map(t => (
+                              <span key={t} className={`type-tag ${t}`}>{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          className="excel-btn primary switch-partner-btn"
+                          onClick={() => handleSwitchActivePokemon(mon.uid)}
+                        >
+                          ⭐ 대표 파트너로 교체
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -2255,7 +2405,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             </div>
 
             <div className="shop-items-grid">
-              {FARM_ITEMS.map(item => (
+              {FARM_ITEMS.filter(item => item.category !== 'special').map(item => (
                 <div key={item.id} className="shop-item-card">
                   <div className="item-icon-box">{item.icon}</div>
                   <h4>{item.name}</h4>
@@ -2273,34 +2423,225 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         )}
 
         {/* =========================================================================
-            TAB 6: 🎓 명예의 전당 & 졸업 앨범 (Diplomas)
+            TAB 6: 📖 포켓몬 졸업 도감 & 명예의 전당 (Pokedex & Diplomas)
            ========================================================================= */}
-        {activeTab === 'diplomas' && !visitingFarm && (
-          <div className="farm-diplomas-layout">
-            <div className="diplomas-banner">
-              <h3>🎓 포켓농장 명예의 전당 (Graduation Hall of Fame)</h3>
-              <p>지극정성으로 키워 졸업시킨 역대 포켓몬들의 졸업 증서 앨범입니다.</p>
-            </div>
+        {activeTab === 'diplomas' && !visitingFarm && (() => {
+          const pokedexList = getAllPokedexEntries();
+          const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
 
-            {farmState.graduatedPokemon.length > 0 ? (
-              <div className="diplomas-grid">
-                {farmState.graduatedPokemon.map(dip => (
-                  <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
-                    <div className="diploma-cap-icon">🎓</div>
-                    <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
-                    <h4>{dip.nickname}</h4>
-                    <span className="diploma-title">{dip.title}</span>
-                    <span className="diploma-date">{dip.graduatedAt} 졸업</span>
+          (farmState.graduatedPokemon || []).forEach(dip => {
+            const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
+            existing.count += 1;
+            if (dip.isShiny) existing.shinyCount += 1;
+            if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
+            if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
+            gradStats.set(dip.speciesId, existing);
+          });
+
+          const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
+          const totalSpeciesCount = pokedexList.length;
+          const totalGradCount = farmState.graduatedPokemon?.length || 0;
+          const shinyGradCount = farmState.graduatedPokemon?.filter(d => d.isShiny).length || 0;
+          const completionPct = Math.round((unlockedCount / totalSpeciesCount) * 100);
+
+          let filteredPokedex = pokedexList;
+          if (pokedexFilter === 'unlocked') {
+            filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
+          } else if (pokedexFilter === 'locked') {
+            filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
+          } else if (pokedexFilter === 'shiny') {
+            filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
+          }
+
+          return (
+            <div className="farm-pokedex-layout">
+              {/* Header Banner & Sub View Switcher */}
+              <div className="pokedex-top-banner">
+                <div className="pokedex-banner-title">
+                  <div className="pokedex-book-icon">📖</div>
+                  <div>
+                    <h3>포켓농장 공식 졸업 도감 (Official Pokedex)</h3>
+                    <p>정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.</p>
                   </div>
-                ))}
+                </div>
+
+                <div className="pokedex-view-tabs">
+                  <button
+                    className={`pokedex-subtab-btn ${pokedexSubView === 'pokedex' ? 'active' : ''}`}
+                    onClick={() => setPokedexSubView('pokedex')}
+                  >
+                    📖 완성 도감 ({unlockedCount}/{totalSpeciesCount})
+                  </button>
+                  <button
+                    className={`pokedex-subtab-btn ${pokedexSubView === 'diplomas' ? 'active' : ''}`}
+                    onClick={() => setPokedexSubView('diplomas')}
+                  >
+                    📜 졸업 증서 앨범 ({totalGradCount}장)
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="empty-yard-card">
-                <p>아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!</p>
-              </div>
-            )}
-          </div>
-        )}
+
+              {pokedexSubView === 'pokedex' ? (
+                <>
+                  {/* Progress & KPI Ribbon */}
+                  <div className="pokedex-stats-bar">
+                    <div className="pokedex-kpi-col">
+                      <span className="pokedex-kpi-label">도감 등록률</span>
+                      <span className="pokedex-kpi-val">{completionPct}% ({unlockedCount}/{totalSpeciesCount}종)</span>
+                    </div>
+                    <div className="pokedex-bar-wrap">
+                      <div className="pokedex-bar-fill" style={{ width: `${completionPct}%` }} />
+                    </div>
+                    <div className="pokedex-kpi-tags">
+                      <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
+                      <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
+                    </div>
+                  </div>
+
+                  {/* Filter Chips */}
+                  <div className="pokedex-filter-bar">
+                    <button
+                      className={`pokedex-filter-chip ${pokedexFilter === 'all' ? 'active' : ''}`}
+                      onClick={() => setPokedexFilter('all')}
+                    >
+                      전체 ({totalSpeciesCount})
+                    </button>
+                    <button
+                      className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
+                      onClick={() => setPokedexFilter('unlocked')}
+                    >
+                      🌟 등록 완료 ({unlockedCount})
+                    </button>
+                    <button
+                      className={`pokedex-filter-chip ${pokedexFilter === 'locked' ? 'active' : ''}`}
+                      onClick={() => setPokedexFilter('locked')}
+                    >
+                      🔒 미등록 ({totalSpeciesCount - unlockedCount})
+                    </button>
+                    <button
+                      className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
+                      onClick={() => setPokedexFilter('shiny')}
+                    >
+                      ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
+                    </button>
+                  </div>
+
+                  {/* 33종 도감 카드 그리드 */}
+                  <div className="pokedex-grid">
+                    {filteredPokedex.map(mon => {
+                      const stat = gradStats.get(mon.speciesId);
+                      const isUnlocked = !!stat;
+                      const hasShiny = (stat?.shinyCount || 0) > 0;
+                      const isHovered = pokedexHoverId === mon.speciesId;
+
+                      return (
+                        <div
+                          key={mon.speciesId}
+                          className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
+                          onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
+                          onMouseLeave={() => setPokedexHoverId(null)}
+                        >
+                          <div className="pokedex-card-header">
+                            <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
+                            {isUnlocked ? (
+                              <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
+                            ) : (
+                              <span className="pokedex-locked-label">🔒 미등록</span>
+                            )}
+                          </div>
+
+                          <div className="pokedex-img-pod">
+                            <img
+                              src={isUnlocked ? (mon.showdownSprite || mon.sprite) : mon.sprite}
+                              alt={isUnlocked ? mon.name : '미해금'}
+                              className={`pokedex-sprite-img ${!isUnlocked ? 'silhouette-img' : ''}`}
+                            />
+                            {hasShiny && (
+                              <span className="pokedex-shiny-ribbon">✨ SHINY</span>
+                            )}
+                          </div>
+
+                          <div className="pokedex-card-footer">
+                            <h4 className="pokedex-mon-name">
+                              {isUnlocked ? mon.name : '???'}
+                            </h4>
+                            <div className="pokedex-types-row">
+                              {isUnlocked ? (
+                                mon.types.map(t => (
+                                  <span key={t} className={`type-tag ${t}`}>{t}</span>
+                                ))
+                              ) : (
+                                <span className="type-tag locked-tag">미확인</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 🌟 마우스 호버 오버레이 (졸업시킨 횟수 및 정보 안내) */}
+                          {isHovered && (
+                            <div className="pokedex-hover-card">
+                              {isUnlocked ? (
+                                <div className="pokedex-hover-body">
+                                  <div className="hover-mon-name">
+                                    {mon.name} {hasShiny && '✨'}
+                                  </div>
+                                  <div className="hover-row grad-highlight">
+                                    🎓 <b>졸업 횟수: {stat.count}회</b>
+                                  </div>
+                                  {stat.shinyCount > 0 && (
+                                    <div className="hover-row shiny-highlight">
+                                      ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
+                                    </div>
+                                  )}
+                                  <div className="hover-row">
+                                    ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
+                                  </div>
+                                  <div className="hover-row date">
+                                    📅 최초 졸업: {stat.firstDate}
+                                  </div>
+                                  {stat.nicknames.length > 0 && (
+                                    <div className="hover-row nicknames">
+                                      애칭: {stat.nicknames.slice(0, 2).join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="pokedex-hover-body locked">
+                                  <div className="hover-locked-title">🔒 미해금 포켓몬</div>
+                                  <p>아직 졸업한 기록이 없습니다.<br/>Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                /* 📜 기존 졸업 증서 앨범 뷰 */
+                <div className="pokedex-diplomas-view">
+                  {farmState.graduatedPokemon.length > 0 ? (
+                    <div className="diplomas-grid">
+                      {farmState.graduatedPokemon.map(dip => (
+                        <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
+                          <div className="diploma-cap-icon">🎓</div>
+                          <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
+                          <h4>{dip.nickname} {dip.isShiny && '✨'}</h4>
+                          <span className="diploma-title">{dip.title}</span>
+                          <span className="diploma-date">{dip.graduatedAt} 졸업</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-yard-card">
+                      <p>아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* =========================================================================
             TAB 7: 🚶‍♂️ 이웃 농장 탐방 & 방명록 (Social)

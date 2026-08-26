@@ -11,6 +11,23 @@ interface SudokuGameProps {
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'legendary' | 'god';
 
+export interface SudokuRankEntry {
+  id: string;
+  username: string;
+  time: number;
+  hintsUsed: number;
+  date: string;
+}
+
+export interface SudokuRankingsMap {
+  easy: SudokuRankEntry[];
+  medium: SudokuRankEntry[];
+  hard: SudokuRankEntry[];
+  expert: SudokuRankEntry[];
+  legendary: SudokuRankEntry[];
+  god: SudokuRankEntry[];
+}
+
 interface SudokuUpdatePayload {
   grid?: number[][];
   fixedMask?: boolean[][];
@@ -19,6 +36,8 @@ interface SudokuUpdatePayload {
   completed?: boolean;
   winner?: string | null;
   message?: string;
+  rankings?: SudokuRankingsMap;
+  newRank?: number | null;
 }
 
 const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) => {
@@ -48,6 +67,18 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [selectedCell, setSelectedCell] = useState<{ r: number; c: number } | null>(null);
   const [message, setMessage] = useState('');
   const [showNumpad, setShowNumpad] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  // 🏆 실시간 명예의 전당 랭킹 상태
+  const [showRankModal, setShowRankModal] = useState(false);
+  const [rankings, setRankings] = useState<SudokuRankingsMap>({
+    easy: [],
+    medium: [],
+    hard: [],
+    expert: [],
+    legendary: [],
+    god: []
+  });
+  const [selectedRankDiff, setSelectedRankDiff] = useState<Difficulty>('easy');
 
   // 모바일 롱프레스(길게 누르기) 감지용 Ref
   const touchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,14 +182,26 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       if (data.completed !== undefined) setCompleted(data.completed);
       if (data.winner) setWinner(data.winner);
       if (data.message) setMessage(data.message);
+      if (data.rankings) setRankings(data.rankings);
+    };
+
+    const handleRankingsUpdate = (newRanks: SudokuRankingsMap) => {
+      if (newRanks) setRankings(newRanks);
     };
 
     socket.on('connect', joinRoom);
     socket.on('sudoku-update', handleUpdate);
+    socket.on('sudoku-rankings-updated', handleRankingsUpdate);
+
+    // 초기 랭킹 정보 요청
+    socket.emit('sudoku-get-rankings', (res: SudokuRankingsMap) => {
+      if (res) setRankings(res);
+    });
 
     return () => {
       socket.off('connect', joinRoom);
       socket.off('sudoku-update', handleUpdate);
+      socket.off('sudoku-rankings-updated', handleRankingsUpdate);
     };
   }, [socket, username, room]);
 
@@ -438,6 +481,17 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           >
             {showNumpad ? '🔢 수식 패드 숨기기' : '🔢 수식 패드 보이기'}
           </button>
+          <button
+            className="excel-btn ranking-btn"
+            onClick={() => {
+              setSelectedRankDiff(difficulty);
+              setShowRankModal(true);
+              socket?.emit('sudoku-get-rankings');
+            }}
+            title="난이도별 실시간 명예의 전당 랭킹 순위표를 확인합니다."
+          >
+            🏆 명예의 전당
+          </button>
           {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
             <button
               className={`excel-btn ${isSelectedCellMarked ? 'marked-btn-active' : ''}`}
@@ -657,11 +711,145 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
       {/* 📑 Bottom Excel Sheet Tabs */}
       <div className="excel-sheet-tab-bar">
         <div className="excel-sheet-tab active">Sudoku_Grid_A1_I9</div>
+        <div
+          className="excel-sheet-tab"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            setSelectedRankDiff(difficulty);
+            setShowRankModal(true);
+            socket?.emit('sudoku-get-rankings');
+          }}
+        >
+          🏆 Hall_Of_Fame
+        </div>
         <div className="excel-sheet-tab">Matrix_Analytics</div>
         <div className="excel-sheet-tab">Validation_Check</div>
         <div style={{ color: '#8a8886', padding: '0 6px', cursor: 'pointer' }}>+</div>
         <div className="excel-status-ready">STATUS: READY</div>
       </div>
+
+      {/* 🏆 실시간 명예의 전당 엑셀 모달 */}
+      {showRankModal && (
+        <div className="sudoku-rank-modal-backdrop" onClick={() => setShowRankModal(false)}>
+          <div className="sudoku-rank-modal-card" onClick={e => e.stopPropagation()}>
+            {/* Modal Title */}
+            <div className="rank-modal-header">
+              <div className="rank-title-group">
+                <span style={{ fontSize: '1.4rem' }}>🏆</span>
+                <div>
+                  <h3>Table 07: Sudoku_Hall_Of_Fame.xlsx</h3>
+                  <span className="rank-subtitle">난이도별 타임어택 실시간 Top 10 명예의 전당</span>
+                </div>
+              </div>
+              <button
+                className="excel-btn close rank-close-btn"
+                onClick={() => setShowRankModal(false)}
+              >
+                ✕ 닫기
+              </button>
+            </div>
+
+            {/* 난이도 탭 바 */}
+            <div className="rank-diff-tabs">
+              {([
+                { key: 'easy', label: '🌱 쉬움' },
+                { key: 'medium', label: '⚡ 보통' },
+                { key: 'hard', label: '🔥 어려움' },
+                { key: 'expert', label: '💀 짱어려움' },
+                { key: 'legendary', label: '👑 전설' },
+                { key: 'god', label: '🌌 신의 영역' }
+              ] as { key: Difficulty; label: string }[]).map(tab => (
+                <button
+                  key={tab.key}
+                  className={`rank-tab-btn ${selectedRankDiff === tab.key ? 'active' : ''} ${tab.key}`}
+                  onClick={() => setSelectedRankDiff(tab.key)}
+                >
+                  {tab.label}
+                  <span className="rank-count-badge">
+                    {rankings[tab.key]?.length || 0}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* 랭킹 스프레드시트 테이블 */}
+            <div className="rank-table-wrapper">
+              <table className="excel-rank-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '60px' }}>순위</th>
+                    <th>플레이어</th>
+                    <th style={{ width: '120px' }}>클리어 타임</th>
+                    <th style={{ width: '90px' }}>힌트</th>
+                    <th style={{ width: '150px' }}>달성 일시</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankings[selectedRankDiff] && rankings[selectedRankDiff].length > 0 ? (
+                    rankings[selectedRankDiff].map((entry, idx) => {
+                      const rankNum = idx + 1;
+                      const isMe = entry.username === username;
+                      const minutes = Math.floor(entry.time / 60);
+                      const seconds = entry.time % 60;
+                      const timeStr = `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`;
+                      const medal = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : `${rankNum}`;
+
+                      return (
+                        <tr
+                          key={entry.id || idx}
+                          className={`rank-row rank-${rankNum} ${isMe ? 'my-rank-row' : ''}`}
+                        >
+                          <td className="rank-col-medal">
+                            <span className={`medal-icon rank-${rankNum}`}>
+                              {medal}
+                            </span>
+                          </td>
+                          <td className="rank-col-user">
+                            <span className="rank-username">{entry.username}</span>
+                            {isMe && <span className="me-tag">ME</span>}
+                          </td>
+                          <td className="rank-col-time">
+                            ⏱️ <b>{timeStr}</b>
+                          </td>
+                          <td className="rank-col-hints">
+                            {entry.hintsUsed > 0 ? `${entry.hintsUsed}회` : <span style={{ color: '#107c41', fontWeight: 700 }}>노힌트 ✨</span>}
+                          </td>
+                          <td className="rank-col-date">
+                            {entry.date}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="empty-rank-cell">
+                        <div className="empty-rank-box">
+                          <p>아직 [{selectedRankDiff === 'easy' ? '쉬움' : selectedRankDiff === 'medium' ? '보통' : selectedRankDiff === 'hard' ? '어려움' : selectedRankDiff === 'expert' ? '짱어려움' : selectedRankDiff === 'legendary' ? '전설의 스도쿠왕' : '신의 영역'}] 난이도에 등록된 랭커가 없습니다.</p>
+                          <span>지금 퍼즐을 클리어하고 영광스러운 첫 1위 🥇의 주인공이 되어보세요!</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="rank-modal-footer">
+              <span className="excel-status-ready">STATUS: RANKINGS_SYNCED_LIVE</span>
+              <button
+                className="excel-btn primary"
+                onClick={() => {
+                  handleStartGame(selectedRankDiff);
+                  setShowRankModal(false);
+                }}
+              >
+                🎮 이 난이도로 도전하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea } from '../types/farm';
+import type { PokemonType } from '../types/pokemon';
 
 export const FARM_STORAGE_KEY = 'pokefarm_save_data_v1';
 
@@ -1063,6 +1064,37 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
   ]
 ];
 
+export interface PokedexEntry {
+  speciesId: number;
+  name: string;
+  types: PokemonType[];
+  sprite: string;
+  showdownSprite: string;
+  baseSpeciesId: number;
+  baseName: string;
+  chainIndex: number;
+}
+
+/**
+ * 33종 전체 진화 계열의 최종 진화체 도감 목록 반환
+ */
+export function getAllPokedexEntries(): PokedexEntry[] {
+  return STARTER_CHAINS.map((chain, chainIndex) => {
+    const finalStage = chain[chain.length - 1];
+    const firstStage = chain[0];
+    return {
+      speciesId: finalStage.id,
+      name: finalStage.name,
+      types: finalStage.types,
+      sprite: finalStage.sprite,
+      showdownSprite: finalStage.showdownSprite,
+      baseSpeciesId: firstStage.id,
+      baseName: firstStage.name,
+      chainIndex
+    };
+  });
+}
+
 // 🍎 농장 상점 아이템 도감
 export const FARM_ITEMS: FarmItem[] = [
   {
@@ -1203,7 +1235,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     dropItems: [
       { itemId: 'oran_berry', chance: 0.6 },
       { itemId: 'sitrus_berry', chance: 0.35 },
-      { itemId: 'mystery_egg', chance: 0.2 },
+      { itemId: 'mystery_egg', chance: 0.03 },
       { itemId: 'poffin_cake', chance: 0.15 }
     ]
   },
@@ -1224,7 +1256,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     dropItems: [
       { itemId: 'sitrus_berry', chance: 0.5 },
       { itemId: 'toy_ball', chance: 0.35 },
-      { itemId: 'mystery_egg', chance: 0.3 },
+      { itemId: 'mystery_egg', chance: 0.06 },
       { itemId: 'energy_drink', chance: 0.25 },
       { itemId: 'shiny_stone', chance: 0.2 }
     ]
@@ -1245,7 +1277,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMax: 200,
     dropItems: [
       { itemId: 'energy_drink', chance: 0.4 },
-      { itemId: 'mystery_egg', chance: 0.35 },
+      { itemId: 'mystery_egg', chance: 0.10 },
       { itemId: 'full_heal', chance: 0.3 },
       { itemId: 'shiny_stone', chance: 0.3 },
       { itemId: 'rare_candy', chance: 0.2 }
@@ -1267,11 +1299,11 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMax: 350,
     dropItems: [
       { itemId: 'full_heal', chance: 0.45 },
-      { itemId: 'mystery_egg', chance: 0.4 },
+      { itemId: 'mystery_egg', chance: 0.15 },
       { itemId: 'rare_candy', chance: 0.35 },
       { itemId: 'shiny_stone', chance: 0.4 },
-      { itemId: 'gold_crown', chance: 0.2 },
-      { itemId: 'golden_egg', chance: 0.15 }
+      { itemId: 'gold_crown', chance: 0.15 },
+      { itemId: 'golden_egg', chance: 0.03 }
     ]
   }
 ];
@@ -1415,7 +1447,8 @@ export function hatchBabyPokemon(isGolden: boolean = false): {
   isShiny: boolean;
 } {
   const chainIdx = Math.floor(Math.random() * STARTER_CHAINS.length);
-  const isShiny = isGolden ? true : Math.random() < 0.08;
+  // 🌟 이로치 확률 밸런스: 일반 알은 1.5%의 귀한 확률, 황금알은 100% 확정
+  const isShiny = isGolden ? true : Math.random() < 0.015;
   return { chainIdx, isShiny };
 }
 
@@ -1427,12 +1460,12 @@ export interface LotterySymbol {
 }
 
 export const LOTTERY_SYMBOLS: LotterySymbol[] = [
-  { id: 'coffee', name: '탕비실 커피', icon: '☕', weight: 35 },
-  { id: 'berry', name: '오랭열매', icon: '🫐', weight: 25 },
+  { id: 'coffee', name: '탕비실 커피', icon: '☕', weight: 40 },
+  { id: 'berry', name: '오랭열매', icon: '🫐', weight: 28 },
   { id: 'soap', name: '거품비누', icon: '🧼', weight: 18 },
-  { id: 'candy', name: '이상한사탕', icon: '🍬', weight: 10 },
-  { id: 'egg', name: '의문의 알', icon: '🥚', weight: 8 },
-  { id: 'jackpot', name: '777 피카츄', icon: '⚡', weight: 4 }
+  { id: 'candy', name: '이상한사탕', icon: '🍬', weight: 8 },
+  { id: 'egg', name: '의문의 알', icon: '🥚', weight: 4 },
+  { id: 'jackpot', name: '777 피카츄', icon: '⚡', weight: 2 }
 ];
 
 export function getTodayDateString(): string {

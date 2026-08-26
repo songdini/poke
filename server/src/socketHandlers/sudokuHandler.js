@@ -1,5 +1,6 @@
 // 🧩 Backend Sudoku Game Socket Handler
 import { generateSudoku } from '../utils/sudokuGenerator.js';
+import { recordSudokuScore, loadRankings } from '../utils/sudokuRankingStore.js';
 
 // 방별 스도쿠 게임 상태 저장소
 const sudokuRooms = new Map();
@@ -23,6 +24,19 @@ function checkSudokuCompletion(state, username, io, customMsg) {
     state.phase = 'completed';
     state.winner = username || '플레이어';
 
+    const elapsedSeconds = Math.max(1, Math.floor((Date.now() - state.startTime) / 1000));
+    const recordResult = recordSudokuScore(state.difficulty, username, elapsedSeconds, state.hintsUsed || 0);
+
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    const timeFormatted = `${minutes > 0 ? `${minutes}분 ` : ''}${seconds}초`;
+
+    let rankNotice = '';
+    if (recordResult.isNewRecord && recordResult.rank) {
+      const medal = recordResult.rank === 1 ? '🥇 1위' : recordResult.rank === 2 ? '🥈 2위' : recordResult.rank === 3 ? '🥉 3위' : `${recordResult.rank}위`;
+      rankNotice = ` 🏆 [${medal}] 명예의 전당 등극! (${timeFormatted})`;
+    }
+
     io.to(state.room).emit('sudoku-update', {
       phase: 'completed',
       grid: state.grid,
@@ -30,9 +44,14 @@ function checkSudokuCompletion(state, username, io, customMsg) {
       notes: state.notes,
       completed: true,
       winner: state.winner,
-      elapsedTime: Math.floor((Date.now() - state.startTime) / 1000),
-      message: customMsg || `🎉 축하합니다! ${username} 님이 퍼즐을 완성했습니다!`
+      elapsedTime: elapsedSeconds,
+      rankings: recordResult.rankings,
+      newRank: recordResult.rank,
+      message: customMsg ? `${customMsg}${rankNotice}` : `🎉 축하합니다! ${username} 님이 퍼즐을 완성했습니다!${rankNotice}`
     });
+
+    // 모든 접속자들에게 최신 랭킹 실시간 브로드캐스트
+    io.emit('sudoku-rankings-updated', recordResult.rankings);
     return true;
   }
   return false;
@@ -105,6 +124,7 @@ export function registerSudokuHandlers(io, socket) {
       completed: false,
       winner: null,
       notes: Array(9).fill(null).map(() => Array(9).fill(null).map(() => [])),
+      hintsUsed: 0,
       history: [] // [{ row, col, prevVal, newVal, username }]
     };
 
@@ -170,9 +190,10 @@ export function registerSudokuHandlers(io, socket) {
 
     const correctVal = state.solutionGrid[row][col];
     state.grid[row][col] = correctVal;
+    state.hintsUsed = (state.hintsUsed || 0) + 1;
 
     const cellName = `${String.fromCharCode(65 + col)}${row + 1}`;
-    const hintMsg = `💡 ${username} 님이 (${cellName}) 셀 힌트를 사용했습니다!`;
+    const hintMsg = `💡 ${username} 님이 (${cellName}) 셀 힌트를 사용했습니다! (총 ${state.hintsUsed}회)`;
 
     const isFinished = checkSudokuCompletion(state, username, io, `🎉 축하합니다! ${username} 님이 힌트로 마지막 퍼즐을 완성했습니다!`);
     if (isFinished) return;
@@ -195,6 +216,7 @@ export function registerSudokuHandlers(io, socket) {
     state.grid = JSON.parse(JSON.stringify(state.initialGrid));
     state.phase = 'playing';
     state.completed = false;
+    state.hintsUsed = 0;
     state.notes = Array(9).fill(null).map(() => Array(9).fill(null).map(() => []));
 
     io.to(room).emit('sudoku-update', {
@@ -205,6 +227,16 @@ export function registerSudokuHandlers(io, socket) {
       completed: false,
       message: '🔄 스도쿠 퍼즐이 초기 상태로 되돌아갔습니다.'
     });
+  });
+
+  // 🏆 랭킹 조회 요청
+  socket.on('sudoku-get-rankings', (callback) => {
+    const rankings = loadRankings();
+    if (typeof callback === 'function') {
+      callback(rankings);
+    } else {
+      socket.emit('sudoku-rankings-updated', rankings);
+    }
   });
 }
 
