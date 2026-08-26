@@ -2655,20 +2655,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       {/* 🌲 EXPEDITION LIVE PROGRESS MODAL */}
       {expeditionModal && expeditionModal.active && (
         <div className="farm-modal-overlay">
-          <div className="job-shift-modal-box expedition-modal-box">
+          <div className="job-shift-modal-card expedition-modal-card">
             {/* Modal Header */}
-            <div className="shift-modal-header">
-              <span className="shift-title-icon">{expeditionModal.area.icon}</span>
-              <div>
-                <h3>{expeditionModal.area.name} 탐험 중</h3>
-                <span className="shift-sub">파견 대원: <strong>{pmon?.nickname || '포켓몬'}</strong> | 신비의 사내 탐험대</span>
+            <div className="job-modal-header">
+              <div className="job-badge">
+                <span className="job-badge-icon">{expeditionModal.area.icon}</span>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{expeditionModal.area.name} 탐험 중</h4>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    파견 대원: <strong>{pmon?.nickname || '포켓몬'}</strong> | 신비의 사내 탐험대
+                  </span>
+                </div>
               </div>
+              {expeditionModal.isDone && (
+                <button className="modal-close-btn" onClick={() => setExpeditionModal(null)}>
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
             {/* Animation Stage */}
-            <div className="shift-stage-viewport expedition-stage-viewport">
+            <div className={`job-stage-view expedition-stage-view stage-${expeditionModal.area.id}`}>
               {/* Background Theme */}
-              <div className={`expedition-bg-theme ${expeditionModal.area.id}`}>
+              <div className="expedition-env-decor">
                 {expeditionModal.area.id === 'exp_pantry' && (
                   <div className="pantry-decor">
                     <span className="decor-item">☕</span>
@@ -2700,51 +2709,60 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               </div>
 
               {/* Walking Pokemon Sprite */}
-              <div className={`worker-pokemon-sprite ${expeditionModal.isDone ? 'done-celebrate' : 'expedition-walking'}`}>
+              <div className="working-pokemon-wrapper">
                 <img
                   src={pmon?.sprites.showdownFront || pmon?.sprites.front}
                   alt="탐험 포켓몬"
-                  className="shift-active-sprite"
+                  className={`working-pokemon-sprite ${expeditionModal.isDone ? 'done-bounce' : 'expedition-walking'}`}
                 />
                 {!expeditionModal.isDone && (
                   <div className="expedition-walk-dust">
                     <span>💨</span>
                   </div>
                 )}
+                <div className="worker-tag">
+                  <span>Lv.{pmon?.level} {pmon?.nickname}</span>
+                </div>
               </div>
             </div>
 
-            {/* Live Status Description */}
-            <div className="shift-status-bubble">
-              <p>{expeditionModal.statusText}</p>
-            </div>
+            {/* Status Section */}
+            <div className="job-status-section">
+              <div className="status-bubble">
+                <p>{expeditionModal.statusText}</p>
+              </div>
 
-            {/* Progress Bar */}
-            <div className="shift-progress-wrapper">
-              <div className="shift-progress-track">
+              <div className="job-progress-bar-wrap">
                 <div
-                  className="shift-progress-fill expedition-fill"
+                  className="job-progress-fill expedition-fill"
                   style={{ width: `${expeditionModal.progress}%` }}
-                />
-              </div>
-              <div className="shift-progress-labels">
-                <span>🎒 탐험 진행률</span>
-                <strong>{Math.round(expeditionModal.progress)}%</strong>
+                >
+                  <span className="progress-percent">{Math.round(expeditionModal.progress)}%</span>
+                </div>
               </div>
             </div>
 
             {/* Completion Result & Claim Button */}
-            {expeditionModal.isDone && expeditionModal.rewardGained && (
-              <div className="shift-reward-result-card">
-                <div className="result-header">
-                  <CheckCircle2 size={24} color="#107c41" />
-                  <h4>🌲 탐험 완료 & 전리품 획득!</h4>
+            {expeditionModal.isDone && expeditionModal.rewardGained ? (
+              <div className="job-salary-receipt expedition-receipt">
+                <div className="receipt-header">
+                  <h4>📜 사내 탐험 전리품 보고서</h4>
+                  <span>{expeditionModal.area.name} 완수</span>
                 </div>
-                <div className="result-values-row">
-                  <span className="reward-chip coin">🪙 +{expeditionModal.rewardGained.coins} P</span>
-                  <span className="reward-chip exp">✨ +{expeditionModal.rewardGained.exp} EXP</span>
+                <div className="receipt-grid">
+                  <div className="receipt-row gain">
+                    <span>🪙 획득 지원금</span>
+                    <strong>+{expeditionModal.rewardGained.coins} P</strong>
+                  </div>
+                  <div className="receipt-row gain">
+                    <span>✨ 탐험 경험치</span>
+                    <strong>+{expeditionModal.rewardGained.exp} EXP</strong>
+                  </div>
                   {expeditionModal.rewardGained.levelUp && (
-                    <span className="reward-chip levelup">🎉 Lv.{expeditionModal.rewardGained.newLevel} 레벨업!</span>
+                    <div className="receipt-row levelup-alert">
+                      <span>🎉 레벨업 달성!</span>
+                      <strong>Lv.{expeditionModal.rewardGained.newLevel}</strong>
+                    </div>
                   )}
                 </div>
 
@@ -2761,17 +2779,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                   </div>
                 ) : (
-                  <p className="no-items-text">아쉽게도 이번엔 특별한 보물 아이템을 발견하지 못했습니다.</p>
+                  <p className="no-items-text" style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '6px 0', textAlign: 'center' }}>
+                    아쉽게도 이번엔 특별한 보물 아이템을 발견하지 못했습니다.
+                  </p>
                 )}
 
                 <button
                   className="excel-btn primary claim-shift-btn"
                   onClick={() => setExpeditionModal(null)}
                 >
-                  전리품 수령 완료
+                  🎁 전리품 수령 완료
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

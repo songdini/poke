@@ -84,6 +84,47 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     });
   }, [fixedMask]);
 
+  // 🟣 헷갈림 표시된 총 셀 개수
+  const totalMarkedCount = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+
+  // 1. 헷갈림 마킹(보라색)만 일반 확정(파란색)으로 전체 해제
+  const handleClearAllMarks = React.useCallback(() => {
+    const count = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    if (count === 0) {
+      setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
+      return;
+    }
+    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
+    setMessage(`🧹 총 ${count}개 셀의 헷갈림(보라색) 표시를 일반 확정(파랑)으로 변경했습니다.`);
+  }, [markedMask]);
+
+  // 2. 헷갈림(보라색)으로 입력된 숫자들을 한 번에 싹 지우기 (가설 롤백)
+  const handleClearAllMarkedValues = React.useCallback(() => {
+    const count = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    if (count === 0) {
+      setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
+      return;
+    }
+    if (!window.confirm(`🟣 헷갈림(보라색)으로 입력된 ${count}개 셀의 숫자를 모두 지우시겠습니까?`)) {
+      return;
+    }
+
+    const newGrid = grid.map(r => [...r]);
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (markedMask[r][c] && !fixedMask[r][c]) {
+          newGrid[r][c] = 0;
+        }
+      }
+    }
+    setGrid(newGrid);
+    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
+    if (socket && socket.connected) {
+      socket.emit('sudoku-update', { room, grid: newGrid });
+    }
+    setMessage(`🗑️ 헷갈림(보라색)으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 지웠습니다.`);
+  }, [markedMask, grid, fixedMask, socket, room]);
+
   // 소켓 연결 및 이벤트 핸들링
   useEffect(() => {
     if (!socket) return;
@@ -161,6 +202,18 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
       const { r, c } = selectedCell;
 
+      if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+        e.preventDefault();
+        handleClearAllMarkedValues();
+        return;
+      }
+
+      if (e.shiftKey && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        handleClearAllMarks();
+        return;
+      }
+
       if (e.key >= '1' && e.key <= '9') {
         const val = parseInt(e.key, 10);
         handleNumberInput(val);
@@ -182,7 +235,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell]);
+  }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell, handleClearAllMarkedValues, handleClearAllMarks]);
 
   // 퍼즐 시작
   const handleStartGame = (diff: Difficulty) => {
@@ -390,6 +443,24 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               {isSelectedCellMarked ? '🟣 헷갈림 해제' : '🟣 헷갈림 표시'}
             </button>
           )}
+          {totalMarkedCount > 0 && (
+            <>
+              <button
+                className="excel-btn marked-clear-btn"
+                onClick={handleClearAllMarks}
+                title="모든 헷갈림(보라색) 셀을 일반 파란색 확정으로 일괄 전환합니다. (단축키: Shift+M)"
+              >
+                🧹 헷갈림 색상 원복 ({totalMarkedCount})
+              </button>
+              <button
+                className="excel-btn marked-delete-btn"
+                onClick={handleClearAllMarkedValues}
+                title="헷갈림(보라색)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
+              >
+                🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
+              </button>
+            </>
+          )}
           {selectedCell && (
             <button
               className="excel-btn"
@@ -540,6 +611,29 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   </button>
                 )}
               </div>
+
+              {totalMarkedCount > 0 && (
+                <div style={{ display: 'flex', gap: '6px', width: '100%', marginTop: 6 }}>
+                  <button
+                    type="button"
+                    className="excel-btn marked-clear-btn"
+                    onClick={handleClearAllMarks}
+                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
+                    title="모든 헷갈림(보라색) 셀을 일반 파란색 확정으로 일괄 전환합니다."
+                  >
+                    🧹 헷갈림 색상 원복 ({totalMarkedCount})
+                  </button>
+                  <button
+                    type="button"
+                    className="excel-btn marked-delete-btn"
+                    onClick={handleClearAllMarkedValues}
+                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
+                    title="헷갈림(보라색)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다."
+                  >
+                    🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -552,7 +646,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
         <div className="sudoku-guide-tip">
           <span>💡 <b>숫자 입력</b>: 가상패드 또는 키보드(1~9) | <b>지우기</b>: Backspace / 0</span>
-          <span>🎨 <b>헷갈림 색상(보라색) 전환</b>: 🖱️ PC는 <b>우클릭</b>(또는 M키) | 📱 모바일은 <b>길게 누르기</b> 또는 <b>[🟣헷갈림]</b> 버튼</span>
+          <span>🎨 <b>헷갈림(보라색)</b>: 🖱️ 우클릭(M키) | 📱 길게 누르기 | <b>일괄삭제</b>: Shift+Delete | <b>일괄원복</b>: Shift+M</span>
         </div>
       </div>
 

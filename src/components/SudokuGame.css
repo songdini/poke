@@ -494,6 +494,30 @@
   border-color: #7e22ce;
 }
 
+.excel-btn.marked-clear-btn {
+  background: #fdf4ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+  font-weight: 700;
+}
+
+.excel-btn.marked-clear-btn:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+.excel-btn.marked-delete-btn {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #be123c;
+  font-weight: 700;
+}
+
+.excel-btn.marked-delete-btn:hover:not(:disabled) {
+  background: #ffe4e6;
+  border-color: #fb7185;
+}
+
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
