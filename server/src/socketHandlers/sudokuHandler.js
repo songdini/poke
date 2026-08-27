@@ -180,6 +180,54 @@ export function registerSudokuHandlers(io, socket) {
   socket.on('sudoku-cell-change', handleCellChange);
   socket.on('sudoku-input', handleCellChange);
 
+  // 🧹 헷갈림 셀 일괄 삭제 핸들러
+  socket.on('sudoku-batch-clear', ({ room, cells, username }) => {
+    const state = sudokuRooms.get(room);
+    if (!state || state.phase !== 'playing') return;
+
+    if (Array.isArray(cells)) {
+      cells.forEach(({ row, col }) => {
+        if (row >= 0 && row < 9 && col >= 0 && col < 9) {
+          if (!state.fixedMask[row][col]) {
+            state.grid[row][col] = 0;
+          }
+        }
+      });
+    }
+
+    io.to(room).emit('sudoku-update', {
+      phase: state.phase,
+      grid: state.grid,
+      fixedMask: state.fixedMask,
+      notes: state.notes,
+      completed: false,
+      message: `🧹 ${username || '플레이어'}님이 헷갈림 셀들의 숫자를 일괄 삭제했습니다.`
+    });
+  });
+
+  // 클라이언트의 sudoku-update 수신 호환 처리
+  socket.on('sudoku-update', ({ room, grid }) => {
+    const state = sudokuRooms.get(room);
+    if (!state || state.phase !== 'playing') return;
+
+    if (Array.isArray(grid) && grid.length === 9) {
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!state.fixedMask[r][c]) {
+            state.grid[r][c] = grid[r][c] || 0;
+          }
+        }
+      }
+      io.to(room).emit('sudoku-update', {
+        phase: state.phase,
+        grid: state.grid,
+        fixedMask: state.fixedMask,
+        notes: state.notes,
+        completed: false
+      });
+    }
+  });
+
   // 힌트 요청
   socket.on('sudoku-hint', ({ room, row, col, username }) => {
     const state = sudokuRooms.get(room);

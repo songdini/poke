@@ -141,20 +141,22 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     }
 
     const newGrid = grid.map(r => [...r]);
+    const clearedCells: Array<{ row: number; col: number }> = [];
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (markedMask[r][c] && !fixedMask[r][c]) {
           newGrid[r][c] = 0;
+          clearedCells.push({ row: r, col: c });
         }
       }
     }
     setGrid(newGrid);
     setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
     if (socket && socket.connected) {
-      socket.emit('sudoku-update', { room, grid: newGrid });
+      socket.emit('sudoku-batch-clear', { room, cells: clearedCells, username });
     }
     setMessage(`🗑️ 헷갈림(보라색)으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 지웠습니다.`);
-  }, [markedMask, grid, fixedMask, socket, room]);
+  }, [markedMask, grid, fixedMask, socket, room, username]);
 
   // 소켓 연결 및 이벤트 핸들링
   useEffect(() => {
