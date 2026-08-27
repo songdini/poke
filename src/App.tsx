@@ -10,10 +10,11 @@ import MinesweeperGame from './components/MinesweeperGame';
 import WordleGame from './components/WordleGame';
 import PokeBattle from './components/PokeBattle';
 import { PokeFarmGame } from './components/PokeFarmGame';
+import TetrisGame from './components/TetrisGame';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'pokefarm' | 'pokebattle' | 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle';
+type GameKey = 'pokefarm' | 'pokebattle' | 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle' | 'tetris';
 
 interface GameSession {
   username: string;
@@ -121,6 +122,15 @@ const GAMES_LIST: GameMeta[] = [
     desc: '5글자 비밀 단어 추정 퍼즐',
     badge: 'WORD',
     themeColor: '#64748b'
+  },
+  {
+    key: 'tetris',
+    name: '포켓 테트리스',
+    excelName: 'Tetris_Block_Matrix_Optimization.xlsx',
+    icon: '🧱',
+    desc: '점수 기록, AI & 친구 1:1 대전, 아이템전 & 실시간 공격 배틀',
+    badge: 'HOT',
+    themeColor: '#6366f1'
   }
 ];
 
@@ -158,7 +168,8 @@ function App() {
       sudoku: null,
       minesweeper: null,
       wordle: null,
-      pokebattle: null
+      pokebattle: null,
+      tetris: null
     };
   });
 
@@ -288,6 +299,11 @@ function App() {
         <div style={{ display: selectedGame === 'pokebattle' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.pokebattle && (
             <PokeBattle username={gameSessions.pokebattle.username} room={gameSessions.pokebattle.room} onLeaveRoom={() => handleLeaveGame('pokebattle')} />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'tetris' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
+          {gameSessions.tetris && (
+            <TetrisGame username={gameSessions.tetris.username} room={gameSessions.tetris.room} onLeaveRoom={() => handleLeaveGame('tetris')} />
           )}
         </div>
       </div>
