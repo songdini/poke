@@ -6,6 +6,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
+    volumes:
+      - ./server/data:/app/data
+      - ./server/uploads:/app/uploads
     env_file:
       - ./.env
     environment:

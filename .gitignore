@@ -52,3 +52,7 @@ replay_pid*
 # Vite
 .vite
 .env
+
+# Server uploads
+server/uploads/*
+!server/uploads/.gitkeep
