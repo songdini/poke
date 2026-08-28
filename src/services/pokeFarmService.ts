@@ -1495,6 +1495,17 @@ export function getInitialFarmState(ownerName: string): FarmState {
     activePokemon: null,
     reservePokemon: [], // 🌟 보육소 목장 보관 포켓몬 리스트
     incubatingEgg: null, // 🌟 현재 인큐베이터에 품고 있는 알
+    bgTheme: 'classic', // 🏠 두부월드 미니룸 기본 배경
+    stickers: [
+      { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20 },
+      { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15 },
+      { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75 },
+      { id: 'stk_init_4', stickerId: 'bubble_grad', icon: '💬', label: '졸업 축하해!', x: 60, y: 25 }
+    ],
+    statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
+    bgmSong: '프리스타일 - Y (Feat. 지선)',
+    todayCount: Math.floor(Math.random() * 50) + 120,
+    totalCount: Math.floor(Math.random() * 1000) + 4200,
     lotteryState: {
       lastDate: getTodayDateString(),
       freeSpinsLeft: 3,
@@ -1514,7 +1525,7 @@ export function getInitialFarmState(ownerName: string): FarmState {
         timestamp: new Date().toISOString()
       }
     ],
-    heartsCount: 0
+    heartsCount: 12
   };
 }
 

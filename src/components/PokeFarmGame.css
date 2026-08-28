@@ -3624,5 +3624,967 @@
   line-height: 1.35;
 }
 
+/* ==========================================================================
+   ⛺ Dubuworld 2000s Retro Mini-homepage & Mini-room Styles
+   ========================================================================== */
+
+.dubuworld-minihompy-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: #eef6fc;
+  border: 3px solid #89b3d9;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(45, 93, 140, 0.15);
+  font-family: 'Pretendard', 'Malgun Gothic', 'Dotum', sans-serif;
+  gap: 10px;
+}
+
+/* 🌐 Top Browser Header Bar */
+.dubuworld-top-browser-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(180deg, #dbeaf6 0%, #c6deef 100%);
+  border: 1px solid #9cbddb;
+  border-radius: 6px;
+  padding: 6px 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dubuworld-url-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dubuworld-logo {
+  font-weight: 900;
+  color: #ff6000;
+  font-size: 1.05rem;
+  letter-spacing: -0.5px;
+  background: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #ffd0b3;
+}
+
+.dubuworld-url-text {
+  font-size: 0.8rem;
+  color: #3b6b99;
+  font-family: monospace;
+  background: #ffffff;
+  padding: 3px 10px;
+  border-radius: 3px;
+  border: 1px solid #b8d2e8;
+}
+
+.dubuworld-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dubuworld-visitor-counter {
+  display: flex;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.today-badge {
+  color: #e65100;
+  background: #fff3e0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #ffe0b2;
+}
+
+.total-badge {
+  color: #1565c0;
+  background: #e3f2fd;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #bbdefb;
+}
+
+/* 🖼️ Main Frame Layout */
+.dubuworld-main-frame {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .dubuworld-main-frame {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dubuworld-card {
+  background: #ffffff;
+  border: 1px solid #a4c4e2;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+/* ⬅️ Left Column Profile Card */
+.dubuworld-profile-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-today-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #f0f7fc;
+  border: 1px dashed #9bc0e3;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.today-label { color: #d84315; }
+.today-val { color: #d84315; font-weight: 900; }
+.total-divider { color: #b0bec5; }
+.total-label { color: #1565c0; }
+.total-val { color: #1565c0; font-weight: 900; }
+
+.dubuworld-photo-frame {
+  background: linear-gradient(135deg, #f5fbff 0%, #e6f3fd 100%);
+  border: 2px solid #b3d4f0;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  position: relative;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.profile-poke-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-sprite {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+.profile-poke-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-top: 6px;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+}
+
+.dubuworld-status-box {
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #d48806;
+  border-bottom: 1px dashed #ffe58f;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.dubuworld-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+}
+
+.status-msg-text {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #595959;
+  line-height: 1.35;
+  font-style: italic;
+}
+
+.profile-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #434343;
+  background: #fafafa;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.detail-item.hearts .heart-num {
+  color: #ff4d4f;
+}
+
+.dubuworld-heart-btn {
+  width: 100%;
+  padding: 8px;
+  background: linear-gradient(180deg, #ff7a45 0%, #d4380d 100%);
+  color: #ffffff;
+  border: 1px solid #ad2102;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(212, 56, 13, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.dubuworld-heart-btn:hover {
+  transform: scale(1.02);
+}
+
+/* 🎵 BGM Player Widget */
+.dubuworld-bgm-widget {
+  background: linear-gradient(180deg, #363940 0%, #222429 100%);
+  border: 1px solid #141518;
+  border-radius: 6px;
+  padding: 10px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bgm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #69b1ff;
+}
+
+.sound-wave-bars {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  align-items: flex-end;
+}
+
+.sound-wave-bars .bar {
+  width: 3px;
+  background: #40a9ff;
+  border-radius: 1px;
+}
+
+.sound-wave-bars.playing .b1 { height: 10px; animation: wave 0.6s infinite ease-in-out alternate; }
+.sound-wave-bars.playing .b2 { height: 6px; animation: wave 0.8s infinite ease-in-out alternate; }
+.sound-wave-bars.playing .b3 { height: 12px; animation: wave 0.5s infinite ease-in-out alternate; }
+.sound-wave-bars.playing .b4 { height: 8px; animation: wave 0.7s infinite ease-in-out alternate; }
+
+@keyframes wave {
+  from { height: 3px; }
+  to { height: 12px; }
+}
+
+.bgm-title-scroll {
+  font-size: 0.75rem;
+  color: #bae7ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #141414;
+  padding: 3px 6px;
+  border-radius: 3px;
+}
+
+.bgm-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.bgm-btn {
+  background: #434343;
+  color: #ffffff;
+  border: none;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.bgm-select {
+  flex: 1;
+  background: #262626;
+  color: #d9d9d9;
+  border: 1px solid #434343;
+  font-size: 0.7rem;
+  border-radius: 3px;
+}
+
+/* ➡️ Right Column Content & Tabs */
+.dubuworld-content-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.dubuworld-subtabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #1890ff;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.cytab {
+  padding: 6px 14px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #096dd9;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cytab:hover {
+  background: #bae7ff;
+}
+
+.cytab.active {
+  background: #1890ff;
+  color: #ffffff;
+  border-color: #1890ff;
+}
+
+/* 🖼️ Miniroom Canvas */
+.miniroom-canvas-container {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  border-radius: 8px;
+  border: 2px solid #89b3d9;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.miniroom-canvas-container.compact {
+  height: 220px;
+  cursor: pointer;
+}
+
+/* Miniroom Background Themes */
+.miniroom-canvas-container.bg-classic {
+  background: linear-gradient(180deg, #e6f3ff 0%, #e6f3ff 55%, #d9b38c 55%, #c4996c 100%);
+}
+
+.miniroom-canvas-container.bg-pixel {
+  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 55%, #4ade80 55%, #22c55e 100%);
+}
+
+.miniroom-canvas-container.bg-starry {
+  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 60%, #312e81 60%, #1e1b4b 100%);
+}
+
+.miniroom-canvas-container.bg-beach {
+  background: linear-gradient(180deg, #fdba74 0%, #f97316 45%, #0284c7 45%, #0369a1 60%, #fde047 60%, #eab308 100%);
+}
+
+.miniroom-canvas-container.bg-sakura {
+  background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 55%, #f472b6 55%, #db2777 100%);
+}
+
+.miniroom-canvas-container.bg-center {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 55%, #fee2e2 55%, #fca5a5 100%);
+}
+
+.miniroom-wall {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+}
+
+.miniroom-window {
+  width: 70px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 3px solid #89b3d9;
+  border-radius: 8px;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.08);
+}
+
+.window-sun { font-size: 1.2rem; }
+
+/* Positional Pokemons in Miniroom */
+.miniroom-pokemon {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  transition: transform 0.2s ease;
+}
+
+.miniroom-pokemon:hover {
+  transform: scale(1.1);
+  z-index: 8;
+}
+
+.miniroom-pokemon.active-pokemon-pos {
+  bottom: 25px;
+  left: 42%;
+}
+
+.miniroom-pokemon.reserve-pos-1 { bottom: 20px; left: 15%; }
+.miniroom-pokemon.reserve-pos-2 { bottom: 35px; right: 18%; }
+.miniroom-pokemon.reserve-pos-3 { bottom: 15px; right: 38%; }
+
+.miniroom-pokemon.graduated-pos-1 { top: 70px; left: 15%; }
+.miniroom-pokemon.graduated-pos-2 { top: 60px; left: 40%; }
+.miniroom-pokemon.graduated-pos-3 { top: 65px; right: 25%; }
+.miniroom-pokemon.graduated-pos-4 { top: 90px; right: 10%; }
+
+.pokemon-name-tag {
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  gap: 4px;
+  margin-bottom: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pokemon-name-tag.compact {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+}
+
+.tag-lvl { color: #fde047; }
+
+.graduated-badge-tag {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border: 1px solid #b45309;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
+  margin-bottom: 2px;
+}
+
+.poke-sprite {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.poke-sprite.bounce {
+  animation: miniroomBounce 2s infinite ease-in-out;
+}
+
+@keyframes miniroomBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.poke-sprite.graduated-shine {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+/* Placed Stickers */
+.miniroom-placed-sticker {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.miniroom-placed-sticker:hover {
+  transform: scale(1.2);
+  z-index: 9;
+}
+
+.stk-icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.stk-bubble {
+  background: #ffffff;
+  color: #1f2937;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #3b82f6;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.stk-del-btn {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.miniroom-placed-sticker:hover .stk-del-btn {
+  opacity: 1;
+}
+
+/* Home View Layout */
+.dubuworld-welcome-banner {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.dubuworld-welcome-banner h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: #0369a1;
+  font-weight: 800;
+}
+
+.dubuworld-welcome-banner p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #0284c7;
+}
+
+.miniroom-preview-box {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.preview-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0284c7;
+  margin-bottom: 4px;
+  text-align: right;
+}
+
+/* 🏆 Top 3 Popular Farms Widget */
+.popular-top3-widget {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.section-title h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #262626;
+  font-weight: 800;
+}
+
+.dubuworld-link-btn {
+  background: none;
+  border: none;
+  color: #1890ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.top3-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .top3-cards-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.top3-mini-card {
+  background: #ffffff;
+  border: 1.5px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  position: relative;
+}
+
+.top3-mini-card.rank-1 {
+  border-color: #fadb14;
+  background: #feffe6;
+  box-shadow: 0 4px 10px rgba(250, 219, 20, 0.2);
+}
+
+.top3-mini-card.rank-2 {
+  border-color: #d9d9d9;
+  background: #fafafa;
+}
+
+.top3-mini-card.rank-3 {
+  border-color: #ffd591;
+  background: #fffbe6;
+}
+
+.rank-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #d48806;
+}
+
+.top3-poke-img img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.top3-mini-info strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #262626;
+}
+
+.top3-mini-info span {
+  font-size: 0.7rem;
+  color: #8c8c8c;
+}
+
+/* Recent Guestbook Widget */
+.recent-guestbook-widget {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.recent-gb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recent-gb-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  gap: 8px;
+}
+
+.gb-author-tag { color: #1890ff; flex-shrink: 0; }
+.gb-msg-preview { color: #434343; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-date { color: #bfbfbf; font-size: 0.7rem; flex-shrink: 0; }
+
+/* Miniroom Toolbar */
+.miniroom-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bg-select-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.bg-tab-btn {
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.bg-tab-btn.active {
+  background: #1890ff;
+  color: #ffffff;
+  border-color: #1890ff;
+  font-weight: 700;
+}
+
+/* Guestbook View */
+.guestbook-input-card {
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.guestbook-input-card h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #1d39c4;
+}
+
+.gb-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dubuworld-input {
+  flex: 1;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.dubuworld-btn.primary {
+  background: #52c41a;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dubuworld-gb-card {
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.gb-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #f0f0f0;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.gb-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.gb-time { color: #8c8c8c; font-size: 0.72rem; }
+.gb-delete-btn { background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 0.75rem; }
+
+.gb-card-body {
+  font-size: 0.85rem;
+  color: #262626;
+  line-height: 1.4;
+}
+
+/* Sticker Palette Grid */
+.sticker-shop-header {
+  margin-bottom: 12px;
+}
+
+.sticker-shop-header h4 { margin: 0 0 4px; font-size: 0.95rem; color: #262626; }
+.sticker-shop-header p { margin: 0; font-size: 0.78rem; color: #8c8c8c; }
+
+.sticker-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sticker-palette-item {
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sticker-palette-item:hover {
+  border-color: #1890ff;
+  background: #e6f6ff;
+  transform: translateY(-2px);
+}
+
+.sticker-palette-item .stk-icon { font-size: 2rem; }
+.sticker-palette-item .stk-label { font-size: 0.72rem; color: #595959; font-weight: 600; }
+
+.sticker-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+/* Top 3 Rankings Full View */
+.top3-header {
+  margin-bottom: 14px;
+}
+
+.top3-header h3 { margin: 0 0 4px; font-size: 1.1rem; color: #1f2937; }
+.top3-header p { margin: 0; font-size: 0.8rem; color: #6b7280; }
+
+.top3-rankings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popular-rank-card {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.popular-rank-card.rank-1 {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.popular-rank-card.rank-2 {
+  border-color: #9ca3af;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.popular-rank-card.rank-3 {
+  border-color: #d97706;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+}
+
+.popular-rank-card.is-me {
+  box-shadow: 0 0 0 3px #3b82f6;
+}
+
+.rank-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank-crown {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.rank-avatar-frame img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.rank-center {
+  flex: 1;
+}
+
+.rank-farm-title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: #111827;
+}
+
+.me-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.rank-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.rank-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.hearts-display {
+  font-size: 0.9rem;
+  color: #dc2626;
+}
+
 
 

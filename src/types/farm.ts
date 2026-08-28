@@ -135,6 +135,15 @@ export interface DailyLotteryState {
   jackpotPool: number; // 사내 누적 잭팟 상금
 }
 
+export interface MinihompySticker {
+  id: string;
+  stickerId: string;
+  icon: string;
+  label: string;
+  x: number; // percentage 0-90
+  y: number; // percentage 0-80
+}
+
 export interface FarmState {
   ownerName: string;
   farmName: string;
@@ -147,6 +156,12 @@ export interface FarmState {
   inventory: Record<string, number>; // itemId -> count
   guestbook: GuestbookEntry[];
   heartsCount: number;
+  bgTheme?: string; // 🏠 두부월드 미니룸 배경 테마 ('classic' | 'pixel' | 'starry' | 'beach' | 'sakura' | 'center')
+  stickers?: MinihompySticker[]; // 🎨 미니룸 배치 스티커 리스트
+  statusMsg?: string; // 💬 투데이 상태 메시지 ("오늘도 피카츄와 열렙 중! ⚡")
+  bgmSong?: string; // 🎵 미니홈피 BGM 곡명
+  todayCount?: number; // TODAY 수
+  totalCount?: number; // TOTAL 수
   activeExpedition?: ExpeditionSession | null;
   lotteryState?: DailyLotteryState; // 🎰 일일 럭키 사내 복권 상태
   lastDailyRewardAt?: string;

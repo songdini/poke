@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -17,7 +17,7 @@ import {
   getAllPokedexEntries
 } from '../services/pokeFarmService';
 import { 
-  Sparkles, Trophy, Volume2, Send, CheckCircle2, AlertCircle, X
+  Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X
 } from 'lucide-react';
 import './PokeFarmGame.css';
 
@@ -26,7 +26,7 @@ interface PokeFarmGameProps {
   onLeaveRoom?: () => void;
 }
 
-type FarmTab = 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas' | 'neighbors';
+type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas' | 'neighbors';
 
 interface NeighborFarmData {
   username: string;
@@ -42,7 +42,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   // 농장 전체 로컬 상태
   const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(username));
-  const [activeTab, setActiveTab] = useState<FarmTab>('yard');
+  const [activeTab, setActiveTab] = useState<FarmTab>('minihome');
 
   // 🐣 온보딩 위저드 상태 (농장주 이름 입력 ➔ 스타팅 포켓몬 선택)
   const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
@@ -136,6 +136,396 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [visitingFarm, setVisitingFarm] = useState<{ owner: string; farm: NeighborFarmData; guestbook: GuestbookEntry[] } | null>(null);
   const [guestbookInput, setGuestbookInput] = useState('');
   const [neighborSearch, setNeighborSearch] = useState('');
+
+  // ⛺ 두부월드 미니홈피 상태
+  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'guestbook' | 'stickers' | 'top3'>('home');
+  const [currentBgmSong, setCurrentBgmSong] = useState(farmState.bgmSong || '프리스타일 - Y (Feat. 지선)');
+  const [isPlayingBgm, setIsPlayingBgm] = useState(false);
+
+  // 🏆 랭킹용 인기 농장 기본 픽스처 데이터 (항상 최고 퀄리티의 인기 농장이 나타나도록 보장)
+  const MOCK_POPULAR_FARMS: NeighborFarmData[] = [
+    {
+      username: '지우',
+      farmName: '⚡ 지우의 챔피언 피카츄 파크',
+      activePokemon: {
+        uid: 'mock_pika',
+        speciesId: 25,
+        name: '피카츄',
+        nickname: '백만볼트 피카',
+        stageIndex: 0,
+        level: 99,
+        exp: 1000,
+        maxExp: 1000,
+        hunger: 100,
+        happiness: 100,
+        cleanliness: 100,
+        energy: 100,
+        isShiny: true,
+        types: ['electric'],
+        sprites: {
+          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png',
+          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/25.gif'
+        },
+        evolutionChain: [],
+        adoptedAt: '2026-01-01',
+        isGraduated: false,
+        totalPats: 999,
+        jobsCompleted: 50
+      },
+      graduatedCount: 15,
+      heartsCount: 1850,
+      isOnline: true
+    },
+    {
+      username: '이슬이',
+      farmName: '🌊 이슬이의 워터 아쿠아랜드',
+      activePokemon: {
+        uid: 'mock_starmie',
+        speciesId: 121,
+        name: '아쿠스타',
+        nickname: '마린스타',
+        stageIndex: 1,
+        level: 78,
+        exp: 800,
+        maxExp: 800,
+        hunger: 95,
+        happiness: 98,
+        cleanliness: 100,
+        energy: 95,
+        isShiny: false,
+        types: ['water', 'psychic'],
+        sprites: {
+          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png',
+          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/121.gif'
+        },
+        evolutionChain: [],
+        adoptedAt: '2026-01-15',
+        isGraduated: false,
+        totalPats: 620,
+        jobsCompleted: 35
+      },
+      graduatedCount: 11,
+      heartsCount: 1420,
+      isOnline: true
+    },
+    {
+      username: '웅이',
+      farmName: '🪨 웅이의 마운틴 락가든',
+      activePokemon: {
+        uid: 'mock_onix',
+        speciesId: 95,
+        name: '롱스톤',
+        nickname: '바위대장',
+        stageIndex: 0,
+        level: 68,
+        exp: 600,
+        maxExp: 600,
+        hunger: 90,
+        happiness: 92,
+        cleanliness: 90,
+        energy: 90,
+        isShiny: false,
+        types: ['rock', 'ground'],
+        sprites: {
+          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png',
+          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/95.gif'
+        },
+        evolutionChain: [],
+        adoptedAt: '2026-02-01',
+        isGraduated: false,
+        totalPats: 410,
+        jobsCompleted: 28
+      },
+      graduatedCount: 8,
+      heartsCount: 1120,
+      isOnline: false
+    }
+  ];
+
+  // 🏆 하트 수 기준 인기 농장 Top 3 랭킹 자동 계산
+  const top3PopularFarms = React.useMemo(() => {
+    const map = new Map<string, NeighborFarmData>();
+
+    // 내 농장 추가
+    map.set(farmState.ownerName, {
+      username: farmState.ownerName,
+      farmName: farmState.farmName,
+      activePokemon: farmState.activePokemon,
+      graduatedCount: farmState.graduatedPokemon.length,
+      heartsCount: farmState.heartsCount,
+      isOnline: true
+    });
+
+    // 이웃 농장 리스트 추가
+    neighborList.forEach(n => {
+      if (!map.has(n.username)) map.set(n.username, n);
+    });
+
+    // 기본 인기 농장 추가
+    MOCK_POPULAR_FARMS.forEach(m => {
+      if (!map.has(m.username)) map.set(m.username, m);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.heartsCount - a.heartsCount).slice(0, 3);
+  }, [farmState, neighborList]);
+
+  // 방문 여부에 따른 미니홈피 표시 값
+  const currentTodayCount = visitingFarm ? 84 : (farmState.todayCount || 142);
+  const currentTotalCount = visitingFarm ? 2340 : (farmState.totalCount || 4820);
+  const displayOwnerName = visitingFarm ? visitingFarm.owner : farmState.ownerName;
+  const displayFarmName = visitingFarm ? visitingFarm.farm.farmName : farmState.farmName;
+  const displayActivePokemon = visitingFarm ? visitingFarm.farm.activePokemon : farmState.activePokemon;
+  const displayReservePokemons = visitingFarm ? [] : farmState.reservePokemon;
+  const displayGraduatedPokemons = visitingFarm ? [] : farmState.graduatedPokemon;
+  const displayGraduatedCount = visitingFarm ? visitingFarm.farm.graduatedCount : farmState.graduatedPokemon.length;
+  const displayHeartsCount = visitingFarm ? visitingFarm.farm.heartsCount : farmState.heartsCount;
+  const displayGuestbook = visitingFarm ? visitingFarm.guestbook : farmState.guestbook;
+  const currentBgTheme = visitingFarm ? 'classic' : (farmState.bgTheme || 'classic');
+  const currentStickers = visitingFarm ? [
+    { id: 'v_stk_1', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15 },
+    { id: 'v_stk_2', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20 },
+    { id: 'v_stk_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75 }
+  ] : (farmState.stickers || []);
+  const currentStatusMsg = visitingFarm ? '이웃의 농장에 놀러왔습니다 🎵' : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
+
+  // 이웃 미니홈피 놀러가기/구경가기
+  const handleVisitNeighbor = (neighborUsername: string) => {
+    if (neighborUsername === farmState.ownerName) {
+      setVisitingFarm(null);
+      setActiveTab('minihome');
+      showAlert('내 포켓 미니홈피로 이동했습니다! 🏠', 'info');
+      return;
+    }
+
+    if (socket && socket.connected) {
+      socket.emit('farm-visit-request', { targetUsername: neighborUsername });
+    }
+
+    const foundLocal = neighborList.find(n => n.username === neighborUsername) ||
+      MOCK_POPULAR_FARMS.find(n => n.username === neighborUsername);
+
+    if (foundLocal) {
+      setVisitingFarm({
+        owner: foundLocal.username,
+        farm: foundLocal,
+        guestbook: [
+          {
+            id: 'gb_mock_1',
+            author: '지우',
+            message: `[${foundLocal.farmName}] 방문하고 갑니다! 포켓몬 너무 멋지네요! ⚡`,
+            timestamp: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: 'gb_mock_2',
+            author: '이슬이',
+            message: '1촌 하트 💖 누르고 갑니다! 제 농장에도 놀러오세요~',
+            timestamp: new Date(Date.now() - 86400000).toISOString()
+          }
+        ]
+      });
+      setActiveTab('minihome');
+      showAlert(`🏠 [${foundLocal.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+    }
+  };
+
+  // 1촌 응원 하트 보내기
+  const handleSendHeartToCurrentFarm = () => {
+    const targetUser = visitingFarm ? visitingFarm.owner : farmState.ownerName;
+    if (visitingFarm) {
+      setVisitingFarm(prev => prev ? {
+        ...prev,
+        farm: { ...prev.farm, heartsCount: prev.farm.heartsCount + 1 }
+      } : null);
+      if (socket && socket.connected) {
+        socket.emit('farm-send-heart', { targetUsername: targetUser, senderUsername: farmState.ownerName });
+      }
+    } else {
+      setFarmState(prev => ({ ...prev, heartsCount: prev.heartsCount + 1 }));
+    }
+    showAlert(`💖 [${targetUser}]님에게 1촌 응원 하트를 보냈습니다!`, 'success');
+    setFloatingHeart({ id: Date.now(), x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  };
+
+  // 방명록 등록
+  const handleAddGuestbookEntry = () => {
+    if (!guestbookInput.trim()) {
+      showAlert('방명록 내용을 입력해 주세요!', 'warn');
+      return;
+    }
+    const newEntry: GuestbookEntry = {
+      id: `gb_${Date.now()}`,
+      author: farmState.ownerName,
+      message: guestbookInput.trim(),
+      timestamp: new Date().toISOString()
+    };
+
+    if (visitingFarm) {
+      setVisitingFarm(prev => prev ? {
+        ...prev,
+        guestbook: [newEntry, ...prev.guestbook]
+      } : null);
+      if (socket && socket.connected) {
+        socket.emit('farm-guestbook-add', { targetUsername: visitingFarm.owner, entry: newEntry });
+      }
+    } else {
+      setFarmState(prev => ({
+        ...prev,
+        guestbook: [newEntry, ...prev.guestbook]
+      }));
+    }
+    setGuestbookInput('');
+    showAlert('📬 방명록이 성공적으로 등록되었습니다!', 'success');
+  };
+
+  // 방명록 삭제
+  const handleDeleteGuestbookEntry = (id: string) => {
+    if (visitingFarm) {
+      setVisitingFarm(prev => prev ? {
+        ...prev,
+        guestbook: prev.guestbook.filter(g => g.id !== id)
+      } : null);
+    } else {
+      setFarmState(prev => ({
+        ...prev,
+        guestbook: prev.guestbook.filter(g => g.id !== id)
+      }));
+    }
+    showAlert('🗑️ 방명록이 삭제되었습니다.', 'info');
+  };
+
+  // 스티커 추가
+  const handleAddSticker = (stickerId: string, icon: string, label: string) => {
+    if (visitingFarm) {
+      showAlert('이웃의 미니홈피 스티커는 수정할 수 없습니다.', 'warn');
+      return;
+    }
+    const newSticker: MinihompySticker = {
+      id: `stk_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      stickerId,
+      icon,
+      label,
+      x: Math.floor(Math.random() * 60) + 15,
+      y: Math.floor(Math.random() * 50) + 15
+    };
+    setFarmState(prev => ({
+      ...prev,
+      stickers: [...(prev.stickers || []), newSticker]
+    }));
+    showAlert(`🎨 [${label}] 스티커를 미니룸에 붙였습니다!`, 'success');
+  };
+
+  // 스티커 제거
+  const handleRemoveSticker = (id: string) => {
+    if (visitingFarm) return;
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).filter(s => s.id !== id)
+    }));
+  };
+
+  // 스티커 전체 삭제
+  const handleClearAllStickers = () => {
+    if (visitingFarm) return;
+    if (window.confirm('미니룸의 모든 스티커를 제거하시겠습니까?')) {
+      setFarmState(prev => ({ ...prev, stickers: [] }));
+      showAlert('🧹 미니룸 스티커를 모두 지웠습니다.', 'info');
+    }
+  };
+
+  // 🖼️ 미니룸 캔버스 렌더러
+  const renderMiniroomCanvas = ({ compact = false }: { compact?: boolean }) => {
+    const bgTheme = currentBgTheme || 'classic';
+    const stickers = currentStickers || [];
+
+    return (
+      <div className={`miniroom-canvas-container bg-${bgTheme} ${compact ? 'compact' : ''}`}>
+        {/* 🖼️ 배경 장식 */}
+        <div className="miniroom-wall">
+          <div className="miniroom-window">
+            <span className="window-sun">☀️</span>
+            <span className="window-cloud c1">☁️</span>
+            <span className="window-cloud c2">☁️</span>
+          </div>
+        </div>
+        <div className="miniroom-floor"></div>
+
+        {/* 🐾 키우는 중인 메인 포켓몬 */}
+        {displayActivePokemon && (
+          <div className="miniroom-pokemon active-pokemon-pos">
+            <div className="pokemon-name-tag">
+              <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
+              <span className="tag-name">{displayActivePokemon.nickname || displayActivePokemon.name}</span>
+            </div>
+            <img
+              src={displayActivePokemon.sprites.showdownFront || displayActivePokemon.sprites.front}
+              alt={displayActivePokemon.name}
+              className="poke-sprite bounce"
+            />
+          </div>
+        )}
+
+        {/* 🏡 키우는 중인 보육소 서브 포켓몬들 */}
+        {displayReservePokemons.slice(0, 3).map((mon, idx) => (
+          <div key={mon.uid || idx} className={`miniroom-pokemon reserve-pos-${idx + 1}`}>
+            <div className="pokemon-name-tag compact">
+              <span>{mon.nickname || mon.name}</span>
+            </div>
+            <img
+              src={mon.sprites.showdownFront || mon.sprites.front}
+              alt={mon.name}
+              className="poke-sprite"
+            />
+          </div>
+        ))}
+
+        {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓) */}
+        {displayGraduatedPokemons.slice(0, 4).map((dip, idx) => (
+          <div
+            key={dip.id || idx}
+            className={`miniroom-pokemon graduated-pos-${(idx % 4) + 1}`}
+            onClick={() => setSelectedDiploma(dip)}
+            title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] (클릭하여 졸업증서 보기)`}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="graduated-badge-tag">
+              🎓 {dip.nickname || dip.name}
+            </div>
+            <img
+              src={dip.sprite}
+              alt={dip.name}
+              className="poke-sprite graduated-shine"
+            />
+          </div>
+        ))}
+
+        {/* 🎨 배치된 스티커들 */}
+        {stickers.map(stk => (
+          <div
+            key={stk.id}
+            className="miniroom-placed-sticker"
+            style={{ left: `${stk.x}%`, top: `${stk.y}%` }}
+          >
+            <span className="stk-icon">{stk.icon}</span>
+            {stk.label.startsWith('말풍선:') && (
+              <span className="stk-bubble">{stk.label.replace('말풍선:', '').trim()}</span>
+            )}
+            {!visitingFarm && (
+              <button
+                className="stk-del-btn"
+                onClick={e => {
+                  e.stopPropagation();
+                  handleRemoveSticker(stk.id);
+                }}
+                title="스티커 삭제"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
@@ -1202,41 +1592,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert(`🐣 [${newMon.name}]을(를) 성공적으로 분양받았습니다! ${isShinyChance ? '✨ [전설의 포켓몬] 당첨!' : ''}`, 'success');
   };
 
-  // 8. 이웃 농장 방문 & 쓰다듬기
-  const handleVisitNeighbor = (neighborUser: string) => {
-    if (socket && socket.connected) {
-      socket.emit('farm-visit', { targetUsername: neighborUser });
-    }
-  };
 
-  const handleSendHeartToNeighbor = () => {
-    if (!visitingFarm || !socket) return;
-    socket.emit('farm-pet-heart', {
-      targetUsername: visitingFarm.owner,
-      senderUsername: farmState.ownerName
-    });
-
-    setFarmState(prev => ({
-      ...prev,
-      coins: prev.coins + 20 // 이웃 방문 보너스 +20 코인
-    }));
-
-    showAlert(`💖 [${visitingFarm.owner}]님 농장에 하트 도장을 찍었습니다! (+20 코인 보상)`, 'success');
-  };
-
-  const handleAddGuestbookMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!guestbookInput.trim() || !visitingFarm || !socket) return;
-
-    socket.emit('farm-add-guestbook', {
-      targetUsername: visitingFarm.owner,
-      author: farmState.ownerName,
-      message: guestbookInput.trim()
-    });
-
-    setGuestbookInput('');
-    showAlert('📝 방명록을 성공적으로 남겼습니다!', 'success');
-  };
 
   // 9. 온보딩 완료 처리 (농장 설립 & 첫 파트너 포켓몬 분양)
   const handleCompleteOnboarding = () => {
@@ -1462,6 +1818,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
       {/* 🧭 Farm Navigation Tabs */}
       <nav className="farm-nav-tabs">
+        <button className={`farm-tab ${activeTab === 'minihome' ? 'active' : ''}`} onClick={() => { setActiveTab('minihome'); setVisitingFarm(null); }}>
+          ⛺ 포켓 미니홈피 (Minihp)
+        </button>
         <button className={`farm-tab ${activeTab === 'yard' ? 'active' : ''}`} onClick={() => { setActiveTab('yard'); setVisitingFarm(null); }}>
           🏡 내 농장 (Yard)
         </button>
@@ -1503,6 +1862,526 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
       {/* 📱 Main Tab Workspace */}
       <div className="farm-workspace-body">
+        {/* =========================================================================
+            TAB 0: ⛺ 두부월드 미니홈피 (Mini-homepage)
+           ========================================================================= */}
+        {(activeTab === 'minihome' || visitingFarm) && (
+          <div className="dubuworld-minihompy-wrapper">
+            {/* 🌐 상단 브라우저 헤더 바 */}
+            <div className="dubuworld-top-browser-bar">
+              <div className="dubuworld-url-box">
+                <span className="dubuworld-logo">Dubuworld</span>
+                <span className="dubuworld-url-text">
+                  http://minihp.dubuworld.com/poke_farm/{displayOwnerName}
+                </span>
+              </div>
+              <div className="dubuworld-header-actions">
+                <span className="dubuworld-visitor-counter">
+                  <span className="today-badge">TODAY <b>{currentTodayCount}</b></span>
+                  <span className="total-badge">TOTAL <b>{currentTotalCount.toLocaleString()}</b></span>
+                </span>
+                {visitingFarm && (
+                  <button
+                    className="excel-btn primary"
+                    onClick={() => setVisitingFarm(null)}
+                    style={{ padding: '3px 10px', fontSize: '0.8rem' }}
+                  >
+                    🔙 내 미니홈피로 돌아가기
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 🖼️ 미니홈피 메인 2단 프레임 */}
+            <div className="dubuworld-main-frame">
+              {/* ⬅️ 좌측 프로필 & 1촌 컬럼 */}
+              <div className="dubuworld-profile-col">
+                <div className="dubuworld-card profile-card">
+                  {/* 방문자 수 카운터 */}
+                  <div className="profile-today-bar">
+                    <span className="today-label">TODAY</span>
+                    <span className="today-val">{currentTodayCount}</span>
+                    <span className="total-divider">|</span>
+                    <span className="total-label">TOTAL</span>
+                    <span className="total-val">{currentTotalCount.toLocaleString()}</span>
+                  </div>
+
+                  {/* 아바타 프로필 액자 (현재 메인 포켓몬) */}
+                  <div className="dubuworld-photo-frame">
+                    {displayActivePokemon ? (
+                      <div className="profile-poke-avatar">
+                        <img
+                          src={displayActivePokemon.sprites.showdownFront || displayActivePokemon.sprites.front}
+                          alt={displayActivePokemon.name}
+                          className="profile-sprite"
+                        />
+                        <span className="profile-poke-badge">
+                          Lv.{displayActivePokemon.level} {displayActivePokemon.nickname || displayActivePokemon.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="empty-avatar">🏡 포켓농장</div>
+                    )}
+                  </div>
+
+                  {/* 프로필 상태 메시지 */}
+                  <div className="dubuworld-status-box">
+                    <div className="status-header">
+                      <span>💬 Today Status</span>
+                      {!visitingFarm && (
+                        <button
+                          className="dubuworld-icon-btn"
+                          onClick={() => {
+                            const newMsg = prompt('투데이 상태 메시지를 입력하세요:', currentStatusMsg);
+                            if (newMsg !== null) {
+                              setFarmState(prev => ({ ...prev, statusMsg: newMsg }));
+                            }
+                          }}
+                          title="상태 메시지 수정"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </div>
+                    <p className="status-msg-text">"{currentStatusMsg}"</p>
+                  </div>
+
+                  {/* 농장주 상세 정보 */}
+                  <div className="profile-details-list">
+                    <div className="detail-item">
+                      <span>👤 농장주:</span> <b>{displayOwnerName}</b>
+                    </div>
+                    <div className="detail-item">
+                      <span>🏡 농장명:</span> <b>{displayFarmName}</b>
+                    </div>
+                    <div className="detail-item">
+                      <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리</b>
+                    </div>
+                    <div className="detail-item hearts">
+                      <span>💖 1촌 하트:</span> <b className="heart-num">{displayHeartsCount}개</b>
+                    </div>
+                  </div>
+
+                  {/* 1촌 응원 하트 버튼 */}
+                  <button
+                    className="dubuworld-heart-btn"
+                    onClick={handleSendHeartToCurrentFarm}
+                  >
+                    💖 1촌 응원 하트 보내기! (+1)
+                  </button>
+
+                  {/* BGM 주크박스 플레이어 */}
+                  <div className="dubuworld-bgm-widget">
+                    <div className="bgm-header">
+                      <span>🎵 Minihp BGM Jukebox</span>
+                      <div className={`sound-wave-bars ${isPlayingBgm ? 'playing' : ''}`}>
+                        <span className="bar b1"></span>
+                        <span className="bar b2"></span>
+                        <span className="bar b3"></span>
+                        <span className="bar b4"></span>
+                      </div>
+                    </div>
+                    <div className="bgm-title-scroll">
+                      <span>▶ {currentBgmSong}</span>
+                    </div>
+                    <div className="bgm-controls">
+                      <button
+                        className="bgm-btn"
+                        onClick={() => setIsPlayingBgm(!isPlayingBgm)}
+                      >
+                        {isPlayingBgm ? '⏸️ 일시정지' : '▶️ 재생'}
+                      </button>
+                      <select
+                        className="bgm-select"
+                        value={currentBgmSong}
+                        onChange={e => setCurrentBgmSong(e.target.value)}
+                      >
+                        <option value="프리스타일 - Y (Feat. 지선)">🎵 프리스타일 - Y</option>
+                        <option value="쿨 - 아로하 (Aroha)">🎵 쿨 - 아로하</option>
+                        <option value="허밍어반스테레오 - Hawaiian Couple">🎵 Hawaiian Couple</option>
+                        <option value="에픽하이 - Fly (Feat. Amin. J)">🎵 에픽하이 - Fly</option>
+                        <option value="포켓몬 BGM - 태초마을 (Pallet Town)">🎵 태초마을 BGM</option>
+                        <option value="포켓몬센터 - 힐링 멜로디">🎵 포켓몬센터 BGM</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ➡️ 우측 콘텐츠 & 두부월드 서브탭 컬럼 */}
+              <div className="dubuworld-content-col">
+                <div className="dubuworld-card content-card">
+                  {/* 서브탭 바 */}
+                  <div className="dubuworld-subtabs">
+                    <button
+                      className={`cytab ${minihompyTab === 'home' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('home')}
+                    >
+                      🏠 홈 (Home)
+                    </button>
+                    <button
+                      className={`cytab ${minihompyTab === 'miniroom' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('miniroom')}
+                    >
+                      🖼️ 미니룸 (Miniroom)
+                    </button>
+                    <button
+                      className={`cytab ${minihompyTab === 'guestbook' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('guestbook')}
+                    >
+                      📝 방명록 ({displayGuestbook.length})
+                    </button>
+                    <button
+                      className={`cytab ${minihompyTab === 'stickers' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('stickers')}
+                    >
+                      🎨 스티커 꾸미기
+                    </button>
+                    <button
+                      className={`cytab ${minihompyTab === 'top3' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('top3')}
+                    >
+                      🏆 인기농장 Top 3
+                    </button>
+                  </div>
+
+                  {/* 1. 홈 뷰 */}
+                  {minihompyTab === 'home' && (
+                    <div className="cytab-content home-view">
+                      <div className="dubuworld-welcome-banner">
+                        <h3>✨ Welcome to {displayFarmName}! ✨</h3>
+                        <p>정성껏 키운 포켓몬들과 자랑스러운 졸업생들이 함께 어우러지는 두부월드 감성 미니홈피입니다.</p>
+                      </div>
+
+                      {/* 미니룸 미니 프리뷰 */}
+                      <div className="miniroom-preview-box" onClick={() => setMinihompyTab('miniroom')}>
+                        <div className="preview-label">🖼️ 클릭하여 미니룸 크게 보기 & 스티커 꾸미기 ➔</div>
+                        {renderMiniroomCanvas({ compact: true })}
+                      </div>
+
+                      {/* 인기 농장 Top 3 미니 랭킹 */}
+                      <div className="popular-top3-widget">
+                        <div className="section-title">
+                          <h4>🏆 인기 농장 Top 3 (하트 랭킹)</h4>
+                          <button className="dubuworld-link-btn" onClick={() => setMinihompyTab('top3')}>
+                            전체 랭킹 보기 ➔
+                          </button>
+                        </div>
+                        <div className="top3-cards-row">
+                          {top3PopularFarms.map((farm, idx) => (
+                            <div key={farm.username} className={`top3-mini-card rank-${idx + 1}`}>
+                              <span className="rank-badge">{idx === 0 ? '🥇 1위' : idx === 1 ? '🥈 2위' : '🥉 3위'}</span>
+                              <div className="top3-poke-img">
+                                {farm.activePokemon ? (
+                                  <img src={farm.activePokemon.sprites.front} alt={farm.activePokemon.name} />
+                                ) : (
+                                  <span>🏡</span>
+                                )}
+                              </div>
+                              <div className="top3-mini-info">
+                                <strong>{farm.farmName}</strong>
+                                <span>👤 {farm.username} | 💖 {farm.heartsCount}</span>
+                              </div>
+                              <button
+                                className="excel-btn primary"
+                                style={{ padding: '3px 8px', fontSize: '0.75rem' }}
+                                onClick={() => handleVisitNeighbor(farm.username)}
+                              >
+                                🏠 구경가기
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 최근 방명록 프리뷰 */}
+                      <div className="recent-guestbook-widget">
+                        <div className="section-title">
+                          <h4>📬 최근 방명록 ({displayGuestbook.length})</h4>
+                          <button className="dubuworld-link-btn" onClick={() => setMinihompyTab('guestbook')}>
+                            방명록 쓰러가기 ➔
+                          </button>
+                        </div>
+                        <div className="recent-gb-list">
+                          {displayGuestbook.slice(0, 3).map(entry => (
+                            <div key={entry.id} className="recent-gb-item">
+                              <span className="gb-author-tag">👤 <b>{entry.author}</b></span>
+                              <span className="gb-msg-preview">{entry.message}</span>
+                              <span className="gb-date">{new Date(entry.timestamp).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2. 미니룸 뷰 */}
+                  {minihompyTab === 'miniroom' && (
+                    <div className="cytab-content miniroom-view">
+                      <div className="miniroom-toolbar">
+                        <div className="bg-select-group">
+                          <span>🎨 배경선택:</span>
+                          {[
+                            { key: 'classic', label: '🏠 클래식 우드룸' },
+                            { key: 'pixel', label: '🌿 픽셀 팜 가든' },
+                            { key: 'starry', label: '🌌 별빛 아늑한 방' },
+                            { key: 'beach', label: '🏖️ 석양 트로피컬 해변' },
+                            { key: 'sakura', label: '🌸 벚꽃 블라썸 동산' },
+                            { key: 'center', label: '🏥 포켓몬 센터 쉼터' }
+                          ].map(bg => (
+                            <button
+                              key={bg.key}
+                              className={`bg-tab-btn ${currentBgTheme === bg.key ? 'active' : ''}`}
+                              onClick={() => {
+                                if (!visitingFarm) {
+                                  setFarmState(prev => ({ ...prev, bgTheme: bg.key }));
+                                }
+                              }}
+                            >
+                              {bg.label}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          className="excel-btn"
+                          onClick={() => setMinihompyTab('stickers')}
+                        >
+                          ✨ 스티커 붙이기
+                        </button>
+                      </div>
+
+                      {renderMiniroomCanvas({ compact: false })}
+                    </div>
+                  )}
+
+                  {/* 3. 방명록 뷰 */}
+                  {minihompyTab === 'guestbook' && (
+                    <div className="cytab-content guestbook-view">
+                      <div className="guestbook-input-card">
+                        <h4>✍️ 방명록 작성하기</h4>
+                        <div className="gb-input-row">
+                          <input
+                            type="text"
+                            className="dubuworld-input"
+                            value={guestbookInput}
+                            onChange={e => setGuestbookInput(e.target.value)}
+                            placeholder={`${displayOwnerName}님의 미니홈피에 따뜻한 응원의 한마디를 남겨보세요! ✨`}
+                            onKeyDown={e => e.key === 'Enter' && handleAddGuestbookEntry()}
+                          />
+                          <button
+                            className="dubuworld-btn primary"
+                            onClick={handleAddGuestbookEntry}
+                          >
+                            📝 남기기
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="guestbook-full-list">
+                        {displayGuestbook.map(entry => (
+                          <div key={entry.id} className="dubuworld-gb-card">
+                            <div className="gb-card-header">
+                              <div className="gb-user-info">
+                                <span className="gb-avatar">👤</span>
+                                <strong>{entry.author}</strong>
+                                <span className="gb-time">{new Date(entry.timestamp).toLocaleString()}</span>
+                              </div>
+                              {(!visitingFarm || entry.author === farmState.ownerName) && (
+                                <button
+                                  className="gb-delete-btn"
+                                  onClick={() => handleDeleteGuestbookEntry(entry.id)}
+                                  title="방명록 삭제"
+                                >
+                                  🗑️ 삭제
+                                </button>
+                              )}
+                            </div>
+                            <div className="gb-card-body">
+                              {entry.message}
+                            </div>
+                          </div>
+                        ))}
+
+                        {displayGuestbook.length === 0 && (
+                          <div className="empty-gb-box">
+                            <p>아직 방명록이 없습니다. 첫 번째 응원의 메시지를 남겨보세요! 💌</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. 스티커 꾸미기 뷰 */}
+                  {minihompyTab === 'stickers' && (
+                    <div className="cytab-content stickers-view">
+                      <div className="sticker-shop-header">
+                        <h4>🎨 두부월드 스티커 데코레이션 패널</h4>
+                        <p>원하는 스티커를 클릭하여 미니룸에 붙여보세요!</p>
+                      </div>
+
+                      <div className="sticker-palette-grid">
+                        {[
+                          { id: 'heart', icon: '💖', label: '러블리 하트' },
+                          { id: 'star', icon: '⭐', label: '반짝이 별' },
+                          { id: 'music', icon: '🎶', label: 'BGM 음표' },
+                          { id: 'acorn', icon: '🌰', label: '두부월드 둡토리' },
+                          { id: 'bolt', icon: '⚡', label: '피카츄 번개' },
+                          { id: 'balloon', icon: '🎈', label: '축하 풍선' },
+                          { id: 'cherry', icon: '🌸', label: '벚꽃 송이' },
+                          { id: 'bubble_grad', icon: '💬', label: '말풍선: 졸업 축하해!' },
+                          { id: 'bubble_level', icon: '💬', label: '말풍선: 오늘열렙!' },
+                          { id: 'trophy', icon: '🏆', label: '황금 트로피' },
+                          { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크' },
+                          { id: 'ribbon', icon: '🎀', label: '핑크 리본' }
+                        ].map(stk => (
+                          <button
+                            key={stk.id}
+                            className="sticker-palette-item"
+                            onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
+                          >
+                            <span className="stk-icon">{stk.icon}</span>
+                            <span className="stk-label">{stk.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="sticker-action-bar">
+                        <span>현재 붙인 스티커: <b>{currentStickers.length}개</b></span>
+                        {!visitingFarm && (
+                          <button
+                            className="excel-btn close"
+                            onClick={handleClearAllStickers}
+                          >
+                            🧹 스티커 모두 지우기
+                          </button>
+                        )}
+                        <button
+                          className="excel-btn primary"
+                          onClick={() => setMinihompyTab('miniroom')}
+                        >
+                          🖼️ 미니룸 보러가기 ➔
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. 스티커 꾸미기 뷰 */}
+                  {minihompyTab === 'stickers' && (
+                    <div className="cytab-content stickers-view">
+                      <div className="sticker-shop-header">
+                        <h4>🎨 두부월드 스티커 데코레이션 패널</h4>
+                        <p>원하는 스티커를 클릭하여 미니룸에 붙여보세요!</p>
+                      </div>
+
+                      <div className="sticker-palette-grid">
+                        {[
+                          { id: 'heart', icon: '💖', label: '러블리 하트' },
+                          { id: 'star', icon: '⭐', label: '반짝이 별' },
+                          { id: 'music', icon: '🎶', label: 'BGM 음표' },
+                          { id: 'acorn', icon: '🌰', label: '두부월드 둡토리' },
+                          { id: 'bolt', icon: '⚡', label: '피카츄 번개' },
+                          { id: 'balloon', icon: '🎈', label: '축하 풍선' },
+                          { id: 'cherry', icon: '🌸', label: '벚꽃 송이' },
+                          { id: 'bubble_grad', icon: '💬', label: '말풍선: 출근 축하해!' },
+                          { id: 'bubble_level', icon: '💬', label: '말풍선: 오늘열일!' },
+                          { id: 'trophy', icon: '🏆', label: '황금 트로피' },
+                          { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크' },
+                          { id: 'ribbon', icon: '🎀', label: '핑크 리본' }
+                        ].map(stk => (
+                          <button
+                            key={stk.id}
+                            className="sticker-palette-item"
+                            onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
+                          >
+                            <span className="stk-icon">{stk.icon}</span>
+                            <span className="stk-label">{stk.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="sticker-action-bar">
+                        <span>현재 붙인 스티커: <b>{currentStickers.length}개</b></span>
+                        {!visitingFarm && (
+                          <button
+                            className="excel-btn close"
+                            onClick={handleClearAllStickers}
+                          >
+                            🧹 스티커 모두 지우기
+                          </button>
+                        )}
+                        <button
+                          className="excel-btn primary"
+                          onClick={() => setMinihompyTab('miniroom')}
+                        >
+                          🖼️ 미니룸 보러가기 ➔
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. 인기농장 Top 3 뷰 */}
+                  {minihompyTab === 'top3' && (
+                    <div className="cytab-content top3-view">
+                      <div className="top3-header">
+                        <h3>🏆 실시간 인기 농장 Top 3 & 랭킹</h3>
+                        <p>전체 포켓농장 중 가장 많은 1촌 응원 하트(💖)를 받은 최고의 인기 농장 명예의 전당입니다!</p>
+                      </div>
+
+                      <div className="top3-rankings-container">
+                        {top3PopularFarms.map((farm, idx) => {
+                          const rankNum = idx + 1;
+                          const isMe = farm.username === farmState.ownerName;
+                          const crown = rankNum === 1 ? '👑 1위 🥇' : rankNum === 2 ? '🥈 2위' : '🥉 3위';
+
+                          return (
+                            <div key={farm.username} className={`popular-rank-card rank-${rankNum} ${isMe ? 'is-me' : ''}`}>
+                              <div className="rank-left">
+                                <span className="rank-crown">{crown}</span>
+                                <div className="rank-avatar-frame">
+                                  {farm.activePokemon ? (
+                                    <img
+                                      src={farm.activePokemon.sprites.showdownFront || farm.activePokemon.sprites.front}
+                                      alt={farm.activePokemon.name}
+                                    />
+                                  ) : (
+                                    <span>🏡</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="rank-center">
+                                <h3 className="rank-farm-title">
+                                  {farm.farmName} {isMe && <span className="me-badge">MY FARM</span>}
+                                </h3>
+                                <div className="rank-meta">
+                                  <span>👤 농장주: <b>{farm.username}</b></span>
+                                  <span>🎓 총 졸업: <b>{farm.graduatedCount}마리</b></span>
+                                </div>
+                              </div>
+
+                              <div className="rank-right">
+                                <div className="hearts-display">
+                                  💖 <b>{farm.heartsCount.toLocaleString()}</b> HEARTS
+                                </div>
+                                <button
+                                  className="excel-btn primary"
+                                  onClick={() => handleVisitNeighbor(farm.username)}
+                                >
+                                  🏠 미니홈피 구경가기 ➔
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* =========================================================================
             TAB 1: 🏡 내 농장 (Farm Yard)
            ========================================================================= */}
@@ -2644,145 +3523,72 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         })()}
 
         {/* =========================================================================
-            TAB 7: 🚶‍♂️ 이웃 농장 탐방 & 방명록 (Social)
+            TAB 10: 🚶‍♂️ 이웃 농장 탐방 & 방명록 (Social)
            ========================================================================= */}
-        {activeTab === 'neighbors' && (
+        {activeTab === 'neighbors' && !visitingFarm && (
           <div className="farm-social-layout">
-            {visitingFarm ? (
-              /* 이웃 농장 방문 뷰 */
-              <div className="visiting-farm-container">
-                <div className="visiting-header">
-                  <button className="excel-btn" onClick={() => setVisitingFarm(null)}>
-                    ◀ 이웃 목록으로 돌아가기
-                  </button>
-                  <h3>🏡 {visitingFarm.farm.farmName}</h3>
-                  <button className="excel-btn primary pulse" onClick={handleSendHeartToNeighbor}>
-                    💖 쓰다듬고 응원하기 (+20 코인)
-                  </button>
-                </div>
-
-                {/* 이웃 포켓몬 마당 */}
-                <div className="farm-pasture-screen">
-                  {visitingFarm.farm.activePokemon ? (
-                    <div className="farm-pokemon-stage">
-                      <img
-                        src={visitingFarm.farm.activePokemon.sprites.showdownFront || visitingFarm.farm.activePokemon.sprites.front}
-                        alt={visitingFarm.farm.activePokemon.nickname}
-                        className="farm-active-sprite"
-                      />
-                      <div className="pet-shadow"></div>
-                      <div className="pet-nametag">
-                        {visitingFarm.farm.activePokemon.nickname} (Lv.{visitingFarm.farm.activePokemon.level})
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', paddingTop: 60, color: '#64748b' }}>
-                      현재 돌보고 있는 포켓몬이 없습니다.
-                    </div>
-                  )}
-                </div>
-
-                {/* 방명록 섹션 */}
-                <div className="guestbook-section">
-                  <h4>📝 {visitingFarm.owner}님의 방명록</h4>
-                  <form onSubmit={handleAddGuestbookMessage} className="guestbook-form">
-                    <input
-                      type="text"
-                      value={guestbookInput}
-                      onChange={e => setGuestbookInput(e.target.value)}
-                      placeholder="따뜻한 한 줄 방명록을 남겨보세요! (예: 포켓몬 너무 멋져요~🐾)"
-                      maxLength={80}
-                      required
-                    />
-                    <button type="submit" className="excel-btn primary">
-                      <Send size={13} /> 남기기
-                    </button>
-                  </form>
-
-                  <div className="guestbook-entries-list">
-                    {visitingFarm.guestbook.length > 0 ? (
-                      visitingFarm.guestbook.map(entry => (
-                        <div key={entry.id} className="guestbook-item">
-                          <div className="gb-author">
-                            <strong>👤 {entry.author}</strong>
-                            <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
-                          </div>
-                          <div className="gb-message">{entry.message}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '12px' }}>
-                        아직 작성된 방명록이 없습니다. 첫 번째 방명록을 남겨보세요!
-                      </p>
-                    )}
-                  </div>
+            <div className="neighbors-list-container">
+              <div className="neighbors-header">
+                <h3>🚶‍♂️ 활성 이웃 농장 둘러보기</h3>
+                <div className="search-bar">
+                  <input
+                    type="text"
+                    value={neighborSearch}
+                    onChange={e => setNeighborSearch(e.target.value)}
+                    placeholder="친구 닉네임 검색..."
+                  />
                 </div>
               </div>
-            ) : (
-              /* 이웃 농장 목록 뷰 */
-              <div className="neighbors-list-container">
-                <div className="neighbors-header">
-                  <h3>🚶‍♂️ 활성 이웃 농장 둘러보기</h3>
-                  <div className="search-bar">
-                    <input
-                      type="text"
-                      value={neighborSearch}
-                      onChange={e => setNeighborSearch(e.target.value)}
-                      placeholder="친구 닉네임 검색..."
-                    />
-                  </div>
-                </div>
 
-                <div className="neighbors-grid">
-                  {neighborList
-                    .filter(n => n.username.toLowerCase().includes(neighborSearch.toLowerCase()))
-                    .map(neighbor => (
-                      <div key={neighbor.username} className="neighbor-card">
-                        <div className="neighbor-avatar">
-                          {neighbor.activePokemon ? (
-                            <img src={neighbor.activePokemon.sprites.front} alt={neighbor.activePokemon.name} />
-                          ) : (
-                            <span>🏡</span>
-                          )}
-                        </div>
-                        <div className="neighbor-info">
-                          <h4>{neighbor.farmName}</h4>
-                          <span className="owner-tag">농장주: {neighbor.username}</span>
-                          <div className="stats-badges">
-                            <span>🎓 {neighbor.graduatedCount}마리 졸업</span>
-                            <span>💖 {neighbor.heartsCount} 하트</span>
-                          </div>
-                        </div>
-                        <button className="excel-btn primary" onClick={() => handleVisitNeighbor(neighbor.username)}>
-                          놀러가기 ➔
-                        </button>
+              <div className="neighbors-grid">
+                {neighborList
+                  .filter(n => n.username.toLowerCase().includes(neighborSearch.toLowerCase()))
+                  .map(neighbor => (
+                    <div key={neighbor.username} className="neighbor-card">
+                      <div className="neighbor-avatar">
+                        {neighbor.activePokemon ? (
+                          <img src={neighbor.activePokemon.sprites.front} alt={neighbor.activePokemon.name} />
+                        ) : (
+                          <span>🏡</span>
+                        )}
                       </div>
-                    ))}
-
-                  {neighborList.length === 0 && (
-                    <div className="empty-yard-card" style={{ gridColumn: '1 / -1' }}>
-                      <p>현재 접속 중인 다른 이웃 농장이 없습니다. 친구를 초대해 보세요!</p>
+                      <div className="neighbor-info">
+                        <h4>{neighbor.farmName}</h4>
+                        <span className="owner-tag">농장주: {neighbor.username}</span>
+                        <div className="stats-badges">
+                          <span>🎓 {neighbor.graduatedCount}마리 졸업</span>
+                          <span>💖 {neighbor.heartsCount} 하트</span>
+                        </div>
+                      </div>
+                      <button className="excel-btn primary" onClick={() => handleVisitNeighbor(neighbor.username)}>
+                        놀러가기 ➔
+                      </button>
                     </div>
-                  )}
-                </div>
+                  ))}
 
-                {/* 내 방명록 모아보기 */}
-                <div className="my-guestbook-box">
-                  <h4>📬 내 농장에 도착한 방명록 ({farmState.guestbook.length}건)</h4>
-                  <div className="guestbook-entries-list">
-                    {farmState.guestbook.map(entry => (
-                      <div key={entry.id} className="guestbook-item">
-                        <div className="gb-author">
-                          <strong>👤 {entry.author}</strong>
-                          <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
-                        </div>
-                        <div className="gb-message">{entry.message}</div>
-                      </div>
-                    ))}
+                {neighborList.length === 0 && (
+                  <div className="empty-yard-card" style={{ gridColumn: '1 / -1' }}>
+                    <p>현재 접속 중인 다른 이웃 농장이 없습니다. 친구를 초대해 보세요!</p>
                   </div>
+                )}
+              </div>
+
+              {/* 내 방명록 모아보기 */}
+              <div className="my-guestbook-box">
+                <h4>📬 내 농장에 도착한 방명록 ({farmState.guestbook.length}건)</h4>
+                <div className="guestbook-entries-list">
+                  {farmState.guestbook.map(entry => (
+                    <div key={entry.id} className="guestbook-item">
+                      <div className="gb-author">
+                        <strong>👤 {entry.author}</strong>
+                        <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                      </div>
+                      <div className="gb-message">{entry.message}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>

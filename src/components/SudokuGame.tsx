@@ -40,6 +40,8 @@ interface SudokuUpdatePayload {
   newRank?: number | null;
 }
 
+export type MarkColor = 'none' | 'purple' | 'orange' | 'green';
+
 const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -50,12 +52,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const [fixedMask, setFixedMask] = useState<boolean[][]>(
     Array(9).fill(false).map(() => Array(9).fill(false))
   );
-  // 🟣 헷갈리는 입력칸/가설 마킹 상태 (9x9 boolean)
-  const [markedMask, setMarkedMask] = useState<boolean[][]>(
-    Array(9).fill(false).map(() => Array(9).fill(false))
+
+  // 🟣 🟠 🟢 헷갈리는 입력칸/가설 마킹 상태 (9x9 MarkColor matrix)
+  const [markedMask, setMarkedMask] = useState<MarkColor[][]>(
+    Array(9).fill('none').map(() => Array(9).fill('none'))
   );
-  // 입력 모드: 'normal' (일반 파란색) | 'marked' (헷갈림 보라색)
-  const [inputMode, setInputMode] = useState<'normal' | 'marked'>('normal');
+  // 입력 모드: 'normal' | 'purple' (보라) | 'orange' (주황) | 'green' (초록)
+  const [inputMode, setInputMode] = useState<'normal' | 'purple' | 'orange' | 'green'>('normal');
 
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [phase, setPhase] = useState<'waiting' | 'playing' | 'completed'>('waiting');
@@ -96,47 +99,64 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   }, [phase, completed]);
 
   // 마킹(헷갈림 색상) 토글 함수
-  const toggleMarkCell = React.useCallback((r: number, c: number) => {
+  const toggleMarkCell = React.useCallback((r: number, c: number, targetColor?: MarkColor) => {
     if (fixedMask[r]?.[c]) {
       setMessage('🔒 고정 문제는 마킹할 수 없습니다.');
       return;
     }
     setMarkedMask(prev => {
       const next = prev.map(row => [...row]);
-      const nextVal = !next[r][c];
+      const current = next[r][c];
+      let nextVal: MarkColor;
+
+      if (targetColor !== undefined) {
+        // 특정 색상 버튼 클릭 시: 이미 해당 색상이면 해제('none'), 아니면 해당 색상으로 변경
+        nextVal = current === targetColor ? 'none' : targetColor;
+      } else {
+        // 순환 토글 (우클릭 / M키 / 롱프레스): none -> purple -> orange -> green -> none
+        if (current === 'none') nextVal = 'purple';
+        else if (current === 'purple') nextVal = 'orange';
+        else if (current === 'orange') nextVal = 'green';
+        else nextVal = 'none';
+      }
+
       next[r][c] = nextVal;
       const cellName = `${String.fromCharCode(65 + c)}${r + 1}`;
-      if (nextVal) {
-        setMessage(`🟣 [${cellName}] 셀이 '헷갈림(보라색)'으로 표시되었습니다.`);
+      if (nextVal === 'purple') {
+        setMessage(`🟣 [${cellName}] 셀이 '헷갈림1 (보라색)'으로 표시되었습니다.`);
+      } else if (nextVal === 'orange') {
+        setMessage(`🟠 [${cellName}] 셀이 '헷갈림2 (주황색)'으로 표시되었습니다.`);
+      } else if (nextVal === 'green') {
+        setMessage(`🟢 [${cellName}] 셀이 '헷갈림3 (초록색)'으로 표시되었습니다.`);
       } else {
-        setMessage(`🔵 [${cellName}] 셀이 '일반(파란색)'으로 변경되었습니다.`);
+        setMessage(`🔵 [${cellName}] 셀이 '일반 (파란색)'으로 변경되었습니다.`);
       }
       return next;
     });
   }, [fixedMask]);
 
-  // 🟣 헷갈림 표시된 총 셀 개수
-  const totalMarkedCount = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+  // 🟣 🟠 🟢 헷갈림 표시된 총 셀 개수
+  const totalMarkedCount = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
 
-  // 1. 헷갈림 마킹(보라색)만 일반 확정(파란색)으로 전체 해제
+  // 1. 헷갈림 마킹(보라/주황/초록)만 일반 확정(파란색)으로 전체 해제
   const handleClearAllMarks = React.useCallback(() => {
-    const count = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    const count = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
     if (count === 0) {
       setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
       return;
     }
-    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
-    setMessage(`🧹 총 ${count}개 셀의 헷갈림(보라색) 표시를 일반 확정(파랑)으로 변경했습니다.`);
+    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
+    setMessage(`🧹 총 ${count}개 셀의 헷갈림 표시(보라/주황/초록)를 일반 확정(파랑)으로 변경했습니다.`);
   }, [markedMask]);
 
-  // 2. 헷갈림(보라색)으로 입력된 숫자들을 한 번에 싹 지우기 (가설 롤백)
+  // 2. 헷갈림(보라/주황/초록)으로 입력된 숫자들을 한 번에 싹 지우기 (가설 롤백)
   const handleClearAllMarkedValues = React.useCallback(() => {
-    const count = markedMask.reduce((acc, row) => acc + row.filter(Boolean).length, 0);
+    const count = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
     if (count === 0) {
       setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
       return;
     }
-    if (!window.confirm(`🟣 헷갈림(보라색)으로 입력된 ${count}개 셀의 숫자를 모두 지우시겠습니까?`)) {
+    if (!window.confirm(`🎨 헷갈림(보라/주황/초록)으로 입력된 ${count}개 셀의 숫자를 모두 지우시겠습니까?`)) {
       return;
     }
 
@@ -144,18 +164,18 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     const clearedCells: Array<{ row: number; col: number }> = [];
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        if (markedMask[r][c] && !fixedMask[r][c]) {
+        if (markedMask[r][c] !== 'none' && !fixedMask[r][c]) {
           newGrid[r][c] = 0;
           clearedCells.push({ row: r, col: c });
         }
       }
     }
     setGrid(newGrid);
-    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
+    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
     if (socket && socket.connected) {
       socket.emit('sudoku-batch-clear', { room, cells: clearedCells, username });
     }
-    setMessage(`🗑️ 헷갈림(보라색)으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 지웠습니다.`);
+    setMessage(`🗑️ 헷갈림(보라/주황/초록)으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 지웠습니다.`);
   }, [markedMask, grid, fixedMask, socket, room, username]);
 
   // 소켓 연결 및 이벤트 핸들링
@@ -222,10 +242,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
     // 헷갈림 모드이거나 이미 마킹된 상태에서 숫자를 입력할 때 마킹 상태 업데이트
     if (val !== 0) {
-      if (inputMode === 'marked') {
+      if (inputMode === 'purple' || inputMode === 'orange' || inputMode === 'green') {
         setMarkedMask(prev => {
           const next = prev.map(row => [...row]);
-          next[r][c] = true;
+          next[r][c] = inputMode;
           return next;
         });
       }
@@ -286,7 +306,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   const handleStartGame = (diff: Difficulty) => {
     setDifficulty(diff);
     setElapsedTime(0);
-    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
+    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
     socket?.emit('sudoku-start', { room, difficulty: diff });
   };
 
@@ -300,7 +320,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
   // 퍼즐 초기화
   const handleReset = () => {
-    setMarkedMask(Array(9).fill(false).map(() => Array(9).fill(false)));
+    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
     socket?.emit('sudoku-reset', { room });
   };
 
@@ -382,9 +402,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     if (c === 2 || c === 5) classes.push('border-right-thick');
     if (r === 2 || r === 5) classes.push('border-bottom-thick');
 
-    const isMarked = markedMask[r]?.[c];
-    if (isMarked) {
-      classes.push('marked');
+    const markState = markedMask[r]?.[c];
+    if (markState === 'purple') {
+      classes.push('marked', 'marked-purple');
+    } else if (markState === 'orange') {
+      classes.push('marked', 'marked-orange');
+    } else if (markState === 'green') {
+      classes.push('marked', 'marked-green');
     }
 
     if (fixedMask[r][c]) {
@@ -419,7 +443,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   };
 
   const selectedVal = selectedCell ? grid[selectedCell.r][selectedCell.c] : null;
-  const isSelectedCellMarked = selectedCell ? markedMask[selectedCell.r]?.[selectedCell.c] : false;
+  const selectedCellMarkState: MarkColor = selectedCell ? (markedMask[selectedCell.r]?.[selectedCell.c] || 'none') : 'none';
 
   return (
     <div className="sudoku-container excel-stealth-theme">
@@ -431,7 +455,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         <div className="excel-fx-icon">fx</div>
         <div className="excel-formula-input">
           {selectedCell
-            ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0}${isSelectedCellMarked ? ', [STATUS: UNSURE_HYPOTHESIS]' : ''})`
+            ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0}${selectedCellMarkState === 'purple' ? ', [STATUS: UNSURE_HYPOTHESIS_1_PURPLE]' : selectedCellMarkState === 'orange' ? ', [STATUS: UNSURE_HYPOTHESIS_2_ORANGE]' : ''})`
             : difficulty === 'god'
             ? '=ASCEND_TO_DIVINITY(Matrix=INFINITY, AI_Escargot=TRUE)'
             : difficulty === 'legendary'
@@ -495,27 +519,43 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             🏆 명예의 전당
           </button>
           {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
-            <button
-              className={`excel-btn ${isSelectedCellMarked ? 'marked-btn-active' : ''}`}
-              onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c)}
-              title="선택된 셀의 헷갈림(보라색) 색상을 전환합니다"
-            >
-              {isSelectedCellMarked ? '🟣 헷갈림 해제' : '🟣 헷갈림 표시'}
-            </button>
+            <div style={{ display: 'inline-flex', gap: '4px' }}>
+              <button
+                className={`excel-btn ${selectedCellMarkState === 'purple' ? 'marked-purple-btn-active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
+                title="선택된 셀의 헷갈림1(보라색) 색상을 전환합니다"
+              >
+                {selectedCellMarkState === 'purple' ? '🟣 보라 해제' : '🟣 헷갈림1'}
+              </button>
+              <button
+                className={`excel-btn ${selectedCellMarkState === 'orange' ? 'marked-orange-btn-active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
+                title="선택된 셀의 헷갈림2(주황색) 색상을 전환합니다"
+              >
+                {selectedCellMarkState === 'orange' ? '🟠 주황 해제' : '🟠 헷갈림2'}
+              </button>
+              <button
+                className={`excel-btn ${selectedCellMarkState === 'green' ? 'marked-green-btn-active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
+                title="선택된 셀의 헷갈림3(초록색) 색상을 전환합니다"
+              >
+                {selectedCellMarkState === 'green' ? '🟢 초록 해제' : '🟢 헷갈림3'}
+              </button>
+            </div>
           )}
           {totalMarkedCount > 0 && (
             <>
               <button
                 className="excel-btn marked-clear-btn"
                 onClick={handleClearAllMarks}
-                title="모든 헷갈림(보라색) 셀을 일반 파란색 확정으로 일괄 전환합니다. (단축키: Shift+M)"
+                title="모든 헷갈림(보라/주황/초록) 셀을 일반 파란색 확정으로 일괄 전환합니다. (단축키: Shift+M)"
               >
                 🧹 헷갈림 색상 원복 ({totalMarkedCount})
               </button>
               <button
                 className="excel-btn marked-delete-btn"
                 onClick={handleClearAllMarkedValues}
-                title="헷갈림(보라색)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
+                title="헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
               >
                 🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
               </button>
@@ -548,8 +588,14 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           <span className="legend-item user">
             <span className="legend-sample user">7</span> 확정 입력 (파랑)
           </span>
-          <span className="legend-item marked">
-            <span className="legend-sample marked">4</span> 헷갈림/가설 (보라)
+          <span className="legend-item marked-purple">
+            <span className="legend-sample marked-purple">4</span> 헷갈림1 (보라)
+          </span>
+          <span className="legend-item marked-orange">
+            <span className="legend-sample marked-orange">8</span> 헷갈림2 (주황)
+          </span>
+          <span className="legend-item marked-green">
+            <span className="legend-sample marked-green">2</span> 헷갈림3 (초록)
           </span>
           <span className="legend-item conflict">
             <span className="legend-sample conflict">3</span> 중복 오류 (빨강)
@@ -584,8 +630,12 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                       title={
                         fixedMask[r][c]
                           ? '고정 문제 셀'
-                          : markedMask[r][c]
-                          ? '헷갈림(가설) 표시된 셀 - 우클릭/길게누르기로 해제'
+                          : markedMask[r][c] === 'purple'
+                          ? '헷갈림1(보라색) 표시된 셀 - 우클릭/길게누르기로 전환'
+                          : markedMask[r][c] === 'orange'
+                          ? '헷갈림2(주황색) 표시된 셀 - 우클릭/길게누르기로 전환'
+                          : markedMask[r][c] === 'green'
+                          ? '헷갈림3(초록색) 표시된 셀 - 우클릭/길게누르기로 전환'
                           : '클릭하여 선택 | 우클릭/길게누르기로 헷갈림 표시'
                       }
                     >
@@ -615,7 +665,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: '6px' }}>
                 <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🔢 수식 입력 패드</h3>
                 
-                {/* 입력 모드 토글 (일반 파랑 vs 헷갈림 보라) */}
+                {/* 입력 모드 토글 (일반 파랑 vs 헷갈림 보라/주황/초록) */}
                 <div className="input-mode-toggle-group">
                   <button
                     type="button"
@@ -627,11 +677,27 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   </button>
                   <button
                     type="button"
-                    className={`mode-toggle-btn ${inputMode === 'marked' ? 'active-marked' : ''}`}
-                    onClick={() => setInputMode('marked')}
-                    title="헷갈리는 가설 숫자 입력 모드 (보라색)"
+                    className={`mode-toggle-btn ${inputMode === 'purple' ? 'active-purple' : ''}`}
+                    onClick={() => setInputMode('purple')}
+                    title="헷갈림1 가설 숫자 입력 모드 (보라색)"
                   >
-                    🟣 헷갈림 모드
+                    🟣 헷갈림1 (보라)
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-toggle-btn ${inputMode === 'orange' ? 'active-orange' : ''}`}
+                    onClick={() => setInputMode('orange')}
+                    title="헷갈림2 가설 숫자 입력 모드 (주황색)"
+                  >
+                    🟠 헷갈림2 (주황)
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-toggle-btn ${inputMode === 'green' ? 'active-green' : ''}`}
+                    onClick={() => setInputMode('green')}
+                    title="헷갈림3 가설 숫자 입력 모드 (초록색)"
+                  >
+                    🟢 헷갈림3 (초록)
                   </button>
                 </div>
               </div>
@@ -641,7 +707,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   <button
                     key={num}
                     type="button"
-                    className={`numpad-btn ${inputMode === 'marked' ? 'marked-mode-btn' : ''}`}
+                    className={`numpad-btn ${inputMode === 'purple' ? 'purple-mode-btn' : inputMode === 'orange' ? 'orange-mode-btn' : inputMode === 'green' ? 'green-mode-btn' : ''}`}
                     onClick={() => handleNumberInput(num)}
                     disabled={completed}
                   >
@@ -661,14 +727,32 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   🧽 셀 지우기
                 </button>
                 {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
-                  <button
-                    type="button"
-                    className={`excel-btn ${isSelectedCellMarked ? 'marked-btn-active' : ''}`}
-                    onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c)}
-                    style={{ flex: 1, padding: '6px 8px' }}
-                  >
-                    {isSelectedCellMarked ? '🟣 색상 원복 (파랑)' : '🟣 헷갈림 표시 (보라)'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '3px', flex: 3 }}>
+                    <button
+                      type="button"
+                      className={`excel-btn ${selectedCellMarkState === 'purple' ? 'marked-purple-btn-active' : ''}`}
+                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
+                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
+                    >
+                      {selectedCellMarkState === 'purple' ? '🟣 보라 해제' : '🟣 헷갈림1'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`excel-btn ${selectedCellMarkState === 'orange' ? 'marked-orange-btn-active' : ''}`}
+                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
+                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
+                    >
+                      {selectedCellMarkState === 'orange' ? '🟠 주황 해제' : '🟠 헷갈림2'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`excel-btn ${selectedCellMarkState === 'green' ? 'marked-green-btn-active' : ''}`}
+                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
+                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
+                    >
+                      {selectedCellMarkState === 'green' ? '🟢 초록 해제' : '🟢 헷갈림3'}
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -679,7 +763,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     className="excel-btn marked-clear-btn"
                     onClick={handleClearAllMarks}
                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
-                    title="모든 헷갈림(보라색) 셀을 일반 파란색 확정으로 일괄 전환합니다."
+                    title="모든 헷갈림(보라/주황/초록) 셀을 일반 파란색 확정으로 일괄 전환합니다."
                   >
                     🧹 헷갈림 색상 원복 ({totalMarkedCount})
                   </button>
@@ -688,7 +772,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     className="excel-btn marked-delete-btn"
                     onClick={handleClearAllMarkedValues}
                     style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
-                    title="헷갈림(보라색)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다."
+                    title="헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다."
                   >
                     🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
                   </button>
@@ -706,7 +790,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
         <div className="sudoku-guide-tip">
           <span>💡 <b>숫자 입력</b>: 가상패드 또는 키보드(1~9) | <b>지우기</b>: Backspace / 0</span>
-          <span>🎨 <b>헷갈림(보라색)</b>: 🖱️ 우클릭(M키) | 📱 길게 누르기 | <b>일괄삭제</b>: Shift+Delete | <b>일괄원복</b>: Shift+M</span>
+          <span>🎨 <b>헷갈림 색상 (보라🟣 / 주황🟠 / 초록🟢)</b>: 🖱️ 우클릭/M키 (토글) | 📱 길게 누르기 | <b>일괄삭제</b>: Shift+Delete | <b>일괄원복</b>: Shift+M</span>
         </div>
       </div>
 

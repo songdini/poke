@@ -288,7 +288,7 @@
   border-color: #93c5fd;
 }
 
-.legend-sample.marked {
+.legend-sample.marked-purple {
   background: #faf5ff;
   color: #7e22ce;
   font-weight: 900;
@@ -296,7 +296,7 @@
   position: relative;
 }
 
-.legend-sample.marked::after {
+.legend-sample.marked-purple::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -304,6 +304,44 @@
   width: 4px;
   height: 4px;
   background-color: #9333ea;
+  border-radius: 50%;
+}
+
+.legend-sample.marked-orange {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 900;
+  border-color: #fed7aa;
+  position: relative;
+}
+
+.legend-sample.marked-orange::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background-color: #ea580c;
+  border-radius: 50%;
+}
+
+.legend-sample.marked-green {
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 900;
+  border-color: #bbf7d0;
+  position: relative;
+}
+
+.legend-sample.marked-green::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background-color: #16a34a;
   border-radius: 50%;
 }
 
@@ -365,12 +403,12 @@
   border-radius: 50%;
 }
 
-/* 🟣 헷갈리는 입력칸 / 가설 표시 (선명한 바이올렛 퍼플, 부드러운 라벤더 배경, 우상단 퍼플 포인트) */
-.sudoku-cell.marked {
+/* 🟣 헷갈림1: 바이올렛 퍼플 (Purple) */
+.sudoku-cell.marked-purple {
   background: #faf5ff;
 }
 
-.sudoku-cell.marked::after {
+.sudoku-cell.marked-purple::after {
   content: '';
   position: absolute;
   top: 3px;
@@ -382,15 +420,71 @@
   box-shadow: 0 0 2px rgba(147, 51, 234, 0.4);
 }
 
-.sudoku-cell.user-input.marked {
+.sudoku-cell.user-input.marked-purple {
   background: #faf5ff;
   color: #7e22ce;
   font-weight: 800;
   font-size: 1.15rem;
 }
 
-.sudoku-cell.user-input.marked::after {
+.sudoku-cell.user-input.marked-purple::after {
   background-color: #9333ea;
+}
+
+/* 🟠 헷갈림2: 앰버 오렌지 (Orange) */
+.sudoku-cell.marked-orange {
+  background: #fff7ed;
+}
+
+.sudoku-cell.marked-orange::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #ea580c;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(234, 88, 12, 0.4);
+}
+
+.sudoku-cell.user-input.marked-orange {
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.sudoku-cell.user-input.marked-orange::after {
+  background-color: #ea580c;
+}
+
+/* 🟢 헷갈림3: 에메랄드 그린 (Green) */
+.sudoku-cell.marked-green {
+  background: #f0fdf4;
+}
+
+.sudoku-cell.marked-green::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #16a34a;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(22, 163, 74, 0.4);
+}
+
+.sudoku-cell.user-input.marked-green {
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.sudoku-cell.user-input.marked-green::after {
+  background-color: #16a34a;
 }
 
 /* 선택된 셀 (선명한 블루 하이라이트) */
@@ -402,9 +496,23 @@
 }
 
 /* 선택된 마킹 셀 */
-.sudoku-cell.marked.selected {
+.sudoku-cell.marked-purple.selected {
   background: #f3e8ff !important;
   outline: 2.5px solid #9333ea !important;
+  outline-offset: -2px;
+  z-index: 3;
+}
+
+.sudoku-cell.marked-orange.selected {
+  background: #ffedd5 !important;
+  outline: 2.5px solid #ea580c !important;
+  outline-offset: -2px;
+  z-index: 3;
+}
+
+.sudoku-cell.marked-green.selected {
+  background: #dcfce7 !important;
+  outline: 2.5px solid #16a34a !important;
   outline-offset: -2px;
   z-index: 3;
 }
@@ -418,12 +526,28 @@
   background: #e0f2fe;
 }
 
-.sudoku-cell.marked.related {
+.sudoku-cell.marked-purple.related {
   background: #fbf8ff;
 }
 
-.sudoku-cell.user-input.marked.related {
+.sudoku-cell.user-input.marked-purple.related {
   background: #f5edff;
+}
+
+.sudoku-cell.marked-orange.related {
+  background: #fffaf5;
+}
+
+.sudoku-cell.user-input.marked-orange.related {
+  background: #ffedd5;
+}
+
+.sudoku-cell.marked-green.related {
+  background: #f7fee7;
+}
+
+.sudoku-cell.user-input.marked-green.related {
+  background: #dcfce7;
 }
 
 /* 같은 숫자 하이라이트 (선명한 골드 옐로우) */
@@ -495,23 +619,61 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.mode-toggle-btn.active-marked {
+.mode-toggle-btn.active-purple {
   background: #ffffff;
   color: #7e22ce;
   font-weight: 700;
   box-shadow: 0 1px 3px rgba(126, 34, 206, 0.15);
 }
 
-.excel-btn.marked-btn-active {
+.mode-toggle-btn.active-orange {
+  background: #ffffff;
+  color: #c2410c;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(194, 65, 12, 0.15);
+}
+
+.mode-toggle-btn.active-green {
+  background: #ffffff;
+  color: #15803d;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.15);
+}
+
+.excel-btn.marked-purple-btn-active {
   background: #f3e8ff;
   border-color: #9333ea;
   color: #6b21a8;
   font-weight: 700;
 }
 
-.excel-btn.marked-btn-active:hover:not(:disabled) {
+.excel-btn.marked-purple-btn-active:hover:not(:disabled) {
   background: #e9d5ff;
   border-color: #7e22ce;
+}
+
+.excel-btn.marked-orange-btn-active {
+  background: #ffedd5;
+  border-color: #ea580c;
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.excel-btn.marked-orange-btn-active:hover:not(:disabled) {
+  background: #fed7aa;
+  border-color: #c2410c;
+}
+
+.excel-btn.marked-green-btn-active {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.excel-btn.marked-green-btn-active:hover:not(:disabled) {
+  background: #bbf7d0;
+  border-color: #15803d;
 }
 
 .excel-btn.marked-clear-btn {
@@ -563,16 +725,40 @@
   border-color: #0b5a2f;
 }
 
-.numpad-btn.marked-mode-btn {
+.numpad-btn.purple-mode-btn {
   border-color: #d8b4fe;
   color: #7e22ce;
   background: #faf5ff;
 }
 
-.numpad-btn.marked-mode-btn:hover {
+.numpad-btn.purple-mode-btn:hover {
   background: #9333ea;
   color: #ffffff;
   border-color: #7e22ce;
+}
+
+.numpad-btn.orange-mode-btn {
+  border-color: #fed7aa;
+  color: #c2410c;
+  background: #fff7ed;
+}
+
+.numpad-btn.orange-mode-btn:hover {
+  background: #ea580c;
+  color: #ffffff;
+  border-color: #c2410c;
+}
+
+.numpad-btn.green-mode-btn {
+  border-color: #bbf7d0;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.numpad-btn.green-mode-btn:hover {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
 }
 
 .numpad-action-row {
