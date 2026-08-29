@@ -3198,38 +3198,70 @@ export function saveFarmState(state: FarmState): void {
   }
 }
 
-// 🌟 브라우저 및 로컬에 저장된 실제 유저 농장 목록 전체 스캔
+// 🌟 브라우저 및 로컬에 저장된 실제 유저 농장 목록 전체 스캔 (최신 프로필 연동)
 export function getAllStoredFarms(): NeighborFarmData[] {
   const farmMap = new Map<string, NeighborFarmData>();
 
   try {
+    // 1. 개별 농장 키 스캔 (FARM_STORAGE_KEY_xxx)
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
-      if (key.startsWith(FARM_STORAGE_KEY) || key === FARM_CURRENT_SAVE_KEY) {
+      if (key.startsWith(FARM_STORAGE_KEY) && key !== FARM_CURRENT_SAVE_KEY) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
         try {
           const state = JSON.parse(raw) as FarmState;
           if (state && state.ownerName && (state.isInitialized || state.activePokemon || (state.graduatedPokemon && state.graduatedPokemon.length > 0))) {
             const cleanUser = state.ownerName.trim();
-            if (!farmMap.has(cleanUser) || (state.heartsCount || 0) > (farmMap.get(cleanUser)?.heartsCount || 0)) {
-              farmMap.set(cleanUser, {
-                username: cleanUser,
-                farmName: state.farmName || `${cleanUser}의 포켓농장`,
-                activePokemon: state.activePokemon || null,
-                graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
-                heartsCount: state.heartsCount || 0,
-                bgTheme: state.bgTheme || 'classic',
-                statusMsg: state.statusMsg || '',
-                isOnline: true
-              });
-            }
+            farmMap.set(cleanUser, {
+              username: cleanUser,
+              farmName: state.farmName || `${cleanUser}님의 포켓농장`,
+              activePokemon: state.activePokemon || null,
+              reservePokemon: state.reservePokemon || [],
+              graduatedPokemon: state.graduatedPokemon || [],
+              graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
+              heartsCount: state.heartsCount || 0,
+              bgTheme: state.bgTheme || 'classic',
+              stickers: state.stickers || [],
+              pokemonPlacements: state.pokemonPlacements || {},
+              statusMsg: state.statusMsg || '',
+              todayCount: state.todayCount || 0,
+              totalCount: state.totalCount || 0,
+              isOnline: true
+            });
           }
         } catch (e) {
           // ignore error
         }
       }
+    }
+
+    // 2. 현재 활성 세이브 키(FARM_CURRENT_SAVE_KEY)를 최우선 덮어씌워 최신 상태 보장
+    const currentRaw = localStorage.getItem(FARM_CURRENT_SAVE_KEY);
+    if (currentRaw) {
+      try {
+        const state = JSON.parse(currentRaw) as FarmState;
+        if (state && state.ownerName && (state.isInitialized || state.activePokemon || (state.graduatedPokemon && state.graduatedPokemon.length > 0))) {
+          const cleanUser = state.ownerName.trim();
+          farmMap.set(cleanUser, {
+            username: cleanUser,
+            farmName: state.farmName || `${cleanUser}님의 포켓농장`,
+            activePokemon: state.activePokemon || null,
+            reservePokemon: state.reservePokemon || [],
+            graduatedPokemon: state.graduatedPokemon || [],
+            graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
+            heartsCount: state.heartsCount || 0,
+            bgTheme: state.bgTheme || 'classic',
+            stickers: state.stickers || [],
+            pokemonPlacements: state.pokemonPlacements || {},
+            statusMsg: state.statusMsg || '',
+            todayCount: state.todayCount || 0,
+            totalCount: state.totalCount || 0,
+            isOnline: true
+          });
+        }
+      } catch (e) {}
     }
   } catch (err) {
     console.error('Failed to scan local farms:', err);

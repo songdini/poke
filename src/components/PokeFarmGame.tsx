@@ -1857,9 +1857,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     });
   };
 
-  // ⌨️ 단축키 [C] 입력 시 화면 어디서든 포켓몬 쓰다듬기 처리
+  // ⌨️ 단축키 [C] 입력 시 화면 어디서든 포켓몬 쓰다듬기 처리 (꾹 누르기 반복 차단)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 꾹 누르고 있을 때 발생하는 OS 키보드 자동 반복(e.repeat) 무조건 차단 (1회 누를 때마다 1번만 발동)
+      if (e.repeat) return;
+
       // 텍스트 입력창(input, textarea 등)에 포커스가 있을 때는 단축키 무시
       const target = e.target as HTMLElement;
       if (
@@ -3069,9 +3072,25 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             <span className="sheet1-panel-icon">🏆</span>
             <div className="sheet1-panel-title-box">
               <h3>실시간 인기 포켓농장 TOP 3 (하트 랭킹)</h3>
-              <p>전체 포켓농장 실제 유저들의 1촌 응원 하트(💖) 실시간 명예의 전당</p>
+              <p>전체 포켓농장 유저들의 1촌 응원 하트(💖) 실시간 명예의 전당</p>
             </div>
           </div>
+          <button
+            type="button"
+            className="social-refresh-btn"
+            onClick={() => {
+              if (socket && socket.connected) {
+                socket.emit('farm-get-list');
+                socket.emit('farm-get-top3');
+              }
+              const localFarms = getAllStoredFarms();
+              setNeighborList(localFarms.filter(f => f.username !== farmState.ownerName));
+              showAlert('🔄 이웃 농장 목록을 최신 상태로 새로고침했습니다!', 'info');
+            }}
+            title="목록 새로고침"
+          >
+            🔄 새로고침
+          </button>
         </div>
 
         {top3RealFarms.length > 0 ? (
@@ -3079,32 +3098,48 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             {top3RealFarms.map((farm, idx) => {
               const rankNum = idx + 1;
               const crown = rankNum === 1 ? '🥇 1위' : rankNum === 2 ? '🥈 2위' : '🥉 3위';
+              const pmon = farm.activePokemon;
               return (
                 <div key={farm.username} className={`sheet1-farm-card rank-${rankNum}`}>
-                  <span className="sheet1-rank-badge">{crown}</span>
+                  <div className="sheet1-card-top-bar">
+                    <span className="sheet1-rank-badge">{crown}</span>
+                    <span className="sheet1-heart-pill">💖 {farm.heartsCount.toLocaleString()}개</span>
+                  </div>
+
                   <div className="sheet1-farm-avatar-box">
-                    {farm.activePokemon ? (
-                      <img
-                        src={farm.activePokemon.sprites.showdownFront || farm.activePokemon.sprites.front}
-                        alt={farm.activePokemon.name}
-                      />
+                    {pmon ? (
+                      <div className="sheet1-avatar-container">
+                        {pmon.isShiny && <span className="sheet1-shiny-tag">✨ SHINY</span>}
+                        <img
+                          src={pmon.sprites.showdownFront || pmon.sprites.front}
+                          alt={pmon.nickname || pmon.name}
+                          className="sheet1-avatar-sprite"
+                        />
+                        <span className="sheet1-poke-level-badge">
+                          Lv.{pmon.level} {pmon.nickname || pmon.name}
+                        </span>
+                      </div>
                     ) : (
-                      <span style={{ fontSize: '2rem' }}>🏡</span>
+                      <div className="sheet1-empty-avatar">🏡 포켓농장</div>
                     )}
                   </div>
+
                   <div className="sheet1-farm-info">
                     <div className="sheet1-farm-name" title={farm.farmName}>{farm.farmName}</div>
                     <div className="sheet1-farm-owner">👤 농장주: <b>{farm.username}</b></div>
+                    <div className="sheet1-farm-status-bubble">
+                      💬 "{farm.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵'}"
+                    </div>
                     <div className="sheet1-farm-stats">
-                      <span className="hearts">💖 {farm.heartsCount.toLocaleString()}개</span>
-                      <span className="graduated">🎓 {farm.graduatedCount}마리 졸업</span>
+                      <span className="stat-pill diplomas">🎓 {farm.graduatedCount}마리 졸업</span>
                     </div>
                   </div>
+
                   <button
                     className="sheet1-visit-btn"
                     onClick={() => handleVisitNeighbor(farm.username)}
                   >
-                    🏠 미니홈피 구경가기 ➔
+                    🏠 미니홈피 파도타기 ➔
                   </button>
                 </div>
               );
@@ -3120,64 +3155,111 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       {/* 전체 이웃 둘러보기 및 검색 */}
       <div className="neighbors-list-container">
         <div className="neighbors-header">
-          <h3>👥 전체 이웃 농장 파도타기 ({neighborList.length}명)</h3>
-          <div className="search-bar">
+          <div className="neighbors-title-box">
+            <h3>👥 전체 이웃 농장 파도타기 ({neighborList.length}명)</h3>
+            <span className="neighbors-subtitle">다른 농장주의 미니홈피와 미니룸을 구경하고 응원 하트를 선물해보세요!</span>
+          </div>
+          <div className="neighbors-search-box">
+            <span className="search-icon">🔍</span>
             <input
               type="text"
               value={neighborSearch}
               onChange={e => setNeighborSearch(e.target.value)}
               placeholder="친구 닉네임 / 농장 이름 검색..."
             />
+            {neighborSearch && (
+              <button className="search-clear-btn" onClick={() => setNeighborSearch('')}>✕</button>
+            )}
           </div>
         </div>
 
         <div className="neighbors-grid">
           {neighborList
             .filter(n => n.username.toLowerCase().includes(neighborSearch.toLowerCase()) || (n.farmName && n.farmName.toLowerCase().includes(neighborSearch.toLowerCase())))
-            .map(neighbor => (
-              <div key={neighbor.username} className="neighbor-card">
-                <div className="neighbor-avatar">
-                  {neighbor.activePokemon ? (
-                    <img src={neighbor.activePokemon.sprites.front} alt={neighbor.activePokemon.name} />
-                  ) : (
-                    <span>🏡</span>
-                  )}
-                </div>
-                <div className="neighbor-info">
-                  <h4>{neighbor.farmName}</h4>
-                  <span className="owner-tag">농장주: {neighbor.username}</span>
-                  <div className="stats-badges">
-                    <span>🎓 {neighbor.graduatedCount}마리 졸업</span>
-                    <span>💖 {neighbor.heartsCount} 하트</span>
+            .map(neighbor => {
+              const pmon = neighbor.activePokemon;
+              return (
+                <div key={neighbor.username} className="neighbor-card">
+                  <div className="neighbor-avatar-box">
+                    {pmon ? (
+                      <div className="neighbor-avatar-wrapper">
+                        {pmon.isShiny && <span className="neighbor-shiny-dot" title="이로치 포켓몬">✨</span>}
+                        <img
+                          src={pmon.sprites.showdownFront || pmon.sprites.front}
+                          alt={pmon.nickname || pmon.name}
+                          className="neighbor-sprite"
+                        />
+                      </div>
+                    ) : (
+                      <div className="neighbor-empty-sprite">🏡</div>
+                    )}
+                  </div>
+
+                  <div className="neighbor-info">
+                    <div className="neighbor-name-row">
+                      <h4 className="neighbor-farm-title" title={neighbor.farmName}>{neighbor.farmName}</h4>
+                    </div>
+                    <div className="neighbor-owner-row">
+                      <span className="neighbor-owner-badge">👤 {neighbor.username}</span>
+                      {pmon && (
+                        <span className="neighbor-poke-badge">
+                          Lv.{pmon.level} {pmon.nickname || pmon.name}
+                        </span>
+                      )}
+                    </div>
+                    {neighbor.statusMsg && (
+                      <p className="neighbor-status-text">"{neighbor.statusMsg}"</p>
+                    )}
+                    <div className="stats-badges">
+                      <span className="stat-badge hearts">💖 {neighbor.heartsCount} 하트</span>
+                      <span className="stat-badge diplomas">🎓 {neighbor.graduatedCount}마리</span>
+                    </div>
+                  </div>
+
+                  <div className="neighbor-action-box">
+                    <button
+                      className="neighbor-visit-action-btn"
+                      onClick={() => handleVisitNeighbor(neighbor.username)}
+                    >
+                      파도타기 ➔
+                    </button>
                   </div>
                 </div>
-                <button className="excel-btn primary" onClick={() => handleVisitNeighbor(neighbor.username)}>
-                  놀러가기 ➔
-                </button>
-              </div>
-            ))}
+              );
+            })}
 
           {neighborList.length === 0 && (
             <div className="empty-yard-card" style={{ gridColumn: '1 / -1' }}>
-              <p>현재 접속 중인 다른 이웃 농장이 없습니다. 친구를 초대해 보세요!</p>
+              <div style={{ fontSize: '2.5rem', marginBottom: 6 }}>👥</div>
+              <h4>아직 등록된 다른 이웃 농장이 없습니다</h4>
+              <p>친구들을 포켓농장으로 초대하여 함께 서로의 미니홈피를 방문해 보세요!</p>
             </div>
           )}
         </div>
 
         {/* 내 방명록 모아보기 */}
         <div className="my-guestbook-box">
-          <h4>📬 내 농장에 도착한 방명록 ({farmState.guestbook.length}건)</h4>
-          <div className="guestbook-entries-list">
-            {farmState.guestbook.map(entry => (
-              <div key={entry.id} className="guestbook-item">
-                <div className="gb-author">
-                  <strong>👤 {entry.author}</strong>
-                  <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
-                </div>
-                <div className="gb-message">{entry.message}</div>
-              </div>
-            ))}
+          <div className="my-gb-header">
+            <h4>📬 내 농장에 도착한 최근 방명록 ({farmState.guestbook.length}건)</h4>
+            <span className="my-gb-subtitle">이웃들이 남겨준 따뜻한 응원의 한마디입니다.</span>
           </div>
+          {farmState.guestbook.length > 0 ? (
+            <div className="guestbook-entries-list">
+              {farmState.guestbook.map(entry => (
+                <div key={entry.id} className="guestbook-item">
+                  <div className="gb-author">
+                    <strong>👤 {entry.author}</strong>
+                    <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                  </div>
+                  <div className="gb-message">{entry.message}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="gb-empty-placeholder">
+              <p>아직 방명록이 비어있습니다. 이웃 농장에 먼저 방명록을 남겨 1촌을 맺어보세요! ✨</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -3438,10 +3520,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       🎨 스티커 꾸미기
                     </button>
                     <button
-                      className={`cytab ${minihompyTab === 'neighbors' ? 'active' : ''}`}
+                      className={`cytab neighbors-tab ${minihompyTab === 'neighbors' ? 'active' : ''}`}
                       onClick={() => setMinihompyTab('neighbors')}
                     >
-                      👥 이웃 파도타기
+                      ✨ 👥 이웃 파도타기
                     </button>
                   </div>
 

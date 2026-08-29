@@ -1100,128 +1100,506 @@
 .farm-social-layout {
   display: flex;
   flex-direction: column;
+  gap: 18px;
+}
+
+/* 🏆 실시간 인기 포켓농장 TOP 3 패널 */
+.sheet1-popular-farms-panel {
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1.5px solid #bbf7d0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+}
+
+.sheet1-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sheet1-panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet1-panel-icon {
+  font-size: 1.5rem;
+}
+
+.sheet1-panel-title-box h3 {
+  margin: 0 0 2px;
+  font-size: 1.08rem;
+  font-weight: 900;
+  color: #065f46;
+}
+
+.sheet1-panel-title-box p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #059669;
+}
+
+.social-refresh-btn {
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0284c7;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
+  transition: all 0.15s ease;
+}
+
+.social-refresh-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.sheet1-top3-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
+}
+
+.sheet1-farm-card {
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.sheet1-farm-card:hover {
+  transform: translateY(-3px);
+}
+
+.sheet1-farm-card.rank-1 {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #facc15;
+  box-shadow: 0 6px 18px rgba(234, 179, 8, 0.2);
+}
+
+.sheet1-farm-card.rank-2 {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgba(100, 116, 139, 0.12);
+}
+
+.sheet1-farm-card.rank-3 {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 2px solid #fdba74;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.15);
+}
+
+.sheet1-card-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sheet1-rank-badge {
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.sheet1-heart-pill {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #e11d48;
+  background: #ffffff;
+  padding: 3px 10px;
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(225, 29, 72, 0.12);
+}
+
+.sheet1-farm-avatar-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.sheet1-avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.sheet1-shiny-tag {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.sheet1-avatar-sprite {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  animation: pet-bounce 2.6s infinite ease-in-out;
+}
+
+.sheet1-poke-level-badge {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-top: 4px;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+}
+
+.sheet1-empty-avatar {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.sheet1-farm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sheet1-farm-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet1-farm-owner {
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.sheet1-farm-status-bubble {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  color: #475569;
+  font-style: italic;
+  line-height: 1.35;
+  margin: 2px 0;
+}
+
+.sheet1-farm-stats {
+  display: flex;
+  gap: 6px;
+  font-size: 0.74rem;
+}
+
+.stat-pill.diplomas {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.sheet1-visit-btn {
+  width: 100%;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+  transition: all 0.15s ease;
+}
+
+.sheet1-visit-btn:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  transform: translateY(-1px);
+}
+
+.sheet1-empty-farms {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+/* 👥 전체 이웃 목록 */
+.neighbors-list-container {
+  background: #ffffff;
+  border: 1.5px solid #e0f2fe;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
 .neighbors-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
   flex-wrap: wrap;
+  gap: 12px;
+}
+
+.neighbors-title-box h3 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0369a1;
+}
+
+.neighbors-subtitle {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.neighbors-search-box {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 6px 12px;
   gap: 8px;
+  width: 260px;
+  max-width: 100%;
+}
+
+.neighbors-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.82rem;
+  flex: 1;
+  color: #1e293b;
+}
+
+.search-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 0.8rem;
 }
 
 .neighbors-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
 }
 
 .neighbor-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  transition: all 0.2s ease;
 }
 
-.neighbor-avatar img {
-  width: 44px;
-  height: 44px;
+.neighbor-card:hover {
+  background: #ffffff;
+  border-color: #0284c7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.12);
+}
+
+.neighbor-avatar-box {
+  width: 60px;
+  height: 60px;
+  background: #ffffff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.neighbor-avatar-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neighbor-shiny-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 0.75rem;
+}
+
+.neighbor-sprite {
+  width: 52px;
+  height: 52px;
   object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.neighbor-empty-sprite {
+  font-size: 1.8rem;
 }
 
 .neighbor-info {
   flex: 1;
+  min-width: 0;
 }
 
-.neighbor-info h4 {
-  margin: 0;
-  font-size: 0.85rem;
+.neighbor-farm-title {
+  margin: 0 0 2px;
+  font-size: 0.88rem;
   font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.owner-tag {
-  font-size: 0.7rem;
+.neighbor-owner-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.neighbor-owner-badge {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.neighbor-poke-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+.neighbor-status-text {
+  margin: 2px 0 4px;
+  font-size: 0.74rem;
   color: #64748b;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.stats-badges {
+.neighbor-card .stats-badges {
   display: flex;
   gap: 4px;
-  font-size: 0.65rem;
-  color: #475569;
-  font-weight: 700;
   margin-top: 2px;
+}
+
+.stat-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.stat-badge.hearts {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.stat-badge.diplomas {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.neighbor-visit-action-btn {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.neighbor-visit-action-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
 }
 
 .my-guestbook-box {
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 18px;
 }
 
-.guestbook-section {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 12px;
+.my-gb-header {
+  margin-bottom: 12px;
 }
 
-.guestbook-form {
-  display: flex;
-  gap: 6px;
-  margin: 10px 0;
-}
-
-.guestbook-form input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.guestbook-entries-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.guestbook-item {
-  background: #f8fafc;
-  border: 1px solid #f1f5f9;
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.gb-author {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.gb-message {
-  font-size: 0.8rem;
+.my-gb-header h4 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+  font-weight: 900;
   color: #0f172a;
 }
 
-.visiting-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+.my-gb-subtitle {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.gb-empty-placeholder {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.8rem;
 }
 
 /* =========================================================================
@@ -4095,6 +4473,83 @@
   color: #ffffff;
   border-color: #0284c7;
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+/* ✨ 이웃 파도타기 탭 강조 반짝임 & 네온 글로우 테두리 효과 */
+.cytab.neighbors-tab {
+  position: relative;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  border: 1.5px solid #38bdf8;
+  color: #0369a1;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4), inset 0 0 6px rgba(56, 189, 248, 0.15);
+  animation: cytab-pulse-glow 2s infinite ease-in-out;
+  overflow: hidden;
+}
+
+.cytab.neighbors-tab::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.7) 40%,
+    rgba(56, 189, 248, 0.6) 50%,
+    rgba(255, 255, 255, 0.7) 60%,
+    transparent 80%
+  );
+  transform: rotate(25deg);
+  animation: cytab-shimmer 3s infinite linear;
+  pointer-events: none;
+}
+
+.cytab.neighbors-tab:hover {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border-color: #0284c7;
+  color: #075985;
+  box-shadow: 0 0 16px rgba(2, 132, 199, 0.55), inset 0 0 8px rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+.cytab.neighbors-tab.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.65), 0 2px 8px rgba(2, 132, 199, 0.4);
+  animation: cytab-active-glow 1.8s infinite ease-in-out;
+}
+
+@keyframes cytab-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.35), inset 0 0 4px rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.75), inset 0 0 8px rgba(56, 189, 248, 0.3);
+    border-color: #0284c7;
+  }
+}
+
+@keyframes cytab-active-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5), 0 2px 8px rgba(2, 132, 199, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.9), 0 4px 12px rgba(2, 132, 199, 0.6);
+  }
+}
+
+@keyframes cytab-shimmer {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(150%) rotate(25deg);
+  }
 }
 
 .dubuworld-welcome-banner {
