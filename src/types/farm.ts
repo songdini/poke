@@ -90,6 +90,10 @@ export interface GraduationDiploma {
   totalDays: number;
   jobsDone: number;
   title: string;
+  evolutionChain?: EvolutionStage[];
+  selectedFormIndex?: number; // 진화 단계 인덱스 (0: 아기/기본 폼, 1: 1단 진화, 2: 최종 진화...)
+  displaySprite?: string;
+  displayName?: string;
 }
 
 export interface ExpeditionArea {

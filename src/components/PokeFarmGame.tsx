@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -46,76 +46,121 @@ export const ARCADE_GAMES = [
 ];
 
 export const DIVERSE_STICKERS = [
-  // 💖 1. 감성 & 두부월드 추억 (Emotional & Nostalgia)
-  { id: 'heart', icon: '💖', label: '러블리 하트', category: 'emotional' },
-  { id: 'heart_sparkle', icon: '💝', label: '리본 하트', category: 'emotional' },
-  { id: 'star', icon: '⭐', label: '반짝이 별', category: 'emotional' },
-  { id: 'acorn', icon: '🌰', label: '두부월드 둡토리', category: 'emotional' },
-  { id: 'ribbon', icon: '🎀', label: '핑크 리본', category: 'emotional' },
-  { id: 'flower_cherry', icon: '🌸', label: '벚꽃 송이', category: 'emotional' },
-  { id: 'flower_rose', icon: '🌹', label: '빨간 장미', category: 'emotional' },
-  { id: 'flower_sun', icon: '🌻', label: '해바라기', category: 'emotional' },
-  { id: 'love_letter', icon: '💌', label: '러브레터', category: 'emotional' },
-  { id: 'music_note', icon: '🎶', label: 'BGM 음표', category: 'emotional' },
-  { id: 'candle', icon: '🕯️', label: '아늑한 촛불', category: 'emotional' },
-  { id: 'coffee', icon: '☕', label: '따뜻한 커피', category: 'emotional' },
-  { id: 'camera', icon: '📷', label: '폴라로이드', category: 'emotional' },
-  { id: 'clover', icon: '🍀', label: '네잎클로버', category: 'emotional' },
+  // 🛋️ 1. 거실 & 인테리어 가구 (Living Room & Furniture)
+  { id: 'sofa_leather', icon: '🛋️', label: '럭셔리 가죽 소파', category: 'living' },
+  { id: 'armchair_wood', icon: '🪑', label: '원목 안락의자', category: 'living' },
+  { id: 'table_wood', icon: '🪵', label: '앤틱 원목 티테이블', category: 'living' },
+  { id: 'bookshelf_large', icon: '📚', label: '월넛 대형 책장', category: 'living' },
+  { id: 'floor_lamp', icon: '🏮', label: '미니 무드 스탠드', category: 'living' },
+  { id: 'mirror_full', icon: '🪞', label: '골드 프레임 전신거울', category: 'living' },
+  { id: 'cuckoo_clock', icon: '🕰️', label: '레트로 뻐꾸기 벽시계', category: 'living' },
+  { id: 'monstera_pot', icon: '🪴', label: '대형 몬스테라 화분', category: 'living' },
+  { id: 'soft_rug', icon: '🧶', label: '포근한 원형 러그', category: 'living' },
+  { id: 'smart_tv', icon: '📺', label: '벽걸이 스마트 TV', category: 'living' },
+  { id: 'audio_speaker', icon: '🔊', label: '하이파이 오디오 스피커', category: 'living' },
+  { id: 'brick_fireplace', icon: '🧱', label: '벽돌 벽난로', category: 'living' },
+  { id: 'room_curtain', icon: '🚪', label: '아늑한 룸 파티션', category: 'living' },
+  { id: 'tissue_box', icon: '🧻', label: '앤틱 티슈함', category: 'living' },
 
-  // ⚡ 2. 포켓몬 아이템 & 볼 (Pokemon Items)
-  { id: 'pokeball', icon: '🔴', label: '몬스터볼', category: 'pokemon' },
-  { id: 'greatball', icon: '🔵', label: '수퍼볼', category: 'pokemon' },
-  { id: 'ultraball', icon: '🟡', label: '하이퍼볼', category: 'pokemon' },
-  { id: 'masterball', icon: '🟣', label: '마스터볼', category: 'pokemon' },
-  { id: 'bolt', icon: '⚡', label: '피카츄 번개', category: 'pokemon' },
-  { id: 'fire', icon: '🔥', label: '불꽃 파이어', category: 'pokemon' },
-  { id: 'water', icon: '💧', label: '물방울', category: 'pokemon' },
-  { id: 'leaf', icon: '🍃', label: '나뭇잎', category: 'pokemon' },
-  { id: 'snowflake', icon: '❄️', label: '눈꽃송이', category: 'pokemon' },
-  { id: 'moon', icon: '🌙', label: '초승달', category: 'pokemon' },
-  { id: 'gem', icon: '💎', label: '반짝 보석', category: 'pokemon' },
-  { id: 'poke_egg', icon: '🥚', label: '신비한 알', category: 'pokemon' },
-  { id: 'shield', icon: '🛡️', label: '방어 쉴드', category: 'pokemon' },
-  { id: 'sword', icon: '⚔️', label: '용기의 검', category: 'pokemon' },
+  // 🛏️ 2. 침실 & 힐링 휴식 (Bedroom & Cozy Comfort)
+  { id: 'bed_king_fluffy', icon: '🛏️', label: '포근한 호텔 침대', category: 'bedroom' },
+  { id: 'nightstand_drawer', icon: '🗄️', label: '침실 협탁 서랍장', category: 'bedroom' },
+  { id: 'teddy_bear_plush', icon: '🧸', label: '폭신폭신 곰인형', category: 'bedroom' },
+  { id: 'candle_warmer', icon: '🕯️', label: '아로마 캔들 워머', category: 'bedroom' },
+  { id: 'alarm_clock_twin', icon: '⏰', label: '트윈벨 알람 시계', category: 'bedroom' },
+  { id: 'dreamcatcher_feathers', icon: '🪶', label: '행운의 드림캐처', category: 'bedroom' },
+  { id: 'hanger_closet', icon: '👗', label: '원목 옷걸이 행거', category: 'bedroom' },
+  { id: 'cozy_slippers', icon: '🩴', label: '폭신 룸 슬리퍼', category: 'bedroom' },
+  { id: 'music_box_melody', icon: '🎶', label: '태엽 멜로디 오르골', category: 'bedroom' },
+  { id: 'night_sky_globe', icon: '🌌', label: '오로라 룸 조명', category: 'bedroom' },
+  { id: 'sleep_mask_pillow', icon: '💤', label: '꿀잠 안대 & 베개', category: 'bedroom' },
 
-  // 🛋️ 3. 인테리어 & 가구 소품 (Interior & Furniture)
-  { id: 'sofa', icon: '🛋️', label: '아늑한 소파', category: 'interior' },
-  { id: 'bed', icon: '🛏️', label: '포근한 침대', category: 'interior' },
-  { id: 'chair', icon: '🪑', label: '원목 의자', category: 'interior' },
-  { id: 'plant', icon: '🪴', label: '몬스테라 화분', category: 'interior' },
-  { id: 'clock', icon: '⏰', label: '벽걸이 시계', category: 'interior' },
-  { id: 'radio', icon: '📻', label: '레트로 라디오', category: 'interior' },
-  { id: 'laptop', icon: '💻', label: '미니 노트북', category: 'interior' },
-  { id: 'teddy', icon: '🧸', label: '곰인형', category: 'interior' },
-  { id: 'easel', icon: '🎨', label: '이젤 캔버스', category: 'interior' },
-  { id: 'books', icon: '📚', label: '책더미', category: 'interior' },
-  { id: 'mirror', icon: '🪞', label: '화장대 거울', category: 'interior' },
-  { id: 'lamp', icon: '🏮', label: '미니 무드등', category: 'interior' },
+  // 💻 3. 서재 & 게이밍 PC룸 (Study & PC Gaming Zone)
+  { id: 'rgb_gaming_pc', icon: '🖥️', label: 'RGB 게이밍 데스크탑', category: 'gaming' },
+  { id: 'laptop_pro_metal', icon: '💻', label: '슬림 노트북', category: 'gaming' },
+  { id: 'console_controller', icon: '🎮', label: '무선 게임 패드', category: 'gaming' },
+  { id: 'vr_headset_meta', icon: '🥽', label: 'VR 헤드셋', category: 'gaming' },
+  { id: 'gaming_headphones', icon: '🎧', label: '서라운드 게이밍 헤드셋', category: 'gaming' },
+  { id: 'retro_arcade_machine', icon: '🕹️', label: '레트로 아케이드 오락기', category: 'gaming' },
+  { id: 'mechanical_keyboard', icon: '⌨️', label: '기계식 게이밍 키보드', category: 'gaming' },
+  { id: 'rgb_gaming_mouse', icon: '🖱️', label: '초경량 게이밍 마우스', category: 'gaming' },
+  { id: 'telescope_astro', icon: '🔭', label: '천체 망원경', category: 'gaming' },
+  { id: 'chess_set_wood', icon: '♟️', label: '클래식 원목 체스판', category: 'gaming' },
+  { id: 'artist_easel_paint', icon: '🎨', label: '미술 이젤 & 캔버스', category: 'gaming' },
+  { id: 'streaming_mic', icon: '🎙️', label: '방송용 콘덴서 마이크', category: 'gaming' },
+  { id: 'magic_spellbook', icon: '📖', label: '고대 마법 서적', category: 'gaming' },
 
-  // 🏆 4. 축하 & 파티 (Party & Celebration)
-  { id: 'trophy', icon: '🏆', label: '황금 트로피', category: 'party' },
-  { id: 'medal', icon: '🥇', label: '1등 금메달', category: 'party' },
-  { id: 'crown', icon: '👑', label: '황금 왕관', category: 'party' },
-  { id: 'balloon', icon: '🎈', label: '축하 풍선', category: 'party' },
-  { id: 'gift', icon: '🎁', label: '선물 상자', category: 'party' },
-  { id: 'cake', icon: '🎂', label: '생일 케이크', category: 'party' },
-  { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크', category: 'party' },
-  { id: 'fireworks', icon: '🎆', label: '축하 불꽃', category: 'party' },
-  { id: 'party_popper', icon: '🎉', label: '파티 폭죽', category: 'party' },
-  { id: 'grad_cap', icon: '🎓', label: '졸업 학사모', category: 'party' },
-  { id: 'champagne', icon: '🥂', label: '축하 샴페인', category: 'party' },
+  // ☕ 4. 키친 & 홈카페 브런치 (Kitchen & Cafe Corner)
+  { id: 'espresso_machine', icon: '☕', label: '에스프레소 머신', category: 'kitchen' },
+  { id: 'vintage_teapot', icon: '🫖', label: '영국식 앤틱 티세트', category: 'kitchen' },
+  { id: 'fluffy_pancakes', icon: '🥞', label: '달콤 메이플 팬케이크', category: 'kitchen' },
+  { id: 'sweet_cupcake', icon: '🧁', label: '딸기 생크림 컵케이크', category: 'kitchen' },
+  { id: 'celebration_cake', icon: '🎂', label: '생일 축하 홀케이크', category: 'kitchen' },
+  { id: 'tropical_cocktail', icon: '🍹', label: '석양 트로피컬 음료', category: 'kitchen' },
+  { id: 'boba_milk_tea', icon: '🧋', label: '타피오카 버블 밀크티', category: 'kitchen' },
+  { id: 'icecream_parfait', icon: '🍨', label: '초코 파르페 아이스크림', category: 'kitchen' },
+  { id: 'glazed_donut_box', icon: '🍩', label: '달콤 글레이즈드 도넛', category: 'kitchen' },
+  { id: 'fresh_pizza_slice', icon: '🍕', label: '치즈 듬뿍 화덕 피자', category: 'kitchen' },
+  { id: 'toaster_toast', icon: '🍞', label: '바삭한 팝업 토스터', category: 'kitchen' },
+  { id: 'vintage_wine_bottle', icon: '🍷', label: '고급 빈티지 와인', category: 'kitchen' },
 
-  // 💬 5. 감정 & 이모지 (Expressions & Status)
-  { id: 'zzz', icon: '💤', label: '쿨쿨 졸림', category: 'emoji' },
-  { id: 'sweat', icon: '💦', label: '삐질 땀방울', category: 'emoji' },
-  { id: 'sparkles', icon: '✨', label: '블링블링 반짝', category: 'emoji' },
-  { id: 'question', icon: '❓', label: '궁금 물음표', category: 'emoji' },
-  { id: 'exclamation', icon: '❗', label: '깜짝 느낌표', category: 'emoji' },
-  { id: 'anger', icon: '💢', label: '버럭 분노', category: 'emoji' },
-  { id: 'singing', icon: '🎵', label: '흥겨운 콧노래', category: 'emoji' },
-  { id: 'thought_cloud', icon: '💭', label: '생각 말풍선', category: 'emoji' },
-  { id: 'dizzy', icon: '💫', label: '어질어질 별빛', category: 'emoji' },
-  { id: 'kiss', icon: '💋', label: '사랑의 뽀뽀', category: 'emoji' }
+  // 🌿 5. 가든 & 테라스 캠핑 (Garden & Nature Camp)
+  { id: 'cactus_flower_pot', icon: '🌵', label: '미니 선인장 화분', category: 'garden' },
+  { id: 'sakura_bonsai_tree', icon: '🌸', label: '분홍 벚꽃 분재', category: 'garden' },
+  { id: 'sunflower_vase', icon: '🌻', label: '해바라기 꽃병', category: 'garden' },
+  { id: 'tulip_flower_basket', icon: '🌷', label: '파스텔 튤립 꽃다발', category: 'garden' },
+  { id: 'red_rose_vase', icon: '🌹', label: '화려한 붉은 장미', category: 'garden' },
+  { id: 'camping_tent_cozy', icon: '⛺', label: '아늑한 캠핑 텐트', category: 'garden' },
+  { id: 'campfire_logs', icon: '🔥', label: '타오르는 모닥불', category: 'garden' },
+  { id: 'picnic_lunch_basket', icon: '🧺', label: '소풍 피크닉 바구니', category: 'garden' },
+  { id: 'terrace_parasol', icon: '⛱️', label: '비치 테라스 파라솔', category: 'garden' },
+  { id: 'marble_fountain', icon: '⛲', label: '유럽풍 대리석 분수대', category: 'garden' },
+  { id: 'pine_tree_mini', icon: '🌲', label: '사시사철 솔나무', category: 'garden' },
+  { id: 'palm_tree_island', icon: '🌴', label: '남국 야자수 나무', category: 'garden' },
+  { id: 'white_bird_cage', icon: '🕊️', label: '행복의 하얀 새장', category: 'garden' },
+
+  // 🏆 6. 포켓몬 & 굿즈 컬렉션 (Pokemon Goods & Trophies)
+  { id: 'pokeball_standard', icon: '🔴', label: '몬스터볼', category: 'pokemon' },
+  { id: 'greatball_blue_c', icon: '🔵', label: '수퍼볼', category: 'pokemon' },
+  { id: 'ultraball_gold_c', icon: '🟡', label: '하이퍼볼', category: 'pokemon' },
+  { id: 'masterball_purple_c', icon: '🟣', label: '마스터볼', category: 'pokemon' },
+  { id: 'cherish_ball_rare', icon: '💝', label: '프레셔스볼', category: 'pokemon' },
+  { id: 'pokemon_gym_badge', icon: '🎖️', label: '체육관 챔피언 뱃지', category: 'pokemon' },
+  { id: 'gold_champion_trophy', icon: '🏆', label: '황금 챔피언 트로피', category: 'pokemon' },
+  { id: 'shining_gold_crown', icon: '👑', label: '황금 왕관', category: 'pokemon' },
+  { id: 'golden_magikarp_statue', icon: '🐟', label: '황금 잉어킹 동상', category: 'pokemon' },
+  { id: 'mystic_crystal_orb', icon: '🔮', label: '신비한 마법 수정구슬', category: 'pokemon' },
+  { id: 'sparkling_diamond_gem', icon: '💎', label: '샤이니 다이아몬드', category: 'pokemon' },
+  { id: 'lightning_spark_bolt', icon: '⚡', label: '백만볼트 번개', category: 'pokemon' },
+  { id: 'mysterious_egg_gold', icon: '🥚', label: '황금빛 전설의 알', category: 'pokemon' },
+  { id: 'hero_courage_sword', icon: '⚔️', label: '용기의 성검', category: 'pokemon' },
+  { id: 'guardian_shield_def', icon: '🛡️', label: '수호의 은빛 방패', category: 'pokemon' },
+
+  // 💖 7. 두부월드 감성 & 파티 (Dubuworld Nostalgia & Party)
+  { id: 'dubu_acorn_special', icon: '🌰', label: '두부월드 황금 둡토리', category: 'emotional' },
+  { id: 'polaroid_instant_cam', icon: '📷', label: '클래식 폴라로이드 사진기', category: 'emotional' },
+  { id: 'retro_cassette_player', icon: '📼', label: '레트로 카세트 테이프', category: 'emotional' },
+  { id: 'secret_love_letter', icon: '💌', label: '비밀 러브레터', category: 'emotional' },
+  { id: 'lucky_four_clover', icon: '🍀', label: '행운의 네잎클로버', category: 'emotional' },
+  { id: 'pink_ribbon_satin', icon: '🎀', label: '새틴 핑크 리본', category: 'emotional' },
+  { id: 'sparkling_mirror_ball', icon: '🪩', label: '반짝반짝 미러볼', category: 'emotional' },
+  { id: 'party_popper_confetti', icon: '🎉', label: '축하 파티 폭죽', category: 'emotional' },
+  { id: 'colorful_balloon_cluster', icon: '🎈', label: '파스텔 축하 풍선', category: 'emotional' },
+  { id: 'night_fireworks_show', icon: '🎆', label: '밤하늘 축제 불꽃', category: 'emotional' },
+  { id: 'champagne_toast_cheers', icon: '🥂', label: '축배 샴페인 건배', category: 'emotional' },
+  { id: 'grad_cap_diploma', icon: '🎓', label: '명예 졸업 학사모', category: 'emotional' },
+
+  // 💬 8. 감정 & 미니 이모지 (Expressions & Status)
+  { id: 'sparkles_glow_star', icon: '✨', label: '블링블링 반짝이', category: 'emoji' },
+  { id: 'heart_flame_burn', icon: '❤️‍🔥', label: '불타는 열정 하트', category: 'emoji' },
+  { id: 'sleeping_zzz_cozy', icon: '💤', label: '쿨쿨 달콤한 잠', category: 'emoji' },
+  { id: 'sweat_nervous_drop', icon: '💦', label: '삐질 당황 땀방울', category: 'emoji' },
+  { id: 'thought_cloud_bubble', icon: '💭', label: '몽글몽글 생각 구름', category: 'emoji' },
+  { id: 'singing_music_melody', icon: '🎵', label: '흥겨운 콧노래 멜로디', category: 'emoji' },
+  { id: 'dizzy_spinning_stars', icon: '💫', label: '어질어질 별빛 회전', category: 'emoji' },
+  { id: 'love_kiss_mark', icon: '💋', label: '달콤한 핑크 뽀뽀', category: 'emoji' },
+  { id: 'bright_idea_lightbulb', icon: '💡', label: '번뜩이는 영감 전구', category: 'emoji' },
+  { id: 'fighting_fire_spirit', icon: '🔥', label: '불타는 승부욕 투지', category: 'emoji' }
 ];
 
 // 💖 1촌 응원 하트 일일 5회 제한 로컬 헬퍼
@@ -130,6 +175,48 @@ const setTodayHeartCountLocal = (owner: string, count: number) => {
   if (typeof window === 'undefined' || !owner) return;
   const today = new Date().toLocaleDateString('sv-SE');
   localStorage.setItem(`pokefarm_hearts_given_${owner}_${today}`, String(count));
+};
+
+// 🎓 졸업생 포켓몬 진화 체인 탐색 헬퍼 (진화 전/후 모든 모습 지원)
+export const getEvolutionChainForDiploma = (diploma: GraduationDiploma): EvolutionStage[] => {
+  if (diploma.evolutionChain && diploma.evolutionChain.length > 0) {
+    return diploma.evolutionChain;
+  }
+  // STARTER_CHAINS에서 speciesId 또는 name으로 탐색
+  const found = STARTER_CHAINS.find(chain =>
+    chain.some(st => st.id === diploma.speciesId || st.name === diploma.name || diploma.name.includes(st.name))
+  );
+  if (found) return found;
+
+  // 단일 stage fallback
+  return [{
+    id: diploma.speciesId,
+    name: diploma.name,
+    minLevel: 1,
+    minHappiness: 0,
+    sprite: diploma.sprite,
+    showdownSprite: diploma.sprite,
+    types: []
+  }];
+};
+
+// 🎓 졸업생의 현재 선택된 외형 스프라이트 및 이름 반환 헬퍼
+export const getDiplomaActiveSprite = (diploma: GraduationDiploma): { sprite: string; name: string; formIndex: number } => {
+  const chain = getEvolutionChainForDiploma(diploma);
+  const maxIdx = chain.length - 1;
+  const formIdx = diploma.selectedFormIndex !== undefined ? Math.min(Math.max(0, diploma.selectedFormIndex), maxIdx) : maxIdx;
+  const currentStage = chain[formIdx] || chain[maxIdx] || chain[0];
+
+  let spr = currentStage.showdownSprite || currentStage.sprite || diploma.sprite;
+  if (diploma.isShiny && currentStage.id) {
+    spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${currentStage.id}.gif`;
+  }
+
+  return {
+    sprite: spr,
+    name: currentStage.name || diploma.name,
+    formIndex: formIdx
+  };
 };
 
 export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser, onSelectGame }) => {
@@ -260,7 +347,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [customTextStyle, setCustomTextStyle] = useState<'classic_bubble' | 'retro_sign' | 'neon_glow' | 'pink_ribbon' | 'gold_badge' | 'plain_text'>('classic_bubble');
   const [customTextColor, setCustomTextColor] = useState('#1e293b');
   const [customFontSize, setCustomFontSize] = useState<number>(14);
-  const [stickerCategory, setStickerCategory] = useState<'all' | 'emotional' | 'pokemon' | 'interior' | 'party' | 'emoji'>('all');
+  const [stickerCategory, setStickerCategory] = useState<'all' | 'living' | 'bedroom' | 'gaming' | 'kitchen' | 'garden' | 'pokemon' | 'emotional' | 'emoji'>('all');
+  const [stickerSearch, setStickerSearch] = useState('');
   const [decorSubtab, setDecorSubtab] = useState<'palette' | 'textmaker' | 'pokeplacements'>('palette');
 
   // 🌐 소켓 및 로컬 실제 유저 농장 동기화
@@ -343,6 +431,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       }
     };
 
+    const handleVisitUpdated = (data: { targetUsername: string; todayCount: number; totalCount: number }) => {
+      if (data.targetUsername === farmState.ownerName) {
+        setFarmState(prev => ({ ...prev, todayCount: data.todayCount, totalCount: data.totalCount }));
+      }
+      if (visitingFarm && visitingFarm.owner === data.targetUsername) {
+        setVisitingFarm(prev => prev ? {
+          ...prev,
+          farm: { ...prev.farm, todayCount: data.todayCount, totalCount: data.totalCount }
+        } : null);
+      }
+    };
+
     const handleMyDataLoaded = (res: { success: boolean; farm: any; guestbook: GuestbookEntry[] }) => {
       if (res.success && res.farm) {
         setFarmState(prev => {
@@ -353,6 +453,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             ...res.farm,
             ownerName: res.farm.username || prev.ownerName,
             isInitialized: true,
+            todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
+            totalCount: res.farm.totalCount !== undefined ? res.farm.totalCount : prev.totalCount,
+            heartsCount: res.farm.heartsCount !== undefined ? res.farm.heartsCount : prev.heartsCount,
             guestbook: res.guestbook || prev.guestbook || []
           };
         });
@@ -364,6 +467,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     socket.on('farm-list-update', handleListUpdate);
     socket.on('farm-visit-data', handleVisitData);
+    socket.on('farm-visit-updated', handleVisitUpdated);
     socket.on('farm-heart-received', handleHeartReceived);
     socket.on('farm-heart-sent-success', handleHeartSentSuccess);
     socket.on('farm-heart-failed', handleHeartFailed);
@@ -374,6 +478,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     return () => {
       socket.off('farm-list-update', handleListUpdate);
       socket.off('farm-visit-data', handleVisitData);
+      socket.off('farm-visit-updated', handleVisitUpdated);
       socket.off('farm-heart-received', handleHeartReceived);
       socket.off('farm-heart-sent-success', handleHeartSentSuccess);
       socket.off('farm-heart-failed', handleHeartFailed);
@@ -393,16 +498,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }
   }, [initialVisitingUser]);
 
-  // 방문 여부에 따른 미니홈피 표시 값
-  const currentTodayCount = visitingFarm ? (visitingFarm.farm.todayCount || 42) : (farmState.todayCount || 142);
-  const currentTotalCount = visitingFarm ? (visitingFarm.farm.totalCount || 850) : (farmState.totalCount || 4820);
+  // 방문 여부에 따른 미니홈피 표시 값 (실제 DB 및 카운터 기준, 0 완벽 지원)
+  const currentTodayCount = visitingFarm ? (visitingFarm.farm.todayCount ?? 0) : (farmState.todayCount ?? 0);
+  const currentTotalCount = visitingFarm ? (visitingFarm.farm.totalCount ?? 0) : (farmState.totalCount ?? 0);
   const displayOwnerName = visitingFarm ? visitingFarm.owner : farmState.ownerName;
   const displayFarmName = visitingFarm ? visitingFarm.farm.farmName : farmState.farmName;
   const displayActivePokemon = visitingFarm ? visitingFarm.farm.activePokemon : farmState.activePokemon;
   const displayReservePokemons = visitingFarm ? (visitingFarm.farm.reservePokemon || []) : farmState.reservePokemon;
   const displayGraduatedPokemons = visitingFarm ? (visitingFarm.farm.graduatedPokemon || []) : farmState.graduatedPokemon;
-  const displayGraduatedCount = visitingFarm ? (visitingFarm.farm.graduatedPokemon ? visitingFarm.farm.graduatedPokemon.length : visitingFarm.farm.graduatedCount) : farmState.graduatedPokemon.length;
-  const displayHeartsCount = visitingFarm ? visitingFarm.farm.heartsCount : farmState.heartsCount;
+  const displayGraduatedCount = visitingFarm ? (visitingFarm.farm.graduatedPokemon ? visitingFarm.farm.graduatedPokemon.length : (visitingFarm.farm.graduatedCount || 0)) : farmState.graduatedPokemon.length;
+  const displayHeartsCount = visitingFarm ? (visitingFarm.farm.heartsCount ?? 0) : (farmState.heartsCount ?? 0);
   const displayGuestbook = visitingFarm ? visitingFarm.guestbook : farmState.guestbook;
   const currentBgTheme = visitingFarm ? (visitingFarm.farm.bgTheme || 'classic') : (farmState.bgTheme || 'classic');
   const currentStickers = visitingFarm ? (visitingFarm.farm.stickers || []) : (farmState.stickers || []);
@@ -419,7 +524,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }
 
     if (socket && socket.connected) {
-      socket.emit('farm-visit-request', { targetUsername: neighborUsername });
+      socket.emit('farm-visit-request', { targetUsername: neighborUsername, visitorUsername: farmState.ownerName });
     }
 
     // 1. 로컬에 저장된 실제 유저 데이터 확인
@@ -434,13 +539,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           reservePokemon: targetSaved.reservePokemon || [],
           graduatedPokemon: targetSaved.graduatedPokemon || [],
           graduatedCount: targetSaved.graduatedPokemon?.length || 0,
-          heartsCount: targetSaved.heartsCount || 0,
+          heartsCount: targetSaved.heartsCount ?? 0,
           bgTheme: targetSaved.bgTheme || 'classic',
           stickers: targetSaved.stickers || [],
           pokemonPlacements: targetSaved.pokemonPlacements || {},
           statusMsg: targetSaved.statusMsg || '',
-          todayCount: targetSaved.todayCount || 42,
-          totalCount: targetSaved.totalCount || 850,
+          todayCount: targetSaved.todayCount ?? 0,
+          totalCount: targetSaved.totalCount ?? 0,
           isOnline: true
         },
         guestbook: targetSaved.guestbook || []
@@ -809,6 +914,52 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert('📍 포켓몬 위치 및 회전 각도를 초기화했습니다.', 'info');
   };
 
+  // 🎓 졸업생 포켓몬 진화 전/후 외형 모습 변경 핸들러
+  const handleSetDiplomaForm = (diplomaId: string, formIndex: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const nextGrad = prev.graduatedPokemon.map(d => {
+        if (d.id === diplomaId) {
+          const chain = getEvolutionChainForDiploma(d);
+          const stage = chain[formIndex] || chain[chain.length - 1];
+          let spr = stage.showdownSprite || stage.sprite;
+          if (d.isShiny && stage.id) {
+            spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
+          }
+          return {
+            ...d,
+            selectedFormIndex: formIndex,
+            displaySprite: spr,
+            displayName: stage.name
+          };
+        }
+        return d;
+      });
+      return {
+        ...prev,
+        graduatedPokemon: nextGrad
+      };
+    });
+    setSelectedDiploma(prev => {
+      if (prev && prev.id === diplomaId) {
+        const chain = getEvolutionChainForDiploma(prev);
+        const stage = chain[formIndex] || chain[chain.length - 1];
+        let spr = stage.showdownSprite || stage.sprite;
+        if (prev.isShiny && stage.id) {
+          spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
+        }
+        return {
+          ...prev,
+          selectedFormIndex: formIndex,
+          displaySprite: spr,
+          displayName: stage.name
+        };
+      }
+      return prev;
+    });
+    showAlert('✨ 졸업생 포켓몬의 미니룸 외형 모습이 변경되었습니다!', 'success');
+  };
+
   // 포켓몬 위치 조회 헬퍼
   const getPokemonPlacement = (
     id: string,
@@ -1013,7 +1164,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             );
           })}
 
-          {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓) */}
+          {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓 & 진화 전/후 모습 커스텀 지원) */}
           {displayGraduatedPokemons.map((dip, idx) => {
             const id = `grad_${dip.id || idx}`;
             const defX = idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86;
@@ -1022,6 +1173,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             const place = getPokemonPlacement(id, defX, defY, 0.85, defFlip, 0, 0);
             const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
             const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
+            const activeForm = getDiplomaActiveSprite(dip);
 
             return (
               <div
@@ -1036,14 +1188,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
                 onClick={() => !dragState && setSelectedDiploma(dip)}
-                title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] (드래그 이동 / 클릭 졸업증서)`}
+                title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] - 현재 외형: ${activeForm.name} (드래그 이동 / 클릭 졸업증서 & 외형 변경)`}
               >
                 <div className={`graduated-badge-tag ${place.flipped ? 'unflip-tag' : ''}`}>
-                  🎓 {dip.nickname || dip.name}
+                  🎓 {dip.nickname || dip.name} {activeForm.name !== (dip.nickname || dip.name) ? `(${activeForm.name})` : ''}
                 </div>
                 <img
-                  src={dip.sprite}
-                  alt={dip.name}
+                  src={activeForm.sprite}
+                  alt={activeForm.name}
                   className="poke-sprite graduated-shine"
                   draggable={false}
                 />
@@ -1222,6 +1374,38 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, -30) : handleSetStickerTiltX(id, -30)}>앞으로 -30°</button>
                   <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 30) : handleSetStickerTiltX(id, 30)}>뒤로 +30°</button>
                 </div>
+
+                {/* 4. 🌱 졸업생 외형 변신 (진화 전/후 폼 선택) */}
+                {isPokemon && id.startsWith('grad_') && (() => {
+                  const dipId = id.replace('grad_', '');
+                  const diploma = farmState.graduatedPokemon.find(d => d.id === dipId || `grad_${d.id}` === id);
+                  if (!diploma) return null;
+                  const chain = getEvolutionChainForDiploma(diploma);
+                  if (chain.length <= 1) return null;
+                  const active = getDiplomaActiveSprite(diploma);
+
+                  return (
+                    <div className="control-row form-evolution-row">
+                      <span className="control-title">🌱 외형 변신:</span>
+                      <div className="form-evolution-buttons">
+                        {chain.map((stage, sIdx) => {
+                          const isCur = active.formIndex === sIdx;
+                          return (
+                            <button
+                              key={stage.id || sIdx}
+                              className={`editor-btn form-btn ${isCur ? 'active-form' : ''}`}
+                              onClick={() => handleSetDiplomaForm(diploma.id, sIdx)}
+                              title={`${stage.name} 모습으로 미니룸에 표시`}
+                            >
+                              <img src={stage.sprite} alt={stage.name} className="mini-form-sprite" />
+                              <span>{sIdx === 0 ? '🐣 1단' : sIdx === chain.length - 1 ? '👑 최종' : `⚡ ${sIdx + 1}단`}: {stage.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
@@ -1952,6 +2136,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert('✨ 대표 파트너 포켓몬을 성공적으로 교체했습니다!', 'success');
   };
 
+  // 🏥 3-6-1. 보육소 포켓몬을 포켓몬 센터로 보내기 (기능상 보육소 삭제 및 지원금 +100 코인 지급)
+  const handleSendPokemonToCenter = (mon: FarmPokemon) => {
+    if (visitingFarm) return;
+    const confirmMsg = `정말로 [${mon.nickname || mon.name}](Lv.${mon.level})을(를) 포켓몬 센터로 보내시겠습니까?\n\n🏥 센터로 보내진 포켓몬은 간호순 누나와 함께 건강하게 보살핌을 받으며 넓은 세상으로 여행을 떠납니다.\n(감사의 마음으로 포켓농장 지원금 +100 P가 지급됩니다)`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setFarmState(prev => {
+      const nextReserves = (prev.reservePokemon || []).filter(p => p.uid !== mon.uid);
+      const nextPlacements = { ...(prev.pokemonPlacements || {}) };
+      const id = `res_${mon.uid}`;
+      delete nextPlacements[id];
+
+      return {
+        ...prev,
+        coins: prev.coins + 100,
+        reservePokemon: nextReserves,
+        pokemonPlacements: nextPlacements
+      };
+    });
+
+    showAlert(`🏥 [${mon.nickname || mon.name}]을(를) 포켓몬 센터로 안전하게 보냈습니다. (지원금 +100 P 지급)`, 'success');
+  };
+
   // 🎰 3-7. 일일 럭키 사내 복권 슬롯 추첨
   const handleSpinLottery = () => {
     if (isSlotSpinning) return;
@@ -2032,7 +2239,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         }));
         setSlotSpinResult({
           title: '🚨 MEGA JACKPOT 대박 잭팟 달성! 🚨',
-          desc: `사내 누적 잭팟 상금 ${jackpotWin.toLocaleString()}P 전액 수령! 추가로 🌟 황금빛 전설의 알을 획득했습니다!`,
+          desc: `사내 누적 잭팟 상금 ${jackpotWin.toLocaleString()}P 전액 수령! 추가로 🌟 전설 & 특수 포켓몬 알을 획득했습니다!`,
           coinsWon: jackpotWin,
           isJackpot: true,
           wonItem: goldenEggItem
@@ -2062,7 +2269,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         return;
       }
 
-      // 3. 의문의 알 3개
+      // 3. 일반 포켓몬 알 3개
       if (s1.id === 'egg' && s2.id === 'egg' && s3.id === 'egg') {
         const eggItem = FARM_ITEMS.find(i => i.id === 'mystery_egg');
         setFarmState(prev => ({
@@ -2074,8 +2281,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           }
         }));
         setSlotSpinResult({
-          title: '🥚 미스터리 에그 잭팟!',
-          desc: '부화기에 품을 수 있는 🥚 의문의 포켓몬 알과 🪙 400P를 획득했습니다!',
+          title: '🥚 일반 포켓몬 알 잭팟!',
+          desc: '부화기에 품을 수 있는 🥚 일반 포켓몬 알과 🪙 400P를 획득했습니다!',
           coinsWon: 400,
           isJackpot: false,
           wonItem: eggItem
@@ -2271,7 +2478,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       finalLevel: pmon.level,
       totalDays: 1,
       jobsDone: pmon.jobsCompleted,
-      title: pmon.level >= 50 ? '🌟 전설의 마스터 육성' : '🎓 명예 졸업생'
+      title: pmon.level >= 50 ? '🌟 전설의 마스터 육성' : '🎓 명예 졸업생',
+      evolutionChain: pmon.evolutionChain,
+      selectedFormIndex: pmon.evolutionChain.length - 1,
+      displaySprite: pmon.sprites.showdownFront || pmon.sprites.front,
+      displayName: pmon.name
     };
 
     setGraduatingModal(diploma);
@@ -3016,10 +3227,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           {[
                             { key: 'classic', label: '🏠 클래식 우드룸' },
                             { key: 'pixel', label: '🌿 픽셀 팜 가든' },
-                            { key: 'starry', label: '🌌 별빛 아늑한 방' },
-                            { key: 'beach', label: '🏖️ 석양 트로피컬 해변' },
-                            { key: 'sakura', label: '🌸 벚꽃 블라썸 동산' },
-                            { key: 'center', label: '🏥 포켓몬 센터 쉼터' }
+                            { key: 'starry', label: '🌌 별빛 오로라 룸' },
+                            { key: 'beach', label: '🏖️ 트로피컬 해변' },
+                            { key: 'sakura', label: '🌸 벚꽃 블라썸' },
+                            { key: 'center', label: '🏥 포켓몬 센터' },
+                            { key: 'attic_cafe', label: '☕ 다락방 홈카페' },
+                            { key: 'neon_arcade', label: '🎮 네온 게이밍룸' },
+                            { key: 'luxury_penthouse', label: '🏰 로열 펜트하우스' },
+                            { key: 'forest_camp', label: '⛺ 낭만 캠핑장' }
                           ].map(bg => (
                             <button
                               key={bg.key}
@@ -3117,7 +3332,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           className={`decor-subtab ${decorSubtab === 'palette' ? 'active' : ''}`}
                           onClick={() => setDecorSubtab('palette')}
                         >
-                          🎨 스티커 팔레트 (60+)
+                          🎨 가구 & 소품 팔레트 (90+)
                         </button>
                         <button
                           className={`decor-subtab ${decorSubtab === 'textmaker' ? 'active' : ''}`}
@@ -3133,18 +3348,38 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         </button>
                       </div>
 
-                      {/* 서브모드 1: 스티커 팔레트 */}
+                      {/* 서브모드 1: 스티커 & 가구 팔레트 */}
                       {decorSubtab === 'palette' && (
                         <div className="decor-palette-panel">
+                          {/* 🔍 스티커 검색창 */}
+                          <div className="decor-search-row">
+                            <div className="decor-search-input-wrap">
+                              <span className="search-icon">🔍</span>
+                              <input
+                                type="text"
+                                className="dubuworld-input decor-search-input"
+                                value={stickerSearch}
+                                onChange={e => setStickerSearch(e.target.value)}
+                                placeholder="가구 / 소품 / 굿즈 이름 검색 (예: 소파, 침대, PC, 커피, 화분, 트로피...)"
+                              />
+                              {stickerSearch && (
+                                <button className="clear-search-btn" onClick={() => setStickerSearch('')}>✕</button>
+                              )}
+                            </div>
+                          </div>
+
                           {/* 카테고리 필터 바 */}
                           <div className="decor-category-filters">
                             {[
-                              { key: 'all', label: '전체' },
-                              { key: 'emotional', label: '💖 감성 & 두부월드' },
-                              { key: 'pokemon', label: '⚡ 포켓몬 & 볼' },
-                              { key: 'interior', label: '🛋️ 가구 & 소품' },
-                              { key: 'party', label: '🏆 파티 & 축하' },
-                              { key: 'emoji', label: '💬 감정 & 이모지' }
+                              { key: 'all', label: '🌟 전체 (90+)' },
+                              { key: 'living', label: '🛋️ 거실 & 가구' },
+                              { key: 'bedroom', label: '🛏️ 침실 & 휴식' },
+                              { key: 'gaming', label: '💻 서재 & PC방' },
+                              { key: 'kitchen', label: '☕ 키친 & 카페' },
+                              { key: 'garden', label: '🌿 가든 & 캠핑' },
+                              { key: 'pokemon', label: '🏆 포켓몬 & 굿즈' },
+                              { key: 'emotional', label: '💖 감성 & 파티' },
+                              { key: 'emoji', label: '💬 이모지' }
                             ].map(cat => (
                               <button
                                 key={cat.key}
@@ -3157,17 +3392,24 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           </div>
 
                           <div className="sticker-palette-grid">
-                            {DIVERSE_STICKERS.filter(stk => stickerCategory === 'all' || stk.category === stickerCategory).map(stk => (
-                              <button
-                                key={stk.id}
-                                className="sticker-palette-item"
-                                onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
-                                title={`${stk.label} 붙이기`}
-                              >
-                                <span className="stk-icon">{stk.icon}</span>
-                                <span className="stk-label">{stk.label}</span>
-                              </button>
-                            ))}
+                            {DIVERSE_STICKERS
+                              .filter(stk => {
+                                const matchesCat = stickerCategory === 'all' || stk.category === stickerCategory;
+                                const query = stickerSearch.trim().toLowerCase();
+                                const matchesQuery = !query || stk.label.toLowerCase().includes(query) || stk.icon.includes(query);
+                                return matchesCat && matchesQuery;
+                              })
+                              .map(stk => (
+                                <button
+                                  key={stk.id}
+                                  className="sticker-palette-item"
+                                  onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
+                                  title={`${stk.label} 붙이기`}
+                                >
+                                  <span className="stk-icon">{stk.icon}</span>
+                                  <span className="stk-label">{stk.label}</span>
+                                </button>
+                              ))}
                           </div>
                         </div>
                       )}
@@ -3404,17 +3646,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                               );
                             })}
 
-                            {/* 졸업생 포켓몬들 */}
+                            {/* 졸업생 포켓몬들 (진화단계별 폼 변경 지원) */}
                             {displayGraduatedPokemons.map((dip, idx) => {
                               const id = `grad_${dip.id || idx}`;
                               const place = getPokemonPlacement(id, idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86, idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32, 0.85, idx >= 2, 0, 0);
+                              const chain = getEvolutionChainForDiploma(dip);
+                              const activeForm = getDiplomaActiveSprite(dip);
+
                               return (
                                 <div key={dip.id || idx} className="poke-placement-card">
                                   <div className="placement-card-top">
                                     <div className="poke-thumb">
                                       <img
-                                        src={dip.sprite}
-                                        alt={dip.name}
+                                        src={activeForm.sprite}
+                                        alt={activeForm.name}
                                         style={{
                                           transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
                                           transition: 'transform 0.15s ease'
@@ -3422,7 +3667,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                       />
                                       <div className="thumb-info">
                                         <strong>🎓 졸업: {dip.nickname || dip.name}</strong>
-                                        <span>{dip.graduatedAt.slice(0, 10)} 졸업</span>
+                                        <span>외형: <b>{activeForm.name}</b> ({dip.graduatedAt.slice(0, 10)} 졸업)</span>
                                       </div>
                                     </div>
                                     <div className="poke-controls-row">
@@ -3432,6 +3677,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                       <button className="excel-btn" onClick={() => handleResetPokemonPlacement(id)}>📍 초기화</button>
                                     </div>
                                   </div>
+
+                                  {/* 🌱 진화 전/후 외형 선택 버튼 그룹 */}
+                                  {chain.length > 1 && (
+                                    <div className="form-evolution-bar">
+                                      <span className="form-select-label">🌱 미니룸 표시 외형:</span>
+                                      <div className="form-badges-wrap">
+                                        {chain.map((stage, sIdx) => {
+                                          const isSelected = activeForm.formIndex === sIdx;
+                                          return (
+                                            <button
+                                              key={stage.id || sIdx}
+                                              className={`form-stage-btn ${isSelected ? 'active' : ''}`}
+                                              onClick={() => handleSetDiplomaForm(dip.id, sIdx)}
+                                              title={`${stage.name} 모습으로 변경`}
+                                            >
+                                              <img src={stage.sprite} alt={stage.name} className="stage-mini-img" />
+                                              <span>{sIdx === 0 ? '🐣 기본' : sIdx === chain.length - 1 ? '👑 최종' : `⚡ ${sIdx + 1}단`}: {stage.name}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   <div className="poke-angles-row">
                                     <div className="angle-control-unit">
                                       <span>🔄 360° 회전:</span>
@@ -3959,8 +4228,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               <div>
                 <h3>🥚 포켓 데이케어 & 알 인큐베이터 (Egg Incubator)</h3>
                 <p>
-                  상점이나 탐험에서 발견한 <strong>의문의 알</strong>을 품어 귀여운 아기 포켓몬으로 부화시키세요!
-                  쓰다듬기(+5%), 목욕(+15%), 알바(+20%), 탐험(+25%)을 통해 온기를 100% 모으면 알이 깨어납니다!
+                  상점이나 탐험에서 발견한 <strong>일반 포켓몬 알</strong> 또는 <strong>전설 & 특수 포켓몬 알</strong>을 품어 귀여운 아기 포켓몬으로 부화시키세요!
+                  쓰다듬기(+1%), 목욕(+3%), 알바(+5%), 탐험(+10%)을 통해 온기를 100% 모으면 알이 깨어납니다!
                 </p>
               </div>
             </div>
@@ -3988,7 +4257,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     <div className="incubator-egg-info">
                       <h3>{farmState.incubatingEgg.name}</h3>
                       <span className="egg-rarity-tag">
-                        {farmState.incubatingEgg.isGolden ? '🌟 전설의 황금알 (100% 이로치)' : '🐣 신비의 포켓몬 알'}
+                        {farmState.incubatingEgg.isGolden ? '🌟 전설 & 특수 포켓몬 알 (100% 이로치/특수폼)' : '🥚 일반 포켓몬 알 (전 세대 포켓몬)'}
                       </span>
                       <p className="egg-warmth-status">
                         {farmState.incubatingEgg.progress >= 100
@@ -4024,7 +4293,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   <div className="empty-pod-icon">🪹</div>
                   <div className="empty-pod-info">
                     <h5>현재 인큐베이터가 비어 있습니다</h5>
-                    <p>보유 중인 의문의 알이나 황금빛 전설의 알을 넣어 정성껏 품어보세요!</p>
+                    <p>보유 중인 일반 포켓몬 알이나 전설 & 특수 포켓몬 알을 넣어 정성껏 품어보세요!</p>
 
                     <div className="place-egg-actions">
                       {(farmState.inventory['mystery_egg'] || 0) > 0 && (
@@ -4035,7 +4304,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             if (item) handlePlaceEggInIncubator(item);
                           }}
                         >
-                          🥚 의문의 알 넣기 (보유: {farmState.inventory['mystery_egg']}개)
+                          🥚 일반 포켓몬 알 넣기 (보유: {farmState.inventory['mystery_egg']}개)
                         </button>
                       )}
                       {(farmState.inventory['golden_egg'] || 0) > 0 && (
@@ -4046,7 +4315,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             if (item) handlePlaceEggInIncubator(item);
                           }}
                         >
-                          🌟 황금빛 전설의 알 넣기 (보유: {farmState.inventory['golden_egg']}개)
+                          🌟 전설 & 특수 포켓몬 알 넣기 (보유: {farmState.inventory['golden_egg']}개)
                         </button>
                       )}
                       {(farmState.inventory['mystery_egg'] || 0) <= 0 && (farmState.inventory['golden_egg'] || 0) <= 0 && (
@@ -4232,12 +4501,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             ))}
                           </div>
                         </div>
-                        <button
-                          className="excel-btn primary switch-partner-btn"
-                          onClick={() => handleSwitchActivePokemon(mon.uid)}
-                        >
-                          ⭐ 대표 파트너로 교체
-                        </button>
+                        <div className="reserve-actions-row">
+                          <button
+                            className="excel-btn primary switch-partner-btn"
+                            onClick={() => handleSwitchActivePokemon(mon.uid)}
+                          >
+                            ⭐ 대표 파트너로 교체
+                          </button>
+                          <button
+                            className="excel-btn danger send-center-btn"
+                            onClick={() => handleSendPokemonToCenter(mon)}
+                            title="포켓몬 센터로 보내 건강하게 넓은 세상으로 보냅니다"
+                          >
+                            🏥 센터로 보내기
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -5118,38 +5396,69 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       )}
 
       {/* 🎓 GRADUATION DIPLOMA MODAL */}
-      {(graduatingModal || selectedDiploma) && (
-        <div className="farm-modal-overlay" onClick={() => { setGraduatingModal(null); setSelectedDiploma(null); }}>
-          <div className="diploma-modal-frame" onClick={e => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => { setGraduatingModal(null); setSelectedDiploma(null); }}>
-              <X size={16} />
-            </button>
-            <div className="diploma-inner-certificate">
-              <div className="cert-header">
-                <div className="cert-seal">🎓</div>
-                <h2>포 켓 농 장 졸 업 증 서</h2>
-                <span className="cert-no">제 {((graduatingModal || selectedDiploma)?.id || '').substring(0, 12)} 호</span>
-              </div>
+      {(graduatingModal || selectedDiploma) && (() => {
+        const dip = graduatingModal || selectedDiploma;
+        if (!dip) return null;
+        const chain = getEvolutionChainForDiploma(dip);
+        const activeForm = getDiplomaActiveSprite(dip);
 
-              <div className="cert-body">
-                <img src={(graduatingModal || selectedDiploma)?.sprite} alt="졸업생" className="cert-pokemon-sprite" />
-                <div className="cert-name-block">
-                  <strong>포켓몬: {(graduatingModal || selectedDiploma)?.nickname} ({(graduatingModal || selectedDiploma)?.name})</strong>
-                  <span>육성 농장주: {(graduatingModal || selectedDiploma)?.ownerName}</span>
+        return (
+          <div className="farm-modal-overlay" onClick={() => { setGraduatingModal(null); setSelectedDiploma(null); }}>
+            <div className="diploma-modal-frame" onClick={e => e.stopPropagation()}>
+              <button className="modal-close-btn" onClick={() => { setGraduatingModal(null); setSelectedDiploma(null); }}>
+                <X size={16} />
+              </button>
+              <div className="diploma-inner-certificate">
+                <div className="cert-header">
+                  <div className="cert-seal">🎓</div>
+                  <h2>포 켓 농 장 졸 업 증 서</h2>
+                  <span className="cert-no">제 {(dip.id || '').substring(0, 12)} 호</span>
                 </div>
-                <p className="cert-text">
-                  위 포켓몬은 포켓농장에서 지극한 사랑과 정성으로 훌륭하게 성장하여
-                  모든 교육 및 진화 과정을 완벽히 수료하였으므로, 본 명예 졸업 증서를 수여합니다.
-                </p>
-                <div className="cert-footer">
-                  <span>졸업일시: {(graduatingModal || selectedDiploma)?.graduatedAt}</span>
-                  <strong className="cert-principal">포켓농장 학장 김두부 (인)</strong>
+
+                <div className="cert-body">
+                  <img src={activeForm.sprite} alt={activeForm.name} className="cert-pokemon-sprite" />
+                  <div className="cert-name-block">
+                    <strong>포켓몬: {dip.nickname} ({dip.name}) {activeForm.name !== dip.name ? `[현재 외형: ${activeForm.name}]` : ''}</strong>
+                    <span>육성 농장주: {dip.ownerName}</span>
+                  </div>
+
+                  {/* 🌱 미니룸 표시 모습 변경 (진화 전/후 폼 선택) */}
+                  {chain.length > 1 && !visitingFarm && (
+                    <div className="cert-form-selector-box">
+                      <span className="cert-form-title">🌱 미니룸 표시 모습 변경 (진화 전/후):</span>
+                      <div className="cert-form-buttons">
+                        {chain.map((st, sIdx) => {
+                          const isCur = activeForm.formIndex === sIdx;
+                          return (
+                            <button
+                              key={st.id || sIdx}
+                              className={`cert-stage-btn ${isCur ? 'active' : ''}`}
+                              onClick={() => handleSetDiplomaForm(dip.id, sIdx)}
+                              title={`${st.name} 모습으로 미니룸에 표시`}
+                            >
+                              <img src={st.sprite} alt={st.name} />
+                              <span>{sIdx === 0 ? '🐣 기본' : sIdx === chain.length - 1 ? '👑 최종' : `⚡ ${sIdx + 1}단`}: {st.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="cert-text">
+                    위 포켓몬은 포켓농장에서 지극한 사랑과 정성으로 훌륭하게 성장하여
+                    모든 교육 및 진화 과정을 완벽히 수료하였으므로, 본 명예 졸업 증서를 수여합니다.
+                  </p>
+                  <div className="cert-footer">
+                    <span>졸업일시: {dip.graduatedAt}</span>
+                    <strong className="cert-principal">포켓농장 학장 김두부 (인)</strong>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

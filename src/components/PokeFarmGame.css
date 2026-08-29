@@ -4052,6 +4052,22 @@
   background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 55%, #fee2e2 55%, #fca5a5 100%);
 }
 
+.miniroom-canvas-container.bg-attic_cafe {
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 55%, #92400e 55%, #78350f 100%);
+}
+
+.miniroom-canvas-container.bg-neon_arcade {
+  background: linear-gradient(180deg, #18181b 0%, #27272a 55%, #3b0764 55%, #581c87 100%);
+}
+
+.miniroom-canvas-container.bg-luxury_penthouse {
+  background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 55%, #cbd5e1 55%, #94a3b8 100%);
+}
+
+.miniroom-canvas-container.bg-forest_camp {
+  background: linear-gradient(180deg, #064e3b 0%, #047857 55%, #713f12 55%, #451a03 100%);
+}
+
 .miniroom-wall {
   position: absolute;
   top: 10px;
@@ -5026,34 +5042,114 @@
 .sticker-shop-header h4 { margin: 0 0 4px; font-size: 0.95rem; color: #262626; }
 .sticker-shop-header p { margin: 0; font-size: 0.78rem; color: #8c8c8c; }
 
+/* 🔍 Decor Search Row */
+.decor-search-row {
+  margin-bottom: 12px;
+}
+
+.decor-search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.decor-search-input-wrap .search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.decor-search-input {
+  width: 100%;
+  padding: 8px 32px 8px 32px;
+  font-size: 0.85rem;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.decor-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  outline: none;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search-btn:hover {
+  background: #cbd5e1;
+  color: #1e293b;
+}
+
 .sticker-palette-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
   gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 4px;
   margin-bottom: 16px;
 }
 
 .sticker-palette-item {
   background: #ffffff;
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 10px;
+  padding: 10px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .sticker-palette-item:hover {
-  border-color: #1890ff;
-  background: #e6f6ff;
+  border-color: #3b82f6;
+  background: #eff6ff;
   transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
 }
 
-.sticker-palette-item .stk-icon { font-size: 2rem; }
-.sticker-palette-item .stk-label { font-size: 0.72rem; color: #595959; font-weight: 600; }
+.sticker-palette-item:active {
+  transform: translateY(0);
+}
+
+.sticker-palette-item .stk-icon {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.sticker-palette-item .stk-label {
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 .sticker-action-bar {
   display: flex;
@@ -5285,6 +5381,209 @@
 
 .arcade-play-btn:hover {
   opacity: 0.9;
+}
+
+/* 🌱 Graduated Pokemon Evolution Form Customization */
+.form-evolution-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.form-evolution-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.form-btn.active-form {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.mini-form-sprite {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.form-evolution-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.form-select-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.form-badges-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.form-stage-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.form-stage-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.form-stage-btn.active {
+  background: #3b82f6;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.stage-mini-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* 🎓 Certificate Form Selector */
+.cert-form-selector-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.cert-form-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.cert-form-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cert-stage-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1.5px solid #f59e0b;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #78350f;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cert-stage-btn img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.cert-stage-btn:hover {
+  background: #fef3c7;
+}
+
+.cert-stage-btn.active {
+  background: #f59e0b;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
+.diploma-form-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+/* 🏡 Daycare Reserve Actions Row */
+.reserve-actions-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.reserve-actions-row .switch-partner-btn {
+  flex: 1.4;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.reserve-actions-row .send-center-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.reserve-actions-row .send-center-btn:hover {
+  background: #fecaca;
+  border-color: #f87171;
+  color: #b91c1c;
+  transform: translateY(-1px);
 }
 
 

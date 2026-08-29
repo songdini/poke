@@ -64,15 +64,33 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS farm_visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_username TEXT NOT NULL,
+    visitor_username TEXT NOT NULL,
+    visit_date TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(target_username, visitor_username, visit_date)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_guestbooks_target ON guestbooks(target_username);
   CREATE INDEX IF NOT EXISTS idx_farms_hearts ON farms(hearts_count DESC);
+  CREATE INDEX IF NOT EXISTS idx_farm_visits_target ON farm_visits(target_username, visit_date);
 `);
 
-// 🛠️ 기존 테이블 컬럼 확장 (하위 호환성 보장)
+// 🛠️ 기존 테이블 컬럼 확장 및 데이터 정합성 보정 (실제 수치 동기화)
 try { db.exec('ALTER TABLE farms ADD COLUMN coins INTEGER DEFAULT 1000'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN inventory TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN incubating_egg TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN lottery_state TEXT'); } catch (e) {}
+
+// 🧹 더미 데이터 정화: 실제 1촌 하트 수(`farm_hearts`)로 동기화
+try {
+  db.exec(`
+    UPDATE farms 
+    SET hearts_count = (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username);
+  `);
+} catch (e) {}
 
 console.log('[SQLite DB] PokéFarm SQLite Database initialized successfully at:', DB_FILE);
 
@@ -212,25 +230,82 @@ export function upsertFarm(username, farmData) {
     pokemon_placements: placementsStr,
     status_msg: farmData.statusMsg || '',
     bgm_song: farmData.bgmSong || '프리스타일 - Y (Feat. 지선)',
-    today_count: farmData.todayCount || 0,
-    total_count: farmData.totalCount || 0,
+    today_count: farmData.todayCount !== undefined ? farmData.todayCount : 0,
+    total_count: farmData.totalCount !== undefined ? farmData.totalCount : 0,
     last_active: Date.now()
   });
 
   return getFarm(cleanUser);
 }
 
-// 2. 단일 농장 전체 정보 조회
+// 2. 한국 표준시(KST) 오늘 날짜 문자열 (YYYY-MM-DD)
+export function getTodayDateStringKST() {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// 2-1. 특정 농장의 실제 방문자수(TODAY / TOTAL) 조회
+export function getFarmVisits(username) {
+  if (!username) return { todayCount: 0, totalCount: 0 };
+  const cleanUser = username.trim();
+  const todayStr = getTodayDateStringKST();
+
+  const todayRow = db.prepare('SELECT COUNT(*) as count FROM farm_visits WHERE target_username = ? AND visit_date = ?').get(cleanUser, todayStr);
+  const totalRow = db.prepare('SELECT COUNT(*) as count FROM farm_visits WHERE target_username = ?').get(cleanUser);
+
+  return {
+    todayCount: todayRow ? (todayRow.count || 0) : 0,
+    totalCount: totalRow ? (totalRow.count || 0) : 0
+  };
+}
+
+// 2-2. 미니홈피 실제 방문 기록 (당일 1인 1회 고유 누적)
+export function recordFarmVisit(targetUsername, visitorUsername) {
+  if (!targetUsername) return { todayCount: 0, totalCount: 0 };
+  const cleanTarget = targetUsername.trim();
+  const cleanVisitor = (visitorUsername || '익명').trim();
+  const todayStr = getTodayDateStringKST();
+
+  try {
+    // 당일 중복 방문 방지 (UNIQUE(target_username, visitor_username, visit_date))
+    db.prepare(`
+      INSERT OR IGNORE INTO farm_visits (target_username, visitor_username, visit_date)
+      VALUES (?, ?, ?)
+    `).run(cleanTarget, cleanVisitor, todayStr);
+
+    const visits = getFarmVisits(cleanTarget);
+
+    // farms 테이블에 최신 방문수 동기화
+    db.prepare('UPDATE farms SET today_count = ?, total_count = ? WHERE username = ?')
+      .run(visits.todayCount, visits.totalCount, cleanTarget);
+
+    return visits;
+  } catch (e) {
+    console.error('[SQLite DB] recordFarmVisit error:', e);
+    return getFarmVisits(cleanTarget);
+  }
+}
+
+// 2-3. 단일 농장 전체 정보 조회 (실제 하트 및 실제 방문수 적용)
 export function getFarm(username) {
   if (!username) return null;
   const cleanUser = username.trim();
   const row = db.prepare('SELECT * FROM farms WHERE username = ?').get(cleanUser);
   if (!row) return null;
 
-  return parseFarmRow(row);
+  const visits = getFarmVisits(cleanUser);
+  const parsed = parseFarmRow(row);
+  return {
+    ...parsed,
+    todayCount: visits.todayCount,
+    totalCount: visits.totalCount
+  };
 }
 
-// 3. 인기 농장 TOP N 조회
+// 3. 인기 농장 TOP N 조회 (실제 하트 및 실제 방문수 반영)
 export function getPopularFarms(limit = 3) {
   const rows = db.prepare(`
     SELECT * FROM farms 
@@ -238,10 +313,18 @@ export function getPopularFarms(limit = 3) {
     LIMIT ?
   `).all(limit);
 
-  return rows.map(parseFarmRow);
+  return rows.map(row => {
+    const parsed = parseFarmRow(row);
+    const visits = getFarmVisits(parsed.username);
+    return {
+      ...parsed,
+      todayCount: visits.todayCount,
+      totalCount: visits.totalCount
+    };
+  });
 }
 
-// 4. 전체 이웃 농장 목록 조회
+// 4. 전체 이웃 농장 목록 조회 (실제 하트 및 실제 방문수 반영)
 export function getAllFarms() {
   const rows = db.prepare(`
     SELECT * FROM farms 
@@ -251,8 +334,11 @@ export function getAllFarms() {
   const now = Date.now();
   return rows.map(row => {
     const parsed = parseFarmRow(row);
+    const visits = getFarmVisits(parsed.username);
     return {
       ...parsed,
+      todayCount: visits.todayCount,
+      totalCount: visits.totalCount,
       isOnline: (now - (parsed.lastActive || 0)) < 1000 * 60 * 30 // 30분 이내 활성
     };
   });

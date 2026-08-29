@@ -6,6 +6,8 @@ import {
   sendHeart,
   getTodayHeartCount,
   DAILY_HEART_LIMIT,
+  recordFarmVisit,
+  getFarmVisits,
   addGuestbookEntry,
   getGuestbookEntries,
   deleteGuestbookEntry
@@ -18,6 +20,9 @@ export function registerFarmHandlers(io, socket) {
     if (!username || !farmData) return;
     const cleanUser = username.trim();
 
+    // 본인 접속 방문 카운트 기록
+    recordFarmVisit(cleanUser, cleanUser);
+
     // SQLite DB에 농장 프로필, 포켓몬, 스티커, 회전 배치 데이터 영구 저장
     const savedFarm = upsertFarm(cleanUser, farmData);
 
@@ -29,6 +34,10 @@ export function registerFarmHandlers(io, socket) {
   socket.on('farm-load-my-data', ({ username }) => {
     if (!username) return;
     const cleanUser = username.trim();
+
+    // 본인 접속 방문 카운트 기록 (당일 첫 접속 시 TODAY/TOTAL +1)
+    recordFarmVisit(cleanUser, cleanUser);
+
     const farm = getFarm(cleanUser);
     const guestbook = getGuestbookEntries(cleanUser, 50);
     socket.emit('farm-my-data-loaded', {
@@ -58,10 +67,15 @@ export function registerFarmHandlers(io, socket) {
     });
   });
 
-  // 3. 특정 이웃 농장 미니홈피 방문 요청 (오프라인 유저도 DB에서 즉시 조회 가능!)
-  const handleVisit = ({ targetUsername }) => {
+  // 3. 특정 이웃 농장 미니홈피 방문 요청 (실제 방문수 카운트 & 오프라인 유저도 DB에서 즉시 조회 가능!)
+  const handleVisit = ({ targetUsername, visitorUsername }) => {
     if (!targetUsername) return;
     const cleanTarget = targetUsername.trim();
+    const cleanVisitor = (visitorUsername || '익명').trim();
+
+    // 실제 방문자 기록
+    recordFarmVisit(cleanTarget, cleanVisitor);
+
     const farm = getFarm(cleanTarget);
     const guestbook = getGuestbookEntries(cleanTarget, 50);
 
@@ -70,6 +84,14 @@ export function registerFarmHandlers(io, socket) {
       farm: farm || null,
       guestbook
     });
+
+    if (farm) {
+      io.emit('farm-visit-updated', {
+        targetUsername: cleanTarget,
+        todayCount: farm.todayCount,
+        totalCount: farm.totalCount
+      });
+    }
   };
   socket.on('farm-visit', handleVisit);
   socket.on('farm-visit-request', handleVisit);

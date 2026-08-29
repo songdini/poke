@@ -1061,6 +1061,454 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
       showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/184.gif',
       genCategory: 'gen1-2'
     }
+  ],
+
+  // 34. 가라르 포니타 ➔ 가라르 날쌩마 (영롱한 유니콘)
+  [
+    {
+      id: 10161,
+      name: '가라르 포니타',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10161.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10161.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10162,
+      name: '가라르 날쌩마',
+      minLevel: 40,
+      minHappiness: 75,
+      types: ['psychic', 'fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10162.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10162.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 35. 가라르 지그제구리 ➔ 가라르 직구리 ➔ 가로막구리 (펑크 락커)
+  [
+    {
+      id: 10171,
+      name: '가라르 지그제구리',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['dark', 'normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10171.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10171.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10172,
+      name: '가라르 직구리',
+      minLevel: 20,
+      minHappiness: 45,
+      types: ['dark', 'normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10172.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10172.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 862,
+      name: '가로막구리',
+      minLevel: 35,
+      minHappiness: 80,
+      types: ['dark', 'normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/862.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/862.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 36. 알로라 식스테일 ➔ 알로라 나인테일 (눈꽃 요정)
+  [
+    {
+      id: 10103,
+      name: '알로라 식스테일',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['ice'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10103.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10103.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10104,
+      name: '알로라 나인테일',
+      minLevel: 36,
+      minHappiness: 80,
+      types: ['ice', 'fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10104.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10104.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 37. 알로라 라이츄 (서핑 팬케이크)
+  [
+    {
+      id: 172,
+      name: '알로라 피츄',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/172.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 25,
+      name: '알로라 피카츄',
+      minLevel: 15,
+      minHappiness: 50,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/25.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10100,
+      name: '알로라 라이츄',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['electric', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10100.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10100.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 38. 히스이 조로아 ➔ 히스이 조로아크 (원한의 요우코)
+  [
+    {
+      id: 10238,
+      name: '히스이 조로아',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['normal', 'ghost'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10238.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10238.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10239,
+      name: '히스이 조로아크',
+      minLevel: 30,
+      minHappiness: 75,
+      types: ['normal', 'ghost'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10239.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10239.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 39. 코스모그 ➔ 코스모움 ➔ 솔가레오 (전설의 태양사자)
+  [
+    {
+      id: 789,
+      name: '코스모그',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/789.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/789.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 790,
+      name: '코스모움',
+      minLevel: 25,
+      minHappiness: 50,
+      types: ['psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/790.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/790.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 791,
+      name: '솔가레오',
+      minLevel: 53,
+      minHappiness: 90,
+      types: ['psychic', 'steel'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/791.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/791.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 40. 뮤 (환상의 시초)
+  [
+    {
+      id: 151,
+      name: '뮤',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/151.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 41. 지라치 (천년의 소원별)
+  [
+    {
+      id: 385,
+      name: '지라치',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['steel', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/385.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/385.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 42. 빅티니 (승리의 별)
+  [
+    {
+      id: 494,
+      name: '빅티니',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic', 'fire'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/494.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/494.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 43. 세레비 (숲의 시간 여행자)
+  [
+    {
+      id: 251,
+      name: '세레비',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic', 'grass'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/251.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/251.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 44. 토게피 ➔ 토게틱 ➔ 토게키스 (행운의 축복)
+  [
+    {
+      id: 175,
+      name: '토게피',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/175.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/175.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 176,
+      name: '토게틱',
+      minLevel: 20,
+      minHappiness: 50,
+      types: ['fairy', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/176.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/176.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 468,
+      name: '토게키스',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['fairy', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/468.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/468.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 45. 애버라스 ➔ 데기라스 ➔ 마기라스 (모래바람 폭군)
+  [
+    {
+      id: 246,
+      name: '애버라스',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['rock', 'ground'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/246.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/246.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 247,
+      name: '데기라스',
+      minLevel: 30,
+      minHappiness: 45,
+      types: ['rock', 'ground'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/247.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/247.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 248,
+      name: '마기라스',
+      minLevel: 55,
+      minHappiness: 90,
+      types: ['rock', 'dark'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/248.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/248.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 46. 아공이 ➔ 쉘곤 ➔ 보만다 (비행의 꿈 드래곤)
+  [
+    {
+      id: 371,
+      name: '아공이',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['dragon'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/371.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/371.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 372,
+      name: '쉘곤',
+      minLevel: 30,
+      minHappiness: 45,
+      types: ['dragon'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/372.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/372.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 373,
+      name: '보만다',
+      minLevel: 50,
+      minHappiness: 90,
+      types: ['dragon', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/373.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/373.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 47. 가디 ➔ 윈디 (의리의 불꽃 사자견)
+  [
+    {
+      id: 58,
+      name: '가디',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['fire'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/58.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/58.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 59,
+      name: '윈디',
+      minLevel: 36,
+      minHappiness: 75,
+      types: ['fire'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/59.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 48. 잉어킹 ➔ 갸라도스 (용오름 역경 극복)
+  [
+    {
+      id: 129,
+      name: '잉어킹',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['water'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/129.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 130,
+      name: '갸라도스',
+      minLevel: 20,
+      minHappiness: 60,
+      types: ['water', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/130.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 49. 메리프 ➔ 보송송 ➔ 전룡 (따뜻한 양털 램프)
+  [
+    {
+      id: 179,
+      name: '메리프',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/179.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/179.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 180,
+      name: '보송송',
+      minLevel: 15,
+      minHappiness: 40,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/180.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/180.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 181,
+      name: '전룡',
+      minLevel: 30,
+      minHappiness: 80,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/181.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/181.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 50. 모부기 ➔ 수풀부기 ➔ 토대부기 (대륙을 품은 숲)
+  [
+    {
+      id: 387,
+      name: '모부기',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['grass'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/387.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/387.gif',
+      genCategory: 'gen3-4'
+    },
+    {
+      id: 388,
+      name: '수풀부기',
+      minLevel: 18,
+      minHappiness: 45,
+      types: ['grass'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/388.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/388.gif',
+      genCategory: 'gen3-4'
+    },
+    {
+      id: 389,
+      name: '토대부기',
+      minLevel: 32,
+      minHappiness: 80,
+      types: ['grass', 'ground'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/389.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/389.gif',
+      genCategory: 'gen3-4'
+    }
   ]
 ];
 
@@ -1198,19 +1646,19 @@ export const FARM_ITEMS: FarmItem[] = [
   },
   {
     id: 'mystery_egg',
-    name: '의문의 포켓몬 알',
+    name: '🥚 일반 포켓몬 알',
     icon: '🥚',
     category: 'special',
-    description: '신비한 기운의 알. 인큐베이터에 넣고 정성으로 돌보면 귀여운 아기 포켓몬이 탄생합니다!',
+    description: '다양한 세대의 모든 일반 포켓몬이 부화하는 알. 인큐베이터에 넣고 정성으로 돌보면 아기 포켓몬이 탄생합니다!',
     price: 300,
     effect: { happiness: 15 }
   },
   {
     id: 'golden_egg',
-    name: '황금빛 전설의 알',
+    name: '🌟 전설 & 특수 포켓몬 알',
     icon: '🌟',
     category: 'special',
-    description: '영롱한 황금빛으로 빛나는 알. 부화 시 100% 확률로 반짝이는 이로치(Shiny) 포켓몬이 탄생합니다!',
+    description: '100% 이로치(Shiny), 가라르/알로라/히스이 리전폼 및 전설/환상 포켓몬이 부화하는 특별한 알!',
     price: 800,
     effect: { happiness: 30 }
   }
@@ -1440,16 +1888,49 @@ export function createNewFarmPokemon(chainIndex: number, nickname?: string, isSh
 
 /**
  * 🥚 알에서 태어날 아기 포켓몬 결정 함수
- * @param isGolden 황금알 여부
+ * @param isGolden 전설/특수 알 여부 (true: 전설 & 특수 포켓몬 알, false: 일반 포켓몬 알)
  */
 export function hatchBabyPokemon(isGolden: boolean = false): {
   chainIdx: number;
   isShiny: boolean;
 } {
-  const chainIdx = Math.floor(Math.random() * STARTER_CHAINS.length);
-  // 🌟 이로치 확률 밸런스: 일반 알은 1.5%의 귀한 확률, 황금알은 100% 확정
-  const isShiny = isGolden ? true : Math.random() < 0.015;
-  return { chainIdx, isShiny };
+  // 1. 특수/전설/리전폼 체인과 일반 체인 분리
+  const specialIndices: number[] = [];
+  const normalIndices: number[] = [];
+
+  STARTER_CHAINS.forEach((chain, idx) => {
+    const isSpecial = chain.some(stage => stage.genCategory === 'special') ||
+      chain.some(stage => 
+        stage.name.includes('알로라') || 
+        stage.name.includes('가라르') || 
+        stage.name.includes('히스이') || 
+        stage.name.includes('팔데아') || 
+        stage.name.includes('뮤') || 
+        stage.name.includes('지라치') || 
+        stage.name.includes('빅티니') || 
+        stage.name.includes('세레비') || 
+        stage.name.includes('코스모그')
+      );
+
+    if (isSpecial) {
+      specialIndices.push(idx);
+    } else {
+      normalIndices.push(idx);
+    }
+  });
+
+  if (isGolden) {
+    // 🌟 전설 & 특수 포켓몬 알: 100% 확정 이로치(Shiny) + 전설/리전폼/희귀 계열 우선 부화
+    const pool = specialIndices.length > 0 ? specialIndices : Array.from({ length: STARTER_CHAINS.length }, (_, i) => i);
+    const chainIdx = pool[Math.floor(Math.random() * pool.length)];
+    return { chainIdx, isShiny: true };
+  } else {
+    // 🥚 일반 포켓몬 알: 전체 다양한 일반 포켓몬 풀에서 부화 (1.5% 행운의 이로치 확률)
+    const pool = normalIndices.length > 0 ? normalIndices : Array.from({ length: STARTER_CHAINS.length }, (_, i) => i);
+    const chainIdx = pool[Math.floor(Math.random() * pool.length)];
+    const isShiny = Math.random() < 0.015;
+    return { chainIdx, isShiny };
+  }
 }
 
 export interface LotterySymbol {
@@ -1505,8 +1986,8 @@ export function getInitialFarmState(ownerName: string): FarmState {
     pokemonPlacements: {},
     statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
     bgmSong: '프리스타일 - Y (Feat. 지선)',
-    todayCount: Math.floor(Math.random() * 50) + 120,
-    totalCount: Math.floor(Math.random() * 1000) + 4200,
+    todayCount: 0,
+    totalCount: 0,
     lotteryState: {
       lastDate: getTodayDateString(),
       freeSpinsLeft: 3,
@@ -1526,7 +2007,7 @@ export function getInitialFarmState(ownerName: string): FarmState {
         timestamp: new Date().toISOString()
       }
     ],
-    heartsCount: 12
+    heartsCount: 0
   };
 }
 
@@ -1617,6 +2098,18 @@ export function loadFarmState(ownerName?: string): FarmState {
         parsed.lotteryState.freeSpinsLeft = 3;
       }
       parsed.lotteryState.jackpotPool = Math.max(1000, parsed.lotteryState.jackpotPool || 2000);
+
+      // 💖 실제 수치 보정 (초기 mock 값 12 / 142 / 4820 등 과거 잔여값 제거)
+      if (parsed.heartsCount === 12) {
+        parsed.heartsCount = 0;
+      }
+      if (parsed.todayCount && parsed.todayCount > 100 && (!parsed.totalCount || parsed.totalCount > 4000)) {
+        parsed.todayCount = 0;
+        parsed.totalCount = 0;
+      }
+      parsed.heartsCount = parsed.heartsCount || 0;
+      parsed.todayCount = parsed.todayCount || 0;
+      parsed.totalCount = parsed.totalCount || 0;
 
       // 🌟 기존 세이브 데이터의 과도하게 뻥튀기된 maxExp를 새 공식으로 즉시 보정
       if (parsed.activePokemon) {
