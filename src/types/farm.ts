@@ -117,6 +117,43 @@ export interface ExpeditionArea {
   }[];
 }
 
+export interface StoryChoice {
+  id: string;
+  text: string;
+  icon: string;
+  reqDesc?: string;
+  successRate: number; // 0.0 ~ 1.0
+  successDialogue: string;
+  failDialogue: string;
+  successResult: {
+    title: string;
+    grade: 'JACKPOT' | 'SUCCESS' | 'ESCAPE';
+    coins: number;
+    exp: number;
+    items: { itemId: string; qty: number }[];
+  };
+  failResult: {
+    title: string;
+    grade: 'FAIL' | 'ESCAPE';
+    coins: number;
+    exp: number;
+    items: { itemId: string; qty: number }[];
+    energyDamage?: number;
+    cleanlinessDamage?: number;
+  };
+}
+
+export interface ExpeditionStoryEvent {
+  id: string;
+  areaId: string;
+  title: string;
+  npcName: string;
+  npcPortrait: string;
+  npcBadge: string;
+  dialogue: string[];
+  choices: StoryChoice[];
+}
+
 export interface ExpeditionSession {
   areaId: string;
   startedAt: number;

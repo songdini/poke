@@ -1,4 +1,4 @@
-import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea, NeighborFarmData } from '../types/farm';
+import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea, NeighborFarmData, ExpeditionStoryEvent } from '../types/farm';
 import type { PokemonType } from '../types/pokemon';
 
 export const FARM_STORAGE_KEY = 'pokefarm_save_data_v1';
@@ -2282,6 +2282,406 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     ]
   }
 ];
+
+// 🌲 사내 탐험 인터랙티브 스토리 인카운터 이벤트 목록
+export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
+  exp_pantry: [
+    {
+      id: 'pantry_snack_thief',
+      areaId: 'exp_pantry',
+      title: '🍪 탕비실 간식 도둑 로켓단의 습격!',
+      npcName: '로켓단 간식 조무래기',
+      npcPortrait: '😈',
+      npcBadge: '탕비실 털이범',
+      dialogue: [
+        '히히히! 서랍 깊숙이 숨겨진 고급 버터쿠키와 오랭열매는 전부 우리 로켓단 차지다!',
+        '어라? 쪼그만 포켓몬 녀석이 어디서 탕비실에 기어들어온 거지? 내 간식을 탐내는 거냐?!'
+      ],
+      choices: [
+        {
+          id: 'tackle',
+          text: '⚔️ [몸통박치기!] 서랍을 들이받아 간식 바구니를 지켜낸다!',
+          icon: '⚔️',
+          reqDesc: '기본 성공률 70% (레벨 보정)',
+          successRate: 0.70,
+          successDialogue: '쿵! 당황한 로켓단이 커피 캔을 밟고 우스꽝스럽게 미끄러져 도망쳤습니다! 떨어진 간식과 코인을 획득했습니다.',
+          failDialogue: '아야! 로켓단의 꿀밤에 맞아 엉덩방아를 찧었습니다. 간신히 한 개만 건져 탈출했습니다.',
+          successResult: {
+            title: '🏆 간식 사수 대승리!',
+            grade: 'SUCCESS',
+            coins: 160,
+            exp: 90,
+            items: [
+              { itemId: 'oran_berry', qty: 2 },
+              { itemId: 'mystery_egg', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '💦 꿀밤 맞고 퇴각...',
+            grade: 'ESCAPE',
+            coins: 40,
+            exp: 25,
+            items: [{ itemId: 'oran_berry', qty: 1 }],
+            energyDamage: 10
+          }
+        },
+        {
+          id: 'coffee_bribe',
+          text: '☕ [황금비율 믹스커피] 달콤한 커피를 타주며 평화 협상을 시도한다',
+          icon: '☕',
+          reqDesc: '기본 성공률 85% (친밀도 보정)',
+          successRate: 0.85,
+          successDialogue: '감동한 로켓단이 눈물을 글썽이며 "이게 얼마 만의 따뜻한 커피인가... 흑흑!"이라며 답례로 귀한 디저트와 코인을 쥐여주었습니다.',
+          failDialogue: '로켓단이 "난 아메리카노파다!"라며 커피잔을 밀치고 도망쳤습니다. 소량의 코인만 주웠습니다.',
+          successResult: {
+            title: '🤝 눈물의 커피 평화 협상!',
+            grade: 'SUCCESS',
+            coins: 140,
+            exp: 70,
+            items: [
+              { itemId: 'sitrus_berry', qty: 2 },
+              { itemId: 'poffin_cake', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '☕ 커피 취향 불일치',
+            grade: 'ESCAPE',
+            coins: 35,
+            exp: 20,
+            items: [{ itemId: 'sitrus_berry', qty: 1 }]
+          }
+        },
+        {
+          id: 'stealth_snatch',
+          text: '💨 [살금살금 은신] 로켓단이 한눈판 사이 쿠키 상자만 낚아채서 튄다!',
+          icon: '💨',
+          reqDesc: '기본 성공률 95% (안전한 선택)',
+          successRate: 0.95,
+          successDialogue: '완벽한 은신 기술! 로켓단이 등 돌린 틈을 타 스낵 바구니를 품에 안고 쏜살같이 본부로 복귀했습니다.',
+          failDialogue: '바닥의 비닐봉지를 바스락 밟아 들킬 뻔했습니다! 헐레벌떡 빈손으로 도망쳤습니다.',
+          successResult: {
+            title: '✨ 닌자 급속 간식 탈취!',
+            grade: 'SUCCESS',
+            coins: 110,
+            exp: 55,
+            items: [
+              { itemId: 'oran_berry', qty: 2 },
+              { itemId: 'sitrus_berry', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '🏃 헐레벌떡 줄행랑',
+            grade: 'ESCAPE',
+            coins: 30,
+            exp: 15,
+            items: []
+          }
+        }
+      ]
+    }
+  ],
+  exp_rooftop: [
+    {
+      id: 'rooftop_poacher_event',
+      areaId: 'exp_rooftop',
+      title: '🌿 화단의 수상한 밀렵꾼과 길 잃은 아기새!',
+      npcName: '선글라스 포켓몬 밀렵꾼',
+      npcPortrait: '🕵️',
+      npcBadge: '화단 침입자',
+      dialogue: [
+        '이 옥상정원 화단에 전설의 날개가 깃든 신비한 알이 숨겨져 있다는 소문을 들었다...',
+        '비켜라 꼬마야! 순순히 화단을 비우지 않으면 네 녀석의 털까지 몽땅 뽑아버리겠다!'
+      ],
+      choices: [
+        {
+          id: 'surprise_attack',
+          text: '⚡ [기습 공격!] 화단 뒤에서 덤불을 박차고 덮친다!',
+          icon: '⚡',
+          reqDesc: '기본 성공률 65% (레벨 보정)',
+          successRate: 0.65,
+          successDialogue: '명중! 밀렵꾼이 당황해 던진 그물이 제 발에 걸려 넘어졌습니다! 바닥에 떨어진 밀렵꾼의 보물 가방을 통째로 압수했습니다!',
+          failDialogue: '밀렵꾼의 연막탄에 기침을 콜록거리며 물러섰습니다. 흙먼지를 뒤집어썼습니다.',
+          successResult: {
+            title: '🏆 밀렵꾼 완전 제압!',
+            grade: 'SUCCESS',
+            coins: 280,
+            exp: 160,
+            items: [
+              { itemId: 'mystery_egg', qty: 1 },
+              { itemId: 'shiny_stone', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '💨 연막탄에 당황!',
+            grade: 'FAIL',
+            coins: 60,
+            exp: 35,
+            items: [{ itemId: 'oran_berry', qty: 1 }],
+            cleanlinessDamage: 25,
+            energyDamage: 15
+          }
+        },
+        {
+          id: 'flower_wind',
+          text: '🌸 [꽃바람 날리기] 꽃가루를 흩뿌려 재채기를 유도한다',
+          icon: '🌸',
+          reqDesc: '기본 성공률 80% (친밀도 보정)',
+          successRate: 0.80,
+          successDialogue: '에취! 에취! 밀렵꾼이 정신없이 재채기를 하는 틈을 타 신선한 최고급 열매와 장난감을 낚아챘습니다!',
+          failDialogue: '바람이 반대로 불어 오히려 이쪽이 에취! 재채기를 하며 슬금슬금 빠져나왔습니다.',
+          successResult: {
+            title: '💐 지혜로운 꽃가루 작전!',
+            grade: 'SUCCESS',
+            coins: 200,
+            exp: 120,
+            items: [
+              { itemId: 'toy_ball', qty: 1 },
+              { itemId: 'sitrus_berry', qty: 2 }
+            ]
+          },
+          failResult: {
+            title: '🤧 재채기 연발 후퇴',
+            grade: 'ESCAPE',
+            coins: 50,
+            exp: 30,
+            items: [{ itemId: 'sitrus_berry', qty: 1 }]
+          }
+        },
+        {
+          id: 'call_pidgeot',
+          text: '🕊️ [옥상 새들에게 신호] 야생 피죤투 무리에 도움을 요청한다',
+          icon: '🕊️',
+          reqDesc: '기본 성공률 75%',
+          successRate: 0.75,
+          successDialogue: '푸드덕! 거대한 피죤투 무리가 강림하여 거센 바람으로 밀렵꾼을 옥상 밖으로 날려버렸습니다! 피죤투가 신비한 사탕을 선물했습니다.',
+          failDialogue: '피죤투들이 낮잠을 자느라 날아오지 않았습니다. 조용히 풀숲 사이로 기어 나왔습니다.',
+          successResult: {
+            title: '🦅 하늘의 수호신 강림!',
+            grade: 'SUCCESS',
+            coins: 240,
+            exp: 140,
+            items: [
+              { itemId: 'rare_candy', qty: 1 },
+              { itemId: 'sitrus_berry', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '🌿 조용한 풀숲 후퇴',
+            grade: 'ESCAPE',
+            coins: 55,
+            exp: 30,
+            items: []
+          }
+        }
+      ]
+    }
+  ],
+  exp_server_room: [
+    {
+      id: 'server_hacker_crisis',
+      areaId: 'exp_server_room',
+      title: '🗄️ 서버실 블랙아웃과 로켓단 사이버 해커!',
+      npcName: '로켓단 사이버 해커',
+      npcPortrait: '💻',
+      npcBadge: '전산망 암흑 지배자',
+      dialogue: [
+        '크크큭... 사내 서버를 모조리 다운시키고 금고의 이상한사탕과 연구 데이터를 전부 가로채겠다!',
+        '침입자 경보? 조무래기 포켓몬 따위가 내 기가바이트 바이러스 공격을 버틸 수 있을까?!'
+      ],
+      choices: [
+        {
+          id: 'pull_plug',
+          text: '🔌 [물리적 랜선 차단!] 해킹 중인 메인 전원 코드를 꽉 물어 뽑아버린다!',
+          icon: '🔌',
+          reqDesc: '기본 성공률 70% (레벨 보정)',
+          successRate: 0.70,
+          successDialogue: '탁! 전원이 차단되자 해커가 "내 데이터가아악!" 비명을 지르며 백도어 USB와 보물 광물을 떨어뜨리고 도망쳤습니다!',
+          failDialogue: '스파크가 찌릿! 털이 곤두서며 깜짝 놀랐습니다. 엉겁결에 뒤로 물러났습니다.',
+          successResult: {
+            title: '🛡️ 사내 서버 완벽 수호!',
+            grade: 'SUCCESS',
+            coins: 390,
+            exp: 250,
+            items: [
+              { itemId: 'rare_candy', qty: 1 },
+              { itemId: 'shiny_stone', qty: 1 },
+              { itemId: 'energy_drink', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '⚡ 스파크 감전 탈출',
+            grade: 'FAIL',
+            coins: 80,
+            exp: 50,
+            items: [{ itemId: 'energy_drink', qty: 1 }],
+            energyDamage: 25,
+            cleanlinessDamage: 15
+          }
+        },
+        {
+          id: 'power_recharge',
+          text: '⚡ [비상 발전기 가동] 전력 스위치를 올려 서버실 백업 전원을 켠다!',
+          icon: '⚡',
+          reqDesc: '기본 성공률 60% (고난도 대박)',
+          successRate: 0.60,
+          successDialogue: '위이잉! 환한 조명이 켜지자 보안 시스템이 작동하여 해커를 체포했습니다! 전산팀장님이 눈물을 흘리며 특급 보상을 건넸습니다!',
+          failDialogue: '과전류로 퓨즈가 펑! 경보 사이렌이 울려 황급히 환기구로 탈출했습니다.',
+          successResult: {
+            title: '👑 전산망 구원의 영웅!',
+            grade: 'JACKPOT',
+            coins: 500,
+            exp: 320,
+            items: [
+              { itemId: 'rare_candy', qty: 2 },
+              { itemId: 'mystery_egg', qty: 1 },
+              { itemId: 'full_heal', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '🚨 경보 벨 속 긴급 탈출',
+            grade: 'ESCAPE',
+            coins: 90,
+            exp: 60,
+            items: [{ itemId: 'energy_drink', qty: 1 }]
+          }
+        },
+        {
+          id: 'snatch_backpack',
+          text: '🗂️ [보급품 배낭 슬쩍] 해커가 바닥에 내려놓은 전리품 가방만 낚아챈다!',
+          icon: '🗂️',
+          reqDesc: '기본 성공률 85%',
+          successRate: 0.85,
+          successDialogue: '나이스 캐치! 해커가 모니터에 집중하는 사이 고가의 상처약과 회복제가 가득 든 가방을 완벽히 회수했습니다!',
+          failDialogue: '캐비닛 문이 삐걱 소리를 내어 해커에게 들킬 뻔했습니다. 음료 한 캔만 챙겨 도망쳤습니다.',
+          successResult: {
+            title: '🎒 해커의 보급품 회수 완료!',
+            grade: 'SUCCESS',
+            coins: 310,
+            exp: 190,
+            items: [
+              { itemId: 'full_heal', qty: 1 },
+              { itemId: 'energy_drink', qty: 2 }
+            ]
+          },
+          failResult: {
+            title: '🏃 아슬아슬 캐비닛 탈출',
+            grade: 'ESCAPE',
+            coins: 95,
+            exp: 55,
+            items: [{ itemId: 'energy_drink', qty: 1 }]
+          }
+        }
+      ]
+    }
+  ],
+  exp_mountain: [
+    {
+      id: 'mountain_apollo_shrine',
+      areaId: 'exp_mountain',
+      title: '⛰️ 안개 낀 절벽, 전설의 제단 결전!',
+      npcName: '로켓단 특수간부 아폴로',
+      npcPortrait: '🦹',
+      npcBadge: '로켓단 총사령관',
+      dialogue: [
+        '이 사옥 뒷산 정상의 고대 제단에 잠든 황금빛 전설의 알... 드디어 내 손에 들어왔다!',
+        '감히 어린 녀석이 방해를 해? 내 다크 포켓몬의 압도적인 암흑 파워를 보여주마!'
+      ],
+      choices: [
+        {
+          id: 'pray_guardian',
+          text: '🌟 [전설의 제단 기도] 수호신에게 기도를 올려 기적의 힘을 깨운다! (친밀도 우대)',
+          icon: '🌟',
+          reqDesc: '친밀도 70+ 일 때 성공률 대폭 상승!',
+          successRate: 0.55,
+          successDialogue: '하늘에서 눈부신 오색 빛기둥이 쏟아지며 전설의 포켓몬이 강림했습니다! 악당 아폴로를 일격에 날려버리고 최고급 황금알과 전설의 왕관을 선물했습니다!',
+          failDialogue: '안개가 짙어 목소리가 닿지 않았습니다. 아폴로의 거센 암흑 파동에 밀려 가파른 숲길을 굴러 떨어졌습니다.',
+          successResult: {
+            title: '👑 [초특급 잭팟] 전설의 수호신 강림!',
+            grade: 'JACKPOT',
+            coins: 680,
+            exp: 480,
+            items: [
+              { itemId: 'golden_egg', qty: 1 },
+              { itemId: 'gold_crown', qty: 1 },
+              { itemId: 'rare_candy', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '💥 절벽 굴러떨어짐...',
+            grade: 'FAIL',
+            coins: 120,
+            exp: 80,
+            items: [{ itemId: 'oran_berry', qty: 1 }],
+            energyDamage: 40,
+            cleanlinessDamage: 30
+          }
+        },
+        {
+          id: 'partner_combo',
+          text: '⚔️ [영혼의 유대 총공격!] 파트너와 호흡을 맞춰 보스에게 돌진한다!',
+          icon: '⚔️',
+          reqDesc: '기본 성공률 65% (레벨 30+ 우대)',
+          successRate: 0.65,
+          successDialogue: '대폭발과 함께 완벽한 승리! 쓰러진 아폴로가 황급히 헬기를 타고 도망치며 전설알과 사탕을 떨어뜨렸습니다!',
+          failDialogue: '보스의 강력한 반격에 뒤로 날아갔습니다. 간신히 비상 약초만 챙겨 퇴각했습니다.',
+          successResult: {
+            title: '🏆 로켓단 총사령관 격파!',
+            grade: 'JACKPOT',
+            coins: 580,
+            exp: 400,
+            items: [
+              { itemId: 'golden_egg', qty: 1 },
+              { itemId: 'rare_candy', qty: 2 },
+              { itemId: 'shiny_stone', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '😵 강타를 맞고 후퇴',
+            grade: 'FAIL',
+            coins: 140,
+            exp: 90,
+            items: [{ itemId: 'full_heal', qty: 1 }],
+            energyDamage: 30
+          }
+        },
+        {
+          id: 'sled_escape',
+          text: '💨 [황금 상자 낚아채기] 보물이 든 상자를 낚아채고 썰매 타고 급경사 활강!',
+          icon: '💨',
+          reqDesc: '기본 성공률 80% (안전한 고수익)',
+          successRate: 0.80,
+          successDialogue: '짜릿한 알프스급 썰매 활강! 아폴로의 고함 소리를 뒤로하고 막대한 전리품과 보석을 품에 안고 본부에 안전 착지했습니다!',
+          failDialogue: '돌부리에 걸려 엉덩방아를 찧었지만 보석 한 개는 사수했습니다.',
+          successResult: {
+            title: '⛷️ 스릴 만점 전리품 활강!',
+            grade: 'SUCCESS',
+            coins: 460,
+            exp: 300,
+            items: [
+              { itemId: 'shiny_stone', qty: 2 },
+              { itemId: 'rare_candy', qty: 1 },
+              { itemId: 'mystery_egg', qty: 1 }
+            ]
+          },
+          failResult: {
+            title: '🪵 돌부리에 쿵!',
+            grade: 'ESCAPE',
+            coins: 160,
+            exp: 110,
+            items: [{ itemId: 'shiny_stone', qty: 1 }],
+            energyDamage: 15
+          }
+        }
+      ]
+    }
+  ]
+};
+
+export function getRandomStoryEvent(areaId: string): ExpeditionStoryEvent {
+  const events = EXPEDITION_STORY_EVENTS[areaId] || EXPEDITION_STORY_EVENTS['exp_pantry'];
+  const idx = Math.floor(Math.random() * events.length);
+  return events[idx];
+}
 
 // 💼 동물농장 스타일 포켓몬 아르바이트 목록
 export const FARM_JOBS: PartTimeJob[] = [

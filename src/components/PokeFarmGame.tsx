@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -17,7 +17,8 @@ import {
   getAllPokedexEntries,
   getAllStoredFarms,
   EEVEE_BRANCHES,
-  getRandomEeveeEvolution
+  getRandomEeveeEvolution,
+  getRandomStoryEvent
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X
@@ -298,6 +299,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
   const [starterNickname, setStarterNickname] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special'>('all');
+  const [shopCategory, setShopCategory] = useState<'all' | 'egg' | 'food' | 'bath' | 'toy' | 'medicine'>('all');
 
   // 애니메이션 & 이펙트 상태
   const [floatingHeart, setFloatingHeart] = useState<{ id: number; x: number; y: number } | null>(null);
@@ -321,14 +323,22 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     } | null;
   } | null>(null);
 
-  // 🌲 사내 탐험 진행 애니메이션 모달 상태
+  // 🌲 사내 탐험 스토리 인터랙션 모달 상태
   const [expeditionModal, setExpeditionModal] = useState<{
     active: boolean;
     area: ExpeditionArea;
+    stage: 'walking' | 'event' | 'resolving' | 'result';
     progress: number;
     statusText: string;
-    isDone: boolean;
+    storyEvent: ExpeditionStoryEvent | null;
+    selectedChoice: StoryChoice | null;
+    isSuccess: boolean | null;
+    resolutionText: string;
+    diceRoll: number;
+    requiredRoll: number;
     rewardGained: {
+      title: string;
+      grade: 'JACKPOT' | 'SUCCESS' | 'ESCAPE' | 'FAIL';
       coins: number;
       exp: number;
       levelUp: boolean;
@@ -2036,7 +2046,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     return () => clearInterval(interval);
   }, [jobShiftModal?.active, jobShiftModal?.isDone, pmon]);
 
-  // 🌲 3-2. 사내 뒷산 탐험 개시
+  // 🌲 3-2. 사내 뒷산 탐험 개시 (스토리 인카운터)
   const handleStartExpedition = (area: ExpeditionArea) => {
     if (!pmon) return;
     if (pmon.level < area.minLevel) {
@@ -2053,107 +2063,47 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }
 
     playPokemonCry(pmon.speciesId);
+    const story = getRandomStoryEvent(area.id);
 
     setExpeditionModal({
       active: true,
       area,
+      stage: 'walking',
       progress: 0,
-      statusText: '🎒 탐험 배낭을 메고 목적지로 출발합니다!',
-      isDone: false,
+      statusText: '🎒 탐험 배낭을 메고 신비로운 목적지로 출발합니다...',
+      storyEvent: story,
+      selectedChoice: null,
+      isSuccess: null,
+      resolutionText: '',
+      diceRoll: 0,
+      requiredRoll: 0,
       rewardGained: null
     });
   };
 
-  // 🌲 사내 뒷산 탐험 진행 애니메이션 타이머
+  // 🌲 1단계: 탐험 전반부 진행 (목적지 이동 ➔ 돌발 스토리 인카운터 발생)
   useEffect(() => {
-    if (!expeditionModal || !expeditionModal.active || expeditionModal.isDone) return;
+    if (!expeditionModal || !expeditionModal.active || expeditionModal.stage !== 'walking') return;
 
     const interval = setInterval(() => {
       setExpeditionModal(prev => {
-        if (!prev || prev.isDone) return prev;
-        const nextProgress = Math.min(100, prev.progress + 12);
+        if (!prev || prev.stage !== 'walking') return prev;
+        const nextProgress = Math.min(50, prev.progress + 15);
 
-        let statusText = '🗺️ 목적지에 도착하여 주변 지형을 정찰 중...';
-        if (nextProgress >= 20 && nextProgress < 50) {
+        let statusText = '🗺️ 목적지에 도착하여 주변 지형을 수색 중...';
+        if (nextProgress >= 30 && nextProgress < 50) {
           statusText = '🔍 수풀과 덤불 사이를 조심스럽게 헤치며 숨겨진 길을 탐색하는 중...';
-        } else if (nextProgress >= 50 && nextProgress < 75) {
-          statusText = '✨ 앗! 바위 틈과 보관함에서 무언가 반짝이는 보물 상자를 발견했습니다! 🎁';
-        } else if (nextProgress >= 75 && nextProgress < 95) {
-          statusText = '🏃‍♂️ 발각되지 않도록 전리품을 배낭에 단단히 챙겨 본부로 귀환하는 중!';
-        } else if (nextProgress >= 100) {
-          statusText = '🎉 탐험 대성공! 전리품 보고서가 도착했습니다.';
+        } else if (nextProgress >= 50) {
+          statusText = '⚠️ 앗! 전방에서 돌발 상황이 발생했습니다! 선택의 순간입니다.';
         }
 
-        if (nextProgress >= 100) {
-          if (pmon) {
-            const gainedCoins = Math.floor(Math.random() * (prev.area.rewardCoinsMax - prev.area.rewardCoinsMin + 1)) + prev.area.rewardCoinsMin;
-            const gainedExp = Math.floor(Math.random() * (prev.area.rewardExpMax - prev.area.rewardExpMin + 1)) + prev.area.rewardExpMin;
-
-            const foundItems: { item: FarmItem; qty: number }[] = [];
-            const inventoryAdd: Record<string, number> = {};
-
-            prev.area.dropItems.forEach(drop => {
-              if (Math.random() < drop.chance) {
-                const itemObj = FARM_ITEMS.find(i => i.id === drop.itemId);
-                if (itemObj) {
-                  foundItems.push({ item: itemObj, qty: 1 });
-                  inventoryAdd[drop.itemId] = (inventoryAdd[drop.itemId] || 0) + 1;
-                }
-              }
-            });
-
-            let newExp = pmon.exp + gainedExp;
-            let newLevel = pmon.level;
-            let maxExp = getMaxExpForLevel(newLevel);
-            let didLevelUp = false;
-
-            while (newExp >= maxExp) {
-              newExp -= maxExp;
-              newLevel += 1;
-              maxExp = getMaxExpForLevel(newLevel);
-              didLevelUp = true;
-            }
-
-            setFarmState(fPrev => {
-              if (!fPrev.activePokemon) return fPrev;
-              const target = fPrev.activePokemon;
-              const nextInv = { ...fPrev.inventory };
-              Object.entries(inventoryAdd).forEach(([k, v]) => {
-                nextInv[k] = (nextInv[k] || 0) + v;
-              });
-
-              return {
-                ...fPrev,
-                coins: fPrev.coins + gainedCoins,
-                inventory: nextInv,
-                activePokemon: {
-                  ...target,
-                  energy: Math.max(0, target.energy - prev.area.energyCost),
-                  hunger: Math.max(0, target.hunger - prev.area.hungerCost),
-                  cleanliness: Math.max(0, target.cleanliness - prev.area.cleanlinessCost),
-                  level: newLevel,
-                  exp: newExp,
-                  maxExp
-                }
-              };
-            });
-
-            addEggWarmth(10, '탐험 완수');
-
-            return {
-              ...prev,
-              progress: 100,
-              statusText: '🎉 탐험 대성공! 전리품 보고서가 도착했습니다.',
-              isDone: true,
-              rewardGained: {
-                coins: gainedCoins,
-                exp: gainedExp,
-                levelUp: didLevelUp,
-                newLevel,
-                foundItems
-              }
-            };
-          }
+        if (nextProgress >= 50) {
+          return {
+            ...prev,
+            stage: 'event',
+            progress: 50,
+            statusText
+          };
         }
 
         return {
@@ -2165,7 +2115,111 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }, 280);
 
     return () => clearInterval(interval);
-  }, [expeditionModal?.active, expeditionModal?.isDone, pmon]);
+  }, [expeditionModal?.active, expeditionModal?.stage]);
+
+  // 🌲 2단계: 유저 선택지 클릭 & 주사위/스탯 판정 & 결산
+  const handleMakeStoryChoice = (choice: StoryChoice) => {
+    if (!pmon || !expeditionModal || expeditionModal.stage !== 'event') return;
+
+    playPokemonCry(pmon.speciesId);
+
+    // 판정 확률 계산 (기본 확률 + 레벨 보너스 + 친밀도 보너스)
+    const levelBonus = Math.floor(pmon.level * 0.6); // Lv.20 ➔ +12%
+    const happinessBonus = pmon.happiness >= 70 ? 10 : 0; // 친밀도 70+ ➔ +10%
+    const baseRate = Math.round(choice.successRate * 100);
+    const targetSuccessRate = Math.min(95, Math.max(20, baseRate + levelBonus + happinessBonus));
+
+    const roll = Math.floor(Math.random() * 100) + 1;
+    const isSuccess = roll <= targetSuccessRate;
+    const outcome = isSuccess ? choice.successResult : choice.failResult;
+    const resolutionText = isSuccess ? choice.successDialogue : choice.failDialogue;
+
+    setExpeditionModal(prev => prev ? {
+      ...prev,
+      stage: 'resolving',
+      selectedChoice: choice,
+      progress: 75,
+      diceRoll: roll,
+      requiredRoll: targetSuccessRate,
+      isSuccess,
+      resolutionText,
+      statusText: isSuccess ? '✨ 판정 성공! 상황을 멋지게 해결했습니다!' : '💦 판정 아쉬움! 위기를 모면하며 탈출합니다.'
+    } : null);
+
+    // 1.4초 후 결산 완료 단계로 이동
+    setTimeout(() => {
+      // 인벤토리 & 보상 적용
+      const gainedCoins = outcome.coins;
+      const gainedExp = outcome.exp;
+      const foundItems: { item: FarmItem; qty: number }[] = [];
+      const inventoryAdd: Record<string, number> = {};
+
+      outcome.items.forEach(it => {
+        const itemObj = FARM_ITEMS.find(i => i.id === it.itemId);
+        if (itemObj) {
+          foundItems.push({ item: itemObj, qty: it.qty });
+          inventoryAdd[it.itemId] = (inventoryAdd[it.itemId] || 0) + it.qty;
+        }
+      });
+
+      let newExp = pmon.exp + gainedExp;
+      let newLevel = pmon.level;
+      let maxExp = getMaxExpForLevel(newLevel);
+      let didLevelUp = false;
+
+      while (newExp >= maxExp) {
+        newExp -= maxExp;
+        newLevel += 1;
+        maxExp = getMaxExpForLevel(newLevel);
+        didLevelUp = true;
+      }
+
+      const energyDmg = (!isSuccess && 'energyDamage' in choice.failResult ? choice.failResult.energyDamage : 0) || 0;
+      const cleanDmg = (!isSuccess && 'cleanlinessDamage' in choice.failResult ? choice.failResult.cleanlinessDamage : 0) || 0;
+
+      setFarmState(fPrev => {
+        if (!fPrev.activePokemon) return fPrev;
+        const target = fPrev.activePokemon;
+        const nextInv = { ...fPrev.inventory };
+        Object.entries(inventoryAdd).forEach(([k, v]) => {
+          nextInv[k] = (nextInv[k] || 0) + v;
+        });
+
+        return {
+          ...fPrev,
+          coins: fPrev.coins + gainedCoins,
+          inventory: nextInv,
+          activePokemon: {
+            ...target,
+            energy: Math.max(0, target.energy - expeditionModal.area.energyCost - energyDmg),
+            hunger: Math.max(0, target.hunger - expeditionModal.area.hungerCost),
+            cleanliness: Math.max(0, target.cleanliness - expeditionModal.area.cleanlinessCost - cleanDmg),
+            level: newLevel,
+            exp: newExp,
+            maxExp
+          }
+        };
+      });
+
+      addEggWarmth(15, '스토리 탐험 완수');
+
+      setExpeditionModal(prev => prev ? {
+        ...prev,
+        stage: 'result',
+        progress: 100,
+        statusText: outcome.title,
+        rewardGained: {
+          title: outcome.title,
+          grade: outcome.grade,
+          coins: gainedCoins,
+          exp: gainedExp,
+          levelUp: didLevelUp,
+          newLevel,
+          foundItems
+        }
+      } : null);
+    }, 1400);
+  };
 
   // 🥚 3-3. 인큐베이터에 알 넣기
   const handlePlaceEggInIncubator = (eggItem: FarmItem) => {
@@ -4921,24 +4975,60 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         {activeTab === 'shop' && !visitingFarm && (
           <div className="farm-shop-layout">
             <div className="shop-banner">
-              <h3>🛍️ 둡박사의 포켓몬 마트</h3>
-              <p>맛있는 나무열매와 목욕 용품, 활력 비타민을 구매하여 포켓몬을 돌보세요!</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <h3>🛍️ 둡박사의 포켓몬 마트</h3>
+                  <p>포켓몬 알, 맛있는 나무열매와 목욕 용품, 활력 비타민을 구매하여 포켓몬을 돌보세요!</p>
+                </div>
+                {/* Shop Category Filter Chips */}
+                <div className="gen-filter-chips">
+                  {[
+                    { id: 'all', label: '전체 상품' },
+                    { id: 'egg', label: '🥚 포켓몬 알 & 특수' },
+                    { id: 'food', label: '🫐 나무열매/음식' },
+                    { id: 'bath', label: '🧼 목욕/청결' },
+                    { id: 'toy', label: '⚽ 장난감' },
+                    { id: 'medicine', label: '🧪 회복/비타민' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`gen-chip ${shopCategory === f.id ? 'active' : ''}`}
+                      onClick={() => setShopCategory(f.id as typeof shopCategory)}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="shop-items-grid">
-              {FARM_ITEMS.filter(item => item.category !== 'special').map(item => (
-                <div key={item.id} className="shop-item-card">
-                  <div className="item-icon-box">{item.icon}</div>
-                  <h4>{item.name}</h4>
-                  <p className="item-desc">{item.description}</p>
-                  <div className="item-price-row">
-                    <span className="price-tag">🪙 {item.price} P</span>
-                    <button className="excel-btn primary" onClick={() => handleBuyItem(item)}>
-                      구매하기
-                    </button>
+              {FARM_ITEMS.filter(item => {
+                if (item.id === 'shiny_stone' || item.id === 'gold_crown') return false; // 탐험 전용 환금 보물은 제외
+                if (shopCategory === 'all') return true;
+                if (shopCategory === 'egg') return item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'rare_candy';
+                return item.category === shopCategory;
+              }).map(item => {
+                const isSpecialItem = item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'rare_candy';
+                const isGolden = item.id === 'golden_egg';
+                return (
+                  <div key={item.id} className={`shop-item-card ${isGolden ? 'golden-egg-card' : isSpecialItem ? 'special-item-card' : ''}`}>
+                    {isGolden && <span className="item-special-badge">🌟 전설&특수</span>}
+                    {item.id === 'mystery_egg' && <span className="item-special-badge normal">🥚 일반부화</span>}
+                    {item.id === 'rare_candy' && <span className="item-special-badge candy">🍬 즉시+1Lv</span>}
+                    <div className="item-icon-box">{item.icon}</div>
+                    <h4>{item.name}</h4>
+                    <p className="item-desc">{item.description}</p>
+                    <div className="item-price-row">
+                      <span className="price-tag">🪙 {item.price} P</span>
+                      <button className={`excel-btn primary ${isGolden ? 'golden-btn' : ''}`} onClick={() => handleBuyItem(item)}>
+                        구매하기
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -5389,29 +5479,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         </div>
       )}
 
-      {/* 🌲 EXPEDITION LIVE PROGRESS MODAL */}
+      {/* 🌲 EXPEDITION LIVE STORY MODAL */}
       {expeditionModal && expeditionModal.active && (
         <div className="farm-modal-overlay">
-          <div className="job-shift-modal-card expedition-modal-card">
+          <div className={`job-shift-modal-card expedition-modal-card ${expeditionModal.stage}`}>
             {/* Modal Header */}
             <div className="job-modal-header">
               <div className="job-badge">
                 <span className="job-badge-icon">{expeditionModal.area.icon}</span>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{expeditionModal.area.name} 탐험 중</h4>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{expeditionModal.area.name} 스토리 탐험대</h4>
                   <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    파견 대원: <strong>{pmon?.nickname || '포켓몬'}</strong> | 신비의 사내 탐험대
+                    파견 대원: <strong>{pmon?.nickname || '포켓몬'} (Lv.{pmon?.level})</strong>
                   </span>
                 </div>
               </div>
-              {expeditionModal.isDone && (
+              {expeditionModal.stage === 'result' && (
                 <button className="modal-close-btn" onClick={() => setExpeditionModal(null)}>
                   <X size={16} />
                 </button>
               )}
             </div>
 
-            {/* Animation Stage */}
+            {/* Stage View: Walking & Pixel Environment */}
             <div className={`job-stage-view expedition-stage-view stage-${expeditionModal.area.id}`}>
               {/* Background Theme */}
               <div className="expedition-env-decor">
@@ -5450,9 +5540,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 <img
                   src={pmon?.sprites.showdownFront || pmon?.sprites.front}
                   alt="탐험 포켓몬"
-                  className={`working-pokemon-sprite ${expeditionModal.isDone ? 'done-bounce' : 'expedition-walking'}`}
+                  className={`working-pokemon-sprite ${expeditionModal.stage === 'result' ? 'done-bounce' : 'expedition-walking'}`}
                 />
-                {!expeditionModal.isDone && (
+                {expeditionModal.stage === 'walking' && (
                   <div className="expedition-walk-dust">
                     <span>💨</span>
                   </div>
@@ -5463,36 +5553,112 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               </div>
             </div>
 
-            {/* Status Section */}
-            <div className="job-status-section">
-              <div className="status-bubble">
-                <p>{expeditionModal.statusText}</p>
-              </div>
-
-              <div className="job-progress-bar-wrap">
-                <div
-                  className="job-progress-fill expedition-fill"
-                  style={{ width: `${expeditionModal.progress}%` }}
-                >
-                  <span className="progress-percent">{Math.round(expeditionModal.progress)}%</span>
-                </div>
+            {/* Progress Bar */}
+            <div className="job-progress-bar-wrap">
+              <div
+                className="job-progress-fill expedition-fill"
+                style={{ width: `${expeditionModal.progress}%` }}
+              >
+                <span className="progress-percent">{Math.round(expeditionModal.progress)}%</span>
               </div>
             </div>
 
-            {/* Completion Result & Claim Button */}
-            {expeditionModal.isDone && expeditionModal.rewardGained ? (
-              <div className="job-salary-receipt expedition-receipt">
-                <div className="receipt-header">
-                  <h4>📜 사내 탐험 전리품 보고서</h4>
-                  <span>{expeditionModal.area.name} 완수</span>
+            {/* 🚶 Phase 1: Walking / Heading to Destination */}
+            {expeditionModal.stage === 'walking' && (
+              <div className="job-status-section">
+                <div className="status-bubble">
+                  <p>{expeditionModal.statusText}</p>
                 </div>
+                <div className="walking-dots-indicator" style={{ textAlign: 'center', padding: '6px', fontSize: '0.8rem', color: '#047857', fontWeight: 700 }}>
+                  <span>🐾 숲길을 조심스럽게 헤쳐나가는 중...</span>
+                </div>
+              </div>
+            )}
+
+            {/* 💬 Phase 2: Story Dialogue & Choice Encounter Box */}
+            {expeditionModal.stage === 'event' && expeditionModal.storyEvent && (
+              <div className="story-dialogue-wrapper">
+                <div className="story-dialogue-box">
+                  {/* Left Portrait */}
+                  <div className="story-portrait-frame">
+                    <div className="portrait-avatar">{expeditionModal.storyEvent.npcPortrait}</div>
+                    <span className="portrait-badge">{expeditionModal.storyEvent.npcBadge}</span>
+                  </div>
+
+                  {/* Right Dialogue & Choices */}
+                  <div className="story-content">
+                    <div className="story-speaker-tag">
+                      <strong>{expeditionModal.storyEvent.npcName}</strong>
+                      <span className="event-title-sub">{expeditionModal.storyEvent.title}</span>
+                    </div>
+
+                    <div className="story-speech-text">
+                      {expeditionModal.storyEvent.dialogue.map((line, idx) => (
+                        <p key={idx} className="speech-line">"{line}"</p>
+                      ))}
+                    </div>
+
+                    {/* Interactive Choices */}
+                    <div className="story-choices-list">
+                      <span className="choices-prompt">❓ 어떻게 행동하시겠습니까? (선택이 운명을 결정합니다!)</span>
+                      {expeditionModal.storyEvent.choices.map(choice => (
+                        <button
+                          key={choice.id}
+                          className="story-choice-btn"
+                          onClick={() => handleMakeStoryChoice(choice)}
+                        >
+                          <span className="choice-icon">{choice.icon}</span>
+                          <div className="choice-text-col">
+                            <strong>{choice.text}</strong>
+                            {choice.reqDesc && <span className="choice-hint">{choice.reqDesc}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 🎲 Phase 3: Resolving / Dice Roll Animation */}
+            {expeditionModal.stage === 'resolving' && (
+              <div className="story-resolving-box">
+                <div className="dice-rolling-animation">
+                  <span className="dice-icon">🎲</span>
+                  <h4>주사위 굴리는 중... 운명의 판정!</h4>
+                  <p>파트너 <strong>{pmon?.nickname}</strong>의 레벨과 친밀도로 상황을 돌파합니다!</p>
+                  <div className="rolling-rate-bar">
+                    <span>성공 기준 확률: <strong>{expeditionModal.requiredRoll}%</strong></span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 📜 Phase 4: Day-End Result Report */}
+            {expeditionModal.stage === 'result' && expeditionModal.rewardGained && (
+              <div className={`job-salary-receipt expedition-receipt grade-${expeditionModal.rewardGained.grade.toLowerCase()}`}>
+                <div className="receipt-header">
+                  <div className={`story-grade-badge ${expeditionModal.rewardGained.grade.toLowerCase()}`}>
+                    {expeditionModal.rewardGained.grade === 'JACKPOT' && '👑 [초특급 잭팟 대성공]'}
+                    {expeditionModal.rewardGained.grade === 'SUCCESS' && '🎉 [탐험 스토리 완수 성공]'}
+                    {expeditionModal.rewardGained.grade === 'ESCAPE' && '💨 [아슬아슬 줄행랑 탈출]'}
+                    {expeditionModal.rewardGained.grade === 'FAIL' && '💥 [작전 실패 & 긴급 퇴각]'}
+                  </div>
+                  <h4>{expeditionModal.rewardGained.title}</h4>
+                </div>
+
+                {/* Resolution Story Narrative */}
+                <div className="resolution-narrative-box">
+                  <p>"{expeditionModal.resolutionText}"</p>
+                </div>
+
                 <div className="receipt-grid">
                   <div className="receipt-row gain">
-                    <span>🪙 획득 지원금</span>
+                    <span>🪙 획득 지원금:</span>
                     <strong>+{expeditionModal.rewardGained.coins} P</strong>
                   </div>
                   <div className="receipt-row gain">
-                    <span>✨ 탐험 경험치</span>
+                    <span>✨ 탐험 경험치:</span>
                     <strong>+{expeditionModal.rewardGained.exp} EXP</strong>
                   </div>
                   {expeditionModal.rewardGained.levelUp && (
@@ -5517,7 +5683,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   </div>
                 ) : (
                   <p className="no-items-text" style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '6px 0', textAlign: 'center' }}>
-                    아쉽게도 이번엔 특별한 보물 아이템을 발견하지 못했습니다.
+                    아쉽게도 이번엔 보물 아이템을 건지지 못했습니다.
                   </p>
                 )}
 
@@ -5525,10 +5691,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   className="excel-btn primary claim-shift-btn"
                   onClick={() => setExpeditionModal(null)}
                 >
-                  🎁 전리품 수령 완료
+                  🎁 탐험 일지 기록 및 귀환
                 </button>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       )}
