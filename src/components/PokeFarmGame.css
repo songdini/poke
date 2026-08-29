@@ -595,46 +595,51 @@
 }
 
 .inventory-chips-row {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  overflow: visible;
 }
 
 .care-item-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
   border: 1px solid #cbd5e1;
   background: #f8fafc;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #334155;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .care-item-btn.available:hover {
   background: #ecfdf5;
   border-color: #10b981;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
 }
 
 .care-item-btn.empty {
-  opacity: 0.4;
+  opacity: 0.45;
+  background: #f1f5f9;
   cursor: not-allowed;
 }
 
 .item-qty {
   background: #e2e8f0;
   color: #475569;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 999px;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 
 /* Empty Yard */

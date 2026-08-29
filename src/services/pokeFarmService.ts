@@ -2186,7 +2186,7 @@ export const FARM_ITEMS: FarmItem[] = [
     icon: '🌟',
     category: 'special',
     description: '지방 리전폼·거다이맥스·전설 포켓몬이 등장하거나, 일반 포켓몬이 100% 확정 이로치(Shiny)로 부화하는 특별한 황금알!',
-    price: 800,
+    price: 2000,
     effect: { happiness: 30 }
   }
 ];
@@ -2278,7 +2278,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
       { itemId: 'rare_candy', chance: 0.45 },
       { itemId: 'shiny_stone', chance: 0.50 },
       { itemId: 'gold_crown', chance: 0.22 },
-      { itemId: 'golden_egg', chance: 0.06 }
+      { itemId: 'golden_egg', chance: 0.055 }
     ]
   }
 ];
@@ -2775,6 +2775,18 @@ export function playPokemonCry(speciesId: number) {
   } catch (e) {
     console.log('Audio error:', e);
   }
+}
+
+/**
+ * 🌟 진화 단계(stageIndex)에 따른 포켓몬 스탯(에너지, 청결도, 배고픔/포만도) 최대치 계산
+ * - 0단계 (기본/아기 폼): 최대 100
+ * - 1단계 (1차 진화 폼): 최대 150
+ * - 2단계 (2차/최종 진화 폼): 최대 200
+ * - 3단계 이상 (특수/메가 진화 폼): 최대 250
+ */
+export function getMaxStatForStage(stageIndex: number = 0): number {
+  const stage = Math.max(0, stageIndex || 0);
+  return 100 + stage * 50;
 }
 
 // 새 포켓몬 생성

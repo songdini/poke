@@ -18,7 +18,8 @@ import {
   getAllStoredFarms,
   EEVEE_BRANCHES,
   getRandomEeveeEvolution,
-  getRandomStoryEvent
+  getRandomStoryEvent,
+  getMaxStatForStage
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
@@ -33,20 +34,9 @@ interface PokeFarmGameProps {
   onSelectGame?: (gameKey: string) => void;
 }
 
-type FarmTab = 'minihome' | 'yard' | 'arcade' | 'neighbors' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
+type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
 
-export const ARCADE_GAMES = [
-  { key: 'pokebattle', name: '포켓몬 3v3 배틀', icon: '⚡', desc: '3대3 턴제 실시간 포켓몬 대전 & 상성 배틀', badge: 'HOT', color: '#ef4444' },
-  { key: 'tetris', name: '포켓 테트리스', icon: '🧱', desc: '점수 기록, AI & 친구 1:1 대전, 아이템전 & 실시간 배틀', badge: 'HOT', color: '#6366f1' },
-  { key: 'catchmind', name: '캐치마인드', icon: '🎨', desc: '실시간 그림 그리고 단어 맞추기 멀티 게임', badge: 'POPULAR', color: '#3b82f6' },
-  { key: 'mafia', name: '마피아 게임', icon: '🕵️', desc: '직업 부여, 밤/낮 투표, 심리 추리 생존전', badge: 'MULTI', color: '#8b5cf6' },
-  { key: 'liar', name: '라이어 게임', icon: '🤥', desc: '제시어를 모르는 라이어를 찾는 심리 단어게임', badge: 'PARTY', color: '#ec4899' },
-  { key: 'telestrations', name: '텔레스트레이션', icon: '📝', desc: '그림 릴레이! 그리고 맞추는 릴레이 스케치', badge: 'FUN', color: '#f59e0b' },
-  { key: 'numberbaseball', name: '숫자야구', icon: '⚾', desc: '3자리 숫자 추리! 스트라이크 & 볼 수리 검증', badge: 'LOGIC', color: '#10b981' },
-  { key: 'sudoku', name: '스도쿠 퍼즐', icon: '🧩', desc: '9x9 행렬 스도쿠 퍼즐 마스터 & 타임어택', badge: 'PUZZLE', color: '#06b6d4' },
-  { key: 'minesweeper', name: '지뢰찾기', icon: '💣', desc: '클래식 지뢰 탐지 & 그리드 생존 게임', badge: 'RETRO', color: '#f97316' },
-  { key: 'wordle', name: '워들 (Wordle)', icon: '🔤', desc: '5글자 비밀 단어 추정 퍼즐', badge: 'WORD', color: '#64748b' }
-];
+
 
 export const DIVERSE_STICKERS = [
   // 🛋️ 1. 거실 & 인테리어 가구 (Living Room & Furniture)
@@ -282,7 +272,7 @@ export const getDiplomaActiveSprite = (
   };
 };
 
-export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser, onSelectGame }) => {
+export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser }) => {
   const { socket } = useSocket();
 
   // 농장 전체 로컬 상태
@@ -473,7 +463,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [neighborSearch, setNeighborSearch] = useState('');
 
   // ⛺ 두부월드 미니홈피 상태
-  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'arcade' | 'guestbook' | 'stickers' | 'neighbors'>('home');
+  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'guestbook' | 'stickers' | 'neighbors'>('home');
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
@@ -1867,6 +1857,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     });
   };
 
+  // ⌨️ 단축키 [C] 입력 시 화면 어디서든 포켓몬 쓰다듬기 처리
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 텍스트 입력창(input, textarea 등)에 포커스가 있을 때는 단축키 무시
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+         target.tagName === 'TEXTAREA' ||
+         target.tagName === 'SELECT' ||
+         target.isContentEditable)
+      ) {
+        return;
+      }
+
+      // 'c', 'C', 한글 'ㅊ' 키 입력 감지
+      if (e.key === 'c' || e.key === 'C' || e.key === 'ㅊ' || e.code === 'KeyC') {
+        if (pmon) {
+          handlePetPokemon();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pmon]);
+
   // 2. 아이템 사용 (밥주기 / 목욕 / 장난감 / 치료)
   const handleUseItem = (item: FarmItem) => {
     if (!pmon) return;
@@ -1945,18 +1962,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       if (!prev.activePokemon) return prev;
       const target = prev.activePokemon;
       const effect = item.effect;
+      const maxStat = getMaxStatForStage(target.stageIndex);
 
       let newHunger = target.hunger + (effect.hunger || 0);
-      newHunger = Math.max(0, Math.min(100, newHunger));
+      newHunger = Math.max(0, Math.min(maxStat, newHunger));
 
       let newClean = target.cleanliness + (effect.cleanliness || 0);
-      newClean = Math.max(0, Math.min(100, newClean));
+      newClean = Math.max(0, Math.min(maxStat, newClean));
 
       let newHappy = target.happiness + (effect.happiness || 0);
       newHappy = Math.max(0, Math.min(100, newHappy));
 
       let newEnergy = target.energy + (effect.energy || 0);
-      newEnergy = Math.max(0, Math.min(100, newEnergy));
+      newEnergy = Math.max(0, Math.min(maxStat, newEnergy));
 
       let newExp = target.exp + (effect.exp || 0);
       let newLevel = target.level;
@@ -2738,6 +2756,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           ? [target.evolutionChain[0], nextStage]
           : target.evolutionChain;
 
+        const newMaxStat = getMaxStatForStage(nextIndex);
+
         return {
           ...prev,
           activePokemon: {
@@ -2747,6 +2767,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             nickname: target.nickname === target.name ? nextStage.name : target.nickname,
             stageIndex: nextIndex,
             types: nextStage.types,
+            energy: newMaxStat,
+            cleanliness: newMaxStat,
+            hunger: newMaxStat,
+            happiness: 100,
             evolutionChain: updatedChain,
             sprites: {
               front: evolvedFront,
@@ -3033,56 +3057,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     );
   }
 
-  // 🎮 두부 오락실 & 미니게임 뷰
-  const renderArcadeGamesView = () => (
-    <div className="dubu-arcade-view">
-      <div className="dubu-arcade-header">
-        <div className="arcade-header-left">
-          <span className="arcade-header-icon">🎮</span>
-          <div className="arcade-title-box">
-            <h3>두부월드 오락실 & 사내 미니게임 센터</h3>
-            <p>포켓몬 3v3 배틀, 테트리스, 캐치마인드 등 10종의 멀티 게임을 바로 플레이해보세요!</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="arcade-games-grid">
-        {ARCADE_GAMES.map((game) => (
-          <div
-            key={game.key}
-            className="arcade-game-card"
-            onClick={() => onSelectGame ? onSelectGame(game.key) : showAlert(`[${game.name}] 게임으로 이동합니다!`, 'info')}
-          >
-            <div className="arcade-card-top">
-              <div className="arcade-icon-box" style={{ background: game.color }}>
-                {game.icon}
-              </div>
-              <span className="arcade-badge" style={{ color: game.color, borderColor: game.color }}>
-                {game.badge}
-              </span>
-            </div>
-            <div className="arcade-card-body">
-              <h4>{game.name}</h4>
-              <p>{game.desc}</p>
-            </div>
-            <div className="arcade-card-footer">
-              <button
-                className="arcade-play-btn"
-                style={{ background: game.color }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onSelectGame) onSelectGame(game.key);
-                }}
-              >
-                🚀 바로 플레이 ➔
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   // 👥 이웃 파도타기 & 실시간 인기농장 TOP 3 뷰
   const top3RealFarms = neighborList.slice(0, 3);
 
@@ -3262,12 +3236,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           </button>
           <button className={`farm-tab ${activeTab === 'yard' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('yard'); setVisitingFarm(null); })}>
             🌿 내 농장 마당 (Farm)
-          </button>
-          <button className={`farm-tab ${activeTab === 'arcade' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('arcade'); setVisitingFarm(null); })}>
-            🎮 두부 오락실 (Games)
-          </button>
-          <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => handleTabClick(() => setActiveTab('neighbors'))}>
-            👥 이웃 파도타기 (Neighbors)
           </button>
           <button className={`farm-tab ${activeTab === 'adopt' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('adopt'); setVisitingFarm(null); })}>
             🐣 분양소 (Adopt)
@@ -3456,12 +3424,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       onClick={() => setMinihompyTab('miniroom')}
                     >
                       🖼️ 미니룸 (Miniroom)
-                    </button>
-                    <button
-                      className={`cytab ${minihompyTab === 'arcade' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('arcade')}
-                    >
-                      🎮 두부 오락실 (Games)
                     </button>
                     <button
                       className={`cytab ${minihompyTab === 'guestbook' ? 'active' : ''}`}
@@ -4112,10 +4074,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                   )}
 
-                  {/* 5. 🎮 두부 오락실 & 미니게임 뷰 */}
-                  {minihompyTab === 'arcade' && renderArcadeGamesView()}
-
-                  {/* 6. 👥 이웃 파도타기 & 인기농장 TOP 3 뷰 */}
+                  {/* 👥 이웃 파도타기 & 인기농장 TOP 3 뷰 */}
                   {minihompyTab === 'neighbors' && renderNeighborsView()}
                 </div>
               </div>
@@ -4180,7 +4139,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   )}
 
                   <div className="pasture-touch-hint">
-                    💡 포켓몬을 터치/클릭하면 고유 스킬 모션과 함께 애정도(+5) 및 EXP(+10)가 상승합니다!
+                    💡 포켓몬을 클릭하거나 키보드 <b>[C]</b> 키를 누르면 고유 스킬 모션과 함께 애정도(+5) 및 경험치가 상승합니다!
                   </div>
                 </div>
 
@@ -4220,47 +4179,70 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   </div>
 
                   {/* 4 Status Gauges Grid */}
-                  <div className="gauges-grid">
-                    <div className="gauge-item">
-                      <div className="gauge-label">
-                        <span>🍎 배고픔</span>
-                        <span>{pmon.hunger}/100</span>
-                      </div>
-                      <div className="gauge-track">
-                        <div className="gauge-fill hunger" style={{ width: `${pmon.hunger}%`, backgroundColor: pmon.hunger > 30 ? '#10b981' : '#ef4444' }} />
-                      </div>
-                    </div>
+                  {(() => {
+                    const maxStat = getMaxStatForStage(pmon.stageIndex);
+                    return (
+                      <div className="gauges-grid">
+                        <div className="gauge-item">
+                          <div className="gauge-label">
+                            <span>🍎 배고픔</span>
+                            <span>{pmon.hunger} / {maxStat}</span>
+                          </div>
+                          <div className="gauge-track">
+                            <div
+                              className="gauge-fill hunger"
+                              style={{
+                                width: `${Math.min(100, Math.round((pmon.hunger / maxStat) * 100))}%`,
+                                backgroundColor: pmon.hunger > (maxStat * 0.3) ? '#10b981' : '#ef4444'
+                              }}
+                            />
+                          </div>
+                        </div>
 
-                    <div className="gauge-item">
-                      <div className="gauge-label">
-                        <span>🧼 청결도</span>
-                        <span>{pmon.cleanliness}/100</span>
-                      </div>
-                      <div className="gauge-track">
-                        <div className="gauge-fill cleanliness" style={{ width: `${pmon.cleanliness}%`, backgroundColor: pmon.cleanliness > 30 ? '#06b6d4' : '#f59e0b' }} />
-                      </div>
-                    </div>
+                        <div className="gauge-item">
+                          <div className="gauge-label">
+                            <span>🧼 청결도</span>
+                            <span>{pmon.cleanliness} / {maxStat}</span>
+                          </div>
+                          <div className="gauge-track">
+                            <div
+                              className="gauge-fill cleanliness"
+                              style={{
+                                width: `${Math.min(100, Math.round((pmon.cleanliness / maxStat) * 100))}%`,
+                                backgroundColor: pmon.cleanliness > (maxStat * 0.3) ? '#06b6d4' : '#f59e0b'
+                              }}
+                            />
+                          </div>
+                        </div>
 
-                    <div className="gauge-item">
-                      <div className="gauge-label">
-                        <span>💖 친밀도</span>
-                        <span>{pmon.happiness}/100</span>
-                      </div>
-                      <div className="gauge-track">
-                        <div className="gauge-fill happiness" style={{ width: `${pmon.happiness}%`, backgroundColor: '#ec4899' }} />
-                      </div>
-                    </div>
+                        <div className="gauge-item">
+                          <div className="gauge-label">
+                            <span>💖 친밀도</span>
+                            <span>{pmon.happiness} / 100</span>
+                          </div>
+                          <div className="gauge-track">
+                            <div className="gauge-fill happiness" style={{ width: `${Math.min(100, pmon.happiness)}%`, backgroundColor: '#ec4899' }} />
+                          </div>
+                        </div>
 
-                    <div className="gauge-item">
-                      <div className="gauge-label">
-                        <span>⚡ 에너지</span>
-                        <span>{pmon.energy}/100</span>
+                        <div className="gauge-item">
+                          <div className="gauge-label">
+                            <span>⚡ 에너지</span>
+                            <span>{pmon.energy} / {maxStat}</span>
+                          </div>
+                          <div className="gauge-track">
+                            <div
+                              className="gauge-fill energy"
+                              style={{
+                                width: `${Math.min(100, Math.round((pmon.energy / maxStat) * 100))}%`,
+                                backgroundColor: '#eab308'
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="gauge-track">
-                        <div className="gauge-fill energy" style={{ width: `${pmon.energy}%`, backgroundColor: '#eab308' }} />
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* 🍎 Quick Care Actions */}
                   <div className="quick-actions-bar">
@@ -4440,6 +4422,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             {happyMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
                             <span>친밀도 조건: 필요 {nextStage.minHappiness}+ (현재: {pmon.happiness})</span>
                           </div>
+                          <div className="check-item checked" style={{ color: '#059669', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+                            <Sparkles size={16} />
+                            <span>진화 혜택: 에너지·청결도·포만도 최대치 확장 ({getMaxStatForStage(pmon.stageIndex)} ➔ {getMaxStatForStage(pmon.stageIndex + 1)})</span>
+                          </div>
                         </div>
 
                         <button
@@ -4457,7 +4443,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 ) : (
                   <div className="evolve-action-card completed">
                     <Trophy size={32} style={{ color: '#d97706', marginBottom: 6 }} />
-                    <h4>🎉 최종 진화 완료!</h4>
+                    <h4>🎉 최종 진화 완료! (스탯 최대치: {getMaxStatForStage(pmon.stageIndex)})</h4>
                     <p>[{pmon.name}]은(는) 이미 최강의 최종 진화체입니다. Lv.36 이상 달성 후 감동의 졸업식을 치러보세요!</p>
                     <button className="excel-btn warning" onClick={handleGraduate}>
                       🎓 졸업식 진행하기
@@ -5328,15 +5314,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           );
         })()}
 
-        {/* =========================================================================
-            TAB: 🎮 두부 오락실 & 미니게임 (Arcade)
-           ========================================================================= */}
-        {activeTab === 'arcade' && !visitingFarm && renderArcadeGamesView()}
-
-        {/* =========================================================================
-            TAB: 👥 이웃 농장 파도타기 & 인기 랭킹 (Social)
-           ========================================================================= */}
-        {activeTab === 'neighbors' && !visitingFarm && renderNeighborsView()}
       </div>
 
       {/* 💼 PART-TIME JOB INTERACTIVE SHIFT MODAL */}
