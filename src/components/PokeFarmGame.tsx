@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -14,7 +14,8 @@ import {
   hatchBabyPokemon,
   playPokemonCry,
   getMaxExpForLevel,
-  getAllPokedexEntries
+  getAllPokedexEntries,
+  getAllStoredFarms
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X
@@ -24,25 +25,122 @@ import './PokeFarmGame.css';
 interface PokeFarmGameProps {
   username: string;
   onLeaveRoom?: () => void;
+  initialVisitingUser?: string | null;
+  onClearInitialVisitingUser?: () => void;
+  onSelectGame?: (gameKey: string) => void;
 }
 
-type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas' | 'neighbors';
+type FarmTab = 'minihome' | 'yard' | 'arcade' | 'neighbors' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
 
-interface NeighborFarmData {
-  username: string;
-  farmName: string;
-  activePokemon: FarmPokemon | null;
-  graduatedCount: number;
-  heartsCount: number;
-  isOnline: boolean;
-}
+export const ARCADE_GAMES = [
+  { key: 'pokebattle', name: '포켓몬 3v3 배틀', icon: '⚡', desc: '3대3 턴제 실시간 포켓몬 대전 & 상성 배틀', badge: 'HOT', color: '#ef4444' },
+  { key: 'tetris', name: '포켓 테트리스', icon: '🧱', desc: '점수 기록, AI & 친구 1:1 대전, 아이템전 & 실시간 배틀', badge: 'HOT', color: '#6366f1' },
+  { key: 'catchmind', name: '캐치마인드', icon: '🎨', desc: '실시간 그림 그리고 단어 맞추기 멀티 게임', badge: 'POPULAR', color: '#3b82f6' },
+  { key: 'mafia', name: '마피아 게임', icon: '🕵️', desc: '직업 부여, 밤/낮 투표, 심리 추리 생존전', badge: 'MULTI', color: '#8b5cf6' },
+  { key: 'liar', name: '라이어 게임', icon: '🤥', desc: '제시어를 모르는 라이어를 찾는 심리 단어게임', badge: 'PARTY', color: '#ec4899' },
+  { key: 'telestrations', name: '텔레스트레이션', icon: '📝', desc: '그림 릴레이! 그리고 맞추는 릴레이 스케치', badge: 'FUN', color: '#f59e0b' },
+  { key: 'numberbaseball', name: '숫자야구', icon: '⚾', desc: '3자리 숫자 추리! 스트라이크 & 볼 수리 검증', badge: 'LOGIC', color: '#10b981' },
+  { key: 'sudoku', name: '스도쿠 퍼즐', icon: '🧩', desc: '9x9 행렬 스도쿠 퍼즐 마스터 & 타임어택', badge: 'PUZZLE', color: '#06b6d4' },
+  { key: 'minesweeper', name: '지뢰찾기', icon: '💣', desc: '클래식 지뢰 탐지 & 그리드 생존 게임', badge: 'RETRO', color: '#f97316' },
+  { key: 'wordle', name: '워들 (Wordle)', icon: '🔤', desc: '5글자 비밀 단어 추정 퍼즐', badge: 'WORD', color: '#64748b' }
+];
 
-export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom }) => {
+export const DIVERSE_STICKERS = [
+  // 💖 1. 감성 & 두부월드 추억 (Emotional & Nostalgia)
+  { id: 'heart', icon: '💖', label: '러블리 하트', category: 'emotional' },
+  { id: 'heart_sparkle', icon: '💝', label: '리본 하트', category: 'emotional' },
+  { id: 'star', icon: '⭐', label: '반짝이 별', category: 'emotional' },
+  { id: 'acorn', icon: '🌰', label: '두부월드 둡토리', category: 'emotional' },
+  { id: 'ribbon', icon: '🎀', label: '핑크 리본', category: 'emotional' },
+  { id: 'flower_cherry', icon: '🌸', label: '벚꽃 송이', category: 'emotional' },
+  { id: 'flower_rose', icon: '🌹', label: '빨간 장미', category: 'emotional' },
+  { id: 'flower_sun', icon: '🌻', label: '해바라기', category: 'emotional' },
+  { id: 'love_letter', icon: '💌', label: '러브레터', category: 'emotional' },
+  { id: 'music_note', icon: '🎶', label: 'BGM 음표', category: 'emotional' },
+  { id: 'candle', icon: '🕯️', label: '아늑한 촛불', category: 'emotional' },
+  { id: 'coffee', icon: '☕', label: '따뜻한 커피', category: 'emotional' },
+  { id: 'camera', icon: '📷', label: '폴라로이드', category: 'emotional' },
+  { id: 'clover', icon: '🍀', label: '네잎클로버', category: 'emotional' },
+
+  // ⚡ 2. 포켓몬 아이템 & 볼 (Pokemon Items)
+  { id: 'pokeball', icon: '🔴', label: '몬스터볼', category: 'pokemon' },
+  { id: 'greatball', icon: '🔵', label: '수퍼볼', category: 'pokemon' },
+  { id: 'ultraball', icon: '🟡', label: '하이퍼볼', category: 'pokemon' },
+  { id: 'masterball', icon: '🟣', label: '마스터볼', category: 'pokemon' },
+  { id: 'bolt', icon: '⚡', label: '피카츄 번개', category: 'pokemon' },
+  { id: 'fire', icon: '🔥', label: '불꽃 파이어', category: 'pokemon' },
+  { id: 'water', icon: '💧', label: '물방울', category: 'pokemon' },
+  { id: 'leaf', icon: '🍃', label: '나뭇잎', category: 'pokemon' },
+  { id: 'snowflake', icon: '❄️', label: '눈꽃송이', category: 'pokemon' },
+  { id: 'moon', icon: '🌙', label: '초승달', category: 'pokemon' },
+  { id: 'gem', icon: '💎', label: '반짝 보석', category: 'pokemon' },
+  { id: 'poke_egg', icon: '🥚', label: '신비한 알', category: 'pokemon' },
+  { id: 'shield', icon: '🛡️', label: '방어 쉴드', category: 'pokemon' },
+  { id: 'sword', icon: '⚔️', label: '용기의 검', category: 'pokemon' },
+
+  // 🛋️ 3. 인테리어 & 가구 소품 (Interior & Furniture)
+  { id: 'sofa', icon: '🛋️', label: '아늑한 소파', category: 'interior' },
+  { id: 'bed', icon: '🛏️', label: '포근한 침대', category: 'interior' },
+  { id: 'chair', icon: '🪑', label: '원목 의자', category: 'interior' },
+  { id: 'plant', icon: '🪴', label: '몬스테라 화분', category: 'interior' },
+  { id: 'clock', icon: '⏰', label: '벽걸이 시계', category: 'interior' },
+  { id: 'radio', icon: '📻', label: '레트로 라디오', category: 'interior' },
+  { id: 'laptop', icon: '💻', label: '미니 노트북', category: 'interior' },
+  { id: 'teddy', icon: '🧸', label: '곰인형', category: 'interior' },
+  { id: 'easel', icon: '🎨', label: '이젤 캔버스', category: 'interior' },
+  { id: 'books', icon: '📚', label: '책더미', category: 'interior' },
+  { id: 'mirror', icon: '🪞', label: '화장대 거울', category: 'interior' },
+  { id: 'lamp', icon: '🏮', label: '미니 무드등', category: 'interior' },
+
+  // 🏆 4. 축하 & 파티 (Party & Celebration)
+  { id: 'trophy', icon: '🏆', label: '황금 트로피', category: 'party' },
+  { id: 'medal', icon: '🥇', label: '1등 금메달', category: 'party' },
+  { id: 'crown', icon: '👑', label: '황금 왕관', category: 'party' },
+  { id: 'balloon', icon: '🎈', label: '축하 풍선', category: 'party' },
+  { id: 'gift', icon: '🎁', label: '선물 상자', category: 'party' },
+  { id: 'cake', icon: '🎂', label: '생일 케이크', category: 'party' },
+  { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크', category: 'party' },
+  { id: 'fireworks', icon: '🎆', label: '축하 불꽃', category: 'party' },
+  { id: 'party_popper', icon: '🎉', label: '파티 폭죽', category: 'party' },
+  { id: 'grad_cap', icon: '🎓', label: '졸업 학사모', category: 'party' },
+  { id: 'champagne', icon: '🥂', label: '축하 샴페인', category: 'party' },
+
+  // 💬 5. 감정 & 이모지 (Expressions & Status)
+  { id: 'zzz', icon: '💤', label: '쿨쿨 졸림', category: 'emoji' },
+  { id: 'sweat', icon: '💦', label: '삐질 땀방울', category: 'emoji' },
+  { id: 'sparkles', icon: '✨', label: '블링블링 반짝', category: 'emoji' },
+  { id: 'question', icon: '❓', label: '궁금 물음표', category: 'emoji' },
+  { id: 'exclamation', icon: '❗', label: '깜짝 느낌표', category: 'emoji' },
+  { id: 'anger', icon: '💢', label: '버럭 분노', category: 'emoji' },
+  { id: 'singing', icon: '🎵', label: '흥겨운 콧노래', category: 'emoji' },
+  { id: 'thought_cloud', icon: '💭', label: '생각 말풍선', category: 'emoji' },
+  { id: 'dizzy', icon: '💫', label: '어질어질 별빛', category: 'emoji' },
+  { id: 'kiss', icon: '💋', label: '사랑의 뽀뽀', category: 'emoji' }
+];
+
+// 💖 1촌 응원 하트 일일 5회 제한 로컬 헬퍼
+const getTodayHeartCountLocal = (owner: string): number => {
+  if (typeof window === 'undefined' || !owner) return 0;
+  const today = new Date().toLocaleDateString('sv-SE');
+  const count = parseInt(localStorage.getItem(`pokefarm_hearts_given_${owner}_${today}`) || '0', 10);
+  return isNaN(count) ? 0 : count;
+};
+
+const setTodayHeartCountLocal = (owner: string, count: number) => {
+  if (typeof window === 'undefined' || !owner) return;
+  const today = new Date().toLocaleDateString('sv-SE');
+  localStorage.setItem(`pokefarm_hearts_given_${owner}_${today}`, String(count));
+};
+
+export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser, onSelectGame }) => {
   const { socket } = useSocket();
 
   // 농장 전체 로컬 상태
   const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(username));
   const [activeTab, setActiveTab] = useState<FarmTab>('minihome');
+
+  // 💖 오늘 보낸 1촌 하트 횟수 (하루 최대 5회 제한)
+  const [todayHeartsSent, setTodayHeartsSent] = useState<number>(() => getTodayHeartCountLocal(farmState.ownerName || username || '지우'));
 
   // 🐣 온보딩 위저드 상태 (농장주 이름 입력 ➔ 스타팅 포켓몬 선택)
   const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
@@ -138,158 +236,181 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [neighborSearch, setNeighborSearch] = useState('');
 
   // ⛺ 두부월드 미니홈피 상태
-  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'guestbook' | 'stickers' | 'top3'>('home');
+  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'arcade' | 'guestbook' | 'stickers' | 'neighbors'>('home');
   const [currentBgmSong, setCurrentBgmSong] = useState(farmState.bgmSong || '프리스타일 - Y (Feat. 지선)');
   const [isPlayingBgm, setIsPlayingBgm] = useState(false);
 
-  // 🏆 랭킹용 인기 농장 기본 픽스처 데이터 (항상 최고 퀄리티의 인기 농장이 나타나도록 보장)
-  const MOCK_POPULAR_FARMS: NeighborFarmData[] = [
-    {
-      username: '지우',
-      farmName: '⚡ 지우의 챔피언 피카츄 파크',
-      activePokemon: {
-        uid: 'mock_pika',
-        speciesId: 25,
-        name: '피카츄',
-        nickname: '백만볼트 피카',
-        stageIndex: 0,
-        level: 99,
-        exp: 1000,
-        maxExp: 1000,
-        hunger: 100,
-        happiness: 100,
-        cleanliness: 100,
-        energy: 100,
-        isShiny: true,
-        types: ['electric'],
-        sprites: {
-          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/25.png',
-          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/25.gif'
-        },
-        evolutionChain: [],
-        adoptedAt: '2026-01-01',
-        isGraduated: false,
-        totalPats: 999,
-        jobsCompleted: 50
-      },
-      graduatedCount: 15,
-      heartsCount: 1850,
-      isOnline: true
-    },
-    {
-      username: '이슬이',
-      farmName: '🌊 이슬이의 워터 아쿠아랜드',
-      activePokemon: {
-        uid: 'mock_starmie',
-        speciesId: 121,
-        name: '아쿠스타',
-        nickname: '마린스타',
-        stageIndex: 1,
-        level: 78,
-        exp: 800,
-        maxExp: 800,
-        hunger: 95,
-        happiness: 98,
-        cleanliness: 100,
-        energy: 95,
-        isShiny: false,
-        types: ['water', 'psychic'],
-        sprites: {
-          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png',
-          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/121.gif'
-        },
-        evolutionChain: [],
-        adoptedAt: '2026-01-15',
-        isGraduated: false,
-        totalPats: 620,
-        jobsCompleted: 35
-      },
-      graduatedCount: 11,
-      heartsCount: 1420,
-      isOnline: true
-    },
-    {
-      username: '웅이',
-      farmName: '🪨 웅이의 마운틴 락가든',
-      activePokemon: {
-        uid: 'mock_onix',
-        speciesId: 95,
-        name: '롱스톤',
-        nickname: '바위대장',
-        stageIndex: 0,
-        level: 68,
-        exp: 600,
-        maxExp: 600,
-        hunger: 90,
-        happiness: 92,
-        cleanliness: 90,
-        energy: 90,
-        isShiny: false,
-        types: ['rock', 'ground'],
-        sprites: {
-          front: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png',
-          showdownFront: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/95.gif'
-        },
-        evolutionChain: [],
-        adoptedAt: '2026-02-01',
-        isGraduated: false,
-        totalPats: 410,
-        jobsCompleted: 28
-      },
-      graduatedCount: 8,
-      heartsCount: 1120,
-      isOnline: false
+  // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
+  const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState<{
+    type: 'sticker' | 'pokemon';
+    id: string;
+    startX: number;
+    startY: number;
+    origX: number;
+    origY: number;
+  } | null>(null);
+  const [selectedDecorItem, setSelectedDecorItem] = useState<{
+    type: 'sticker' | 'pokemon';
+    id: string;
+  } | null>(null);
+
+  // ✍️ 자유 텍스트 & 말풍선 제작 상태
+  const [customTextContent, setCustomTextContent] = useState('');
+  const [customTextStyle, setCustomTextStyle] = useState<'classic_bubble' | 'retro_sign' | 'neon_glow' | 'pink_ribbon' | 'gold_badge' | 'plain_text'>('classic_bubble');
+  const [customTextColor, setCustomTextColor] = useState('#1e293b');
+  const [customFontSize, setCustomFontSize] = useState<number>(14);
+  const [stickerCategory, setStickerCategory] = useState<'all' | 'emotional' | 'pokemon' | 'interior' | 'party' | 'emoji'>('all');
+  const [decorSubtab, setDecorSubtab] = useState<'palette' | 'textmaker' | 'pokeplacements'>('palette');
+
+  // 🌐 소켓 및 로컬 실제 유저 농장 동기화
+  useEffect(() => {
+    // 1. 브라우저 로컬스토리지에 저장된 실제 유저 농장 로드
+    const storedFarms = getAllStoredFarms();
+    setNeighborList(storedFarms);
+
+    if (!socket) return;
+
+    // 2. 서버에 내 농장 정보 동기화 및 전체 활성 농장 목록 요청
+    if (farmState.isInitialized && farmState.ownerName) {
+      socket.emit('farm-sync', { username: farmState.ownerName, farmData: farmState });
     }
-  ];
+    socket.emit('farm-get-list');
 
-  // 🏆 하트 수 기준 인기 농장 Top 3 랭킹 자동 계산
-  const top3PopularFarms = React.useMemo(() => {
-    const map = new Map<string, NeighborFarmData>();
+    const handleListUpdate = (serverFarms: NeighborFarmData[]) => {
+      if (Array.isArray(serverFarms)) {
+        const map = new Map<string, NeighborFarmData>();
+        storedFarms.forEach(f => map.set(f.username, f));
+        serverFarms.forEach(f => map.set(f.username, f));
+        setNeighborList(Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0)));
+      }
+    };
 
-    // 내 농장 추가
-    map.set(farmState.ownerName, {
-      username: farmState.ownerName,
-      farmName: farmState.farmName,
-      activePokemon: farmState.activePokemon,
-      graduatedCount: farmState.graduatedPokemon.length,
-      heartsCount: farmState.heartsCount,
-      isOnline: true
-    });
+    const handleVisitData = (res: { success: boolean; farm: NeighborFarmData | null; guestbook: GuestbookEntry[] }) => {
+      if (res.success && res.farm) {
+        setVisitingFarm({
+          owner: res.farm.username,
+          farm: res.farm,
+          guestbook: res.guestbook || []
+        });
+        setActiveTab('minihome');
+      }
+    };
 
-    // 이웃 농장 리스트 추가
-    neighborList.forEach(n => {
-      if (!map.has(n.username)) map.set(n.username, n);
-    });
+    const handleHeartReceived = ({ targetUsername, senderUsername, heartsCount, rewardCoins }: { targetUsername: string; senderUsername?: string; heartsCount: number; rewardCoins?: number }) => {
+      if (targetUsername === farmState.ownerName) {
+        const bonus = rewardCoins || 100;
+        setFarmState(prev => ({
+          ...prev,
+          heartsCount,
+          coins: prev.coins + bonus
+        }));
+        showAlert(`💖 [${senderUsername || '1촌 이웃'}]님이 내 농장에 응원 하트를 선물했습니다! (+${bonus} 코인 획득 🪙)`, 'success');
+        setFloatingHeart({ id: Date.now(), x: window.innerWidth / 2, y: window.innerHeight / 2 });
+      }
+      if (visitingFarm && visitingFarm.owner === targetUsername) {
+        setVisitingFarm(prev => prev ? { ...prev, farm: { ...prev.farm, heartsCount } } : null);
+      }
+    };
 
-    // 기본 인기 농장 추가
-    MOCK_POPULAR_FARMS.forEach(m => {
-      if (!map.has(m.username)) map.set(m.username, m);
-    });
+    const handleHeartSentSuccess = (data: { targetUsername: string; heartsCount: number; senderRewardCoins: number; todaySent: number; remainingHearts: number }) => {
+      setTodayHeartsSent(data.todaySent);
+      setTodayHeartCountLocal(farmState.ownerName, data.todaySent);
+      if (visitingFarm && visitingFarm.owner === data.targetUsername) {
+        setVisitingFarm(prev => prev ? { ...prev, farm: { ...prev.farm, heartsCount: data.heartsCount } } : null);
+      }
+    };
 
-    return Array.from(map.values()).sort((a, b) => b.heartsCount - a.heartsCount).slice(0, 3);
-  }, [farmState, neighborList]);
+    const handleHeartFailed = (data: { reason: string; message: string; todaySent?: number }) => {
+      if (data.todaySent !== undefined) {
+        setTodayHeartsSent(data.todaySent);
+        setTodayHeartCountLocal(farmState.ownerName, data.todaySent);
+      }
+      showAlert(data.message, 'warn');
+    };
+
+    const handleDailyHeartsInfo = (data: { todaySent: number; remainingHearts: number }) => {
+      setTodayHeartsSent(data.todaySent);
+      setTodayHeartCountLocal(farmState.ownerName, data.todaySent);
+    };
+
+    const handleGuestbookUpdated = ({ targetUsername, guestbook }: { targetUsername: string; guestbook: GuestbookEntry[] }) => {
+      if (targetUsername === farmState.ownerName) {
+        setFarmState(prev => ({ ...prev, guestbook }));
+      }
+      if (visitingFarm && visitingFarm.owner === targetUsername) {
+        setVisitingFarm(prev => prev ? { ...prev, guestbook } : null);
+      }
+    };
+
+    const handleMyDataLoaded = (res: { success: boolean; farm: any; guestbook: GuestbookEntry[] }) => {
+      if (res.success && res.farm) {
+        setFarmState(prev => {
+          const gradCount = res.farm.graduatedPokemon ? res.farm.graduatedPokemon.length : 0;
+          showAlert(`🎉 서버 DB에서 [${res.farm.username || res.farm.ownerName}]님의 포켓농장 데이터(졸업생 ${gradCount}마리, 파트너 등)를 성공적으로 복원했습니다!`, 'success');
+          return {
+            ...prev,
+            ...res.farm,
+            ownerName: res.farm.username || prev.ownerName,
+            isInitialized: true,
+            guestbook: res.guestbook || prev.guestbook || []
+          };
+        });
+        setActiveTab('minihome');
+      }
+    };
+
+    socket.emit('farm-get-daily-hearts', { username: farmState.ownerName });
+
+    socket.on('farm-list-update', handleListUpdate);
+    socket.on('farm-visit-data', handleVisitData);
+    socket.on('farm-heart-received', handleHeartReceived);
+    socket.on('farm-heart-sent-success', handleHeartSentSuccess);
+    socket.on('farm-heart-failed', handleHeartFailed);
+    socket.on('farm-daily-hearts-info', handleDailyHeartsInfo);
+    socket.on('farm-guestbook-updated', handleGuestbookUpdated);
+    socket.on('farm-my-data-loaded', handleMyDataLoaded);
+
+    return () => {
+      socket.off('farm-list-update', handleListUpdate);
+      socket.off('farm-visit-data', handleVisitData);
+      socket.off('farm-heart-received', handleHeartReceived);
+      socket.off('farm-heart-sent-success', handleHeartSentSuccess);
+      socket.off('farm-heart-failed', handleHeartFailed);
+      socket.off('farm-daily-hearts-info', handleDailyHeartsInfo);
+      socket.off('farm-guestbook-updated', handleGuestbookUpdated);
+      socket.off('farm-my-data-loaded', handleMyDataLoaded);
+    };
+  }, [socket, farmState.ownerName, farmState.isInitialized]);
+
+  // 📌 외부(시트1 게임목록 상단 등)에서 특정 유저 미니홈피 방문 요청 시 자동 전환
+  useEffect(() => {
+    if (initialVisitingUser) {
+      handleVisitNeighbor(initialVisitingUser);
+      if (onClearInitialVisitingUser) {
+        onClearInitialVisitingUser();
+      }
+    }
+  }, [initialVisitingUser]);
 
   // 방문 여부에 따른 미니홈피 표시 값
-  const currentTodayCount = visitingFarm ? 84 : (farmState.todayCount || 142);
-  const currentTotalCount = visitingFarm ? 2340 : (farmState.totalCount || 4820);
+  const currentTodayCount = visitingFarm ? (visitingFarm.farm.todayCount || 42) : (farmState.todayCount || 142);
+  const currentTotalCount = visitingFarm ? (visitingFarm.farm.totalCount || 850) : (farmState.totalCount || 4820);
   const displayOwnerName = visitingFarm ? visitingFarm.owner : farmState.ownerName;
   const displayFarmName = visitingFarm ? visitingFarm.farm.farmName : farmState.farmName;
   const displayActivePokemon = visitingFarm ? visitingFarm.farm.activePokemon : farmState.activePokemon;
-  const displayReservePokemons = visitingFarm ? [] : farmState.reservePokemon;
-  const displayGraduatedPokemons = visitingFarm ? [] : farmState.graduatedPokemon;
-  const displayGraduatedCount = visitingFarm ? visitingFarm.farm.graduatedCount : farmState.graduatedPokemon.length;
+  const displayReservePokemons = visitingFarm ? (visitingFarm.farm.reservePokemon || []) : farmState.reservePokemon;
+  const displayGraduatedPokemons = visitingFarm ? (visitingFarm.farm.graduatedPokemon || []) : farmState.graduatedPokemon;
+  const displayGraduatedCount = visitingFarm ? (visitingFarm.farm.graduatedPokemon ? visitingFarm.farm.graduatedPokemon.length : visitingFarm.farm.graduatedCount) : farmState.graduatedPokemon.length;
   const displayHeartsCount = visitingFarm ? visitingFarm.farm.heartsCount : farmState.heartsCount;
   const displayGuestbook = visitingFarm ? visitingFarm.guestbook : farmState.guestbook;
-  const currentBgTheme = visitingFarm ? 'classic' : (farmState.bgTheme || 'classic');
-  const currentStickers = visitingFarm ? [
-    { id: 'v_stk_1', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15 },
-    { id: 'v_stk_2', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20 },
-    { id: 'v_stk_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75 }
-  ] : (farmState.stickers || []);
-  const currentStatusMsg = visitingFarm ? '이웃의 농장에 놀러왔습니다 🎵' : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
+  const currentBgTheme = visitingFarm ? (visitingFarm.farm.bgTheme || 'classic') : (farmState.bgTheme || 'classic');
+  const currentStickers = visitingFarm ? (visitingFarm.farm.stickers || []) : (farmState.stickers || []);
+  const currentStatusMsg = visitingFarm ? (visitingFarm.farm.statusMsg || '이웃의 농장에 놀러왔습니다 🎵') : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
 
   // 이웃 미니홈피 놀러가기/구경가기
   const handleVisitNeighbor = (neighborUsername: string) => {
+    if (!neighborUsername) return;
     if (neighborUsername === farmState.ownerName) {
       setVisitingFarm(null);
       setActiveTab('minihome');
@@ -301,48 +422,81 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       socket.emit('farm-visit-request', { targetUsername: neighborUsername });
     }
 
-    const foundLocal = neighborList.find(n => n.username === neighborUsername) ||
-      MOCK_POPULAR_FARMS.find(n => n.username === neighborUsername);
-
-    if (foundLocal) {
+    // 1. 로컬에 저장된 실제 유저 데이터 확인
+    const targetSaved = loadFarmState(neighborUsername);
+    if (targetSaved && targetSaved.isInitialized && targetSaved.ownerName === neighborUsername) {
       setVisitingFarm({
-        owner: foundLocal.username,
-        farm: foundLocal,
-        guestbook: [
-          {
-            id: 'gb_mock_1',
-            author: '지우',
-            message: `[${foundLocal.farmName}] 방문하고 갑니다! 포켓몬 너무 멋지네요! ⚡`,
-            timestamp: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'gb_mock_2',
-            author: '이슬이',
-            message: '1촌 하트 💖 누르고 갑니다! 제 농장에도 놀러오세요~',
-            timestamp: new Date(Date.now() - 86400000).toISOString()
-          }
-        ]
+        owner: targetSaved.ownerName,
+        farm: {
+          username: targetSaved.ownerName,
+          farmName: targetSaved.farmName,
+          activePokemon: targetSaved.activePokemon,
+          reservePokemon: targetSaved.reservePokemon || [],
+          graduatedPokemon: targetSaved.graduatedPokemon || [],
+          graduatedCount: targetSaved.graduatedPokemon?.length || 0,
+          heartsCount: targetSaved.heartsCount || 0,
+          bgTheme: targetSaved.bgTheme || 'classic',
+          stickers: targetSaved.stickers || [],
+          pokemonPlacements: targetSaved.pokemonPlacements || {},
+          statusMsg: targetSaved.statusMsg || '',
+          todayCount: targetSaved.todayCount || 42,
+          totalCount: targetSaved.totalCount || 850,
+          isOnline: true
+        },
+        guestbook: targetSaved.guestbook || []
       });
       setActiveTab('minihome');
-      showAlert(`🏠 [${foundLocal.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      showAlert(`🏠 [${targetSaved.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      return;
+    }
+
+    // 2. 이웃 목록에서 확인
+    const foundNeighbor = neighborList.find(n => n.username === neighborUsername);
+    if (foundNeighbor) {
+      setVisitingFarm({
+        owner: foundNeighbor.username,
+        farm: foundNeighbor,
+        guestbook: []
+      });
+      setActiveTab('minihome');
+      showAlert(`🏠 [${foundNeighbor.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
     }
   };
 
-  // 1촌 응원 하트 보내기
+  // 1촌 응원 하트 보내기 (하루 5회 제한, 자기 자신 금지, 보답 코인 보상)
   const handleSendHeartToCurrentFarm = () => {
-    const targetUser = visitingFarm ? visitingFarm.owner : farmState.ownerName;
-    if (visitingFarm) {
-      setVisitingFarm(prev => prev ? {
-        ...prev,
-        farm: { ...prev.farm, heartsCount: prev.farm.heartsCount + 1 }
-      } : null);
-      if (socket && socket.connected) {
-        socket.emit('farm-send-heart', { targetUsername: targetUser, senderUsername: farmState.ownerName });
-      }
-    } else {
-      setFarmState(prev => ({ ...prev, heartsCount: prev.heartsCount + 1 }));
+    // 1. 자기 농장인 경우 차단
+    if (!visitingFarm || visitingFarm.owner === farmState.ownerName) {
+      showAlert('내 농장에는 하트를 보낼 수 없습니다! 1촌 이웃 농장을 방문해 따뜻한 하트를 선물해 보세요. 💖', 'warn');
+      return;
     }
-    showAlert(`💖 [${targetUser}]님에게 1촌 응원 하트를 보냈습니다!`, 'success');
+
+    // 2. 일일 5회 제한 검사
+    const currentSent = getTodayHeartCountLocal(farmState.ownerName);
+    if (currentSent >= 5 || todayHeartsSent >= 5) {
+      showAlert('오늘 보낼 수 있는 1촌 응원 하트(하루 최대 5회)를 모두 선물하셨습니다! 내일 다시 응원해 주세요. 🌟', 'warn');
+      return;
+    }
+
+    const targetUser = visitingFarm.owner;
+    const nextSent = currentSent + 1;
+    setTodayHeartsSent(nextSent);
+    setTodayHeartCountLocal(farmState.ownerName, nextSent);
+
+    // 발신자에게도 즉시 보답 코인 +20
+    setFarmState(prev => ({ ...prev, coins: prev.coins + 20 }));
+
+    setVisitingFarm(prev => prev ? {
+      ...prev,
+      farm: { ...prev.farm, heartsCount: prev.farm.heartsCount + 1 }
+    } : null);
+
+    if (socket && socket.connected) {
+      socket.emit('farm-send-heart', { targetUsername: targetUser, senderUsername: farmState.ownerName });
+    }
+
+    const remaining = Math.max(0, 5 - nextSent);
+    showAlert(`💖 [${targetUser}]님에게 1촌 응원 하트를 선물했습니다! (보답으로 +20 코인 획득 🪙, 오늘 남은 하트: ${remaining}/5회)`, 'success');
     setFloatingHeart({ id: Date.now(), x: window.innerWidth / 2, y: window.innerHeight / 2 });
   };
 
@@ -404,14 +558,123 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       stickerId,
       icon,
       label,
-      x: Math.floor(Math.random() * 60) + 15,
-      y: Math.floor(Math.random() * 50) + 15
+      type: 'sticker',
+      x: Math.floor(Math.random() * 50) + 25,
+      y: Math.floor(Math.random() * 40) + 20,
+      scale: 1,
+      flipped: false
     };
     setFarmState(prev => ({
       ...prev,
       stickers: [...(prev.stickers || []), newSticker]
     }));
-    showAlert(`🎨 [${label}] 스티커를 미니룸에 붙였습니다!`, 'success');
+    showAlert(`🎨 [${label}] 스티커를 미니룸에 붙였습니다! 드래그하여 배치해보세요.`, 'success');
+    setSelectedDecorItem({ type: 'sticker', id: newSticker.id });
+  };
+
+  // 자유 텍스트 & 말풍선 추가
+  const handleAddCustomTextSticker = () => {
+    if (visitingFarm) return;
+    if (!customTextContent.trim()) {
+      showAlert('작성할 텍스트 내용을 입력해주세요!', 'warn');
+      return;
+    }
+
+    const newTextSticker: MinihompySticker = {
+      id: `txt_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      stickerId: `txt_${customTextStyle}`,
+      text: customTextContent.trim(),
+      label: customTextContent.trim().slice(0, 10),
+      type: customTextStyle === 'classic_bubble' ? 'bubble' : 'text',
+      styleType: customTextStyle,
+      color: customTextColor,
+      fontSize: customFontSize,
+      x: 35,
+      y: 20,
+      scale: 1,
+      flipped: false
+    };
+
+    setFarmState(prev => ({
+      ...prev,
+      stickers: [...(prev.stickers || []), newTextSticker]
+    }));
+    setCustomTextContent('');
+    showAlert('✍️ 자유 텍스트/말풍선이 미니룸에 추가되었습니다! 드래그하여 원하는 위치에 놓아보세요.', 'success');
+    setMinihompyTab('miniroom');
+    setSelectedDecorItem({ type: 'sticker', id: newTextSticker.id });
+  };
+
+  // 스티커 크기 조절
+  const handleScaleSticker = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => {
+        if (s.id !== id) return s;
+        const curScale = s.scale || 1;
+        const nextScale = Math.max(0.5, Math.min(2.2, Math.round((curScale + delta) * 10) / 10));
+        return { ...s, scale: nextScale };
+      })
+    }));
+  };
+
+  // 스티커 360도 평면 회전 조작
+  const handleSetStickerRotation = (id: string, angle: number) => {
+    if (visitingFarm) return;
+    const normalized = Math.round(((angle % 360) + 360) % 360);
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => s.id === id ? { ...s, rotation: normalized } : s)
+    }));
+  };
+
+  const handleRotateSticker = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => {
+        if (s.id !== id) return s;
+        const cur = s.rotation || 0;
+        const next = Math.round(((cur + delta) % 360 + 360) % 360);
+        return { ...s, rotation: next };
+      })
+    }));
+  };
+
+  // 스티커 앞뒤 3D 기울기 (TiltX: -60 ~ +60도)
+  const handleSetStickerTiltX = (id: string, tilt: number) => {
+    if (visitingFarm) return;
+    const clamped = Math.max(-60, Math.min(60, Math.round(tilt)));
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => s.id === id ? { ...s, tiltX: clamped } : s)
+    }));
+  };
+
+  const handleTiltStickerX = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => {
+        if (s.id !== id) return s;
+        const cur = s.tiltX || 0;
+        const next = Math.max(-60, Math.min(60, cur + delta));
+        return { ...s, tiltX: next };
+      })
+    }));
+  };
+
+  // 스티커 좌우 반전
+  const handleFlipSticker = (id: string) => {
+    if (visitingFarm) return;
+    setFarmState(prev => ({
+      ...prev,
+      stickers: (prev.stickers || []).map(s => {
+        if (s.id !== id) return s;
+        return { ...s, flipped: !s.flipped };
+      })
+    }));
   };
 
   // 스티커 제거
@@ -421,14 +684,232 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       ...prev,
       stickers: (prev.stickers || []).filter(s => s.id !== id)
     }));
+    if (selectedDecorItem?.id === id) {
+      setSelectedDecorItem(null);
+    }
   };
 
   // 스티커 전체 삭제
   const handleClearAllStickers = () => {
     if (visitingFarm) return;
-    if (window.confirm('미니룸의 모든 스티커를 제거하시겠습니까?')) {
+    if (window.confirm('미니룸의 모든 스티커와 텍스트를 제거하시겠습니까?')) {
       setFarmState(prev => ({ ...prev, stickers: [] }));
+      setSelectedDecorItem(null);
       showAlert('🧹 미니룸 스티커를 모두 지웠습니다.', 'info');
+    }
+  };
+
+  // 포켓몬 크기 조절
+  const handleScalePokemon = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      const curScale = existing.scale || 1;
+      const nextScale = Math.max(0.6, Math.min(1.8, Math.round((curScale + delta) * 10) / 10));
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, scale: nextScale }
+        }
+      };
+    });
+  };
+
+  // 포켓몬 360도 평면 회전 조작 (0 ~ 360도)
+  const handleSetPokemonRotation = (id: string, angle: number) => {
+    if (visitingFarm) return;
+    const normalized = Math.round(((angle % 360) + 360) % 360);
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, rotation: normalized }
+        }
+      };
+    });
+  };
+
+  const handleRotatePokemon = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      const cur = existing.rotation || 0;
+      const next = Math.round(((cur + delta) % 360 + 360) % 360);
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, rotation: next }
+        }
+      };
+    });
+  };
+
+  // 포켓몬 앞뒤 3D 기울기 / 눕힘 (TiltX: -60 ~ +60도)
+  const handleSetPokemonTiltX = (id: string, tilt: number) => {
+    if (visitingFarm) return;
+    const clamped = Math.max(-60, Math.min(60, Math.round(tilt)));
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, tiltX: clamped }
+        }
+      };
+    });
+  };
+
+  const handleTiltPokemonX = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      const cur = existing.tiltX || 0;
+      const next = Math.max(-60, Math.min(60, cur + delta));
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, tiltX: next }
+        }
+      };
+    });
+  };
+
+  // 포켓몬 좌우 반전 (바라보는 방향 전환)
+  const handleFlipPokemon = (id: string) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, flipped: !existing.flipped }
+        }
+      };
+    });
+  };
+
+  // 포켓몬 위치 초기화
+  const handleResetPokemonPlacement = (id: string) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const next = { ...(prev.pokemonPlacements || {}) };
+      delete next[id];
+      return {
+        ...prev,
+        pokemonPlacements: next
+      };
+    });
+    showAlert('📍 포켓몬 위치 및 회전 각도를 초기화했습니다.', 'info');
+  };
+
+  // 포켓몬 위치 조회 헬퍼
+  const getPokemonPlacement = (
+    id: string,
+    defaultX: number,
+    defaultY: number,
+    defaultScale = 1,
+    defaultFlipped = false,
+    defaultRotation = 0,
+    defaultTiltX = 0
+  ) => {
+    const placements = visitingFarm ? visitingFarm.farm.pokemonPlacements : farmState.pokemonPlacements;
+    const custom = placements?.[id];
+    if (custom) {
+      return {
+        x: custom.x,
+        y: custom.y,
+        scale: custom.scale !== undefined ? custom.scale : defaultScale,
+        flipped: custom.flipped !== undefined ? custom.flipped : defaultFlipped,
+        rotation: custom.rotation !== undefined ? custom.rotation : defaultRotation,
+        tiltX: custom.tiltX !== undefined ? custom.tiltX : defaultTiltX,
+        tiltY: custom.tiltY !== undefined ? custom.tiltY : 0
+      };
+    }
+    return {
+      x: defaultX,
+      y: defaultY,
+      scale: defaultScale,
+      flipped: defaultFlipped,
+      rotation: defaultRotation,
+      tiltX: defaultTiltX,
+      tiltY: 0
+    };
+  };
+
+  // 🎯 인터랙티브 드래그 시작 핸들러
+  const handleStartDrag = (
+    e: React.PointerEvent,
+    type: 'sticker' | 'pokemon',
+    id: string,
+    currentX: number,
+    currentY: number
+  ) => {
+    if (visitingFarm) return; // 이웃 방문 시 읽기 전용
+    e.stopPropagation();
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch (err) {}
+
+    setDragState({
+      type,
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: currentX,
+      origY: currentY
+    });
+    setSelectedDecorItem({ type, id });
+  };
+
+  // 🎯 캔버스 위에서 드래그 이동 핸들러
+  const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (!dragState || !miniroomCanvasRef.current) return;
+    const rect = miniroomCanvasRef.current.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const deltaXPercent = ((e.clientX - dragState.startX) / rect.width) * 100;
+    const deltaYPercent = ((e.clientY - dragState.startY) / rect.height) * 100;
+
+    const newX = Math.max(2, Math.min(92, Math.round((dragState.origX + deltaXPercent) * 10) / 10));
+    const newY = Math.max(2, Math.min(88, Math.round((dragState.origY + deltaYPercent) * 10) / 10));
+
+    if (dragState.type === 'sticker') {
+      setFarmState(prev => ({
+        ...prev,
+        stickers: (prev.stickers || []).map(s => s.id === dragState.id ? { ...s, x: newX, y: newY } : s)
+      }));
+    } else if (dragState.type === 'pokemon') {
+      setFarmState(prev => {
+        const existing = prev.pokemonPlacements?.[dragState.id] || { uid: dragState.id, x: dragState.origX, y: dragState.origY, scale: 1, flipped: false };
+        return {
+          ...prev,
+          pokemonPlacements: {
+            ...(prev.pokemonPlacements || {}),
+            [dragState.id]: {
+              ...existing,
+              x: newX,
+              y: newY
+            }
+          }
+        };
+      });
+    }
+  };
+
+  // 🎯 드래그 종료 핸들러
+  const handleCanvasPointerUp = (e: React.PointerEvent) => {
+    if (dragState) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (err) {}
+      setDragState(null);
     }
   };
 
@@ -438,91 +919,313 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const stickers = currentStickers || [];
 
     return (
-      <div className={`miniroom-canvas-container bg-${bgTheme} ${compact ? 'compact' : ''}`}>
-        {/* 🖼️ 배경 장식 */}
-        <div className="miniroom-wall">
-          <div className="miniroom-window">
-            <span className="window-sun">☀️</span>
-            <span className="window-cloud c1">☁️</span>
-            <span className="window-cloud c2">☁️</span>
-          </div>
-        </div>
-        <div className="miniroom-floor"></div>
-
-        {/* 🐾 키우는 중인 메인 포켓몬 */}
-        {displayActivePokemon && (
-          <div className="miniroom-pokemon active-pokemon-pos">
-            <div className="pokemon-name-tag">
-              <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
-              <span className="tag-name">{displayActivePokemon.nickname || displayActivePokemon.name}</span>
+      <div className="miniroom-viewport-wrapper">
+        <div
+          ref={miniroomCanvasRef}
+          className={`miniroom-canvas-container bg-${bgTheme} ${compact ? 'compact' : ''} ${dragState ? 'is-dragging' : ''}`}
+          onPointerMove={handleCanvasPointerMove}
+          onPointerUp={handleCanvasPointerUp}
+          onClick={(e) => {
+            if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('miniroom-floor') || (e.target as HTMLElement).classList.contains('miniroom-wall')) {
+              setSelectedDecorItem(null);
+            }
+          }}
+        >
+          {/* 🖼️ 배경 장식 */}
+          <div className="miniroom-wall">
+            <div className="miniroom-window">
+              <span className="window-sun">☀️</span>
+              <span className="window-cloud c1">☁️</span>
+              <span className="window-cloud c2">☁️</span>
             </div>
-            <img
-              src={displayActivePokemon.sprites.showdownFront || displayActivePokemon.sprites.front}
-              alt={displayActivePokemon.name}
-              className="poke-sprite bounce"
-            />
           </div>
-        )}
+          <div className="miniroom-floor"></div>
 
-        {/* 🏡 키우는 중인 보육소 서브 포켓몬들 */}
-        {displayReservePokemons.slice(0, 3).map((mon, idx) => (
-          <div key={mon.uid || idx} className={`miniroom-pokemon reserve-pos-${idx + 1}`}>
-            <div className="pokemon-name-tag compact">
-              <span>{mon.nickname || mon.name}</span>
-            </div>
-            <img
-              src={mon.sprites.showdownFront || mon.sprites.front}
-              alt={mon.name}
-              className="poke-sprite"
-            />
-          </div>
-        ))}
+          {/* 🐾 키우는 중인 메인 포켓몬 */}
+          {displayActivePokemon && (() => {
+            const id = 'active';
+            const place = getPokemonPlacement(id, 45, 52, 1, false, 0, 0);
+            const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
+            const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
 
-        {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓) */}
-        {displayGraduatedPokemons.slice(0, 4).map((dip, idx) => (
-          <div
-            key={dip.id || idx}
-            className={`miniroom-pokemon graduated-pos-${(idx % 4) + 1}`}
-            onClick={() => setSelectedDiploma(dip)}
-            title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] (클릭하여 졸업증서 보기)`}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="graduated-badge-tag">
-              🎓 {dip.nickname || dip.name}
-            </div>
-            <img
-              src={dip.sprite}
-              alt={dip.name}
-              className="poke-sprite graduated-shine"
-            />
-          </div>
-        ))}
-
-        {/* 🎨 배치된 스티커들 */}
-        {stickers.map(stk => (
-          <div
-            key={stk.id}
-            className="miniroom-placed-sticker"
-            style={{ left: `${stk.x}%`, top: `${stk.y}%` }}
-          >
-            <span className="stk-icon">{stk.icon}</span>
-            {stk.label.startsWith('말풍선:') && (
-              <span className="stk-bubble">{stk.label.replace('말풍선:', '').trim()}</span>
-            )}
-            {!visitingFarm && (
-              <button
-                className="stk-del-btn"
-                onClick={e => {
-                  e.stopPropagation();
-                  handleRemoveSticker(stk.id);
+            return (
+              <div
+                key="mon_active"
+                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{
+                  left: `${place.x}%`,
+                  top: `${place.y}%`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transformOrigin: 'bottom center',
+                  zIndex: isDragging ? 50 : isSelected ? 40 : 20
                 }}
-                title="스티커 삭제"
+                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                title="드래그 이동 / 클릭하여 360도 회전 & 각도 조절!"
               >
-                ✕
-              </button>
-            )}
-          </div>
-        ))}
+                <div className={`pokemon-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
+                  <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
+                  <span className="tag-name">{displayActivePokemon.nickname || displayActivePokemon.name}</span>
+                </div>
+                <img
+                  src={displayActivePokemon.sprites.showdownFront || displayActivePokemon.sprites.front}
+                  alt={displayActivePokemon.name}
+                  className="poke-sprite bounce"
+                  draggable={false}
+                />
+              </div>
+            );
+          })()}
+
+          {/* 🏡 키우는 중인 보육소 서브 포켓몬들 */}
+          {displayReservePokemons.map((mon, idx) => {
+            const id = `res_${mon.uid || idx}`;
+            const defX = idx === 0 ? 20 : idx === 1 ? 70 : 82;
+            const defY = idx === 0 ? 58 : idx === 1 ? 58 : 48;
+            const defFlip = idx !== 0;
+            const place = getPokemonPlacement(id, defX, defY, 0.9, defFlip, 0, 0);
+            const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
+            const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
+
+            return (
+              <div
+                key={mon.uid || idx}
+                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{
+                  left: `${place.x}%`,
+                  top: `${place.y}%`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transformOrigin: 'bottom center',
+                  zIndex: isDragging ? 50 : isSelected ? 40 : 18
+                }}
+                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                title="드래그 이동 / 클릭하여 360도 회전 & 각도 조절!"
+              >
+                <div className={`pokemon-name-tag compact ${place.flipped ? 'unflip-tag' : ''}`}>
+                  <span>{mon.nickname || mon.name}</span>
+                </div>
+                <img
+                  src={mon.sprites.showdownFront || mon.sprites.front}
+                  alt={mon.name}
+                  className="poke-sprite"
+                  draggable={false}
+                />
+              </div>
+            );
+          })}
+
+          {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓) */}
+          {displayGraduatedPokemons.map((dip, idx) => {
+            const id = `grad_${dip.id || idx}`;
+            const defX = idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86;
+            const defY = idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32;
+            const defFlip = idx >= 2;
+            const place = getPokemonPlacement(id, defX, defY, 0.85, defFlip, 0, 0);
+            const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
+            const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
+
+            return (
+              <div
+                key={dip.id || idx}
+                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{
+                  left: `${place.x}%`,
+                  top: `${place.y}%`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transformOrigin: 'bottom center',
+                  zIndex: isDragging ? 50 : isSelected ? 40 : 16
+                }}
+                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onClick={() => !dragState && setSelectedDiploma(dip)}
+                title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] (드래그 이동 / 클릭 졸업증서)`}
+              >
+                <div className={`graduated-badge-tag ${place.flipped ? 'unflip-tag' : ''}`}>
+                  🎓 {dip.nickname || dip.name}
+                </div>
+                <img
+                  src={dip.sprite}
+                  alt={dip.name}
+                  className="poke-sprite graduated-shine"
+                  draggable={false}
+                />
+              </div>
+            );
+          })}
+
+          {/* 🎨 배치된 스티커 & 자유 텍스트 / 말풍선들 */}
+          {stickers.map(stk => {
+            const isSelected = selectedDecorItem?.type === 'sticker' && selectedDecorItem.id === stk.id;
+            const isDragging = dragState?.type === 'sticker' && dragState.id === stk.id;
+            const scale = stk.scale || 1;
+            const flipped = !!stk.flipped;
+            const rot = stk.rotation || 0;
+            const tilt = stk.tiltX || 0;
+
+            return (
+              <div
+                key={stk.id}
+                className={`miniroom-placed-item ${stk.text ? 'text-item' : 'sticker-item'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{
+                  left: `${stk.x}%`,
+                  top: `${stk.y}%`,
+                  transform: `scale(${scale}) ${flipped ? 'scaleX(-1)' : ''} rotate(${rot}deg) rotateX(${tilt}deg)`,
+                  transformOrigin: 'center center',
+                  zIndex: isDragging ? 60 : isSelected ? 45 : 25
+                }}
+                onPointerDown={(e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
+              >
+                {/* 1. 자유 텍스트 & 말풍선 */}
+                {stk.text ? (
+                  <div
+                    className={`custom-decor-text style-${stk.styleType || 'classic_bubble'}`}
+                    style={{
+                      color: stk.color || '#1e293b',
+                      fontSize: `${stk.fontSize || 14}px`
+                    }}
+                  >
+                    <span className={flipped ? 'unflip-text' : ''}>{stk.text}</span>
+                  </div>
+                ) : (
+                  /* 2. 이모지/아이콘 스티커 */
+                  <span className="stk-icon">{stk.icon}</span>
+                )}
+
+                {/* 개별 삭제 버튼 */}
+                {!visitingFarm && (
+                  <button
+                    className="stk-del-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveSticker(stk.id);
+                    }}
+                    title="스티커 삭제"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 🎛️ 선택된 아이템 (스티커/포켓몬) 정밀 360도 회전 & 3D 틸트 조작 툴바 */}
+        {!compact && selectedDecorItem && !visitingFarm && (() => {
+          const isPokemon = selectedDecorItem.type === 'pokemon';
+          const id = selectedDecorItem.id;
+          const curPlacement = isPokemon
+            ? getPokemonPlacement(id, 45, 52, 1, false, 0, 0)
+            : (farmState.stickers || []).find(s => s.id === id);
+          const curRot = (isPokemon ? curPlacement?.rotation : (curPlacement as MinihompySticker)?.rotation) || 0;
+          const curTilt = (isPokemon ? curPlacement?.tiltX : (curPlacement as MinihompySticker)?.tiltX) || 0;
+
+          return (
+            <div className="miniroom-item-editor-bar">
+              <div className="editor-top-line">
+                <span className="editor-target-name">
+                  {isPokemon ? '🐾 포켓몬 미세 회전 & 연출' : '🎨 스티커/텍스트 회전 & 연출'}
+                </span>
+                <button
+                  className="editor-btn close"
+                  onClick={() => setSelectedDecorItem(null)}
+                  title="선택 해제"
+                >
+                  ✖ 선택 닫기
+                </button>
+              </div>
+
+              <div className="editor-controls-grid">
+                {/* 1. 크기 & 좌우 반전 */}
+                <div className="control-row">
+                  <span className="control-title">📐 크기/반전:</span>
+                  <button
+                    className="editor-btn"
+                    onClick={() => isPokemon ? handleScalePokemon(id, -0.15) : handleScaleSticker(id, -0.15)}
+                    title="축소"
+                  >
+                    ➖ 작게
+                  </button>
+                  <button
+                    className="editor-btn"
+                    onClick={() => isPokemon ? handleScalePokemon(id, 0.15) : handleScaleSticker(id, 0.15)}
+                    title="확대"
+                  >
+                    ➕ 크게
+                  </button>
+                  <button
+                    className="editor-btn"
+                    onClick={() => isPokemon ? handleFlipPokemon(id) : handleFlipSticker(id)}
+                    title="바라보는 방향 반전"
+                  >
+                    🔄 좌우반전
+                  </button>
+                  {isPokemon ? (
+                    <button
+                      className="editor-btn"
+                      onClick={() => handleResetPokemonPlacement(id)}
+                      title="위치 및 각도 초기화"
+                    >
+                      📍 위치/각도 초기화
+                    </button>
+                  ) : (
+                    <button
+                      className="editor-btn danger"
+                      onClick={() => {
+                        handleRemoveSticker(id);
+                      }}
+                      title="삭제"
+                    >
+                      🗑️ 삭제
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. 🔄 360도 2D 평면 미세 회전 (Z축) */}
+                <div className="control-row">
+                  <span className="control-title">🔄 360° 회전:</span>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -15) : handleRotateSticker(id, -15)}>↶ -15°</button>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -5) : handleRotateSticker(id, -5)}>↶ -5°</button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={curRot}
+                    onChange={e => isPokemon ? handleSetPokemonRotation(id, Number(e.target.value)) : handleSetStickerRotation(id, Number(e.target.value))}
+                    className="angle-range-slider"
+                    title="360도 미세 회전 조작"
+                  />
+                  <span className="angle-badge">{curRot}°</span>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 5) : handleRotateSticker(id, 5)}>↷ +5°</button>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 15) : handleRotateSticker(id, 15)}>↷ +15°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 0) : handleSetStickerRotation(id, 0)}>0° 정면</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 45) : handleSetStickerRotation(id, 45)}>45°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 90) : handleSetStickerRotation(id, 90)}>90°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 180) : handleSetStickerRotation(id, 180)}>180°</button>
+                </div>
+
+                {/* 3. 📐 앞뒤 3D 입체 기울기 / 눕힘 (X축 Tilt) */}
+                <div className="control-row">
+                  <span className="control-title">📐 앞뒤 3D 눕힘:</span>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, -10) : handleTiltStickerX(id, -10)}>⬆️ 앞 -10°</button>
+                  <input
+                    type="range"
+                    min="-60"
+                    max="60"
+                    step="2"
+                    value={curTilt}
+                    onChange={e => isPokemon ? handleSetPokemonTiltX(id, Number(e.target.value)) : handleSetStickerTiltX(id, Number(e.target.value))}
+                    className="angle-range-slider"
+                    title="앞뒤 3D 기울기 (-60도 ~ +60도)"
+                  />
+                  <span className="angle-badge">{curTilt > 0 ? `+${curTilt}°` : `${curTilt}°`}</span>
+                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, 10) : handleTiltStickerX(id, 10)}>⬇️ 뒤 +10°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 0) : handleSetStickerTiltX(id, 0)}>수평 0°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, -30) : handleSetStickerTiltX(id, -30)}>앞으로 -30°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 30) : handleSetStickerTiltX(id, 30)}>뒤로 +30°</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -530,15 +1233,24 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
     saveFarmState(farmState);
-    if (socket && socket.connected) {
+    if (socket && socket.connected && farmState.isInitialized && farmState.ownerName) {
       socket.emit('farm-sync', {
         username: farmState.ownerName,
         farmData: {
           farmName: farmState.farmName,
           activePokemon: farmState.activePokemon,
-          graduatedCount: farmState.graduatedPokemon.length,
+          reservePokemon: farmState.reservePokemon,
+          graduatedPokemon: farmState.graduatedPokemon,
+          graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
           heartsCount: farmState.heartsCount,
-          guestbook: farmState.guestbook
+          guestbook: farmState.guestbook,
+          bgTheme: farmState.bgTheme,
+          stickers: farmState.stickers,
+          pokemonPlacements: farmState.pokemonPlacements,
+          statusMsg: farmState.statusMsg,
+          bgmSong: farmState.bgmSong,
+          todayCount: farmState.todayCount,
+          totalCount: farmState.totalCount
         }
       });
     }
@@ -1621,13 +2333,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const starterBaby = selectedChain[0];
 
     return (
-      <div className="poke-farm-container excel-stealth-theme">
-        <div className="excel-formula-bar">
-          <div className="excel-name-box">Farm!Setup</div>
-          <div className="excel-fx-icon">fx</div>
-          <div className="excel-formula-input">=ESTABLISH_NEW_FARM(Step="{onboardingStep}")</div>
-        </div>
-
+      <div className="poke-farm-container dubu-modern-theme">
         <div className="farm-onboarding-wrapper">
           <div className="onboarding-card">
             {onboardingStep === 'name' ? (
@@ -1665,6 +2371,37 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       placeholder="예: 지우의 힐링 포켓농장"
                       maxLength={20}
                     />
+                  </div>
+
+                  <div className="onboarding-restore-box" style={{ margin: '10px 0 16px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      className="excel-btn"
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: '#f0fdf4',
+                        color: '#166534',
+                        border: '1px solid #bbf7d0',
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        borderRadius: '6px'
+                      }}
+                      onClick={() => {
+                        if (!initOwnerName.trim()) {
+                          showAlert('조회할 닉네임을 먼저 입력해 주세요!', 'warn');
+                          return;
+                        }
+                        if (socket && socket.connected) {
+                          socket.emit('farm-load-my-data', { username: initOwnerName.trim() });
+                          showAlert(`🔍 [${initOwnerName.trim()}]님의 기존 농장 데이터를 서버 DB에서 조회 중입니다...`, 'info');
+                        } else {
+                          showAlert('서버와 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warn');
+                        }
+                      }}
+                    >
+                      ☁️ 서버 DB에서 이전 내 농장 데이터(졸업생/포켓몬) 찾아 복원하기
+                    </button>
                   </div>
 
                   <button
@@ -1783,17 +2520,184 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     );
   }
 
-  return (
-    <div className="poke-farm-container excel-stealth-theme">
-      {/* 📊 Excel Formula Bar (PC 위장용) */}
-      <div className="excel-formula-bar">
-        <div className="excel-name-box">Farm!A1</div>
-        <div className="excel-fx-icon">fx</div>
-        <div className="excel-formula-input">
-          =LIFECYCLE_MANAGE_ASSET("{pmon ? pmon.name : 'NO_ACTIVE_PET'}", Lv_{pmon?.level || 0}, Hunger_{pmon?.hunger || 0}%, Happiness_{pmon?.happiness || 0}%)
+  // 🎮 두부 오락실 & 미니게임 뷰
+  const renderArcadeGamesView = () => (
+    <div className="dubu-arcade-view">
+      <div className="dubu-arcade-header">
+        <div className="arcade-header-left">
+          <span className="arcade-header-icon">🎮</span>
+          <div className="arcade-title-box">
+            <h3>두부월드 오락실 & 사내 미니게임 센터</h3>
+            <p>포켓몬 3v3 배틀, 테트리스, 캐치마인드 등 10종의 멀티 게임을 바로 플레이해보세요!</p>
+          </div>
         </div>
       </div>
 
+      <div className="arcade-games-grid">
+        {ARCADE_GAMES.map((game) => (
+          <div
+            key={game.key}
+            className="arcade-game-card"
+            onClick={() => onSelectGame ? onSelectGame(game.key) : showAlert(`[${game.name}] 게임으로 이동합니다!`, 'info')}
+          >
+            <div className="arcade-card-top">
+              <div className="arcade-icon-box" style={{ background: game.color }}>
+                {game.icon}
+              </div>
+              <span className="arcade-badge" style={{ color: game.color, borderColor: game.color }}>
+                {game.badge}
+              </span>
+            </div>
+            <div className="arcade-card-body">
+              <h4>{game.name}</h4>
+              <p>{game.desc}</p>
+            </div>
+            <div className="arcade-card-footer">
+              <button
+                className="arcade-play-btn"
+                style={{ background: game.color }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onSelectGame) onSelectGame(game.key);
+                }}
+              >
+                🚀 바로 플레이 ➔
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // 👥 이웃 파도타기 & 실시간 인기농장 TOP 3 뷰
+  const top3RealFarms = neighborList.slice(0, 3);
+
+  const renderNeighborsView = () => (
+    <div className="farm-social-layout">
+      {/* 🏆 실시간 인기 포켓농장 TOP 3 (하트 랭킹 명예의 전당) */}
+      <div className="sheet1-popular-farms-panel">
+        <div className="sheet1-panel-header">
+          <div className="sheet1-panel-header-left">
+            <span className="sheet1-panel-icon">🏆</span>
+            <div className="sheet1-panel-title-box">
+              <h3>실시간 인기 포켓농장 TOP 3 (하트 랭킹)</h3>
+              <p>전체 포켓농장 실제 유저들의 1촌 응원 하트(💖) 실시간 명예의 전당</p>
+            </div>
+          </div>
+        </div>
+
+        {top3RealFarms.length > 0 ? (
+          <div className="sheet1-top3-grid">
+            {top3RealFarms.map((farm, idx) => {
+              const rankNum = idx + 1;
+              const crown = rankNum === 1 ? '🥇 1위' : rankNum === 2 ? '🥈 2위' : '🥉 3위';
+              return (
+                <div key={farm.username} className={`sheet1-farm-card rank-${rankNum}`}>
+                  <span className="sheet1-rank-badge">{crown}</span>
+                  <div className="sheet1-farm-avatar-box">
+                    {farm.activePokemon ? (
+                      <img
+                        src={farm.activePokemon.sprites.showdownFront || farm.activePokemon.sprites.front}
+                        alt={farm.activePokemon.name}
+                      />
+                    ) : (
+                      <span style={{ fontSize: '2rem' }}>🏡</span>
+                    )}
+                  </div>
+                  <div className="sheet1-farm-info">
+                    <div className="sheet1-farm-name" title={farm.farmName}>{farm.farmName}</div>
+                    <div className="sheet1-farm-owner">👤 농장주: <b>{farm.username}</b></div>
+                    <div className="sheet1-farm-stats">
+                      <span className="hearts">💖 {farm.heartsCount.toLocaleString()}개</span>
+                      <span className="graduated">🎓 {farm.graduatedCount}마리 졸업</span>
+                    </div>
+                  </div>
+                  <button
+                    className="sheet1-visit-btn"
+                    onClick={() => handleVisitNeighbor(farm.username)}
+                  >
+                    🏠 미니홈피 구경가기 ➔
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="sheet1-empty-farms">
+            <p>🌱 아직 등록된 이웃 농장이 없습니다. 친구에게 1촌 하트를 보내고 랭킹을 올려보세요!</p>
+          </div>
+        )}
+      </div>
+
+      {/* 전체 이웃 둘러보기 및 검색 */}
+      <div className="neighbors-list-container">
+        <div className="neighbors-header">
+          <h3>👥 전체 이웃 농장 파도타기 ({neighborList.length}명)</h3>
+          <div className="search-bar">
+            <input
+              type="text"
+              value={neighborSearch}
+              onChange={e => setNeighborSearch(e.target.value)}
+              placeholder="친구 닉네임 / 농장 이름 검색..."
+            />
+          </div>
+        </div>
+
+        <div className="neighbors-grid">
+          {neighborList
+            .filter(n => n.username.toLowerCase().includes(neighborSearch.toLowerCase()) || (n.farmName && n.farmName.toLowerCase().includes(neighborSearch.toLowerCase())))
+            .map(neighbor => (
+              <div key={neighbor.username} className="neighbor-card">
+                <div className="neighbor-avatar">
+                  {neighbor.activePokemon ? (
+                    <img src={neighbor.activePokemon.sprites.front} alt={neighbor.activePokemon.name} />
+                  ) : (
+                    <span>🏡</span>
+                  )}
+                </div>
+                <div className="neighbor-info">
+                  <h4>{neighbor.farmName}</h4>
+                  <span className="owner-tag">농장주: {neighbor.username}</span>
+                  <div className="stats-badges">
+                    <span>🎓 {neighbor.graduatedCount}마리 졸업</span>
+                    <span>💖 {neighbor.heartsCount} 하트</span>
+                  </div>
+                </div>
+                <button className="excel-btn primary" onClick={() => handleVisitNeighbor(neighbor.username)}>
+                  놀러가기 ➔
+                </button>
+              </div>
+            ))}
+
+          {neighborList.length === 0 && (
+            <div className="empty-yard-card" style={{ gridColumn: '1 / -1' }}>
+              <p>현재 접속 중인 다른 이웃 농장이 없습니다. 친구를 초대해 보세요!</p>
+            </div>
+          )}
+        </div>
+
+        {/* 내 방명록 모아보기 */}
+        <div className="my-guestbook-box">
+          <h4>📬 내 농장에 도착한 방명록 ({farmState.guestbook.length}건)</h4>
+          <div className="guestbook-entries-list">
+            {farmState.guestbook.map(entry => (
+              <div key={entry.id} className="guestbook-item">
+                <div className="gb-author">
+                  <strong>👤 {entry.author}</strong>
+                  <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
+                </div>
+                <div className="gb-message">{entry.message}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="poke-farm-container dubu-modern-theme">
       {/* 📋 Farm Header & Navigation */}
       <div className="farm-header">
         <div className="farm-title-box">
@@ -1819,10 +2723,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       {/* 🧭 Farm Navigation Tabs */}
       <nav className="farm-nav-tabs">
         <button className={`farm-tab ${activeTab === 'minihome' ? 'active' : ''}`} onClick={() => { setActiveTab('minihome'); setVisitingFarm(null); }}>
-          ⛺ 포켓 미니홈피 (Minihp)
+          🏠 두부 미니홈피 (Minihp)
         </button>
         <button className={`farm-tab ${activeTab === 'yard' ? 'active' : ''}`} onClick={() => { setActiveTab('yard'); setVisitingFarm(null); }}>
-          🏡 내 농장 (Yard)
+          🌿 내 농장 마당 (Farm)
+        </button>
+        <button className={`farm-tab ${activeTab === 'arcade' ? 'active' : ''}`} onClick={() => { setActiveTab('arcade'); setVisitingFarm(null); }}>
+          🎮 두부 오락실 (Games)
+        </button>
+        <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => setActiveTab('neighbors')}>
+          👥 이웃 파도타기 (Neighbors)
         </button>
         <button className={`farm-tab ${activeTab === 'adopt' ? 'active' : ''}`} onClick={() => { setActiveTab('adopt'); setVisitingFarm(null); }}>
           🐣 분양소 (Adopt)
@@ -1843,13 +2753,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           🎰 행운 복권 (Lottery)
         </button>
         <button className={`farm-tab ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { setActiveTab('shop'); setVisitingFarm(null); }}>
-          🛍️ 열매 상점 (Shop)
+          🛍️ 상점 (Shop)
         </button>
         <button className={`farm-tab ${activeTab === 'diplomas' ? 'active' : ''}`} onClick={() => { setActiveTab('diplomas'); setVisitingFarm(null); }}>
-          📖 포켓몬 도감 (Pokedex)
-        </button>
-        <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => setActiveTab('neighbors')}>
-          🚶‍♂️ 이웃 농장 (Social)
+          📖 도감 & 졸업 (Pokedex)
         </button>
       </nav>
 
@@ -1962,13 +2869,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                   </div>
 
-                  {/* 1촌 응원 하트 버튼 */}
-                  <button
-                    className="dubuworld-heart-btn"
-                    onClick={handleSendHeartToCurrentFarm}
-                  >
-                    💖 1촌 응원 하트 보내기! (+1)
-                  </button>
+                  {/* 1촌 응원 하트 버튼 (하루 5회 제한, 자기 자신 금지, 보답 코인) */}
+                  {(!visitingFarm || visitingFarm.owner === farmState.ownerName) ? (
+                    <button
+                      className="dubuworld-heart-btn own-farm"
+                      disabled
+                      title="자신의 농장에는 하트를 보낼 수 없습니다. 이웃 농장을 방문해 응원해 보세요!"
+                    >
+                      💖 내 농장 1촌 하트 ({displayHeartsCount}개)
+                    </button>
+                  ) : (
+                    <button
+                      className="dubuworld-heart-btn"
+                      onClick={handleSendHeartToCurrentFarm}
+                      disabled={todayHeartsSent >= 5}
+                      title={todayHeartsSent >= 5 ? '오늘 보낼 수 있는 하트 5회를 모두 사용하셨습니다.' : `이웃에게 하트를 선물하고 20코인을 받습니다. (남은 횟수: ${5 - todayHeartsSent}/5회)`}
+                    >
+                      {todayHeartsSent >= 5
+                        ? '💖 오늘 하트 완료 (0/5회 남음)'
+                        : `💖 1촌 응원 하트 선물하기! (${5 - todayHeartsSent}/5회 남음)`}
+                    </button>
+                  )}
 
                   {/* BGM 주크박스 플레이어 */}
                   <div className="dubuworld-bgm-widget">
@@ -2026,6 +2947,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       🖼️ 미니룸 (Miniroom)
                     </button>
                     <button
+                      className={`cytab ${minihompyTab === 'arcade' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('arcade')}
+                    >
+                      🎮 두부 오락실 (Games)
+                    </button>
+                    <button
                       className={`cytab ${minihompyTab === 'guestbook' ? 'active' : ''}`}
                       onClick={() => setMinihompyTab('guestbook')}
                     >
@@ -2038,10 +2965,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       🎨 스티커 꾸미기
                     </button>
                     <button
-                      className={`cytab ${minihompyTab === 'top3' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('top3')}
+                      className={`cytab ${minihompyTab === 'neighbors' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('neighbors')}
                     >
-                      🏆 인기농장 Top 3
+                      👥 이웃 파도타기
                     </button>
                   </div>
 
@@ -2057,41 +2984,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       <div className="miniroom-preview-box" onClick={() => setMinihompyTab('miniroom')}>
                         <div className="preview-label">🖼️ 클릭하여 미니룸 크게 보기 & 스티커 꾸미기 ➔</div>
                         {renderMiniroomCanvas({ compact: true })}
-                      </div>
-
-                      {/* 인기 농장 Top 3 미니 랭킹 */}
-                      <div className="popular-top3-widget">
-                        <div className="section-title">
-                          <h4>🏆 인기 농장 Top 3 (하트 랭킹)</h4>
-                          <button className="dubuworld-link-btn" onClick={() => setMinihompyTab('top3')}>
-                            전체 랭킹 보기 ➔
-                          </button>
-                        </div>
-                        <div className="top3-cards-row">
-                          {top3PopularFarms.map((farm, idx) => (
-                            <div key={farm.username} className={`top3-mini-card rank-${idx + 1}`}>
-                              <span className="rank-badge">{idx === 0 ? '🥇 1위' : idx === 1 ? '🥈 2위' : '🥉 3위'}</span>
-                              <div className="top3-poke-img">
-                                {farm.activePokemon ? (
-                                  <img src={farm.activePokemon.sprites.front} alt={farm.activePokemon.name} />
-                                ) : (
-                                  <span>🏡</span>
-                                )}
-                              </div>
-                              <div className="top3-mini-info">
-                                <strong>{farm.farmName}</strong>
-                                <span>👤 {farm.username} | 💖 {farm.heartsCount}</span>
-                              </div>
-                              <button
-                                className="excel-btn primary"
-                                style={{ padding: '3px 8px', fontSize: '0.75rem' }}
-                                onClick={() => handleVisitNeighbor(farm.username)}
-                              >
-                                🏠 구경가기
-                              </button>
-                            </div>
-                          ))}
-                        </div>
                       </div>
 
                       {/* 최근 방명록 프리뷰 */}
@@ -2211,171 +3103,394 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                   )}
 
-                  {/* 4. 스티커 꾸미기 뷰 */}
+                  {/* 4. 스티커 & 자유 꾸미기 뷰 */}
                   {minihompyTab === 'stickers' && (
                     <div className="cytab-content stickers-view">
                       <div className="sticker-shop-header">
-                        <h4>🎨 두부월드 스티커 데코레이션 패널</h4>
-                        <p>원하는 스티커를 클릭하여 미니룸에 붙여보세요!</p>
+                        <h4>🎨 두부월드 미니룸 데코레이션 스튜디오</h4>
+                        <p>스티커 부착, 자유 텍스트/말풍선 작성, 포켓몬 위치 및 방향을 다채롭게 꾸며보세요!</p>
                       </div>
 
-                      <div className="sticker-palette-grid">
-                        {[
-                          { id: 'heart', icon: '💖', label: '러블리 하트' },
-                          { id: 'star', icon: '⭐', label: '반짝이 별' },
-                          { id: 'music', icon: '🎶', label: 'BGM 음표' },
-                          { id: 'acorn', icon: '🌰', label: '두부월드 둡토리' },
-                          { id: 'bolt', icon: '⚡', label: '피카츄 번개' },
-                          { id: 'balloon', icon: '🎈', label: '축하 풍선' },
-                          { id: 'cherry', icon: '🌸', label: '벚꽃 송이' },
-                          { id: 'bubble_grad', icon: '💬', label: '말풍선: 졸업 축하해!' },
-                          { id: 'bubble_level', icon: '💬', label: '말풍선: 오늘열렙!' },
-                          { id: 'trophy', icon: '🏆', label: '황금 트로피' },
-                          { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크' },
-                          { id: 'ribbon', icon: '🎀', label: '핑크 리본' }
-                        ].map(stk => (
-                          <button
-                            key={stk.id}
-                            className="sticker-palette-item"
-                            onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
-                          >
-                            <span className="stk-icon">{stk.icon}</span>
-                            <span className="stk-label">{stk.label}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="sticker-action-bar">
-                        <span>현재 붙인 스티커: <b>{currentStickers.length}개</b></span>
-                        {!visitingFarm && (
-                          <button
-                            className="excel-btn close"
-                            onClick={handleClearAllStickers}
-                          >
-                            🧹 스티커 모두 지우기
-                          </button>
-                        )}
+                      {/* 🌟 데코레이션 서브모드 탭 */}
+                      <div className="decor-submode-tabs">
                         <button
-                          className="excel-btn primary"
-                          onClick={() => setMinihompyTab('miniroom')}
+                          className={`decor-subtab ${decorSubtab === 'palette' ? 'active' : ''}`}
+                          onClick={() => setDecorSubtab('palette')}
                         >
-                          🖼️ 미니룸 보러가기 ➔
+                          🎨 스티커 팔레트 (60+)
+                        </button>
+                        <button
+                          className={`decor-subtab ${decorSubtab === 'textmaker' ? 'active' : ''}`}
+                          onClick={() => setDecorSubtab('textmaker')}
+                        >
+                          ✍️ 자유 텍스트 & 말풍선 쓰기
+                        </button>
+                        <button
+                          className={`decor-subtab ${decorSubtab === 'pokeplacements' ? 'active' : ''}`}
+                          onClick={() => setDecorSubtab('pokeplacements')}
+                        >
+                          🐾 포켓몬 배치 & 연출
                         </button>
                       </div>
-                    </div>
-                  )}
 
-                  {/* 4. 스티커 꾸미기 뷰 */}
-                  {minihompyTab === 'stickers' && (
-                    <div className="cytab-content stickers-view">
-                      <div className="sticker-shop-header">
-                        <h4>🎨 두부월드 스티커 데코레이션 패널</h4>
-                        <p>원하는 스티커를 클릭하여 미니룸에 붙여보세요!</p>
-                      </div>
+                      {/* 서브모드 1: 스티커 팔레트 */}
+                      {decorSubtab === 'palette' && (
+                        <div className="decor-palette-panel">
+                          {/* 카테고리 필터 바 */}
+                          <div className="decor-category-filters">
+                            {[
+                              { key: 'all', label: '전체' },
+                              { key: 'emotional', label: '💖 감성 & 두부월드' },
+                              { key: 'pokemon', label: '⚡ 포켓몬 & 볼' },
+                              { key: 'interior', label: '🛋️ 가구 & 소품' },
+                              { key: 'party', label: '🏆 파티 & 축하' },
+                              { key: 'emoji', label: '💬 감정 & 이모지' }
+                            ].map(cat => (
+                              <button
+                                key={cat.key}
+                                className={`cat-filter-chip ${stickerCategory === cat.key ? 'active' : ''}`}
+                                onClick={() => setStickerCategory(cat.key as any)}
+                              >
+                                {cat.label}
+                              </button>
+                            ))}
+                          </div>
 
-                      <div className="sticker-palette-grid">
-                        {[
-                          { id: 'heart', icon: '💖', label: '러블리 하트' },
-                          { id: 'star', icon: '⭐', label: '반짝이 별' },
-                          { id: 'music', icon: '🎶', label: 'BGM 음표' },
-                          { id: 'acorn', icon: '🌰', label: '두부월드 둡토리' },
-                          { id: 'bolt', icon: '⚡', label: '피카츄 번개' },
-                          { id: 'balloon', icon: '🎈', label: '축하 풍선' },
-                          { id: 'cherry', icon: '🌸', label: '벚꽃 송이' },
-                          { id: 'bubble_grad', icon: '💬', label: '말풍선: 출근 축하해!' },
-                          { id: 'bubble_level', icon: '💬', label: '말풍선: 오늘열일!' },
-                          { id: 'trophy', icon: '🏆', label: '황금 트로피' },
-                          { id: 'cupcake', icon: '🧁', label: '달콤 컵케이크' },
-                          { id: 'ribbon', icon: '🎀', label: '핑크 리본' }
-                        ].map(stk => (
-                          <button
-                            key={stk.id}
-                            className="sticker-palette-item"
-                            onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
-                          >
-                            <span className="stk-icon">{stk.icon}</span>
-                            <span className="stk-label">{stk.label}</span>
-                          </button>
-                        ))}
-                      </div>
+                          <div className="sticker-palette-grid">
+                            {DIVERSE_STICKERS.filter(stk => stickerCategory === 'all' || stk.category === stickerCategory).map(stk => (
+                              <button
+                                key={stk.id}
+                                className="sticker-palette-item"
+                                onClick={() => handleAddSticker(stk.id, stk.icon, stk.label)}
+                                title={`${stk.label} 붙이기`}
+                              >
+                                <span className="stk-icon">{stk.icon}</span>
+                                <span className="stk-label">{stk.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                      <div className="sticker-action-bar">
-                        <span>현재 붙인 스티커: <b>{currentStickers.length}개</b></span>
-                        {!visitingFarm && (
-                          <button
-                            className="excel-btn close"
-                            onClick={handleClearAllStickers}
-                          >
-                            🧹 스티커 모두 지우기
-                          </button>
-                        )}
-                        <button
-                          className="excel-btn primary"
-                          onClick={() => setMinihompyTab('miniroom')}
-                        >
-                          🖼️ 미니룸 보러가기 ➔
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                      {/* 서브모드 2: 자유 텍스트 & 말풍선 제작 */}
+                      {decorSubtab === 'textmaker' && (
+                        <div className="text-maker-panel">
+                          <div className="maker-form-box">
+                            <div className="maker-form-header">
+                              <h4>✍️ 나만의 문구 / 말풍선 / 푯말 만들기</h4>
+                              <p>원하는 메시지를 입력하고 스타일을 선택하여 미니룸에 붙여보세요!</p>
+                            </div>
 
-                  {/* 5. 인기농장 Top 3 뷰 */}
-                  {minihompyTab === 'top3' && (
-                    <div className="cytab-content top3-view">
-                      <div className="top3-header">
-                        <h3>🏆 실시간 인기 농장 Top 3 & 랭킹</h3>
-                        <p>전체 포켓농장 중 가장 많은 1촌 응원 하트(💖)를 받은 최고의 인기 농장 명예의 전당입니다!</p>
-                      </div>
+                            <div className="maker-input-row">
+                              <label>💬 텍스트 내용 (최대 40자):</label>
+                              <input
+                                type="text"
+                                className="dubuworld-input"
+                                value={customTextContent}
+                                onChange={e => setCustomTextContent(e.target.value)}
+                                placeholder="예: 우리 꼬부기 오늘 30렙 달성! 1촌 환영해요 🎵"
+                                maxLength={40}
+                              />
+                            </div>
 
-                      <div className="top3-rankings-container">
-                        {top3PopularFarms.map((farm, idx) => {
-                          const rankNum = idx + 1;
-                          const isMe = farm.username === farmState.ownerName;
-                          const crown = rankNum === 1 ? '👑 1위 🥇' : rankNum === 2 ? '🥈 2위' : '🥉 3위';
-
-                          return (
-                            <div key={farm.username} className={`popular-rank-card rank-${rankNum} ${isMe ? 'is-me' : ''}`}>
-                              <div className="rank-left">
-                                <span className="rank-crown">{crown}</span>
-                                <div className="rank-avatar-frame">
-                                  {farm.activePokemon ? (
-                                    <img
-                                      src={farm.activePokemon.sprites.showdownFront || farm.activePokemon.sprites.front}
-                                      alt={farm.activePokemon.name}
-                                    />
-                                  ) : (
-                                    <span>🏡</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="rank-center">
-                                <h3 className="rank-farm-title">
-                                  {farm.farmName} {isMe && <span className="me-badge">MY FARM</span>}
-                                </h3>
-                                <div className="rank-meta">
-                                  <span>👤 농장주: <b>{farm.username}</b></span>
-                                  <span>🎓 총 졸업: <b>{farm.graduatedCount}마리</b></span>
-                                </div>
-                              </div>
-
-                              <div className="rank-right">
-                                <div className="hearts-display">
-                                  💖 <b>{farm.heartsCount.toLocaleString()}</b> HEARTS
-                                </div>
-                                <button
-                                  className="excel-btn primary"
-                                  onClick={() => handleVisitNeighbor(farm.username)}
-                                >
-                                  🏠 미니홈피 구경가기 ➔
-                                </button>
+                            <div className="maker-presets-row">
+                              <label>🎨 스타일 테마 선택:</label>
+                              <div className="presets-options-grid">
+                                {[
+                                  { key: 'classic_bubble', label: '💬 클래식 말풍선', desc: '싸이월드 감성 화이트 버블' },
+                                  { key: 'retro_sign', label: '🏷️ 우드 표지판', desc: '따뜻한 나무 팻말 명판' },
+                                  { key: 'neon_glow', label: '🔮 네온 사이버', desc: '빛나는 사이버 글로우' },
+                                  { key: 'pink_ribbon', label: '🎀 러블리 핑크', desc: '파스텔 핑크 배너' },
+                                  { key: 'gold_badge', label: '🌟 골드 챔피언', desc: '황금 명예 뱃지' },
+                                  { key: 'plain_text', label: '📝 심플 투명 글자', desc: '배경 없이 선명한 폰트' }
+                                ].map(pre => (
+                                  <button
+                                    key={pre.key}
+                                    className={`preset-select-card ${customTextStyle === pre.key ? 'active' : ''}`}
+                                    onClick={() => setCustomTextStyle(pre.key as any)}
+                                  >
+                                    <b>{pre.label}</b>
+                                    <span>{pre.desc}</span>
+                                  </button>
+                                ))}
                               </div>
                             </div>
-                          );
-                        })}
+
+                            <div className="maker-details-row">
+                              <div className="detail-col">
+                                <label>🎨 글자 색상:</label>
+                                <div className="color-swatches">
+                                  {['#1e293b', '#ffffff', '#dc2626', '#db2777', '#d97706', '#059669', '#2563eb', '#7c3aed'].map(c => (
+                                    <button
+                                      key={c}
+                                      className={`color-swatch ${customTextColor === c ? 'active' : ''}`}
+                                      style={{ background: c }}
+                                      onClick={() => setCustomTextColor(c)}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="detail-col">
+                                <label>📏 글자 크기:</label>
+                                <div className="fontsize-buttons">
+                                  {[
+                                    { size: 12, label: '작게 (12px)' },
+                                    { size: 14, label: '보통 (14px)' },
+                                    { size: 18, label: '크게 (18px)' },
+                                    { size: 22, label: '특대 (22px)' }
+                                  ].map(f => (
+                                    <button
+                                      key={f.size}
+                                      className={`font-size-btn ${customFontSize === f.size ? 'active' : ''}`}
+                                      onClick={() => setCustomFontSize(f.size)}
+                                    >
+                                      {f.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 실시간 미리보기 */}
+                            <div className="maker-preview-box">
+                              <span className="preview-label">실시간 미리보기:</span>
+                              <div className="preview-canvas-sub">
+                                <div
+                                  className={`custom-decor-text style-${customTextStyle}`}
+                                  style={{
+                                    color: customTextColor,
+                                    fontSize: `${customFontSize}px`
+                                  }}
+                                >
+                                  {customTextContent.trim() || '미리보기 텍스트입니다 ✨'}
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              className="dubuworld-btn primary large-btn"
+                              onClick={handleAddCustomTextSticker}
+                            >
+                              ✨ 미니룸에 붙이고 꾸미기 ➔
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 서브모드 3: 포켓몬 위치 & 방향 관리 */}
+                      {decorSubtab === 'pokeplacements' && (
+                        <div className="poke-placements-panel">
+                          <div className="placements-header">
+                            <h4>🐾 미니룸 포켓몬 연출 및 위치 관리</h4>
+                            <p>포켓몬을 미니룸 캔버스에서 마우스/터치로 직접 드래그하여 자유롭게 배치할 수 있습니다!</p>
+                          </div>
+
+                          <div className="poke-placements-list">
+                            {/* 대표 포켓몬 */}
+                            {displayActivePokemon && (() => {
+                              const place = getPokemonPlacement('active', 45, 52, 1, false, 0, 0);
+                              return (
+                                <div className="poke-placement-card">
+                                  <div className="placement-card-top">
+                                    <div className="poke-thumb">
+                                      <img
+                                        src={displayActivePokemon.sprites.front}
+                                        alt={displayActivePokemon.name}
+                                        style={{
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transition: 'transform 0.15s ease'
+                                        }}
+                                      />
+                                      <div className="thumb-info">
+                                        <strong>대표: {displayActivePokemon.nickname || displayActivePokemon.name}</strong>
+                                        <span>Lv.{displayActivePokemon.level} (크기: {Math.round((place.scale || 1) * 100)}%)</span>
+                                      </div>
+                                    </div>
+                                    <div className="poke-controls-row">
+                                      <button className="excel-btn" onClick={() => handleFlipPokemon('active')}>🔄 좌우반전</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon('active', 0.1)}>➕ 확대</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon('active', -0.1)}>➖ 축소</button>
+                                      <button className="excel-btn" onClick={() => handleResetPokemonPlacement('active')}>📍 초기화</button>
+                                    </div>
+                                  </div>
+                                  <div className="poke-angles-row">
+                                    <div className="angle-control-unit">
+                                      <span>🔄 360° 회전:</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        value={place.rotation || 0}
+                                        onChange={e => handleSetPokemonRotation('active', Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.rotation || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>📐 앞뒤 눕힘:</span>
+                                      <input
+                                        type="range"
+                                        min="-60"
+                                        max="60"
+                                        step="2"
+                                        value={place.tiltX || 0}
+                                        onChange={e => handleSetPokemonTiltX('active', Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltX || 0}°</b>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
+                            {/* 보육소 포켓몬들 */}
+                            {displayReservePokemons.map((mon, idx) => {
+                              const id = `res_${mon.uid || idx}`;
+                              const place = getPokemonPlacement(id, idx === 0 ? 20 : idx === 1 ? 70 : 82, idx === 0 ? 58 : idx === 1 ? 58 : 48, 0.9, idx !== 0, 0, 0);
+                              return (
+                                <div key={mon.uid || idx} className="poke-placement-card">
+                                  <div className="placement-card-top">
+                                    <div className="poke-thumb">
+                                      <img
+                                        src={mon.sprites.front}
+                                        alt={mon.name}
+                                        style={{
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transition: 'transform 0.15s ease'
+                                        }}
+                                      />
+                                      <div className="thumb-info">
+                                        <strong>보육소: {mon.nickname || mon.name}</strong>
+                                        <span>Lv.{mon.level}</span>
+                                      </div>
+                                    </div>
+                                    <div className="poke-controls-row">
+                                      <button className="excel-btn" onClick={() => handleFlipPokemon(id)}>🔄 좌우반전</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon(id, 0.1)}>➕ 확대</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon(id, -0.1)}>➖ 축소</button>
+                                      <button className="excel-btn" onClick={() => handleResetPokemonPlacement(id)}>📍 초기화</button>
+                                    </div>
+                                  </div>
+                                  <div className="poke-angles-row">
+                                    <div className="angle-control-unit">
+                                      <span>🔄 360° 회전:</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        value={place.rotation || 0}
+                                        onChange={e => handleSetPokemonRotation(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.rotation || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>📐 앞뒤 눕힘:</span>
+                                      <input
+                                        type="range"
+                                        min="-60"
+                                        max="60"
+                                        step="2"
+                                        value={place.tiltX || 0}
+                                        onChange={e => handleSetPokemonTiltX(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltX || 0}°</b>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* 졸업생 포켓몬들 */}
+                            {displayGraduatedPokemons.map((dip, idx) => {
+                              const id = `grad_${dip.id || idx}`;
+                              const place = getPokemonPlacement(id, idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86, idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32, 0.85, idx >= 2, 0, 0);
+                              return (
+                                <div key={dip.id || idx} className="poke-placement-card">
+                                  <div className="placement-card-top">
+                                    <div className="poke-thumb">
+                                      <img
+                                        src={dip.sprite}
+                                        alt={dip.name}
+                                        style={{
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transition: 'transform 0.15s ease'
+                                        }}
+                                      />
+                                      <div className="thumb-info">
+                                        <strong>🎓 졸업: {dip.nickname || dip.name}</strong>
+                                        <span>{dip.graduatedAt.slice(0, 10)} 졸업</span>
+                                      </div>
+                                    </div>
+                                    <div className="poke-controls-row">
+                                      <button className="excel-btn" onClick={() => handleFlipPokemon(id)}>🔄 좌우반전</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon(id, 0.1)}>➕ 확대</button>
+                                      <button className="excel-btn" onClick={() => handleScalePokemon(id, -0.1)}>➖ 축소</button>
+                                      <button className="excel-btn" onClick={() => handleResetPokemonPlacement(id)}>📍 초기화</button>
+                                    </div>
+                                  </div>
+                                  <div className="poke-angles-row">
+                                    <div className="angle-control-unit">
+                                      <span>🔄 360° 회전:</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        value={place.rotation || 0}
+                                        onChange={e => handleSetPokemonRotation(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.rotation || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>📐 앞뒤 눕힘:</span>
+                                      <input
+                                        type="range"
+                                        min="-60"
+                                        max="60"
+                                        step="2"
+                                        value={place.tiltX || 0}
+                                        onChange={e => handleSetPokemonTiltX(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltX || 0}°</b>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="sticker-action-bar">
+                        <span>현재 붙인 스티커/텍스트: <b>{currentStickers.length}개</b></span>
+                        {!visitingFarm && (
+                          <button
+                            className="excel-btn close"
+                            onClick={handleClearAllStickers}
+                          >
+                            🧹 스티커 모두 지우기
+                          </button>
+                        )}
+                        <button
+                          className="excel-btn primary"
+                          onClick={() => setMinihompyTab('miniroom')}
+                        >
+                          🖼️ 미니룸 보러가기 ➔
+                        </button>
                       </div>
                     </div>
                   )}
+
+                  {/* 5. 🎮 두부 오락실 & 미니게임 뷰 */}
+                  {minihompyTab === 'arcade' && renderArcadeGamesView()}
+
+                  {/* 6. 👥 이웃 파도타기 & 인기농장 TOP 3 뷰 */}
+                  {minihompyTab === 'neighbors' && renderNeighborsView()}
                 </div>
               </div>
             </div>
@@ -3523,74 +4638,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         })()}
 
         {/* =========================================================================
-            TAB 10: 🚶‍♂️ 이웃 농장 탐방 & 방명록 (Social)
+            TAB: 🎮 두부 오락실 & 미니게임 (Arcade)
            ========================================================================= */}
-        {activeTab === 'neighbors' && !visitingFarm && (
-          <div className="farm-social-layout">
-            <div className="neighbors-list-container">
-              <div className="neighbors-header">
-                <h3>🚶‍♂️ 활성 이웃 농장 둘러보기</h3>
-                <div className="search-bar">
-                  <input
-                    type="text"
-                    value={neighborSearch}
-                    onChange={e => setNeighborSearch(e.target.value)}
-                    placeholder="친구 닉네임 검색..."
-                  />
-                </div>
-              </div>
+        {activeTab === 'arcade' && !visitingFarm && renderArcadeGamesView()}
 
-              <div className="neighbors-grid">
-                {neighborList
-                  .filter(n => n.username.toLowerCase().includes(neighborSearch.toLowerCase()))
-                  .map(neighbor => (
-                    <div key={neighbor.username} className="neighbor-card">
-                      <div className="neighbor-avatar">
-                        {neighbor.activePokemon ? (
-                          <img src={neighbor.activePokemon.sprites.front} alt={neighbor.activePokemon.name} />
-                        ) : (
-                          <span>🏡</span>
-                        )}
-                      </div>
-                      <div className="neighbor-info">
-                        <h4>{neighbor.farmName}</h4>
-                        <span className="owner-tag">농장주: {neighbor.username}</span>
-                        <div className="stats-badges">
-                          <span>🎓 {neighbor.graduatedCount}마리 졸업</span>
-                          <span>💖 {neighbor.heartsCount} 하트</span>
-                        </div>
-                      </div>
-                      <button className="excel-btn primary" onClick={() => handleVisitNeighbor(neighbor.username)}>
-                        놀러가기 ➔
-                      </button>
-                    </div>
-                  ))}
-
-                {neighborList.length === 0 && (
-                  <div className="empty-yard-card" style={{ gridColumn: '1 / -1' }}>
-                    <p>현재 접속 중인 다른 이웃 농장이 없습니다. 친구를 초대해 보세요!</p>
-                  </div>
-                )}
-              </div>
-
-              {/* 내 방명록 모아보기 */}
-              <div className="my-guestbook-box">
-                <h4>📬 내 농장에 도착한 방명록 ({farmState.guestbook.length}건)</h4>
-                <div className="guestbook-entries-list">
-                  {farmState.guestbook.map(entry => (
-                    <div key={entry.id} className="guestbook-item">
-                      <div className="gb-author">
-                        <strong>👤 {entry.author}</strong>
-                        <span>{new Date(entry.timestamp).toLocaleDateString()}</span>
-                      </div>
-                      <div className="gb-message">{entry.message}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* =========================================================================
+            TAB: 👥 이웃 농장 파도타기 & 인기 랭킹 (Social)
+           ========================================================================= */}
+        {activeTab === 'neighbors' && !visitingFarm && renderNeighborsView()}
       </div>
 
       {/* 💼 PART-TIME JOB INTERACTIVE SHIFT MODAL */}

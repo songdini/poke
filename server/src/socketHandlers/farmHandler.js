@@ -1,119 +1,150 @@
-// 🏡 포켓농장 (PokéFarm) 소셜 핸들러: 이웃 농장 탐방, 하트 응원, 방명록 시스템
+import {
+  upsertFarm,
+  getFarm,
+  getAllFarms,
+  getPopularFarms,
+  sendHeart,
+  getTodayHeartCount,
+  DAILY_HEART_LIMIT,
+  addGuestbookEntry,
+  getGuestbookEntries,
+  deleteGuestbookEntry
+} from '../db.js';
 
-// 서버 메모리 상의 활성 농장 레지스트리 (Map<username, FarmPublicData>)
-const farmRegistry = new Map();
-
-// 방명록 저장소 (Map<ownerUsername, GuestbookEntry[]>)
-const farmGuestbooks = new Map();
-
+// 🏡 포켓농장 (PokéFarm) SQLite 기반 소셜 핸들러: 실시간 이웃 농장 방문, 하트 응원, 방명록 시스템
 export function registerFarmHandlers(io, socket) {
-  // 1. 농장 상태 동기화 및 레지스트리 등록
+  // 1. 농장 상태 동기화 및 SQLite DB 저장 (UPSERT)
   socket.on('farm-sync', ({ username, farmData }) => {
     if (!username || !farmData) return;
     const cleanUser = username.trim();
 
-    farmRegistry.set(cleanUser, {
-      username: cleanUser,
-      farmName: farmData.farmName || `${cleanUser}님의 포켓농장`,
-      activePokemon: farmData.activePokemon || null,
-      graduatedCount: farmData.graduatedCount || 0,
-      heartsCount: farmData.heartsCount || 0,
-      lastActive: Date.now()
-    });
+    // SQLite DB에 농장 프로필, 포켓몬, 스티커, 회전 배치 데이터 영구 저장
+    const savedFarm = upsertFarm(cleanUser, farmData);
 
-    if (!farmGuestbooks.has(cleanUser)) {
-      farmGuestbooks.set(cleanUser, farmData.guestbook || []);
-    }
-
-    // 최신 이웃 농장 목록 브로드캐스트
+    // 전체 클라이언트에 실시간 이웃 농장 및 TOP 3 랭킹 브로드캐스트
     broadcastFarmList(io);
   });
 
-  // 2. 이웃 농장 목록 요청
-  socket.on('farm-get-list', () => {
-    socket.emit('farm-list-update', getFarmList());
+  // 1-1. 내 농장 데이터 DB에서 조회 및 복원 (Cloud Restore)
+  socket.on('farm-load-my-data', ({ username }) => {
+    if (!username) return;
+    const cleanUser = username.trim();
+    const farm = getFarm(cleanUser);
+    const guestbook = getGuestbookEntries(cleanUser, 50);
+    socket.emit('farm-my-data-loaded', {
+      success: !!(farm && (farm.activePokemon || (farm.graduatedPokemon && farm.graduatedPokemon.length > 0))),
+      farm: farm || null,
+      guestbook
+    });
   });
 
-  // 3. 특정 이웃 농장 방문 요청
-  socket.on('farm-visit', ({ targetUsername }) => {
+  // 2. 이웃 농장 목록 및 TOP 3 랭킹 요청
+  socket.on('farm-get-list', () => {
+    socket.emit('farm-list-update', getAllFarms());
+  });
+
+  socket.on('farm-get-top3', () => {
+    socket.emit('farm-top3-update', getPopularFarms(3));
+  });
+
+  // 2-1. 오늘 보낸 하트 개수 조회
+  socket.on('farm-get-daily-hearts', ({ username }) => {
+    if (!username) return;
+    const count = getTodayHeartCount(username);
+    socket.emit('farm-daily-hearts-info', {
+      todaySent: count,
+      remainingHearts: Math.max(0, DAILY_HEART_LIMIT - count),
+      dailyLimit: DAILY_HEART_LIMIT
+    });
+  });
+
+  // 3. 특정 이웃 농장 미니홈피 방문 요청 (오프라인 유저도 DB에서 즉시 조회 가능!)
+  const handleVisit = ({ targetUsername }) => {
     if (!targetUsername) return;
     const cleanTarget = targetUsername.trim();
-    const farm = farmRegistry.get(cleanTarget);
-    const guestbook = farmGuestbooks.get(cleanTarget) || [];
+    const farm = getFarm(cleanTarget);
+    const guestbook = getGuestbookEntries(cleanTarget, 50);
 
     socket.emit('farm-visit-data', {
       success: !!farm,
       farm: farm || null,
       guestbook
     });
-  });
+  };
+  socket.on('farm-visit', handleVisit);
+  socket.on('farm-visit-request', handleVisit);
 
-  // 4. 이웃 포켓몬 하트/응원 보내기
-  socket.on('farm-pet-heart', ({ targetUsername, senderUsername }) => {
+  // 4. 이웃 미니홈피 1촌 응원 하트 보내기 (하루 5회 제한, 자기 자신 금지, 코인 보상)
+  const handleHeart = ({ targetUsername, senderUsername }) => {
     if (!targetUsername || !senderUsername) return;
-    const cleanTarget = targetUsername.trim();
-    const cleanSender = senderUsername.trim();
+    const result = sendHeart({ targetUsername, senderUsername });
 
-    const farm = farmRegistry.get(cleanTarget);
-    if (farm) {
-      farm.heartsCount = (farm.heartsCount || 0) + 1;
-      farmRegistry.set(cleanTarget, farm);
-
-      // 대상 유저 및 전체 알림
-      io.emit('farm-heart-received', {
-        targetUsername: cleanTarget,
-        senderUsername: cleanSender,
-        heartsCount: farm.heartsCount
-      });
-      broadcastFarmList(io);
+    if (!result.success) {
+      socket.emit('farm-heart-failed', result);
+      return;
     }
-  });
+
+    // 발신자에게 성공 응답 (보답 코인 및 잔여 하트 횟수 전달)
+    socket.emit('farm-heart-sent-success', {
+      targetUsername: result.targetUsername,
+      heartsCount: result.heartsCount,
+      senderRewardCoins: result.senderRewardCoins,
+      remainingHearts: result.remainingHearts,
+      todaySent: result.todaySent
+    });
+
+    // 대상 유저 및 전체 클라이언트에 하트 업데이트 전송 (+수신자 코인 보상 알림)
+    io.emit('farm-heart-received', {
+      targetUsername: result.targetUsername,
+      senderUsername: result.senderUsername,
+      heartsCount: result.heartsCount,
+      rewardCoins: result.targetRewardCoins
+    });
+
+    broadcastFarmList(io);
+  };
+  socket.on('farm-pet-heart', handleHeart);
+  socket.on('farm-send-heart', handleHeart);
 
   // 5. 방명록 작성
-  socket.on('farm-add-guestbook', ({ targetUsername, author, message }) => {
-    if (!targetUsername || !author || !message) return;
-    const cleanTarget = targetUsername.trim();
-    const cleanAuthor = author.trim();
+  const handleAddGuestbook = ({ targetUsername, author, message, entry }) => {
+    const cleanTarget = (targetUsername || '').trim();
+    const cleanAuthor = (author || (entry && entry.author) || '익명').trim();
+    const msg = (message || (entry && entry.message) || '').trim();
 
-    let guestbook = farmGuestbooks.get(cleanTarget);
-    if (!guestbook) {
-      guestbook = [];
-      farmGuestbooks.set(cleanTarget, guestbook);
-    }
+    if (!cleanTarget || !cleanAuthor || !msg) return;
 
-    const newEntry = {
-      id: `gb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      author: cleanAuthor,
-      message: message.trim().slice(0, 100),
-      timestamp: new Date().toISOString()
-    };
+    const newEntry = addGuestbookEntry(cleanTarget, cleanAuthor, msg);
+    const guestbook = getGuestbookEntries(cleanTarget, 50);
 
-    guestbook.unshift(newEntry);
-    if (guestbook.length > 30) {
-      guestbook.pop(); // 최근 30개만 유지
-    }
-
-    // 방문자와 농장 주인에게 방명록 갱신 전송
+    // 방문자와 해당 농장에 실시간 방명록 갱신 전송
     io.emit('farm-guestbook-updated', {
       targetUsername: cleanTarget,
       entry: newEntry,
       guestbook
     });
+  };
+  socket.on('farm-add-guestbook', handleAddGuestbook);
+  socket.on('farm-guestbook-add', handleAddGuestbook);
+
+  // 6. 방명록 삭제
+  socket.on('farm-guestbook-delete', ({ targetUsername, id }) => {
+    if (!id) return;
+    deleteGuestbookEntry(id);
+
+    if (targetUsername) {
+      const cleanTarget = targetUsername.trim();
+      const guestbook = getGuestbookEntries(cleanTarget, 50);
+      io.emit('farm-guestbook-updated', {
+        targetUsername: cleanTarget,
+        guestbook
+      });
+    }
   });
 }
 
-function getFarmList() {
-  const list = [];
-  const now = Date.now();
-  for (const [user, data] of farmRegistry.entries()) {
-    list.push({
-      ...data,
-      isOnline: (now - data.lastActive) < 1000 * 60 * 30 // 최근 30분 이내 활성
-    });
-  }
-  return list.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
-}
-
 function broadcastFarmList(io) {
-  io.emit('farm-list-update', getFarmList());
+  const all = getAllFarms();
+  io.emit('farm-list-update', all);
+  io.emit('farm-top3-update', getPopularFarms(3));
 }

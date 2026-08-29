@@ -1,4 +1,4 @@
-import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea } from '../types/farm';
+import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea, NeighborFarmData } from '../types/farm';
 import type { PokemonType } from '../types/pokemon';
 
 export const FARM_STORAGE_KEY = 'pokefarm_save_data_v1';
@@ -1233,10 +1233,10 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMin: 35,
     rewardExpMax: 65,
     dropItems: [
-      { itemId: 'oran_berry', chance: 0.6 },
-      { itemId: 'sitrus_berry', chance: 0.35 },
-      { itemId: 'mystery_egg', chance: 0.03 },
-      { itemId: 'poffin_cake', chance: 0.15 }
+      { itemId: 'oran_berry', chance: 0.75 },
+      { itemId: 'sitrus_berry', chance: 0.50 },
+      { itemId: 'mystery_egg', chance: 0.07 },
+      { itemId: 'poffin_cake', chance: 0.25 }
     ]
   },
   {
@@ -1254,11 +1254,11 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMin: 70,
     rewardExpMax: 120,
     dropItems: [
-      { itemId: 'sitrus_berry', chance: 0.5 },
-      { itemId: 'toy_ball', chance: 0.35 },
-      { itemId: 'mystery_egg', chance: 0.06 },
-      { itemId: 'energy_drink', chance: 0.25 },
-      { itemId: 'shiny_stone', chance: 0.2 }
+      { itemId: 'sitrus_berry', chance: 0.65 },
+      { itemId: 'toy_ball', chance: 0.48 },
+      { itemId: 'mystery_egg', chance: 0.12 },
+      { itemId: 'energy_drink', chance: 0.38 },
+      { itemId: 'shiny_stone', chance: 0.30 }
     ]
   },
   {
@@ -1276,11 +1276,11 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMin: 130,
     rewardExpMax: 200,
     dropItems: [
-      { itemId: 'energy_drink', chance: 0.4 },
-      { itemId: 'mystery_egg', chance: 0.10 },
-      { itemId: 'full_heal', chance: 0.3 },
-      { itemId: 'shiny_stone', chance: 0.3 },
-      { itemId: 'rare_candy', chance: 0.2 }
+      { itemId: 'energy_drink', chance: 0.55 },
+      { itemId: 'mystery_egg', chance: 0.18 },
+      { itemId: 'full_heal', chance: 0.42 },
+      { itemId: 'shiny_stone', chance: 0.42 },
+      { itemId: 'rare_candy', chance: 0.30 }
     ]
   },
   {
@@ -1298,12 +1298,12 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     rewardExpMin: 220,
     rewardExpMax: 350,
     dropItems: [
-      { itemId: 'full_heal', chance: 0.45 },
-      { itemId: 'mystery_egg', chance: 0.15 },
-      { itemId: 'rare_candy', chance: 0.35 },
-      { itemId: 'shiny_stone', chance: 0.4 },
-      { itemId: 'gold_crown', chance: 0.15 },
-      { itemId: 'golden_egg', chance: 0.03 }
+      { itemId: 'full_heal', chance: 0.60 },
+      { itemId: 'mystery_egg', chance: 0.25 },
+      { itemId: 'rare_candy', chance: 0.45 },
+      { itemId: 'shiny_stone', chance: 0.50 },
+      { itemId: 'gold_crown', chance: 0.22 },
+      { itemId: 'golden_egg', chance: 0.06 }
     ]
   }
 ];
@@ -1497,11 +1497,12 @@ export function getInitialFarmState(ownerName: string): FarmState {
     incubatingEgg: null, // 🌟 현재 인큐베이터에 품고 있는 알
     bgTheme: 'classic', // 🏠 두부월드 미니룸 기본 배경
     stickers: [
-      { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20 },
-      { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15 },
-      { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75 },
-      { id: 'stk_init_4', stickerId: 'bubble_grad', icon: '💬', label: '졸업 축하해!', x: 60, y: 25 }
+      { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20, type: 'sticker', scale: 1 },
+      { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15, type: 'sticker', scale: 1 },
+      { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75, type: 'sticker', scale: 1 },
+      { id: 'stk_init_4', stickerId: 'txt_welcome', text: '두부월드에 오신 것을 환영해요! ✨', label: '환영 말풍선', x: 28, y: 18, type: 'bubble', styleType: 'classic_bubble', scale: 1 }
     ],
+    pokemonPlacements: {},
     statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
     bgmSong: '프리스타일 - Y (Feat. 지선)',
     todayCount: Math.floor(Math.random() * 50) + 120,
@@ -1582,6 +1583,8 @@ export function loadFarmState(ownerName?: string): FarmState {
 
     if (parsed) {
       parsed.reservePokemon = parsed.reservePokemon || [];
+      parsed.stickers = parsed.stickers || [];
+      parsed.pokemonPlacements = parsed.pokemonPlacements || {};
       if (parsed.incubatingEgg === undefined) parsed.incubatingEgg = null;
       if (parsed.isInitialized === undefined) {
         parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
@@ -1657,3 +1660,44 @@ export function saveFarmState(state: FarmState): void {
     console.error('Failed to save farm state to localStorage:', err);
   }
 }
+
+// 🌟 브라우저 및 로컬에 저장된 실제 유저 농장 목록 전체 스캔
+export function getAllStoredFarms(): NeighborFarmData[] {
+  const farmMap = new Map<string, NeighborFarmData>();
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key.startsWith(FARM_STORAGE_KEY) || key === FARM_CURRENT_SAVE_KEY) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        try {
+          const state = JSON.parse(raw) as FarmState;
+          if (state && state.ownerName && (state.isInitialized || state.activePokemon || (state.graduatedPokemon && state.graduatedPokemon.length > 0))) {
+            const cleanUser = state.ownerName.trim();
+            if (!farmMap.has(cleanUser) || (state.heartsCount || 0) > (farmMap.get(cleanUser)?.heartsCount || 0)) {
+              farmMap.set(cleanUser, {
+                username: cleanUser,
+                farmName: state.farmName || `${cleanUser}의 포켓농장`,
+                activePokemon: state.activePokemon || null,
+                graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
+                heartsCount: state.heartsCount || 0,
+                bgTheme: state.bgTheme || 'classic',
+                statusMsg: state.statusMsg || '',
+                isOnline: true
+              });
+            }
+          }
+        } catch (e) {
+          // ignore error
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to scan local farms:', err);
+  }
+
+  return Array.from(farmMap.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
+}
+

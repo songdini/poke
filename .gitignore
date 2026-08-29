@@ -57,4 +57,5 @@ replay_pid*
 server/uploads/*
 !server/uploads/.gitkeep
 server/data/*.json
+server/data/*.db*
 !server/data/.gitkeep

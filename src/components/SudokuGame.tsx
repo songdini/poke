@@ -42,6 +42,34 @@ interface SudokuUpdatePayload {
 
 export type MarkColor = 'none' | 'purple' | 'orange' | 'green';
 
+/**
+ * 한국 표준시(KST, Asia/Seoul, UTC+9) 기준 날짜/시간 포맷팅
+ */
+export function formatKSTDate(dateStr: string): string {
+  if (!dateStr) return '';
+  if (/^\d{4}\.\d{2}\.\d{2}\s\d{2}:\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      const parts = kstFormatter.formatToParts(d);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value || '';
+      return `${getPart('year')}.${getPart('month')}.${getPart('day')} ${getPart('hour')}:${getPart('minute')}`;
+    }
+  } catch (e) {}
+  return dateStr;
+}
+
 const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -901,7 +929,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                             {entry.hintsUsed > 0 ? `${entry.hintsUsed}회` : <span style={{ color: '#107c41', fontWeight: 700 }}>노힌트 ✨</span>}
                           </td>
                           <td className="rank-col-date">
-                            {entry.date}
+                            {formatKSTDate(entry.date)}
                           </td>
                         </tr>
                       );

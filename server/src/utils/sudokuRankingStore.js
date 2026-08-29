@@ -65,6 +65,36 @@ function saveRankings() {
 }
 
 /**
+ * 한국 표준시(KST, Asia/Seoul, UTC+9) 기준 포맷팅 헬퍼
+ * @param {Date} date
+ * @returns {string} 예: "2026.08.29 19:35"
+ */
+export function getKSTDateString(date = new Date()) {
+  try {
+    const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const parts = kstFormatter.formatToParts(date);
+    const getPart = (type) => parts.find(p => p.type === type)?.value || '';
+    return `${getPart('year')}.${getPart('month')}.${getPart('day')} ${getPart('hour')}:${getPart('minute')}`;
+  } catch (e) {
+    const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    const yyyy = kst.getUTCFullYear();
+    const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getUTCDate()).padStart(2, '0');
+    const hh = String(kst.getUTCHours()).padStart(2, '0');
+    const min = String(kst.getUTCMinutes()).padStart(2, '0');
+    return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+  }
+}
+
+/**
  * 랭킹 등록 함수
  * @param {'easy'|'medium'|'hard'|'expert'|'legendary'|'god'} difficulty
  * @param {string} username
@@ -77,8 +107,7 @@ export function recordSudokuScore(difficulty, username, timeSeconds, hintsUsed =
   const diffKey = allRankings[difficulty] ? difficulty : 'easy';
   const list = allRankings[diffKey] || [];
 
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const dateStr = getKSTDateString(new Date());
 
   const newEntry = {
     id: `rank_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

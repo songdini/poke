@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import Chat from './components/Chat'
-import MafiaGame from './components/MafiaGame'
-import LiarGame from './components/LiarGame'
+﻿import { useState, useEffect } from 'react';
+import './App.css';
+import Chat from './components/Chat';
+import MafiaGame from './components/MafiaGame';
+import LiarGame from './components/LiarGame';
 import TelestrationsGame from './components/TelestrationsGame';
 import NumberBaseballGame from './components/NumberBaseballGame';
 import SudokuGame from './components/SudokuGame';
@@ -14,15 +14,26 @@ import TetrisGame from './components/TetrisGame';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
-type GameKey = 'pokefarm' | 'pokebattle' | 'catchmind' | 'mafia' | 'liar' | 'telestrations' | 'numberbaseball' | 'sudoku' | 'minesweeper' | 'wordle' | 'tetris';
+export type GameKey =
+  | 'pokefarm'
+  | 'pokebattle'
+  | 'catchmind'
+  | 'mafia'
+  | 'liar'
+  | 'telestrations'
+  | 'numberbaseball'
+  | 'sudoku'
+  | 'minesweeper'
+  | 'wordle'
+  | 'tetris';
 
-interface GameSession {
+export interface GameSession {
   username: string;
   room: string;
   gameType: GameKey;
 }
 
-interface GameMeta {
+export interface GameMeta {
   key: GameKey;
   name: string;
   excelName: string;
@@ -32,14 +43,14 @@ interface GameMeta {
   themeColor: string;
 }
 
-const GAMES_LIST: GameMeta[] = [
+export const GAMES_LIST: GameMeta[] = [
   {
     key: 'pokefarm',
-    name: '포켓농장 (동물농장)',
-    excelName: 'Poke_Asset_Lifecycle_Management.xlsx',
-    icon: '🏡',
-    desc: '아기 포켓몬 분양, 육성, 진화 & 감동의 졸업식',
-    badge: 'NEW',
+    name: '두부월드 미니홈피 (포켓농장)',
+    excelName: 'Dubuworld_Minihompy_Lifecycle.xlsx',
+    icon: '🏠',
+    desc: '아기 포켓몬 육성 & 두부월드 미니룸 스티커 꾸미기 & 1촌 파도타기',
+    badge: 'MAIN',
     themeColor: '#10b981'
   },
   {
@@ -134,24 +145,16 @@ const GAMES_LIST: GameMeta[] = [
   }
 ];
 
-function App() {
+function AppMain() {
   const [selectedGame, setSelectedGame] = useState<GameKey | null>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('poke_active_game') as GameKey;
       if (saved) return saved;
     }
-    return null;
+    return 'pokefarm';
   });
-  const [activeTab, setActiveTab] = useState('Home');
   const [isBossMode, setIsBossMode] = useState(false);
-
-  // Default to Mobile UI if screen width <= 768px
-  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth <= 768;
-    }
-    return false;
-  });
+  const [visitingFarmUser, setVisitingFarmUser] = useState<string | null>(null);
 
   const [formUsername, setFormUsername] = useState('');
   const [formRoom, setFormRoom] = useState('');
@@ -172,15 +175,6 @@ function App() {
       tetris: null
     };
   });
-
-  // Handle window resize auto-switch if user hasn't explicitly set preference
-  useEffect(() => {
-    const handleResize = () => {
-      // Auto adjust if screen is resized
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // 🚨 Emergency Boss Key Keyboard Listener (F2 or ESC)
   useEffect(() => {
@@ -213,7 +207,7 @@ function App() {
     const formData = new FormData(e.currentTarget);
     const username = ((formData.get('username') as string) || formUsername).trim();
     const room = ((formData.get('room') as string) || formRoom).trim();
-    
+
     if (username && room && selectedGame) {
       setGameSessions(prev => ({
         ...prev,
@@ -232,11 +226,6 @@ function App() {
     }));
   };
 
-  const handleBackToMainSheet = () => {
-    setSelectedGame(null);
-    localStorage.removeItem('poke_active_game');
-  };
-
   const generateRandomName = () => {
     const randId = Math.floor(100 + Math.random() * 900);
     setFormUsername(`유저_${randId}`);
@@ -249,11 +238,42 @@ function App() {
 
   const renderActiveGameViewport = () => {
     if (!selectedGame) return null;
+    const currentMeta = GAMES_LIST.find(g => g.key === selectedGame);
     return (
-      <div className={`excel-game-viewport ${isMobileMode ? 'mobile-game-viewport' : ''}`}>
+      <div className="dubu-game-viewport">
+        {selectedGame !== 'pokefarm' && (
+          <div className="game-global-topbar">
+            <button className="topbar-home-btn" onClick={() => handleGameSelection('pokefarm')}>
+              🏠 두부 미니홈피로 돌아가기
+            </button>
+            <div className="topbar-game-tag">
+              <span className="topbar-game-icon">{currentMeta?.icon}</span>
+              <span className="topbar-game-name">{currentMeta?.name}</span>
+            </div>
+            <div className="topbar-switch-box">
+              <select
+                value={selectedGame}
+                onChange={(e) => handleGameSelection(e.target.value as GameKey)}
+                className="topbar-game-select"
+              >
+                {GAMES_LIST.map(g => (
+                  <option key={g.key} value={g.key}>
+                    {g.icon} {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
         <div style={{ display: selectedGame === 'pokefarm' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
           {gameSessions.pokefarm && (
-            <PokeFarmGame username={gameSessions.pokefarm.username} onLeaveRoom={() => handleLeaveGame('pokefarm')} />
+            <PokeFarmGame
+              username={gameSessions.pokefarm.username}
+              initialVisitingUser={visitingFarmUser}
+              onClearInitialVisitingUser={() => setVisitingFarmUser(null)}
+              onLeaveRoom={() => handleLeaveGame('pokefarm')}
+              onSelectGame={(gameKey) => handleGameSelection(gameKey as GameKey)}
+            />
           )}
         </div>
         <div style={{ display: selectedGame === 'catchmind' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
@@ -311,492 +331,239 @@ function App() {
   };
 
   /* ----------------------------------------------------
-   * 📱 MOBILE UI LAYOUT
+   * 🌟 MODERN CLEAN JOIN CARD (No Excel theme)
    * ---------------------------------------------------- */
-  const renderMobileUI = () => {
-    const currentMeta = selectedGame ? GAMES_LIST.find(g => g.key === selectedGame) : null;
-    const currentSession = selectedGame ? gameSessions[selectedGame] : null;
-
+  const renderGameJoinCard = (gameMeta: GameMeta) => {
     return (
-      <div className="mobile-app-window">
-        {/* Mobile Modern Header */}
-        <header className="mobile-header">
-          <div className="mobile-header-left">
-            {selectedGame ? (
-              <button className="mobile-back-btn" onClick={handleBackToMainSheet}>
-                ◀ 목록
-              </button>
-            ) : (
-              <div className="mobile-app-brand">
-                <span className="brand-logo">🎮</span>
-                <span className="brand-title">POKE PLAY</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mobile-header-center">
-            <span className="mobile-header-game-title">
-              {currentMeta ? `${currentMeta.icon} ${currentMeta.name}` : '모바일 멀티 게임 센터'}
-            </span>
-          </div>
-
-          <div className="mobile-header-right">
-            <button
-              className="mobile-mode-toggle-btn"
-              onClick={() => setIsMobileMode(false)}
-              title="컴퓨터용 엑셀위장 모드로 전환"
-            >
-              💻 엑셀위장
-            </button>
-            <button
-              className="mobile-boss-btn"
-              onClick={() => setIsBossMode(true)}
-              title="긴급 화면 가리기 (F2)"
-            >
-              ⚡
-            </button>
-          </div>
-        </header>
-
-        {/* Mobile Horizontal Scroll Active Session Bar */}
-        <nav className="mobile-sessions-nav">
-          <button
-            className={`mobile-nav-chip ${!selectedGame ? 'active' : ''}`}
-            onClick={handleBackToMainSheet}
-          >
-            🏠 게임 선택
-          </button>
-          {GAMES_LIST.map((game) => {
-            const hasSession = !!gameSessions[game.key];
-            const isSelected = selectedGame === game.key;
-            return (
-              <button
-                key={game.key}
-                className={`mobile-nav-chip ${isSelected ? 'active' : ''} ${hasSession ? 'has-session' : ''}`}
-                onClick={() => handleGameSelection(game.key)}
-              >
-                <span>{game.icon} {game.name}</span>
-                {hasSession && <span className="mobile-live-dot">●</span>}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Mobile Main Body */}
-        <main className="mobile-main-body">
-          {!selectedGame ? (
-            /* 1. Mobile Home Game Cards Grid */
-            <div className="mobile-home-container">
-              <div className="mobile-hero-banner">
-                <div className="mobile-hero-tag">📱 MOBILE MODE</div>
-                <h2>즐거운 멀티게임 라이브</h2>
-                <p>터치로 간편하게 즐기는 9가지 게임 파티!</p>
-              </div>
-
-              <div className="mobile-game-grid">
-                {GAMES_LIST.map((game) => {
-                  const hasSession = !!gameSessions[game.key];
-                  return (
-                    <div
-                      key={game.key}
-                      className={`mobile-game-card ${hasSession ? 'has-active-session' : ''}`}
-                      onClick={() => handleGameSelection(game.key)}
-                    >
-                      <div className="mobile-card-top">
-                        <div className="mobile-card-icon-box" style={{ background: game.themeColor }}>
-                          <span>{game.icon}</span>
-                        </div>
-                        <span className={`mobile-badge ${hasSession ? 'active-badge' : ''}`}>
-                          {hasSession ? '● 플레이중' : game.badge}
-                        </span>
-                      </div>
-                      <div className="mobile-card-body">
-                        <h3>{game.name}</h3>
-                        <p>{game.desc}</p>
-                      </div>
-                      <div className="mobile-card-footer">
-                        <span>{hasSession ? '게임 세션 입장' : '입장하기'}</span>
-                        <span className="arrow">➔</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+      <div className="dubu-join-container">
+        <div className="dubu-join-card">
+          <div className="dubu-join-header" style={{ borderBottomColor: gameMeta.themeColor }}>
+            <div className="dubu-join-icon" style={{ background: gameMeta.themeColor }}>
+              {gameMeta.icon}
             </div>
-          ) : !currentSession ? (
-            /* 2. Mobile Join Room Form View */
-            <div className="mobile-join-container">
-              <div className="mobile-join-card">
-                <button className="mobile-card-close-btn" onClick={handleBackToMainSheet}>
-                  ✕
+            <div className="dubu-join-title-box">
+              <h2>{gameMeta.name}</h2>
+              <p>{gameMeta.desc}</p>
+            </div>
+            <button className="dubu-card-back-btn" onClick={() => handleGameSelection('pokefarm')}>
+              🏠 미니홈피로
+            </button>
+          </div>
+
+          <form onSubmit={handleJoinChat} className="dubu-join-form">
+            <div className="dubu-form-group">
+              <div className="dubu-label-row">
+                <label htmlFor="dubu-username">👤 플레이어 닉네임</label>
+                <button
+                  type="button"
+                  className="dubu-quick-btn"
+                  onClick={generateRandomName}
+                >
+                  🎲 랜덤 닉네임
                 </button>
-                <div className="mobile-join-header" style={{ borderBottomColor: currentMeta?.themeColor }}>
-                  <div className="mobile-join-icon" style={{ background: currentMeta?.themeColor }}>
-                    {currentMeta?.icon}
-                  </div>
-                  <h2>{currentMeta?.name}</h2>
-                  <p>{currentMeta?.desc}</p>
-                </div>
-
-                <form onSubmit={handleJoinChat} className="mobile-join-form">
-                  <div className="mobile-form-group">
-                    <div className="mobile-label-row">
-                      <label htmlFor="mobile-username">닉네임 / ID</label>
-                      <button
-                        type="button"
-                        className="mobile-quick-fill-btn"
-                        onClick={generateRandomName}
-                      >
-                        🎲 랜덤 ID 생성
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      id="mobile-username"
-                      name="username"
-                      value={formUsername}
-                      onChange={(e) => setFormUsername(e.target.value)}
-                      placeholder="닉네임을 입력하세요 (2~20자)"
-                      required
-                      minLength={2}
-                      maxLength={20}
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  <div className="mobile-form-group">
-                    <div className="mobile-label-row">
-                      <label htmlFor="mobile-room">방 코드 (Room Code)</label>
-                      <button
-                        type="button"
-                        className="mobile-quick-fill-btn"
-                        onClick={generateRandomRoom}
-                      >
-                        🔑 ROOM1 채우기
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      id="mobile-room"
-                      name="room"
-                      value={formRoom}
-                      onChange={(e) => setFormRoom(e.target.value)}
-                      placeholder="방 코드를 입력하세요 (예: ROOM1)"
-                      required
-                      minLength={2}
-                      maxLength={20}
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="mobile-join-submit-btn"
-                    style={{ background: currentMeta?.themeColor || '#10b981' }}
-                  >
-                    🚀 게임 시작하기
-                  </button>
-                </form>
               </div>
+              <input
+                type="text"
+                id="dubu-username"
+                name="username"
+                value={formUsername}
+                onChange={(e) => setFormUsername(e.target.value)}
+                placeholder="닉네임을 입력하세요 (2~20자)"
+                required
+                minLength={2}
+                maxLength={20}
+                autoComplete="off"
+              />
             </div>
-          ) : (
-            /* 3. Mobile Game Viewport View */
-            renderActiveGameViewport()
-          )}
-        </main>
+
+            <div className="dubu-form-group">
+              <div className="dubu-label-row">
+                <label htmlFor="dubu-room">🔑 방 코드 (Room Code)</label>
+                <button
+                  type="button"
+                  className="dubu-quick-btn"
+                  onClick={generateRandomRoom}
+                >
+                  🎲 방 코드 생성
+                </button>
+              </div>
+              <input
+                type="text"
+                id="dubu-room"
+                name="room"
+                value={formRoom}
+                onChange={(e) => setFormRoom(e.target.value)}
+                placeholder="입장할 방 코드를 입력하세요 (예: ROOM_101)"
+                required
+                minLength={2}
+                maxLength={20}
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="dubu-join-actions">
+              <button
+                type="button"
+                className="dubu-btn outline"
+                onClick={() => handleGameSelection('pokefarm')}
+              >
+                ◀ 두부 미니홈피로 돌아가기
+              </button>
+              <button
+                type="submit"
+                className="dubu-btn primary"
+                style={{ background: gameMeta.themeColor || '#10b981' }}
+              >
+                🚀 게임 방 입장하기
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     );
   };
 
   /* ----------------------------------------------------
-   * 💻 EXCEL STEALTH DESKTOP LAYOUT
+   * 🌟 MODERN ALL GAMES GRID VIEW (오락실 목록)
    * ---------------------------------------------------- */
-  const renderDesktopExcelContent = () => {
-    if (!selectedGame) {
-      return (
-        <div className="excel-sheet-content">
-          <div className="excel-banner">
-            <h2>📊 Q3_Quarterly_Financial_Report_2026.xlsx</h2>
-            <p>Worksheet: Select Task Module / Data Table to Execute</p>
-          </div>
-          
-          <div className="game-selection">
-            {GAMES_LIST.map((game, idx) => {
-              const hasSession = !!gameSessions[game.key];
-              const modCode = `MOD_0${idx + 1}`;
-              return (
-                <button
-                  key={game.key}
-                  className={`game-option ${game.key} ${hasSession ? 'has-active-session' : ''}`}
-                  onClick={() => handleGameSelection(game.key)}
-                >
-                  <div className="game-icon">{game.icon}</div>
-                  <div className="game-info">
-                    <h3>Table 0{idx + 1}: {game.excelName}</h3>
-                    <p>{game.desc} | Status: {hasSession ? '● LIVE SESSION ACTIVE' : 'Ready'}</p>
+  const renderAllGamesGridView = () => {
+    return (
+      <div className="dubu-all-games-container">
+        <div className="dubu-all-games-hero">
+          <div className="dubu-hero-badge">🎮 DUBU ARCADE</div>
+          <h2>두부월드 오락실 & 미니게임 천국</h2>
+          <p>포켓몬 3v3 배틀부터 테트리스, 캐치마인드, 마피아까지 10종의 실시간 멀티게임을 즐겨보세요!</p>
+        </div>
+
+        <div className="dubu-games-cards-grid">
+          {GAMES_LIST.map((game) => {
+            const hasSession = !!gameSessions[game.key];
+            const isSelected = selectedGame === game.key;
+            return (
+              <div
+                key={game.key}
+                className={`dubu-game-card ${isSelected ? 'selected' : ''} ${hasSession ? 'has-session' : ''}`}
+                onClick={() => handleGameSelection(game.key)}
+              >
+                <div className="dubu-card-header">
+                  <div className="dubu-card-icon" style={{ background: game.themeColor }}>
+                    {game.icon}
                   </div>
-                  <span className="excel-cell-tag">{hasSession ? 'ACTIVE' : modCode}</span>
-                </button>
-              );
-            })}
-          </div>
+                  <span className={`dubu-badge ${hasSession ? 'active' : ''}`}>
+                    {hasSession ? '● 플레이중' : game.badge}
+                  </span>
+                </div>
+                <div className="dubu-card-body">
+                  <h3>{game.name}</h3>
+                  <p>{game.desc}</p>
+                </div>
+                <div className="dubu-card-footer">
+                  <span>{hasSession ? '세션 바로가기' : '플레이하기'}</span>
+                  <span className="arrow">➔</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      );
-    }
-
-    const currentSession = gameSessions[selectedGame];
-
-    if (!currentSession) {
-      const meta = GAMES_LIST.find(g => g.key === selectedGame);
-      return (
-        <div className="excel-sheet-content">
-          <div className="game-header">
-            <button className="back-button" onClick={handleBackToMainSheet}>
-              ◀ Return to Main Sheet (Ctrl+Z)
-            </button>
-            <h1>
-              {meta ? `${meta.icon} ${meta.excelName}` : 'Excel Worksheet'}
-            </h1>
-            <p className="excel-subtext">
-              Enter User Credentials and Workgroup Session Key to Load Cell Data:
-            </p>
-          </div>
-          
-          <form onSubmit={handleJoinChat} className="join-form">
-            <div className="form-group">
-              <label htmlFor="username">User_ID (Cell B2)</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formUsername}
-                onChange={(e) => setFormUsername(e.target.value)}
-                placeholder="e.g. Employee_1042"
-                required
-                minLength={2}
-                maxLength={20}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="room">Workgroup_ID / Room_Code (Cell B3)</label>
-              <input
-                type="text"
-                id="room"
-                name="room"
-                value={formRoom}
-                onChange={(e) => setFormRoom(e.target.value)}
-                placeholder="e.g. FIN_DEPT_01"
-                required
-                minLength={2}
-                maxLength={20}
-              />
-            </div>
-            
-            <button type="submit" className="join-button">
-              ▶ Load Worksheet Data (Enter)
-            </button>
-          </form>
-        </div>
-      );
-    }
-
-    return renderActiveGameViewport();
+      </div>
+    );
   };
 
+  const currentMeta = selectedGame ? GAMES_LIST.find(g => g.key === selectedGame) : null;
+  const currentSession = selectedGame ? gameSessions[selectedGame] : null;
+  const currentSavedOwner = (typeof window !== 'undefined' && localStorage.getItem('pokefarm_saved_owner')) || '지우';
+
   return (
-    <SocketProvider>
+    <div className="dubu-portal-app">
       {/* 🚨 Emergency Boss Key Screen Overlay */}
       {isBossMode && <BossScreen onToggle={() => setIsBossMode(false)} />}
 
-      {isMobileMode ? (
-        renderMobileUI()
-      ) : (
-        <div className="excel-app-window">
-          {/* Excel Top Title Bar */}
-          <div className="excel-title-bar">
-            <div className="excel-title-left">
-              <span className="excel-app-icon">📊</span>
-              <span className="excel-doc-title">Q3_Quarterly_Financial_Report_2026.xlsx - Excel</span>
-              <span className="excel-autosave">AutoSave <span className="excel-toggle-on">ON</span></span>
-            </div>
-            <div className="excel-title-center">
-              <div className="excel-search-box">
-                <span>🔍 Search (Alt+Q)</span>
-              </div>
-            </div>
-            <div className="excel-title-right">
-              <button
-                onClick={() => setIsMobileMode(true)}
-                style={{
-                  background: '#047857',
-                  color: '#ffffff',
-                  border: '1px solid #6ee7b7',
-                  padding: '2px 8px',
-                  borderRadius: '2px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  marginRight: '6px'
-                }}
-                title="모바일 전용 UI 화면으로 전환"
-              >
-                📱 모바일 UI 모드
-              </button>
-              <button
-                onClick={() => setIsBossMode(true)}
-                style={{
-                  background: '#0b5a2f',
-                  color: '#ffffff',
-                  border: '1px solid #8bf7b5',
-                  padding: '2px 8px',
-                  borderRadius: '2px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  marginRight: '6px'
-                }}
-                title="긴급 보스키 (F2 / ESC)"
-              >
-                ⚡ Stealth View (F2)
-              </button>
-              <span className="excel-user-profile">👤 KIMSJ (Corp)</span>
-              <div className="excel-window-controls">
-                <span>─</span>
-                <span>🗖</span>
-                <span className="close-btn">✕</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Excel Ribbon Tabs */}
-          <div className="excel-ribbon-tabs">
-            {['File', 'Home', 'Insert', 'Page Layout', 'Formulas', 'Data', 'Review', 'View', 'Automate', 'Help'].map((tab) => (
-              <button
-                key={tab}
-                className={`ribbon-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Excel Ribbon Toolbar Icons */}
-          <div className="excel-ribbon-toolbar">
-            <div className="toolbar-group">
-              <span className="toolbar-btn">📋 Paste</span>
-              <span className="toolbar-btn">✂️ Cut</span>
-              <span className="toolbar-btn">📄 Copy</span>
-            </div>
-            <div className="toolbar-separator" />
-            <div className="toolbar-group">
-              <select className="excel-font-select" defaultValue="Segoe UI">
-                <option value="Segoe UI">Segoe UI</option>
-                <option value="Calibri">Calibri</option>
-                <option value="Aptos">Aptos</option>
-                <option value="Arial">Arial</option>
-              </select>
-              <select className="excel-size-select" defaultValue="11">
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
-              </select>
-              <button className="toolbar-tool-btn bold">B</button>
-              <button className="toolbar-tool-btn italic">I</button>
-              <button className="toolbar-tool-btn underline">U</button>
-              <button className="toolbar-tool-btn fill">🪣</button>
-              <button className="toolbar-tool-btn color">🎨</button>
-            </div>
-            <div className="toolbar-separator" />
-            <div className="toolbar-group">
-              <button className="toolbar-tool-btn">≡</button>
-              <button className="toolbar-tool-btn">≡</button>
-              <button className="toolbar-tool-btn">Merge & Center ▾</button>
-            </div>
-            <div className="toolbar-separator" />
-            <div className="toolbar-group">
-              <span className="toolbar-btn">📊 Conditional Formatting</span>
-              <span className="toolbar-btn">▦ Format as Table</span>
-            </div>
-          </div>
-
-          {/* Excel Formula Bar */}
-          <div className="excel-formula-bar">
-            <div className="excel-name-box">B4</div>
-            <div className="excel-fx-btn">fx</div>
-            <div className="excel-formula-input">
-              {selectedGame
-                ? `=VLOOKUP("${selectedGame.toUpperCase()}", WORKGROUP_DATA, 2, FALSE)`
-                : `=SUM(A1:B100)`}
-            </div>
-          </div>
-
-          {/* Excel Sheet Body Container */}
-          <div className="excel-body-container">
-            {/* Column Header Row */}
-            <div className="excel-col-headers">
-              <div className="col-header-corner"></div>
-              {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'].map((col) => (
-                <div key={col} className="col-header-cell">{col}</div>
-              ))}
-            </div>
-
-            {/* Main Grid View */}
-            <div className="excel-grid-workspace">
-              <div className="excel-row-numbers">
-                {Array.from({ length: 25 }, (_, i) => (
-                  <div key={i} className="row-number-cell">{i + 1}</div>
-                ))}
-              </div>
-              <div className="excel-main-content-cell">
-                {renderDesktopExcelContent()}
-              </div>
-            </div>
-          </div>
-
-          {/* Excel Sheet Tabs Footer */}
-          <div className="excel-sheet-footer">
-            <div className="excel-sheet-tabs">
-              <button
-                className={`sheet-tab ${!selectedGame ? 'active' : ''}`}
-                onClick={handleBackToMainSheet}
-              >
-                📊 Sheet1 - Summary
-              </button>
-              {GAMES_LIST.map((game, idx) => {
-                const hasSession = !!gameSessions[game.key];
-                const isSelected = selectedGame === game.key;
-                return (
-                  <button
-                    key={game.key}
-                    className={`sheet-tab ${isSelected ? 'active' : ''} ${hasSession ? 'has-session' : ''}`}
-                    onClick={() => handleGameSelection(game.key)}
-                  >
-                    {game.icon} Sheet{idx + 2} - {game.name} {hasSession && <span className="tab-live-dot">●</span>}
-                  </button>
-                );
-              })}
-              <span className="new-sheet-btn">➕</span>
-            </div>
-
-            <div className="excel-status-bar">
-              <span className="status-item">Ready</span>
-              <span className="status-item">⚡ Calculation: Automatic</span>
-              <span className="status-item">AVERAGE: 4,892.10</span>
-              <span className="status-item">COUNT: 14</span>
-              <span className="status-item">SUM: $128,450.00</span>
-              <div className="zoom-slider">
-                <span>100%</span>
-                <input type="range" min="50" max="200" defaultValue="100" />
-              </div>
-            </div>
+      {/* 🌟 Global Sleek Portal Header */}
+      <header className="dubu-portal-navbar">
+        <div className="navbar-brand-section" onClick={() => handleGameSelection('pokefarm')}>
+          <span className="navbar-logo">🏡</span>
+          <div className="navbar-brand-text">
+            <h1 className="navbar-title">
+              두부월드 <span className="navbar-accent">& 오락실</span>
+            </h1>
+            <span className="navbar-subtitle">DUBUWORLD METAVERSE</span>
           </div>
         </div>
-      )}
+
+        {/* Global Navigation Tabs */}
+        <nav className="navbar-nav-tabs">
+          <button
+            className={`navbar-tab ${selectedGame === 'pokefarm' ? 'active' : ''}`}
+            onClick={() => handleGameSelection('pokefarm')}
+          >
+            🏠 두부 미니홈피
+          </button>
+          <button
+            className={`navbar-tab ${!selectedGame ? 'active' : ''}`}
+            onClick={() => setSelectedGame(null)}
+          >
+            🎮 두부 오락실 (10종)
+          </button>
+          {selectedGame && selectedGame !== 'pokefarm' && (
+            <div className="navbar-active-game-pill" style={{ borderColor: currentMeta?.themeColor }}>
+              <span className="game-dot" style={{ background: currentMeta?.themeColor }}>
+                ●
+              </span>
+              <span>
+                {currentMeta?.icon} {currentMeta?.name}
+              </span>
+              <button
+                className="pill-close-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGameSelection('pokefarm');
+                }}
+                title="미니홈피로 돌아가기"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </nav>
+
+        {/* Right User Status & Actions */}
+        <div className="navbar-right-section">
+          <button
+            className="navbar-boss-btn"
+            onClick={() => setIsBossMode(true)}
+            title="긴급 화면 가리기 (F2 / ESC)"
+          >
+            ⚡ 긴급 화면 가리기
+          </button>
+          <div className="navbar-user-chip">
+            <span className="user-icon">👤</span>
+            <span className="user-name">{currentSavedOwner}</span>
+          </div>
+        </div>
+      </header>
+
+      {/* 🌟 Main Responsive Viewport */}
+      <main className="dubu-main-viewport">
+        {!selectedGame ? (
+          renderAllGamesGridView()
+        ) : selectedGame === 'pokefarm' ? (
+          renderActiveGameViewport()
+        ) : !currentSession ? (
+          renderGameJoinCard(currentMeta || GAMES_LIST[0])
+        ) : (
+          renderActiveGameViewport()
+        )}
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <SocketProvider>
+      <AppMain />
     </SocketProvider>
   );
 }
 
-export default App
+export default App;

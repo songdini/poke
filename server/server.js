@@ -21,6 +21,7 @@ import { registerPokeBattleHandlers } from './src/socketHandlers/pokeBattleHandl
 import { registerFarmHandlers } from './src/socketHandlers/farmHandler.js';
 import { registerTetrisHandlers } from './src/socketHandlers/tetrisHandler.js';
 import { isGeminiConfigured, getGeminiModelName } from './src/aiService.js';
+import { getPopularFarms, getFarm, getAllFarms, getGuestbookEntries } from './src/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -111,6 +112,42 @@ app.post('/api/upload', (req, res) => {
   } catch (err) {
     console.error('이미지 업로드 처리 실패:', err);
     return res.status(500).json({ error: '이미지 저장 중 오류가 발생했습니다.' });
+  }
+});
+
+// 🏡 PokéFarm REST APIs (SQLite 연동)
+app.get('/api/farms', (req, res) => {
+  try {
+    const list = getAllFarms();
+    res.json(list);
+  } catch (err) {
+    console.error('농장 목록 조회 실패:', err);
+    res.status(500).json({ error: '농장 목록을 불러오지 못했습니다.' });
+  }
+});
+
+app.get('/api/farms/popular', (req, res) => {
+  try {
+    const top3 = getPopularFarms(3);
+    res.json(top3);
+  } catch (err) {
+    console.error('인기 농장 조회 실패:', err);
+    res.status(500).json({ error: '인기 농장 목록을 불러오지 못했습니다.' });
+  }
+});
+
+app.get('/api/farms/:username', (req, res) => {
+  try {
+    const { username } = req.params;
+    const farm = getFarm(username);
+    if (!farm) {
+      return res.status(404).json({ error: '농장을 찾을 수 없습니다.' });
+    }
+    const guestbook = getGuestbookEntries(username, 50);
+    res.json({ farm, guestbook });
+  } catch (err) {
+    console.error('농장 상세 조회 실패:', err);
+    res.status(500).json({ error: '농장 정보를 불러오지 못했습니다.' });
   }
 });
 

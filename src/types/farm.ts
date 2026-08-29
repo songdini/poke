@@ -138,10 +138,33 @@ export interface DailyLotteryState {
 export interface MinihompySticker {
   id: string;
   stickerId: string;
-  icon: string;
-  label: string;
+  icon?: string;
+  label?: string;
+  text?: string; // 💬 자유 텍스트 / 말풍선 내용
+  type?: 'sticker' | 'text' | 'bubble' | 'sign' | 'banner';
+  x: number; // percentage 0-95
+  y: number; // percentage 0-90
+  scale?: number; // 0.6 ~ 2.0
+  rotation?: number; // 360도 2D 평면 회전 (0 ~ 360도)
+  tiltX?: number; // 앞뒤 3D 기울기 / 눕힘 (-60 ~ +60도)
+  tiltY?: number; // 좌우 3D 원근 회전 (-60 ~ +60도)
+  color?: string; // 글자색
+  bgColor?: string; // 배경색
+  fontSize?: number; // 12 ~ 28
+  flipped?: boolean;
+  styleType?: 'classic_bubble' | 'retro_sign' | 'neon_glow' | 'pink_ribbon' | 'gold_badge' | 'plain_text';
+}
+
+export interface PokemonPlacement {
+  uid: string; // mon.uid or 'active' or diploma id
   x: number; // percentage 0-90
-  y: number; // percentage 0-80
+  y: number; // percentage 0-85
+  scale?: number; // 0.7 ~ 1.5
+  rotation?: number; // 360도 2D 평면 회전 (0 ~ 360도)
+  tiltX?: number; // 앞뒤 3D 기울기 / 눕힘 (-60 ~ +60도)
+  tiltY?: number; // 좌우 3D 원근 회전 (-60 ~ +60도)
+  flipped?: boolean; // 좌우 반전
+  zIndex?: number;
 }
 
 export interface FarmState {
@@ -157,7 +180,8 @@ export interface FarmState {
   guestbook: GuestbookEntry[];
   heartsCount: number;
   bgTheme?: string; // 🏠 두부월드 미니룸 배경 테마 ('classic' | 'pixel' | 'starry' | 'beach' | 'sakura' | 'center')
-  stickers?: MinihompySticker[]; // 🎨 미니룸 배치 스티커 리스트
+  stickers?: MinihompySticker[]; // 🎨 미니룸 배치 스티커 및 자유 텍스트 리스트
+  pokemonPlacements?: Record<string, PokemonPlacement>; // 🐾 포켓몬별 자유 위치/크기/반전 저장
   statusMsg?: string; // 💬 투데이 상태 메시지 ("오늘도 피카츄와 열렙 중! ⚡")
   bgmSong?: string; // 🎵 미니홈피 BGM 곡명
   todayCount?: number; // TODAY 수
@@ -166,3 +190,23 @@ export interface FarmState {
   lotteryState?: DailyLotteryState; // 🎰 일일 럭키 사내 복권 상태
   lastDailyRewardAt?: string;
 }
+
+export interface NeighborFarmData {
+  username: string;
+  farmName: string;
+  activePokemon: FarmPokemon | null;
+  reservePokemon?: FarmPokemon[];
+  graduatedPokemon?: GraduationDiploma[];
+  graduatedCount: number;
+  heartsCount: number;
+  bgTheme?: string;
+  stickers?: MinihompySticker[];
+  pokemonPlacements?: Record<string, PokemonPlacement>;
+  statusMsg?: string;
+  bgmSong?: string;
+  todayCount?: number;
+  totalCount?: number;
+  isOnline?: boolean;
+  lastActive?: number;
+}
+

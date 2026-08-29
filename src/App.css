@@ -1,807 +1,556 @@
-/* 📊 Microsoft Excel Theme Stylesheet */
-@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
+﻿/* ?룪 DUBUWORLD & ARCADE MODERN PORTAL STYLESHEET */
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
 
 :root {
-  --excel-green: #107c41;
-  --excel-green-dark: #0b5a2f;
-  --excel-green-light: #e6f2eb;
-  --excel-header-bg: #f3f2f1;
-  --excel-border: #d4d4d4;
-  --excel-grid-line: #e1dfdd;
-  --excel-text: #201f1e;
-  --excel-text-muted: #605e5c;
-  --excel-white: #ffffff;
+  --dubu-primary: #10b981;
+  --dubu-primary-dark: #059669;
+  --dubu-primary-light: #ecfdf5;
+  --dubu-accent: #6366f1;
+  --dubu-accent-light: #eef2ff;
+  --dubu-bg: #f1f5f9;
+  --dubu-surface: #ffffff;
+  --dubu-border: #e2e8f0;
+  --dubu-border-dark: #cbd5e1;
+  --dubu-text: #0f172a;
+  --dubu-text-muted: #64748b;
+  --dubu-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --dubu-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --dubu-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --dubu-radius-sm: 6px;
+  --dubu-radius-md: 10px;
+  --dubu-radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Calibri, Aptos, Arial, sans-serif;
-  background-color: #201f1e;
-  color: var(--excel-text);
+  font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--dubu-bg);
+  color: var(--dubu-text);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* App Window Container */
-.excel-app-window {
+/* ?뙚 App Main Shell */
+.dubu-portal-app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
-  background-color: var(--excel-white);
-  box-sizing: border-box;
-  user-select: none;
+  background: var(--dubu-bg);
 }
 
-/* 1. Title Bar */
-.excel-title-bar {
-  background-color: var(--excel-green);
-  color: var(--excel-white);
-  height: 36px;
+/* ?뙚 Global Portal Navbar */
+.dubu-portal-navbar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--dubu-border);
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  font-size: 13px;
-  font-weight: 600;
+  box-shadow: var(--dubu-shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.excel-title-left {
+.navbar-brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.navbar-logo {
+  font-size: 1.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.navbar-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navbar-accent {
+  color: var(--dubu-primary);
+}
+
+.navbar-subtitle {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--dubu-text-muted);
+  letter-spacing: 0.8px;
+}
+
+/* Navbar Center Tabs */
+.navbar-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.navbar-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dubu-text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar-tab:hover {
+  color: var(--dubu-primary);
+  background: var(--dubu-primary-light);
+}
+
+.navbar-tab.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.navbar-active-game-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1.5px solid var(--dubu-accent);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  box-shadow: var(--dubu-shadow-sm);
+  animation: fadeIn 0.2s ease;
+}
+
+.game-dot {
+  font-size: 0.6rem;
+  animation: pulse 1.5s infinite;
+}
+
+.pill-close-btn {
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pill-close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Navbar Right Controls */
+.navbar-right-section {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.excel-app-icon {
-  font-size: 16px;
-}
-
-.excel-doc-title {
-  letter-spacing: 0.2px;
-}
-
-.excel-autosave {
-  font-size: 11px;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 2px 8px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.excel-toggle-on {
-  color: #86efac;
+.navbar-boss-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: var(--dubu-radius-sm);
+  font-size: 0.78rem;
   font-weight: 700;
-}
-
-.excel-search-box {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 24px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #f3f2f1;
-  width: 260px;
-  text-align: center;
-}
-
-.excel-title-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.excel-user-profile {
-  font-size: 12px;
-}
-
-.excel-window-controls {
-  display: flex;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.excel-window-controls span:hover {
-  opacity: 0.8;
-}
-
-.excel-window-controls .close-btn:hover {
-  color: #f87171;
-}
-
-/* 2. Ribbon Tabs */
-.excel-ribbon-tabs {
-  background-color: var(--excel-header-bg);
-  border-bottom: 1px solid var(--excel-border);
-  display: flex;
-  padding-left: 8px;
-  height: 32px;
-  align-items: flex-end;
-}
-
-.ribbon-tab {
-  background: none;
-  border: none;
-  padding: 6px 14px;
-  font-size: 13px;
-  color: var(--excel-text);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  font-family: inherit;
-}
-
-.ribbon-tab:hover {
-  background-color: #e1dfdd;
-}
-
-.ribbon-tab.active {
-  background-color: var(--excel-white);
-  border-bottom: 3px solid var(--excel-green);
-  color: var(--excel-green);
-  font-weight: 600;
-}
-
-/* 3. Ribbon Toolbar */
-.excel-ribbon-toolbar {
-  background-color: var(--excel-white);
-  border-bottom: 1px solid var(--excel-border);
-  padding: 6px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  height: 42px;
-  overflow-x: auto;
-}
-
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.toolbar-btn {
-  padding: 4px 8px;
-  border-radius: 3px;
-  cursor: pointer;
-  color: var(--excel-text);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-btn:hover {
-  background-color: var(--excel-header-bg);
-}
-
-.toolbar-separator {
-  width: 1px;
-  height: 24px;
-  background-color: var(--excel-border);
-}
-
-.excel-font-select,
-.excel-size-select {
-  border: 1px solid var(--excel-border);
-  border-radius: 3px;
-  padding: 2px 4px;
-  font-size: 12px;
-  background: white;
-}
-
-.toolbar-tool-btn {
-  background: white;
-  border: 1px solid var(--excel-border);
-  border-radius: 3px;
-  padding: 3px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.toolbar-tool-btn:hover {
-  background-color: var(--excel-header-bg);
-}
-
-/* 4. Formula Bar */
-.excel-formula-bar {
-  display: flex;
-  align-items: center;
-  background-color: var(--excel-white);
-  border-bottom: 1px solid var(--excel-border);
-  height: 28px;
-  font-size: 13px;
-}
-
-.excel-name-box {
-  width: 60px;
-  text-align: center;
-  border-right: 1px solid var(--excel-border);
-  font-weight: 600;
-  color: var(--excel-text-muted);
-  line-height: 28px;
-}
-
-.excel-fx-btn {
-  width: 32px;
-  text-align: center;
-  border-right: 1px solid var(--excel-border);
-  font-style: italic;
-  font-weight: bold;
-  color: var(--excel-text-muted);
-  line-height: 28px;
-  font-family: 'Times New Roman', serif;
-}
-
-.excel-formula-input {
-  flex: 1;
-  padding: 0 12px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  color: #0b5a2f;
-  font-weight: 600;
-  line-height: 28px;
-}
-
-/* 5. Body Workspace */
-.excel-body-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background-color: var(--excel-header-bg);
-}
-
-/* Column Headers */
-.excel-col-headers {
-  display: flex;
-  background-color: var(--excel-header-bg);
-  border-bottom: 1px solid var(--excel-border);
-  height: 24px;
-}
-
-.col-header-corner {
-  width: 40px;
-  border-right: 1px solid var(--excel-border);
-  background-color: #e1dfdd;
-}
-
-.col-header-cell {
-  flex: 1;
-  min-width: 60px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 24px;
-  color: var(--excel-text-muted);
-  border-right: 1px solid var(--excel-border);
-  font-weight: 600;
-}
-
-/* Grid Area */
-.excel-grid-workspace {
-  flex: 1;
-  display: flex;
-  overflow: auto;
-  background: white;
-}
-
-.excel-row-numbers {
-  width: 40px;
-  background-color: var(--excel-header-bg);
-  border-right: 1px solid var(--excel-border);
-  display: flex;
-  flex-direction: column;
-}
-
-.row-number-cell {
-  height: 32px;
-  text-align: center;
-  line-height: 32px;
-  font-size: 12px;
-  color: var(--excel-text-muted);
-  border-bottom: 1px solid var(--excel-border);
-  font-weight: 600;
-}
-
-.excel-main-content-cell {
-  flex: 1;
-  padding: 20px;
-  background-color: var(--excel-white);
-  overflow-y: auto;
-  position: relative;
-  background-image: 
-    linear-gradient(to right, var(--excel-grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--excel-grid-line) 1px, transparent 1px);
-  background-size: 120px 32px;
-}
-
-/* Excel Content Sheet Wrapper */
-.excel-sheet-content {
-  max-width: 900px;
-  margin: 0 auto;
-  background: white;
-  border: 2px solid var(--excel-green);
-  border-radius: 4px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-
-.excel-banner h2 {
-  margin: 0 0 4px 0;
-  color: var(--excel-green);
-  font-size: 1.4rem;
-}
-
-.excel-banner p {
-  margin: 0 0 20px 0;
-  color: var(--excel-text-muted);
-  font-size: 0.9rem;
-}
-
-.game-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.game-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border: 1px solid var(--excel-border);
-  border-radius: 4px;
-  background: #fafafa;
   cursor: pointer;
   transition: all 0.15s ease;
-  text-align: left;
 }
 
-.game-option:hover {
-  border-color: var(--excel-green);
-  background: var(--excel-green-light);
-  transform: translateX(4px);
+.navbar-boss-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
-.game-icon {
-  font-size: 1.6rem;
-  margin-right: 16px;
+.navbar-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
-.game-info {
+/* ?뙚 Main Responsive Viewport */
+.dubu-main-viewport {
   flex: 1;
-}
-
-.game-info h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.05rem;
-  color: var(--excel-text);
-}
-
-.game-info p {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--excel-text-muted);
-}
-
-.excel-cell-tag {
-  font-family: monospace;
-  font-size: 11px;
-  background: #e1dfdd;
-  color: #323130;
-  padding: 4px 8px;
-  border-radius: 3px;
-  font-weight: bold;
-}
-
-/* Forms in Excel Style */
-.join-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  text-align: left;
-}
-
-.form-group label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--excel-text);
-}
-
-.form-group input {
-  padding: 10px 12px;
-  border: 1px solid var(--excel-border);
-  border-radius: 3px;
-  font-size: 0.95rem;
-  font-family: inherit;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--excel-green);
-  box-shadow: 0 0 0 2px rgba(16, 124, 65, 0.2);
-}
-
-.join-button, .primary-btn {
-  background-color: var(--excel-green);
-  color: white;
-  border: none;
-  border-radius: 3px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s;
-}
-
-.join-button:hover, .primary-btn:hover {
-  background-color: var(--excel-green-dark);
-}
-
-.back-button {
-  background: white;
-  border: 1px solid var(--excel-border);
-  color: var(--excel-green);
-  padding: 6px 12px;
-  border-radius: 3px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  margin-bottom: 12px;
-}
-
-.back-button:hover {
-  background: var(--excel-green-light);
-}
-
-/* 6. Footer & Sheet Tabs */
-.excel-sheet-footer {
-  background-color: var(--excel-header-bg);
-  border-top: 1px solid var(--excel-border);
-  display: flex;
-  flex-direction: column;
-}
-
-.excel-sheet-tabs {
-  display: flex;
-  align-items: center;
-  padding-left: 8px;
-  height: 30px;
-  border-bottom: 1px solid var(--excel-border);
-  overflow-x: auto;
-}
-
-.sheet-tab {
-  background: none;
-  border: 1px solid transparent;
-  border-top: 2px solid transparent;
-  padding: 4px 12px;
-  font-size: 12px;
-  color: var(--excel-text-muted);
-  cursor: pointer;
-  border-radius: 4px 4px 0 0;
-  margin-right: 2px;
-}
-
-.sheet-tab:hover {
-  background-color: #e1dfdd;
-}
-
-.sheet-tab.active {
-  background-color: var(--excel-white);
-  border-color: var(--excel-border);
-  border-top: 3px solid var(--excel-green);
-  color: var(--excel-green);
-  font-weight: 600;
-}
-
-.sheet-tab.has-session {
-  font-weight: 600;
-}
-
-.tab-live-dot {
-  color: var(--excel-green);
-  font-size: 10px;
-  margin-left: 4px;
-  vertical-align: middle;
-  animation: pulse-live 1.5s infinite;
-}
-
-@keyframes pulse-live {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.new-sheet-btn {
-  padding: 2px 8px;
-  cursor: pointer;
-  color: var(--excel-text-muted);
-  font-size: 14px;
-}
-
-/* Status Bar */
-.excel-status-bar {
-  height: 24px;
-  background-color: var(--excel-green);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-size: 11px;
-}
-
-.status-item {
-  margin-right: 16px;
-}
-
-.zoom-slider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.zoom-slider input[type="range"] {
-  width: 80px;
-  accent-color: white;
-}
-
-/* Active Game Component Viewport Overrides */
-.excel-game-viewport {
-  background: white;
-  border: 2px solid var(--excel-green);
-  border-radius: 4px;
-  padding: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-}
-
-/* ----------------------------------------------------
- * 📱 MOBILE UI MODE STYLES
- * ---------------------------------------------------- */
-.mobile-app-window {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  width: 100vw;
-  background-color: #0f172a;
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  overflow: hidden;
-  user-select: none;
-}
-
-/* Header */
-.mobile-header {
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  flex-shrink: 0;
-}
-
-.mobile-header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mobile-back-btn {
-  background: #334155;
-  color: #f8fafc;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.mobile-app-brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: #38bdf8;
-  letter-spacing: -0.5px;
-}
-
-.mobile-header-center {
-  flex: 1;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 8px;
-}
-
-.mobile-header-game-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.mobile-header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.mobile-mode-toggle-btn {
-  background: linear-gradient(135deg, #059669, #10b981);
-  color: #ffffff;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.mobile-boss-btn {
-  background: #dc2626;
-  color: #ffffff;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* Horizontal Sessions Bar */
-.mobile-sessions-nav {
-  background: #0f172a;
-  border-bottom: 1px solid #1e293b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  overflow-x: auto;
-  flex-shrink: 0;
-  -webkit-overflow-scrolling: touch;
-}
-
-.mobile-sessions-nav::-webkit-scrollbar {
-  display: none;
-}
-
-.mobile-nav-chip {
-  background: #1e293b;
-  color: #94a3b8;
-  border: 1px solid #334155;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.mobile-nav-chip.active {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #38bdf8;
-  font-weight: 700;
-}
-
-.mobile-nav-chip.has-session {
-  border-color: #10b981;
-}
-
-.mobile-live-dot {
-  color: #10b981;
-  font-size: 10px;
-  animation: pulse-live 1.5s infinite;
-}
-
-/* Main Body */
-.mobile-main-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background-color: #0f172a;
-  position: relative;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 1. Mobile Home View */
-.mobile-home-container {
-  padding: 16px;
-  max-width: 800px;
+  width: 100%;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 0;
+  min-height: calc(100vh - 65px);
 }
 
-.mobile-hero-banner {
-  background: linear-gradient(135deg, #1e1b4b, #312e81);
-  border: 1px solid #4338ca;
+/* ?렜 Global Sticky Topbar inside games */
+.game-global-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid var(--dubu-border);
+  padding: 10px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--dubu-shadow-sm);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.topbar-home-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
+}
+
+.topbar-home-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+}
+
+.topbar-game-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.topbar-game-icon {
+  font-size: 1.3rem;
+}
+
+.topbar-switch-box {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-game-select {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.topbar-game-select:focus {
+  border-color: var(--dubu-primary);
+}
+
+/* ?뙚 Modern Game Join Room Card (Clean SaaS style) */
+.dubu-join-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+  min-height: 80vh;
+}
+
+.dubu-join-card {
+  background: #ffffff;
+  border-radius: var(--dubu-radius-lg);
+  border: 1px solid var(--dubu-border);
+  box-shadow: var(--dubu-shadow-lg);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: popIn 0.25s ease;
+}
+
+.dubu-join-header {
+  padding: 24px;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  position: relative;
+}
+
+.dubu-join-icon {
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
-  padding: 18px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
-.mobile-hero-tag {
-  display: inline-block;
-  background: rgba(129, 140, 248, 0.2);
-  color: #818cf8;
-  padding: 2px 8px;
+.dubu-join-title-box {
+  flex: 1;
+}
+
+.dubu-join-title-box h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.dubu-join-title-box p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--dubu-text-muted);
+}
+
+.dubu-card-back-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dubu-card-back-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.dubu-join-form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dubu-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dubu-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dubu-label-row label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.dubu-quick-btn {
+  background: none;
+  border: none;
+  color: var(--dubu-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.7rem;
+}
+
+.dubu-quick-btn:hover {
+  background: var(--dubu-primary-light);
+  text-decoration: underline;
+}
+
+.dubu-form-group input {
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.dubu-form-group input:focus {
+  border-color: var(--dubu-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.dubu-join-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* ?뙚 Modern Button System */
+.dubu-btn {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.dubu-btn.primary {
+  background: var(--dubu-primary);
+  color: #ffffff;
+  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.25);
+}
+
+.dubu-btn.primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.dubu-btn.outline {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+}
+
+.dubu-btn.outline:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* ?뙚 Modern All Games View */
+.dubu-all-games-container {
+  padding: 24px 20px 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.dubu-all-games-hero {
+  text-align: center;
+  padding: 30px 16px 24px;
+  margin-bottom: 24px;
+}
+
+.dubu-hero-badge {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
   font-weight: 800;
   margin-bottom: 8px;
   letter-spacing: 0.5px;
 }
 
-.mobile-hero-banner h2 {
-  margin: 0 0 6px 0;
-  font-size: 1.3rem;
-  color: #ffffff;
+.dubu-all-games-hero h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
-.mobile-hero-banner p {
+.dubu-all-games-hero p {
   margin: 0;
-  font-size: 0.85rem;
-  color: #c7d2fe;
+  font-size: 0.95rem;
+  color: var(--dubu-text-muted);
 }
 
-.mobile-game-grid {
+.dubu-games-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
-@media (max-width: 480px) {
-  .mobile-game-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.mobile-game-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
+.dubu-game-card {
+  background: #ffffff;
+  border-radius: var(--dubu-radius-md);
+  border: 1px solid var(--dubu-border);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--dubu-shadow-sm);
+  position: relative;
+  overflow: hidden;
 }
 
-.mobile-game-card:active {
-  transform: scale(0.98);
+.dubu-game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--dubu-shadow-md);
+  border-color: #cbd5e1;
 }
 
-.mobile-game-card.has-active-session {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #1e293b, #064e3b);
+.dubu-game-card.has-session {
+  border-color: #86efac;
+  background: #f0fdf4;
 }
 
-.mobile-card-top {
+.dubu-card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.mobile-card-icon-box {
+.dubu-card-icon {
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -809,313 +558,93 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.mobile-badge {
-  background: #334155;
-  color: #94a3b8;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.mobile-badge.active-badge {
-  background: #10b981;
   color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.mobile-card-body h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.05rem;
-  color: #f8fafc;
-}
-
-.mobile-card-body p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: #94a3b8;
-  line-height: 1.3;
-}
-
-.mobile-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid #334155;
-  padding-top: 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #38bdf8;
-}
-
-/* 2. Mobile Join Container */
-.mobile-join-container {
-  padding: 20px 16px;
-  max-width: 440px;
-  margin: 0 auto;
-}
-
-.mobile-join-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-}
-
-.mobile-card-close-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.mobile-join-header {
-  text-align: center;
-  padding-bottom: 16px;
-  border-bottom: 3px solid #38bdf8;
-  margin-bottom: 20px;
-}
-
-.mobile-join-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  margin: 0 auto 12px auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.mobile-join-header h2 {
-  margin: 0 0 6px 0;
-  color: #f8fafc;
-  font-size: 1.3rem;
-}
-
-.mobile-join-header p {
-  margin: 0;
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.mobile-join-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mobile-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.mobile-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.mobile-label-row label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.mobile-quick-fill-btn {
-  background: #334155;
-  color: #38bdf8;
-  border: none;
-  padding: 3px 8px;
-  border-radius: 4px;
+.dubu-badge {
   font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
 }
 
-.mobile-form-group input {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 12px 14px;
-  color: #f8fafc;
-  font-size: 0.95rem;
-  outline: none;
+.dubu-badge.active {
+  background: #dcfce7;
+  color: #15803d;
 }
 
-.mobile-form-group input:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+.dubu-card-body h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
-.mobile-join-submit-btn {
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  padding: 14px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  margin-top: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  transition: transform 0.1s ease;
+.dubu-card-body p {
+  margin: 0 0 16px 0;
+  font-size: 0.82rem;
+  color: var(--dubu-text-muted);
+  line-height: 1.45;
 }
 
-.mobile-join-submit-btn:active {
-  transform: scale(0.98);
-}
-
-/* 3. Mobile Game Viewport */
-.mobile-game-viewport {
-  width: 100%;
-  flex: 1;
-  min-height: 100%;
-  background: #ffffff;
-  overflow: visible;
-  border: none;
-  border-radius: 0;
-  padding: 0;
+.dubu-card-footer {
+  margin-top: auto;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dubu-primary);
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
 }
 
-/* ----------------------------------------------------
- * 📱 MOBILE RESPONSIVE MEDIA QUERIES FOR GAME COMPONENTS
- * ---------------------------------------------------- */
+.dubu-card-footer .arrow {
+  transition: transform 0.15s ease;
+}
+
+.dubu-game-card:hover .dubu-card-footer .arrow {
+  transform: translateX(4px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Mobile Responsive */
 @media (max-width: 768px) {
-  .excel-app-window {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+  .dubu-portal-navbar {
+    padding: 10px 14px;
   }
-
-  .excel-title-bar {
-    font-size: 11px;
-    padding: 0 6px;
-    height: 32px;
-  }
-
-  .excel-search-box {
+  
+  .navbar-subtitle {
     display: none;
   }
-
-  .excel-autosave {
+  
+  .navbar-boss-btn {
     display: none;
   }
-
-  .excel-ribbon-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    height: 30px;
+  
+  .dubu-all-games-hero h2 {
+    font-size: 1.35rem;
   }
-
-  .ribbon-tab {
-    padding: 4px 10px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .excel-ribbon-toolbar {
-    display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    height: 36px;
-    padding: 4px 8px;
-    gap: 6px;
-  }
-
-  .excel-formula-bar {
-    font-size: 11px;
-    height: 26px;
-  }
-
-  .excel-name-box {
-    width: 45px;
-    line-height: 26px;
-  }
-
-  .excel-fx-btn {
-    width: 24px;
-    line-height: 26px;
-  }
-
-  .excel-formula-input {
-    line-height: 26px;
-    font-size: 11px;
-    padding: 0 6px;
-  }
-
-  .excel-col-headers {
-    display: none;
-  }
-
-  .excel-row-numbers {
-    display: none;
-  }
-
-  .excel-main-content-cell {
-    padding: 6px 4px;
-    background-image: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .excel-sheet-content {
-    padding: 12px 8px;
-    margin: 0;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  }
-
-  .excel-game-viewport {
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .game-option {
-    padding: 12px;
-  }
-
-  .game-icon {
-    font-size: 1.3rem;
-    margin-right: 10px;
-  }
-
-  .game-info h3 {
-    font-size: 0.92rem;
-  }
-
-  .game-info p {
-    font-size: 0.78rem;
-  }
-
-  .excel-cell-tag {
-    font-size: 9px;
-  }
-
-  .excel-sheet-footer {
-    height: auto;
-  }
-
-  .excel-sheet-tabs {
-    height: 28px;
-  }
-
-  .excel-status-bar {
-    display: none;
+  
+  .dubu-games-cards-grid {
+    grid-template-columns: 1fr;
   }
 }
-
-
