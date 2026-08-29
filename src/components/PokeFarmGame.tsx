@@ -598,6 +598,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           };
         });
         setActiveTab('minihome');
+      } else {
+        showAlert('서버 DB에 복원 가능한 농장 데이터(졸업생 1마리 이상)가 없습니다.', 'warn');
       }
     };
 
@@ -2898,7 +2900,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         setInitFarmName(`${e.target.value}의 포켓농장`);
                       }}
                       placeholder="예: 지우"
-                      maxLength={12}
+                      maxLength={100}
                     />
                   </div>
 
@@ -2909,7 +2911,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       value={initFarmName}
                       onChange={e => setInitFarmName(e.target.value)}
                       placeholder="예: 지우의 힐링 포켓농장"
-                      maxLength={20}
+                      maxLength={100}
                     />
                   </div>
 
@@ -3034,7 +3036,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       value={starterNickname}
                       onChange={e => setStarterNickname(e.target.value)}
                       placeholder={`기본값: ${starterBaby.name}`}
-                      maxLength={10}
+                      maxLength={100}
                     />
                   </div>
 
@@ -3457,6 +3459,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                     <div className="detail-item">
                       <span>🏡 농장명:</span> <b>{displayFarmName}</b>
+                      {!visitingFarm && (
+                        <button
+                          className="dubuworld-icon-btn"
+                          style={{ marginLeft: '6px', fontSize: '0.75rem', padding: '1px 4px' }}
+                          onClick={() => {
+                            const newFarmName = prompt('새로운 농장 이름을 입력하세요 (최대 100자):', farmState.farmName);
+                            if (newFarmName && newFarmName.trim()) {
+                              setFarmState(prev => ({ ...prev, farmName: newFarmName.trim().slice(0, 100) }));
+                            }
+                          }}
+                          title="농장 이름 수정"
+                        >
+                          ✏️
+                        </button>
+                      )}
                     </div>
                     <div className="detail-item">
                       <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리</b>
@@ -5890,7 +5907,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       value={hatchingModal.nicknameInput}
                       onChange={e => setHatchingModal({ ...hatchingModal, nicknameInput: e.target.value })}
                       placeholder={hatchingModal.babyPokemon.name}
-                      maxLength={10}
+                      maxLength={100}
                     />
                   </div>
 

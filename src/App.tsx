@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import Chat from './components/Chat';
 import MafiaGame from './components/MafiaGame';
@@ -368,10 +368,10 @@ function AppMain() {
                 name="username"
                 value={formUsername}
                 onChange={(e) => setFormUsername(e.target.value)}
-                placeholder="닉네임을 입력하세요 (2~20자)"
+                placeholder="닉네임을 입력하세요 (2~100자)"
                 required
                 minLength={2}
-                maxLength={20}
+                maxLength={100}
                 autoComplete="off"
               />
             </div>
@@ -396,7 +396,7 @@ function AppMain() {
                 placeholder="입장할 방 코드를 입력하세요 (예: ROOM_101)"
                 required
                 minLength={2}
-                maxLength={20}
+                maxLength={100}
                 autoComplete="off"
               />
             </div>

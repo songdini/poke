@@ -12,7 +12,7 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-export function sanitizeString(str, maxLength = 20) {
+export function sanitizeString(str, maxLength = 100) {
   if (typeof str !== 'string') return '';
   const trimmed = str.trim().slice(0, maxLength);
   return escapeHtml(trimmed);

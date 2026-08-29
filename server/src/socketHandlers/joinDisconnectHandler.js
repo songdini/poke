@@ -11,9 +11,9 @@ export function registerJoinDisconnectHandlers(io, socket) {
     const rawRoom = userData.room;
     const { gameType, sessionToken } = userData;
 
-    // 서버 측 입력값 검증 (최대 20자 제한 및 XSS 이스케이프)
-    const username = sanitizeString(rawUsername, 20);
-    const room = sanitizeString(rawRoom, 20);
+    // 서버 측 입력값 검증 (최대 100자 제한 및 XSS 이스케이프)
+    const username = sanitizeString(rawUsername, 100);
+    const room = sanitizeString(rawRoom, 100);
 
     if (!username || username.length < 2 || !room || room.length < 2) {
       return socket.emit('join-error', { message: '유효한 이름과 방 이름을 2자 이상 입력해주세요.' });

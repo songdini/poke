@@ -41,8 +41,8 @@ export function registerFarmHandlers(io, socket) {
     const farm = getFarm(cleanUser);
     const guestbook = getGuestbookEntries(cleanUser, 50);
     socket.emit('farm-my-data-loaded', {
-      success: !!(farm && (farm.activePokemon || (farm.graduatedPokemon && farm.graduatedPokemon.length > 0))),
-      farm: farm || null,
+      success: !!(farm && farm.graduatedPokemon && farm.graduatedPokemon.length > 0),
+      farm: (farm && farm.graduatedPokemon && farm.graduatedPokemon.length > 0) ? farm : null,
       guestbook
     });
   });

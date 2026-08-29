@@ -3057,7 +3057,7 @@ export function getInitialFarmState(ownerName: string): FarmState {
 
 export const FARM_CURRENT_SAVE_KEY = 'pokefarm_save_data_current_active';
 
-// 로컬스토리지 로드 (새로고침, 닉네임 불일치 등에도 농장 데이터 절대 유실 방지)
+// 로컬스토리지 로드 (졸업한 포켓몬이 0마리면 백업 없는 셈 처리)
 export function loadFarmState(ownerName?: string): FarmState {
   try {
     // 1순위: 가장 최근에 플레이하던 내 브라우저 통합 세이브 데이터
@@ -3066,18 +3066,24 @@ export function loadFarmState(ownerName?: string): FarmState {
 
     if (currentActiveRaw) {
       try {
-        parsed = JSON.parse(currentActiveRaw) as FarmState;
+        const candidate = JSON.parse(currentActiveRaw) as FarmState;
+        if (candidate && candidate.graduatedPokemon && candidate.graduatedPokemon.length > 0) {
+          parsed = candidate;
+        }
       } catch (e) {
         parsed = null;
       }
     }
 
     // 2순위: ownerName별 세이브 데이터
-    if ((!parsed || !parsed.isInitialized) && ownerName) {
+    if (!parsed && ownerName) {
       const ownerRaw = localStorage.getItem(`${FARM_STORAGE_KEY}_${ownerName}`);
       if (ownerRaw) {
         try {
-          parsed = JSON.parse(ownerRaw) as FarmState;
+          const candidate = JSON.parse(ownerRaw) as FarmState;
+          if (candidate && candidate.graduatedPokemon && candidate.graduatedPokemon.length > 0) {
+            parsed = candidate;
+          }
         } catch (e) {
           parsed = null;
         }
@@ -3085,15 +3091,15 @@ export function loadFarmState(ownerName?: string): FarmState {
     }
 
     // 3순위: 브라우저에 저장된 이전의 모든 pokefarm_save_data_ 키 자동 스캔 & 복구
-    if (!parsed || !parsed.isInitialized) {
+    if (!parsed) {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith(FARM_STORAGE_KEY)) {
+        if (key && key.startsWith(FARM_STORAGE_KEY) && key !== FARM_CURRENT_SAVE_KEY) {
           const candidateRaw = localStorage.getItem(key);
           if (candidateRaw) {
             try {
               const candidate = JSON.parse(candidateRaw) as FarmState;
-              if (candidate && (candidate.isInitialized || candidate.activePokemon || (candidate.graduatedPokemon && candidate.graduatedPokemon.length > 0))) {
+              if (candidate && candidate.graduatedPokemon && candidate.graduatedPokemon.length > 0) {
                 parsed = candidate;
                 console.log(`[PokeFarm] 🌟 기존 농장 세이브 데이터 자동 복구 성공 (Key: ${key})`);
                 break;
@@ -3106,14 +3112,12 @@ export function loadFarmState(ownerName?: string): FarmState {
       }
     }
 
-    if (parsed) {
+    if (parsed && parsed.graduatedPokemon && parsed.graduatedPokemon.length > 0) {
       parsed.reservePokemon = parsed.reservePokemon || [];
       parsed.stickers = parsed.stickers || [];
       parsed.pokemonPlacements = parsed.pokemonPlacements || {};
       if (parsed.incubatingEgg === undefined) parsed.incubatingEgg = null;
-      if (parsed.isInitialized === undefined) {
-        parsed.isInitialized = !!(parsed.activePokemon || parsed.graduatedPokemon?.length > 0);
-      }
+      parsed.isInitialized = true;
 
       // ✨ 이로치 포켓몬의 스프라이트 URL이 일반 URL인 경우 최신 이로치 URL로 자동 보정
       const fixShinySprites = (mon: FarmPokemon) => {
@@ -3182,9 +3186,12 @@ export function loadFarmState(ownerName?: string): FarmState {
   return getInitialFarmState(fallbackOwner);
 }
 
-// 로컬스토리지 저장 (통합 키 + 개별 키 동시 저장으로 완벽 보존)
+// 로컬스토리지 저장 (졸업한 포켓몬이 0마리면 백업 없는 셈 처리하여 저장하지 않음)
 export function saveFarmState(state: FarmState): void {
   try {
+    if (!state || !state.graduatedPokemon || state.graduatedPokemon.length === 0) {
+      return;
+    }
     const jsonStr = JSON.stringify(state);
     // 1. 현재 브라우저 활성 농장 통합 키 저장
     localStorage.setItem(FARM_CURRENT_SAVE_KEY, jsonStr);
@@ -3198,7 +3205,7 @@ export function saveFarmState(state: FarmState): void {
   }
 }
 
-// 🌟 브라우저 및 로컬에 저장된 실제 유저 농장 목록 전체 스캔 (최신 프로필 연동)
+// 🌟 브라우저 및 로컬에 저장된 실제 유저 농장 목록 전체 스캔 (졸업 포켓몬 1마리 이상 보유한 농장만 연동)
 export function getAllStoredFarms(): NeighborFarmData[] {
   const farmMap = new Map<string, NeighborFarmData>();
 
@@ -3212,7 +3219,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
         if (!raw) continue;
         try {
           const state = JSON.parse(raw) as FarmState;
-          if (state && state.ownerName && (state.isInitialized || state.activePokemon || (state.graduatedPokemon && state.graduatedPokemon.length > 0))) {
+          if (state && state.ownerName && state.graduatedPokemon && state.graduatedPokemon.length > 0) {
             const cleanUser = state.ownerName.trim();
             farmMap.set(cleanUser, {
               username: cleanUser,
@@ -3220,7 +3227,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
               activePokemon: state.activePokemon || null,
               reservePokemon: state.reservePokemon || [],
               graduatedPokemon: state.graduatedPokemon || [],
-              graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
+              graduatedCount: state.graduatedPokemon.length,
               heartsCount: state.heartsCount || 0,
               bgTheme: state.bgTheme || 'classic',
               stickers: state.stickers || [],
@@ -3242,7 +3249,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
     if (currentRaw) {
       try {
         const state = JSON.parse(currentRaw) as FarmState;
-        if (state && state.ownerName && (state.isInitialized || state.activePokemon || (state.graduatedPokemon && state.graduatedPokemon.length > 0))) {
+        if (state && state.ownerName && state.graduatedPokemon && state.graduatedPokemon.length > 0) {
           const cleanUser = state.ownerName.trim();
           farmMap.set(cleanUser, {
             username: cleanUser,
@@ -3250,7 +3257,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
             activePokemon: state.activePokemon || null,
             reservePokemon: state.reservePokemon || [],
             graduatedPokemon: state.graduatedPokemon || [],
-            graduatedCount: state.graduatedPokemon ? state.graduatedPokemon.length : 0,
+            graduatedCount: state.graduatedPokemon.length,
             heartsCount: state.heartsCount || 0,
             bgTheme: state.bgTheme || 'classic',
             stickers: state.stickers || [],
