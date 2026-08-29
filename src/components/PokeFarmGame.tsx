@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -15,7 +15,9 @@ import {
   playPokemonCry,
   getMaxExpForLevel,
   getAllPokedexEntries,
-  getAllStoredFarms
+  getAllStoredFarms,
+  EEVEE_BRANCHES,
+  getRandomEeveeEvolution
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X
@@ -200,22 +202,82 @@ export const getEvolutionChainForDiploma = (diploma: GraduationDiploma): Evoluti
   }];
 };
 
+// 🐾 포켓몬 스프라이트 URL 생성기 (앞모습, 뒷모습/뒷태, 쇼다운 GIF, 이로치 완벽 지원)
+export function getPokemonSpriteUrl(
+  speciesId: number,
+  options: {
+    isShiny?: boolean;
+    isBack?: boolean;
+    animated?: boolean;
+  } = {}
+): string {
+  const { isShiny = false, isBack = false, animated = true } = options;
+
+  if (animated) {
+    if (isBack) {
+      return isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/back/shiny/${speciesId}.gif`
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/back/${speciesId}.gif`;
+    } else {
+      return isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${speciesId}.gif`
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${speciesId}.gif`;
+    }
+  } else {
+    if (isBack) {
+      return isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/shiny/${speciesId}.png`
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${speciesId}.png`;
+    } else {
+      return isShiny
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${speciesId}.png`
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`;
+    }
+  }
+}
+
+// 🔄 3D 방향/시선 각도(0~360°)에 따라 앞/뒤 스프라이트 및 3D Y축 회전 각도를 매끄럽게 계산하는 헬퍼
+export function computePokemonVisualAngle(turnAngle: number): { isBack: boolean; visualRotateY: number } {
+  const norm = ((turnAngle % 360) + 360) % 360;
+  if (norm > 90 && norm < 270) {
+    // 90도 ~ 270도: 뒤돌아보는 각도 (Back Sprite 및 3D Y축 매끄러운 회전)
+    return {
+      isBack: true,
+      visualRotateY: norm - 180
+    };
+  } else {
+    // 270도 ~ 90도: 정면 바라보는 각도 (Front Sprite 및 3D Y축 매끄러운 회전)
+    return {
+      isBack: false,
+      visualRotateY: norm > 180 ? norm - 360 : norm
+    };
+  }
+}
+
 // 🎓 졸업생의 현재 선택된 외형 스프라이트 및 이름 반환 헬퍼
-export const getDiplomaActiveSprite = (diploma: GraduationDiploma): { sprite: string; name: string; formIndex: number } => {
+export const getDiplomaActiveSprite = (
+  diploma: GraduationDiploma,
+  isBackView = false
+): { sprite: string; name: string; formIndex: number; fallbackSprite: string } => {
   const chain = getEvolutionChainForDiploma(diploma);
   const maxIdx = chain.length - 1;
   const formIdx = diploma.selectedFormIndex !== undefined ? Math.min(Math.max(0, diploma.selectedFormIndex), maxIdx) : maxIdx;
   const currentStage = chain[formIdx] || chain[maxIdx] || chain[0];
 
-  let spr = currentStage.showdownSprite || currentStage.sprite || diploma.sprite;
-  if (diploma.isShiny && currentStage.id) {
-    spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${currentStage.id}.gif`;
-  }
+  const spr = getPokemonSpriteUrl(currentStage.id, {
+    isShiny: diploma.isShiny,
+    isBack: isBackView,
+    animated: true
+  });
+  const fallback = isBackView
+    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${currentStage.id}.png`
+    : (currentStage.showdownSprite || currentStage.sprite || diploma.sprite);
 
   return {
     sprite: spr,
     name: currentStage.name || diploma.name,
-    formIndex: formIdx
+    formIndex: formIdx,
+    fallbackSprite: fallback
   };
 };
 
@@ -889,12 +951,44 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const handleFlipPokemon = (id: string) => {
     if (visitingFarm) return;
     setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, isBackView: false };
       return {
         ...prev,
         pokemonPlacements: {
           ...(prev.pokemonPlacements || {}),
           [id]: { ...existing, flipped: !existing.flipped }
+        }
+      };
+    });
+  };
+
+  // 🔄 포켓몬 3D 시선/방향 360° 미세 턴 조작 (0 ~ 360도 연속 회전)
+  const handleSetPokemonTiltY = (id: string, angle: number) => {
+    if (visitingFarm) return;
+    const normalized = Math.round(((angle % 360) + 360) % 360);
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, tiltY: normalized, isBackView: normalized > 90 && normalized < 270 }
+        }
+      };
+    });
+  };
+
+  const handleTurnPokemonY = (id: string, delta: number) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
+      const cur = existing.tiltY !== undefined ? existing.tiltY : (existing.isBackView ? 180 : 0);
+      const next = Math.round(((cur + delta) % 360 + 360) % 360);
+      return {
+        ...prev,
+        pokemonPlacements: {
+          ...(prev.pokemonPlacements || {}),
+          [id]: { ...existing, tiltY: next, isBackView: next > 90 && next < 270 }
         }
       };
     });
@@ -960,7 +1054,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert('✨ 졸업생 포켓몬의 미니룸 외형 모습이 변경되었습니다!', 'success');
   };
 
-  // 포켓몬 위치 조회 헬퍼
+  // 포켓몬 위치 및 3D 방향 조회 헬퍼
   const getPokemonPlacement = (
     id: string,
     defaultX: number,
@@ -968,11 +1062,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     defaultScale = 1,
     defaultFlipped = false,
     defaultRotation = 0,
-    defaultTiltX = 0
+    defaultTiltX = 0,
+    defaultTiltY = 0
   ) => {
     const placements = visitingFarm ? visitingFarm.farm.pokemonPlacements : farmState.pokemonPlacements;
     const custom = placements?.[id];
     if (custom) {
+      const turnY = custom.tiltY !== undefined ? custom.tiltY : (custom.isBackView ? 180 : defaultTiltY);
       return {
         x: custom.x,
         y: custom.y,
@@ -980,9 +1076,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         flipped: custom.flipped !== undefined ? custom.flipped : defaultFlipped,
         rotation: custom.rotation !== undefined ? custom.rotation : defaultRotation,
         tiltX: custom.tiltX !== undefined ? custom.tiltX : defaultTiltX,
-        tiltY: custom.tiltY !== undefined ? custom.tiltY : 0
+        tiltY: turnY,
+        isBackView: custom.isBackView !== undefined ? custom.isBackView : (turnY > 90 && turnY < 270)
       };
     }
+    const turnY = defaultTiltY;
     return {
       x: defaultX,
       y: defaultY,
@@ -990,7 +1088,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       flipped: defaultFlipped,
       rotation: defaultRotation,
       tiltX: defaultTiltX,
-      tiltY: 0
+      tiltY: turnY,
+      isBackView: turnY > 90 && turnY < 270
     };
   };
 
@@ -1095,9 +1194,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           {/* 🐾 키우는 중인 메인 포켓몬 */}
           {displayActivePokemon && (() => {
             const id = 'active';
-            const place = getPokemonPlacement(id, 45, 52, 1, false, 0, 0);
+            const place = getPokemonPlacement(id, 45, 52, 1, false, 0, 0, 0);
             const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
             const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
+            const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+            const spriteSrc = getPokemonSpriteUrl(displayActivePokemon.speciesId, {
+              isShiny: displayActivePokemon.isShiny,
+              isBack: isBack,
+              animated: true
+            });
 
             return (
               <div
@@ -1106,19 +1211,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
-                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 20
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
-                title="드래그 이동 / 클릭하여 360도 회전 & 각도 조절!"
+                title={`[${displayActivePokemon.nickname || displayActivePokemon.name}] Lv.${displayActivePokemon.level}`}
               >
                 <div className={`pokemon-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
                   <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
                   <span className="tag-name">{displayActivePokemon.nickname || displayActivePokemon.name}</span>
                 </div>
                 <img
-                  src={displayActivePokemon.sprites.showdownFront || displayActivePokemon.sprites.front}
+                  src={spriteSrc}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (isBack) {
+                      target.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${displayActivePokemon.speciesId}.png`;
+                    } else {
+                      target.src = displayActivePokemon.sprites.front;
+                    }
+                  }}
                   alt={displayActivePokemon.name}
                   className="poke-sprite bounce"
                   draggable={false}
@@ -1133,9 +1246,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             const defX = idx === 0 ? 20 : idx === 1 ? 70 : 82;
             const defY = idx === 0 ? 58 : idx === 1 ? 58 : 48;
             const defFlip = idx !== 0;
-            const place = getPokemonPlacement(id, defX, defY, 0.9, defFlip, 0, 0);
+            const place = getPokemonPlacement(id, defX, defY, 0.9, defFlip, 0, 0, 0);
             const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
             const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
+            const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+            const spriteSrc = getPokemonSpriteUrl(mon.speciesId, {
+              isShiny: mon.isShiny,
+              isBack: isBack,
+              animated: true
+            });
 
             return (
               <div
@@ -1144,18 +1263,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
-                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 18
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
-                title="드래그 이동 / 클릭하여 360도 회전 & 각도 조절!"
+                title={`[${mon.nickname || mon.name}] Lv.${mon.level}`}
               >
                 <div className={`pokemon-name-tag compact ${place.flipped ? 'unflip-tag' : ''}`}>
                   <span>{mon.nickname || mon.name}</span>
                 </div>
                 <img
-                  src={mon.sprites.showdownFront || mon.sprites.front}
+                  src={spriteSrc}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (isBack) {
+                      target.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${mon.speciesId}.png`;
+                    } else {
+                      target.src = mon.sprites.front;
+                    }
+                  }}
                   alt={mon.name}
                   className="poke-sprite"
                   draggable={false}
@@ -1170,10 +1297,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             const defX = idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86;
             const defY = idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32;
             const defFlip = idx >= 2;
-            const place = getPokemonPlacement(id, defX, defY, 0.85, defFlip, 0, 0);
+            const place = getPokemonPlacement(id, defX, defY, 0.85, defFlip, 0, 0, 0);
             const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
             const isDragging = dragState?.type === 'pokemon' && dragState.id === id;
-            const activeForm = getDiplomaActiveSprite(dip);
+            const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+            const activeForm = getDiplomaActiveSprite(dip, isBack);
 
             return (
               <div
@@ -1182,19 +1310,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
-                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${place.tiltY || 0}deg)`,
+                  transform: `scale(${place.scale}) ${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 16
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
                 onClick={() => !dragState && setSelectedDiploma(dip)}
-                title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] - 현재 외형: ${activeForm.name} (드래그 이동 / 클릭 졸업증서 & 외형 변경)`}
+                title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] - ${activeForm.name}`}
               >
                 <div className={`graduated-badge-tag ${place.flipped ? 'unflip-tag' : ''}`}>
                   🎓 {dip.nickname || dip.name} {activeForm.name !== (dip.nickname || dip.name) ? `(${activeForm.name})` : ''}
                 </div>
                 <img
                   src={activeForm.sprite}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (isBack) {
+                      target.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${dip.speciesId}.png`;
+                    } else {
+                      target.src = activeForm.fallbackSprite || dip.sprite;
+                    }
+                  }}
                   alt={activeForm.name}
                   className="poke-sprite graduated-shine"
                   draggable={false}
@@ -1241,8 +1377,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   <span className="stk-icon">{stk.icon}</span>
                 )}
 
-                {/* 개별 삭제 버튼 */}
-                {!visitingFarm && (
+                {/* 개별 삭제 버튼: 홈 화면(minihompyTab === 'home')에서는 절대 미노출, 오직 꾸미기 모드에서 선택되었을 때만 노출 */}
+                {!visitingFarm && minihompyTab !== 'home' && isSelected && (
                   <button
                     className="stk-del-btn"
                     onClick={(e) => {
@@ -1264,16 +1400,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           const isPokemon = selectedDecorItem.type === 'pokemon';
           const id = selectedDecorItem.id;
           const curPlacement = isPokemon
-            ? getPokemonPlacement(id, 45, 52, 1, false, 0, 0)
+            ? getPokemonPlacement(id, 45, 52, 1, false, 0, 0, 0)
             : (farmState.stickers || []).find(s => s.id === id);
-          const curRot = (isPokemon ? curPlacement?.rotation : (curPlacement as MinihompySticker)?.rotation) || 0;
-          const curTilt = (isPokemon ? curPlacement?.tiltX : (curPlacement as MinihompySticker)?.tiltX) || 0;
+          const curRot = (isPokemon ? (curPlacement as PokemonPlacement)?.rotation : (curPlacement as MinihompySticker)?.rotation) || 0;
+          const curTilt = (isPokemon ? (curPlacement as PokemonPlacement)?.tiltX : (curPlacement as MinihompySticker)?.tiltX) || 0;
+          const curTurnY = isPokemon ? ((curPlacement as PokemonPlacement)?.tiltY || 0) : 0;
 
           return (
             <div className="miniroom-item-editor-bar">
               <div className="editor-top-line">
                 <span className="editor-target-name">
-                  {isPokemon ? '🐾 포켓몬 미세 회전 & 연출' : '🎨 스티커/텍스트 회전 & 연출'}
+                  {isPokemon ? '🐾 포켓몬 각도 및 방향 설정' : '🎨 스티커/텍스트 회전 & 연출'}
                 </span>
                 <button
                   className="editor-btn close"
@@ -1305,7 +1442,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   <button
                     className="editor-btn"
                     onClick={() => isPokemon ? handleFlipPokemon(id) : handleFlipSticker(id)}
-                    title="바라보는 방향 반전"
+                    title="좌우 반전"
                   >
                     🔄 좌우반전
                   </button>
@@ -1330,9 +1467,37 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   )}
                 </div>
 
-                {/* 2. 🔄 360도 2D 평면 미세 회전 (Z축) */}
+                {/* 2. 🔄 3D 방향 / 시선 회전 (0° ~ 360° 미세 턴) - 포켓몬 전용 */}
+                {isPokemon && (
+                  <div className="control-row">
+                    <span className="control-title">🔄 시선/방향 (3D 턴):</span>
+                    <button className="editor-btn nudge-btn" onClick={() => handleTurnPokemonY(id, -15)}>↶ -15°</button>
+                    <button className="editor-btn nudge-btn" onClick={() => handleTurnPokemonY(id, -5)}>↶ -5°</button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      step="2"
+                      value={curTurnY}
+                      onChange={e => handleSetPokemonTiltY(id, Number(e.target.value))}
+                      className="angle-range-slider"
+                      title="360도 자유로운 방향 회전 (0도: 정면, 180도: 후면)"
+                    />
+                    <span className="angle-badge">{curTurnY}°</span>
+                    <button className="editor-btn nudge-btn" onClick={() => handleTurnPokemonY(id, 5)}>↷ +5°</button>
+                    <button className="editor-btn nudge-btn" onClick={() => handleTurnPokemonY(id, 15)}>↷ +15°</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 0)}>0° 정면</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 45)}>45°</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 135)}>135°</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 180)}>180° 후면</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 225)}>225°</button>
+                    <button className="editor-btn mini" onClick={() => handleSetPokemonTiltY(id, 315)}>315°</button>
+                  </div>
+                )}
+
+                {/* 3. 🔄 2D 평면 회전 (Z축) */}
                 <div className="control-row">
-                  <span className="control-title">🔄 360° 회전:</span>
+                  <span className="control-title">📐 평면 기울기:</span>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -15) : handleRotateSticker(id, -15)}>↶ -15°</button>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -5) : handleRotateSticker(id, -5)}>↶ -5°</button>
                   <input
@@ -1343,20 +1508,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     value={curRot}
                     onChange={e => isPokemon ? handleSetPokemonRotation(id, Number(e.target.value)) : handleSetStickerRotation(id, Number(e.target.value))}
                     className="angle-range-slider"
-                    title="360도 미세 회전 조작"
+                    title="2D 평면 회전"
                   />
                   <span className="angle-badge">{curRot}°</span>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 5) : handleRotateSticker(id, 5)}>↷ +5°</button>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 15) : handleRotateSticker(id, 15)}>↷ +15°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 0) : handleSetStickerRotation(id, 0)}>0° 정면</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 45) : handleSetStickerRotation(id, 45)}>45°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 90) : handleSetStickerRotation(id, 90)}>90°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 180) : handleSetStickerRotation(id, 180)}>180°</button>
+                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 0) : handleSetStickerRotation(id, 0)}>0°</button>
                 </div>
 
-                {/* 3. 📐 앞뒤 3D 입체 기울기 / 눕힘 (X축 Tilt) */}
+                {/* 4. 📐 앞뒤 3D 상하 눕힘 (X축 Tilt) */}
                 <div className="control-row">
-                  <span className="control-title">📐 앞뒤 3D 눕힘:</span>
+                  <span className="control-title">📐 상하 눕힘:</span>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, -10) : handleTiltStickerX(id, -10)}>⬆️ 앞 -10°</button>
                   <input
                     type="range"
@@ -1366,13 +1528,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     value={curTilt}
                     onChange={e => isPokemon ? handleSetPokemonTiltX(id, Number(e.target.value)) : handleSetStickerTiltX(id, Number(e.target.value))}
                     className="angle-range-slider"
-                    title="앞뒤 3D 기울기 (-60도 ~ +60도)"
+                    title="상하 3D 눕힘 (-60도 ~ +60도)"
                   />
                   <span className="angle-badge">{curTilt > 0 ? `+${curTilt}°` : `${curTilt}°`}</span>
                   <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, 10) : handleTiltStickerX(id, 10)}>⬇️ 뒤 +10°</button>
                   <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 0) : handleSetStickerTiltX(id, 0)}>수평 0°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, -30) : handleSetStickerTiltX(id, -30)}>앞으로 -30°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 30) : handleSetStickerTiltX(id, 30)}>뒤로 +30°</button>
                 </div>
 
                 {/* 4. 🌱 졸업생 외형 변신 (진화 전/후 폼 선택) */}
@@ -2407,7 +2567,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       return;
     }
 
-    const nextStage = currentChain[nextIndex];
+    let nextStage = currentChain[nextIndex];
+
+    // 🦊 이브이 8대 진화체 확률 분기 처리 (샤미드, 쥬피썬더, 부스터, 에브이, 블래키, 리피아, 글레이시아, 님피아)
+    const isEeveeBranch = pmon.speciesId === 133 || currentChain[pmon.stageIndex]?.isEeveeBranch || nextStage.name.includes('이브이즈');
+    if (isEeveeBranch) {
+      nextStage = getRandomEeveeEvolution();
+    }
+
     if (pmon.level < nextStage.minLevel || pmon.happiness < nextStage.minHappiness) {
       showAlert(`진화 조건 미달: Lv.${nextStage.minLevel} & 친밀도 ${nextStage.minHappiness} 이상 필요`, 'warn');
       return;
@@ -2437,6 +2604,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       setFarmState(prev => {
         if (!prev.activePokemon) return prev;
         const target = prev.activePokemon;
+        const updatedChain = isEeveeBranch
+          ? [target.evolutionChain[0], nextStage]
+          : target.evolutionChain;
+
         return {
           ...prev,
           activePokemon: {
@@ -2446,6 +2617,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             nickname: target.nickname === target.name ? nextStage.name : target.nickname,
             stageIndex: nextIndex,
             types: nextStage.types,
+            evolutionChain: updatedChain,
             sprites: {
               front: evolvedFront,
               showdownFront: evolvedShowdown
@@ -2635,7 +2807,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 <div className="onboarding-badge">STEP 2 / 2</div>
                 <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
                 <p className="onboarding-desc">
-                  함께할 첫 아기 포켓몬을 선택하세요! 5% 확률로 특별한 전설의 포켓몬이 등장합니다.
+                  함께할 첫 아기 포켓몬을 선택하세요! (※ 가라르/알로라/히스이 등 지방 리전폼 및 전설/환상 포켓몬은 분양받을 수 없으며, 상점의 [🌟 전설 & 특수 포켓몬 알]을 통해서만 부화시킬 수 있습니다)
                 </p>
 
                 {/* Selected Preview Box */}
@@ -2648,15 +2820,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   </div>
                 </div>
 
-                {/* Generation Filter Chips */}
+                {/* Generation Filter Chips - 일반 스타팅 포켓몬들만 제공 */}
                 <div className="gen-filter-chips">
                   {[
-                    { id: 'all', label: `전체 (${STARTER_CHAINS.length}종)` },
+                    { id: 'all', label: '전체 일반 스타팅' },
                     { id: 'gen1-2', label: '1~2세대' },
                     { id: 'gen3-4', label: '3~4세대' },
                     { id: 'gen5-6', label: '5~6세대' },
-                    { id: 'gen7-9', label: '7~9세대' },
-                    { id: 'special', label: '드래곤/희귀' }
+                    { id: 'gen7-9', label: '7~9세대' }
                   ].map(f => (
                     <button
                       key={f.id}
@@ -2669,12 +2840,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   ))}
                 </div>
 
-                {/* Starter Picker Grid */}
+                {/* Starter Picker Grid - 특수/지방/전설(special)은 분양 불가 */}
                 <div className="onboarding-starter-grid">
                   {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
                     .filter(({ chain }) => {
-                      if (genFilter === 'all') return true;
                       const cat = chain[0].genCategory || 'gen1-2';
+                      if (cat === 'special') return false; // 지방/전설 포켓몬은 분양소 제외!
+                      if (genFilter === 'all') return true;
                       return cat === genFilter;
                     })
                     .map(({ chain, originalIdx }) => {
@@ -3191,10 +3363,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         <p>정성껏 키운 포켓몬들과 자랑스러운 졸업생들이 함께 어우러지는 두부월드 감성 미니홈피입니다.</p>
                       </div>
 
-                      {/* 미니룸 미니 프리뷰 */}
-                      <div className="miniroom-preview-box" onClick={() => setMinihompyTab('miniroom')}>
-                        <div className="preview-label">🖼️ 클릭하여 미니룸 크게 보기 & 스티커 꾸미기 ➔</div>
-                        {renderMiniroomCanvas({ compact: true })}
+                      {/* 미니룸 프리뷰 (꾸미기 모드와 100% 동일한 1:1 크기 & 비율) */}
+                      <div className="miniroom-preview-box" onClick={() => setMinihompyTab('stickers')}>
+                        <div className="preview-label">🖼️ 클릭하여 스티커 & 방 꾸미기 ➔</div>
+                        {renderMiniroomCanvas({ compact: false })}
                       </div>
 
                       {/* 최근 방명록 프리뷰 */}
@@ -3325,6 +3497,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         <h4>🎨 두부월드 미니룸 데코레이션 스튜디오</h4>
                         <p>스티커 부착, 자유 텍스트/말풍선 작성, 포켓몬 위치 및 방향을 다채롭게 꾸며보세요!</p>
                       </div>
+
+                      {/* 🖼️ 실시간 미니룸 캔버스 (홈 화면과 1:1 완벽 일치하는 360px 크기) */}
+                      {renderMiniroomCanvas({ compact: false })}
 
                       {/* 🌟 데코레이션 서브모드 탭 */}
                       <div className="decor-submode-tabs">
@@ -3531,16 +3706,23 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           <div className="poke-placements-list">
                             {/* 대표 포켓몬 */}
                             {displayActivePokemon && (() => {
-                              const place = getPokemonPlacement('active', 45, 52, 1, false, 0, 0);
+                              const place = getPokemonPlacement('active', 45, 52, 1, false, 0, 0, 0);
+                              const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+                              const thumbSprite = getPokemonSpriteUrl(displayActivePokemon.speciesId, {
+                                isShiny: displayActivePokemon.isShiny,
+                                isBack: isBack,
+                                animated: false
+                              });
+
                               return (
                                 <div className="poke-placement-card">
                                   <div className="placement-card-top">
                                     <div className="poke-thumb">
                                       <img
-                                        src={displayActivePokemon.sprites.front}
+                                        src={thumbSprite}
                                         alt={displayActivePokemon.name}
                                         style={{
-                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                                           transition: 'transform 0.15s ease'
                                         }}
                                       />
@@ -3558,7 +3740,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                   </div>
                                   <div className="poke-angles-row">
                                     <div className="angle-control-unit">
-                                      <span>🔄 360° 회전:</span>
+                                      <span>🔄 시선/방향 (3D 턴):</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        step="2"
+                                        value={place.tiltY || 0}
+                                        onChange={e => handleSetPokemonTiltY('active', Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltY || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>🔄 평면 회전:</span>
                                       <input
                                         type="range"
                                         min="0"
@@ -3570,7 +3765,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                       <b>{place.rotation || 0}°</b>
                                     </div>
                                     <div className="angle-control-unit">
-                                      <span>📐 앞뒤 눕힘:</span>
+                                      <span>📐 상하 눕힘:</span>
                                       <input
                                         type="range"
                                         min="-60"
@@ -3590,16 +3785,23 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             {/* 보육소 포켓몬들 */}
                             {displayReservePokemons.map((mon, idx) => {
                               const id = `res_${mon.uid || idx}`;
-                              const place = getPokemonPlacement(id, idx === 0 ? 20 : idx === 1 ? 70 : 82, idx === 0 ? 58 : idx === 1 ? 58 : 48, 0.9, idx !== 0, 0, 0);
+                              const place = getPokemonPlacement(id, idx === 0 ? 20 : idx === 1 ? 70 : 82, idx === 0 ? 58 : idx === 1 ? 58 : 48, 0.9, idx !== 0, 0, 0, 0);
+                              const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+                              const thumbSprite = getPokemonSpriteUrl(mon.speciesId, {
+                                isShiny: mon.isShiny,
+                                isBack: isBack,
+                                animated: false
+                              });
+
                               return (
                                 <div key={mon.uid || idx} className="poke-placement-card">
                                   <div className="placement-card-top">
                                     <div className="poke-thumb">
                                       <img
-                                        src={mon.sprites.front}
+                                        src={thumbSprite}
                                         alt={mon.name}
                                         style={{
-                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                                           transition: 'transform 0.15s ease'
                                         }}
                                       />
@@ -3617,7 +3819,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                   </div>
                                   <div className="poke-angles-row">
                                     <div className="angle-control-unit">
-                                      <span>🔄 360° 회전:</span>
+                                      <span>🔄 시선/방향 (3D 턴):</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        step="2"
+                                        value={place.tiltY || 0}
+                                        onChange={e => handleSetPokemonTiltY(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltY || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>🔄 평면 회전:</span>
                                       <input
                                         type="range"
                                         min="0"
@@ -3629,7 +3844,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                       <b>{place.rotation || 0}°</b>
                                     </div>
                                     <div className="angle-control-unit">
-                                      <span>📐 앞뒤 눕힘:</span>
+                                      <span>📐 상하 눕힘:</span>
                                       <input
                                         type="range"
                                         min="-60"
@@ -3649,9 +3864,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                             {/* 졸업생 포켓몬들 (진화단계별 폼 변경 지원) */}
                             {displayGraduatedPokemons.map((dip, idx) => {
                               const id = `grad_${dip.id || idx}`;
-                              const place = getPokemonPlacement(id, idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86, idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32, 0.85, idx >= 2, 0, 0);
+                              const place = getPokemonPlacement(id, idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86, idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32, 0.85, idx >= 2, 0, 0, 0);
                               const chain = getEvolutionChainForDiploma(dip);
-                              const activeForm = getDiplomaActiveSprite(dip);
+                              const { isBack, visualRotateY } = computePokemonVisualAngle(place.tiltY || 0);
+                              const activeForm = getDiplomaActiveSprite(dip, isBack);
 
                               return (
                                 <div key={dip.id || idx} className="poke-placement-card">
@@ -3661,13 +3877,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                         src={activeForm.sprite}
                                         alt={activeForm.name}
                                         style={{
-                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg)`,
+                                          transform: `${place.flipped ? 'scaleX(-1)' : ''} rotate(${place.rotation || 0}deg) rotateX(${place.tiltX || 0}deg) rotateY(${visualRotateY}deg)`,
                                           transition: 'transform 0.15s ease'
                                         }}
                                       />
                                       <div className="thumb-info">
                                         <strong>🎓 졸업: {dip.nickname || dip.name}</strong>
-                                        <span>외형: <b>{activeForm.name}</b> ({dip.graduatedAt.slice(0, 10)} 졸업)</span>
+                                        <span>외형: <b>{activeForm.name}</b></span>
                                       </div>
                                     </div>
                                     <div className="poke-controls-row">
@@ -3703,7 +3919,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
                                   <div className="poke-angles-row">
                                     <div className="angle-control-unit">
-                                      <span>🔄 360° 회전:</span>
+                                      <span>🔄 시선/방향 (3D 턴):</span>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="360"
+                                        step="2"
+                                        value={place.tiltY || 0}
+                                        onChange={e => handleSetPokemonTiltY(id, Number(e.target.value))}
+                                        className="angle-range-slider"
+                                      />
+                                      <b>{place.tiltY || 0}°</b>
+                                    </div>
+                                    <div className="angle-control-unit">
+                                      <span>🔄 평면 회전:</span>
                                       <input
                                         type="range"
                                         min="0"
@@ -3715,7 +3944,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                                       <b>{place.rotation || 0}°</b>
                                     </div>
                                     <div className="angle-control-unit">
-                                      <span>📐 앞뒤 눕힘:</span>
+                                      <span>📐 상하 눕힘:</span>
                                       <input
                                         type="range"
                                         min="-60"
@@ -3953,17 +4182,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <h3>🐣 둡박사 포켓몬 분양소</h3>
-                  <p>원하는 포켓몬을 선택하여 입양하세요! 5% 확률로 희귀한 전설의 포켓몬이 탄생합니다.</p>
+                  <p>원하는 일반 포켓몬을 선택하여 입양하세요! (※ 가라르/알로라/히스이 리전폼 및 전설/환상 포켓몬은 분양소 분양 불가, [🌟 전설알]에서만 부화 가능)</p>
                 </div>
-                {/* Generation Filter Chips */}
+                {/* Generation Filter Chips - 일반 스타팅 포켓몬들만 제공 */}
                 <div className="gen-filter-chips">
                   {[
-                    { id: 'all', label: `전체 (${STARTER_CHAINS.length}종)` },
+                    { id: 'all', label: '전체 일반 분양' },
                     { id: 'gen1-2', label: '1~2세대' },
                     { id: 'gen3-4', label: '3~4세대' },
                     { id: 'gen5-6', label: '5~6세대' },
-                    { id: 'gen7-9', label: '7~9세대' },
-                    { id: 'special', label: '드래곤/희귀' }
+                    { id: 'gen7-9', label: '7~9세대' }
                   ].map(f => (
                     <button
                       key={f.id}
@@ -3981,8 +4209,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             <div className="starter-cards-grid">
               {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
                 .filter(({ chain }) => {
-                  if (genFilter === 'all') return true;
                   const cat = chain[0].genCategory || 'gen1-2';
+                  if (cat === 'special') return false; // 지방/전설 포켓몬은 분양소 분양 제외!
+                  if (genFilter === 'all') return true;
                   return cat === genFilter;
                 })
                 .map(({ chain, originalIdx }) => {
@@ -4053,9 +4282,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     const happyMet = pmon.happiness >= nextStage.minHappiness;
                     const canEvolve = levelMet && happyMet;
 
+                    const isEeveeBranch = pmon.speciesId === 133 || pmon.evolutionChain[pmon.stageIndex]?.isEeveeBranch || nextStage.name.includes('이브이즈');
+
                     return (
                       <div className="evolve-action-card">
-                        <h4>다음 진화: [{nextStage.name}] 조건 달성표</h4>
+                        <h4>
+                          {isEeveeBranch
+                            ? '다음 진화: 🎲 8대 이브이즈 (샤미드·쥬피썬더·부스터·에브이·블래키·리피아·글레이시아·님피아 중 확률 진화)'
+                            : `다음 진화: [${nextStage.name}] 조건 달성표`}
+                        </h4>
+
+                        {isEeveeBranch && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0', justifyContent: 'center' }}>
+                            {EEVEE_BRANCHES.map(br => (
+                              <div key={br.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 6px' }}>
+                                <img src={br.sprite} alt={br.name} style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }} />
+                                <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>{br.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="req-checklist">
                           <div className={`check-item ${levelMet ? 'checked' : ''}`}>
                             {levelMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -4072,7 +4319,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           disabled={!canEvolve}
                           onClick={handleEvolve}
                         >
-                          {canEvolve ? '✨ 지금 바로 진화시키기!' : '⏳ 조건을 먼저 달성해 주세요'}
+                          {canEvolve 
+                            ? (isEeveeBranch ? '🎲 지금 바로 8대 이브이즈로 진화시키기!' : '✨ 지금 바로 진화시키기!')
+                            : '⏳ 조건을 먼저 달성해 주세요'}
                         </button>
                       </div>
                     );

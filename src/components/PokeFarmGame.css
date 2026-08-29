@@ -4005,7 +4005,9 @@
 .miniroom-canvas-container {
   position: relative;
   width: 100%;
-  height: 350px;
+  height: 360px;
+  min-height: 360px;
+  max-height: 360px;
   border-radius: 10px;
   border: 2px solid #89b3d9;
   overflow: hidden;
@@ -4015,11 +4017,10 @@
   background-size: cover;
   perspective: 800px;
   transform-style: preserve-3d;
-  transition: all 0.3s ease;
 }
 
 .miniroom-canvas-container.compact {
-  height: 220px;
+  height: 360px; /* 홈 뷰에서도 꾸미기 뷰와 100% 동일한 크기와 비율 유지 */
   cursor: pointer;
 }
 
@@ -4230,7 +4231,6 @@
   opacity: 0.85;
 }
 
-.miniroom-placed-item:hover .stk-del-btn,
 .miniroom-placed-item.selected .stk-del-btn {
   opacity: 1;
   transform: scale(1.1);
@@ -5584,6 +5584,22 @@
   border-color: #f87171;
   color: #b91c1c;
   transform: translateY(-1px);
+}
+
+/* 🐾 Pokemon Back View (뒷태 감상) Button Styles */
+.editor-btn.active-back-btn,
+.excel-btn.active-back {
+  background: #fdf2f8 !important;
+  border-color: #f472b6 !important;
+  color: #db2777 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.25) !important;
+}
+
+.editor-btn.active-back-btn:hover,
+.excel-btn.active-back:hover {
+  background: #fce7f3 !important;
+  border-color: #ec4899 !important;
 }
 
 

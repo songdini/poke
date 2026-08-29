@@ -129,7 +129,7 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
     }
   ],
 
-  // 5. 이브이 ➔ 님피아
+  // 5. 이브이 ➔ 8대 이브이즈 (확률 진화: 샤미드/쥬피썬더/부스터/에브이/블래키/리피아/글레이시아/님피아)
   [
     {
       id: 133,
@@ -138,16 +138,19 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
       minHappiness: 0,
       types: ['normal'],
       sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/133.gif'
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/133.gif',
+      genCategory: 'gen1-2',
+      isEeveeBranch: true
     },
     {
-      id: 700,
-      name: '님피아',
+      id: 134,
+      name: '이브이즈 (8종 확률 진화)',
       minLevel: 25,
-      minHappiness: 70,
-      types: ['fairy'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/700.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/700.gif'
+      minHappiness: 60,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/133.gif',
+      genCategory: 'gen1-2'
     }
   ],
 
@@ -1419,26 +1422,36 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
     }
   ],
 
-  // 48. 잉어킹 ➔ 갸라도스 (용오름 역경 극복)
+  // 48. 캐터피 ➔ 단데기 ➔ 버터플 (나비의 비상)
   [
     {
-      id: 129,
-      name: '잉어킹',
+      id: 10,
+      name: '캐터피',
       minLevel: 1,
       minHappiness: 0,
-      types: ['water'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/129.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/129.gif',
+      types: ['bug'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10.gif',
       genCategory: 'gen1-2'
     },
     {
-      id: 130,
-      name: '갸라도스',
-      minLevel: 20,
-      minHappiness: 60,
-      types: ['water', 'flying'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/130.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/130.gif',
+      id: 11,
+      name: '단데기',
+      minLevel: 7,
+      minHappiness: 20,
+      types: ['bug'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/11.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 12,
+      name: '버터플',
+      minLevel: 10,
+      minHappiness: 50,
+      types: ['bug', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/12.gif',
       genCategory: 'gen1-2'
     }
   ],
@@ -1477,37 +1490,551 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
     }
   ],
 
-  // 50. 모부기 ➔ 수풀부기 ➔ 토대부기 (대륙을 품은 숲)
+  // 50. 아보 ➔ 아보크 (맹독 코브라)
   [
     {
-      id: 387,
-      name: '모부기',
+      id: 23,
+      name: '아보',
       minLevel: 1,
       minHappiness: 0,
-      types: ['grass'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/387.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/387.gif',
-      genCategory: 'gen3-4'
+      types: ['poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/23.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/23.gif',
+      genCategory: 'gen1-2'
     },
     {
-      id: 388,
-      name: '수풀부기',
-      minLevel: 18,
+      id: 24,
+      name: '아보크',
+      minLevel: 22,
+      minHappiness: 50,
+      types: ['poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/24.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/24.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 51. 알로라 모래두지 ➔ 알로라 고지 (설산의 강철 두더지)
+  [
+    {
+      id: 10101,
+      name: '알로라 모래두지',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['ice', 'steel'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10101.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10101.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10102,
+      name: '알로라 고지',
+      minLevel: 25,
+      minHappiness: 60,
+      types: ['ice', 'steel'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10102.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10102.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 52. 삐 ➔ 삐삐 ➔ 픽시 (달맞이산 요정)
+  [
+    {
+      id: 173,
+      name: '삐',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/173.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/173.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 35,
+      name: '삐삐',
+      minLevel: 15,
       minHappiness: 45,
-      types: ['grass'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/388.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/388.gif',
-      genCategory: 'gen3-4'
+      types: ['fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/35.gif',
+      genCategory: 'gen1-2'
     },
     {
-      id: 389,
-      name: '토대부기',
-      minLevel: 32,
+      id: 36,
+      name: '픽시',
+      minLevel: 30,
       minHappiness: 80,
-      types: ['grass', 'ground'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/389.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/389.gif',
-      genCategory: 'gen3-4'
+      types: ['fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/36.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 53. 푸푸린 ➔ 푸린 ➔ 푸크린 (달콤한 자장가)
+  [
+    {
+      id: 174,
+      name: '푸푸린',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['normal', 'fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/174.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/174.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 39,
+      name: '푸린',
+      minLevel: 15,
+      minHappiness: 45,
+      types: ['normal', 'fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/39.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 40,
+      name: '푸크린',
+      minLevel: 30,
+      minHappiness: 80,
+      types: ['normal', 'fairy'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/40.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 54. 야돈 ➔ 야도란 ➔ 야도킹 (느긋한 왕관 현자)
+  [
+    {
+      id: 79,
+      name: '야돈',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['water', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/79.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/79.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 80,
+      name: '야도란',
+      minLevel: 25,
+      minHappiness: 45,
+      types: ['water', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/80.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/80.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 199,
+      name: '야도킹',
+      minLevel: 37,
+      minHappiness: 80,
+      types: ['water', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/199.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/199.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 55. 가라르 야돈 ➔ 가라르 야도란 ➔ 가라르 야도킹 (독침 쉘터)
+  [
+    {
+      id: 10164,
+      name: '가라르 야돈',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10164.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10164.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10165,
+      name: '가라르 야도란',
+      minLevel: 25,
+      minHappiness: 45,
+      types: ['poison', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10165.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10165.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10166,
+      name: '가라르 야도킹',
+      minLevel: 37,
+      minHappiness: 80,
+      types: ['poison', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10166.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10166.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 56. 쥬쥬 ➔ 쥬레곤 (오로라 물개)
+  [
+    {
+      id: 86,
+      name: '쥬쥬',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['water'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/86.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/86.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 87,
+      name: '쥬레곤',
+      minLevel: 34,
+      minHappiness: 75,
+      types: ['water', 'ice'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/87.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/87.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 57. 별가사리 ➔ 아쿠스타 (신비의 코어)
+  [
+    {
+      id: 120,
+      name: '별가사리',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['water'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/120.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 121,
+      name: '아쿠스타',
+      minLevel: 30,
+      minHappiness: 75,
+      types: ['water', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/121.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 58. 뽀뽀라 ➔ 루주라 (얼음 댄서)
+  [
+    {
+      id: 238,
+      name: '뽀뽀라',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['ice', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/238.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/238.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 124,
+      name: '루주라',
+      minLevel: 30,
+      minHappiness: 75,
+      types: ['ice', 'psychic'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/124.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/124.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 59. 핑복 ➔ 럭키 ➔ 해피니스 (행복의 알천사)
+  [
+    {
+      id: 440,
+      name: '핑복',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/440.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/440.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 113,
+      name: '럭키',
+      minLevel: 20,
+      minHappiness: 50,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/113.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/113.gif',
+      genCategory: 'gen1-2'
+    },
+    {
+      id: 242,
+      name: '해피니스',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/242.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/242.gif',
+      genCategory: 'gen1-2'
+    }
+  ],
+
+  // 60. 거다이맥스 버터플 (초특수 전설알 체인)
+  [
+    {
+      id: 10,
+      name: '캐터피',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['bug'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 11,
+      name: '단데기',
+      minLevel: 7,
+      minHappiness: 20,
+      types: ['bug'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/11.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 12,
+      name: '버터플',
+      minLevel: 10,
+      minHappiness: 45,
+      types: ['bug', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/12.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10198,
+      name: '거다이맥스 버터플',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['bug', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10198.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10198.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 61. 거다이맥스 팬텀 (초특수 전설알 체인)
+  [
+    {
+      id: 92,
+      name: '고오스',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['ghost', 'poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/92.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/92.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 93,
+      name: '고우스트',
+      minLevel: 25,
+      minHappiness: 45,
+      types: ['ghost', 'poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/93.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/93.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 94,
+      name: '팬텀',
+      minLevel: 38,
+      minHappiness: 75,
+      types: ['ghost', 'poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/94.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10199,
+      name: '거다이맥스 팬텀',
+      minLevel: 45,
+      minHappiness: 90,
+      types: ['ghost', 'poison'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10199.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10199.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 62. 거다이맥스 이브이 (초특수 전설알 체인)
+  [
+    {
+      id: 133,
+      name: '이브이',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/133.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10205,
+      name: '거다이맥스 이브이',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['normal'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10205.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10205.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 63. 거다이맥스 리자몽 (초특수 전설알 체인)
+  [
+    {
+      id: 4,
+      name: '파이리',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['fire'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/4.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 5,
+      name: '리자드',
+      minLevel: 16,
+      minHappiness: 40,
+      types: ['fire'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/5.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 6,
+      name: '리자몽',
+      minLevel: 36,
+      minHappiness: 75,
+      types: ['fire', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/6.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10196,
+      name: '거다이맥스 리자몽',
+      minLevel: 45,
+      minHappiness: 90,
+      types: ['fire', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10196.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10196.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 64. 거다이맥스 피카츄 (초특수 전설알 체인)
+  [
+    {
+      id: 172,
+      name: '피츄',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/172.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 25,
+      name: '피카츄',
+      minLevel: 15,
+      minHappiness: 45,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/25.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10197,
+      name: '거다이맥스 피카츄',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['electric'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10197.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10197.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 65. 거다이맥스 라프라스 (초특수 전설알 체인)
+  [
+    {
+      id: 131,
+      name: '라프라스',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['water', 'ice'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/131.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/131.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10204,
+      name: '거다이맥스 라프라스',
+      minLevel: 36,
+      minHappiness: 85,
+      types: ['water', 'ice'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10204.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10204.gif',
+      genCategory: 'special'
+    }
+  ],
+
+  // 66. 거다이맥스 괴력몬 (초특수 전설알 체인)
+  [
+    {
+      id: 66,
+      name: '알통몬',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['fighting'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/66.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/66.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 67,
+      name: '근육몬',
+      minLevel: 20,
+      minHappiness: 40,
+      types: ['fighting'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/67.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/67.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 68,
+      name: '괴력몬',
+      minLevel: 36,
+      minHappiness: 75,
+      types: ['fighting'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/68.gif',
+      genCategory: 'special'
+    },
+    {
+      id: 10201,
+      name: '거다이맥스 괴력몬',
+      minLevel: 45,
+      minHappiness: 90,
+      types: ['fighting'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10201.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10201.gif',
+      genCategory: 'special'
     }
   ]
 ];
@@ -1658,7 +2185,7 @@ export const FARM_ITEMS: FarmItem[] = [
     name: '🌟 전설 & 특수 포켓몬 알',
     icon: '🌟',
     category: 'special',
-    description: '100% 이로치(Shiny), 가라르/알로라/히스이 리전폼 및 전설/환상 포켓몬이 부화하는 특별한 알!',
+    description: '지방 리전폼·거다이맥스·전설 포켓몬이 등장하거나, 일반 포켓몬이 100% 확정 이로치(Shiny)로 부화하는 특별한 황금알!',
     price: 800,
     effect: { happiness: 30 }
   }
@@ -1886,15 +2413,107 @@ export function createNewFarmPokemon(chainIndex: number, nickname?: string, isSh
   };
 }
 
+// 🦊 이브이 8대 진화체 목록 (확률 진화)
+export const EEVEE_BRANCHES: EvolutionStage[] = [
+  {
+    id: 134,
+    name: '샤미드',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['water'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/134.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 135,
+    name: '쥬피썬더',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['electric'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/135.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/135.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 136,
+    name: '부스터',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['fire'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/136.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/136.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 196,
+    name: '에브이',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['psychic'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/196.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/196.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 197,
+    name: '블래키',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['dark'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/197.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/197.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 470,
+    name: '리피아',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['grass'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/470.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/470.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 471,
+    name: '글레이시아',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['ice'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/471.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/471.gif',
+    genCategory: 'gen1-2'
+  },
+  {
+    id: 700,
+    name: '님피아',
+    minLevel: 25,
+    minHappiness: 60,
+    types: ['fairy'],
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/700.png',
+    showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/700.gif',
+    genCategory: 'gen1-2'
+  }
+];
+
+export function getRandomEeveeEvolution(): EvolutionStage {
+  const idx = Math.floor(Math.random() * EEVEE_BRANCHES.length);
+  return EEVEE_BRANCHES[idx];
+}
+
 /**
  * 🥚 알에서 태어날 아기 포켓몬 결정 함수
- * @param isGolden 전설/특수 알 여부 (true: 전설 & 특수 포켓몬 알, false: 일반 포켓몬 알)
+ * - 일반 포켓몬 알(🥚): 오직 친근한 일반 포켓몬 풀에서만 부화 (1.5% 행운의 이로치)
+ * - 전설 & 특수 포켓몬 알(🌟):
+ *    ① 50% 확률: 지방 리전폼(알로라/가라르/히스이)/거다이맥스/전설/환상/600족 포켓몬 (20% 확률로 이로치 보너스!)
+ *    ② 50% 확률: 일반 포켓몬 풀의 100% 확정 이로치(✨ Shiny) 탄생!
  */
 export function hatchBabyPokemon(isGolden: boolean = false): {
   chainIdx: number;
   isShiny: boolean;
 } {
-  // 1. 특수/전설/리전폼 체인과 일반 체인 분리
+  // 1. 특수/전설/리전폼/거다이맥스 체인과 일반 체인 엄격하게 분리
   const specialIndices: number[] = [];
   const normalIndices: number[] = [];
 
@@ -1905,11 +2524,14 @@ export function hatchBabyPokemon(isGolden: boolean = false): {
         stage.name.includes('가라르') || 
         stage.name.includes('히스이') || 
         stage.name.includes('팔데아') || 
+        stage.name.includes('거다이맥스') || 
         stage.name.includes('뮤') || 
         stage.name.includes('지라치') || 
         stage.name.includes('빅티니') || 
         stage.name.includes('세레비') || 
-        stage.name.includes('코스모그')
+        stage.name.includes('코스모그') ||
+        stage.name.includes('마기라스') ||
+        stage.name.includes('보만다')
       );
 
     if (isSpecial) {
@@ -1920,13 +2542,23 @@ export function hatchBabyPokemon(isGolden: boolean = false): {
   });
 
   if (isGolden) {
-    // 🌟 전설 & 특수 포켓몬 알: 100% 확정 이로치(Shiny) + 전설/리전폼/희귀 계열 우선 부화
-    const pool = specialIndices.length > 0 ? specialIndices : Array.from({ length: STARTER_CHAINS.length }, (_, i) => i);
-    const chainIdx = pool[Math.floor(Math.random() * pool.length)];
-    return { chainIdx, isShiny: true };
+    // 🌟 전설 & 특수 포켓몬 알: 방식 B (지방/거다이맥스/전설 포켓몬 OR 일반 포켓몬 100% 확정 이로치)
+    const isSpecialPool = Math.random() < 0.5; // 50% 특수/지방/전설알, 50% 일반 포켓몬 확정 이로치
+
+    if (isSpecialPool && specialIndices.length > 0) {
+      // ① 지방 리전폼 / 거다이맥스 / 전설 포켓몬 등장 (20% 확률로 이로치 보너스)
+      const chainIdx = specialIndices[Math.floor(Math.random() * specialIndices.length)];
+      const isShiny = Math.random() < 0.20;
+      return { chainIdx, isShiny };
+    } else {
+      // ② 일반 포켓몬 풀에서 100% 확정 이로치(✨ Shiny) 탄생!
+      const pool = normalIndices.length > 0 ? normalIndices : Array.from({ length: STARTER_CHAINS.length }, (_, i) => i);
+      const chainIdx = pool[Math.floor(Math.random() * pool.length)];
+      return { chainIdx, isShiny: true };
+    }
   } else {
-    // 🥚 일반 포켓몬 알: 전체 다양한 일반 포켓몬 풀에서 부화 (1.5% 행운의 이로치 확률)
-    const pool = normalIndices.length > 0 ? normalIndices : Array.from({ length: STARTER_CHAINS.length }, (_, i) => i);
+    // 🥚 일반 포켓몬 알: 오직 친근한 일반 포켓몬들 풀에서만 부화 (희귀/리전폼/전설/거다이맥스 제외)
+    const pool = normalIndices.length > 0 ? normalIndices : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
     const chainIdx = pool[Math.floor(Math.random() * pool.length)];
     const isShiny = Math.random() < 0.015;
     return { chainIdx, isShiny };

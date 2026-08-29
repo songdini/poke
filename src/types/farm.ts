@@ -10,6 +10,7 @@ export interface EvolutionStage {
   showdownSprite: string;
   types: PokemonType[];
   genCategory?: 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special';
+  isEeveeBranch?: boolean;
 }
 
 export interface FarmPokemon {
@@ -166,8 +167,9 @@ export interface PokemonPlacement {
   scale?: number; // 0.7 ~ 1.5
   rotation?: number; // 360도 2D 평면 회전 (0 ~ 360도)
   tiltX?: number; // 앞뒤 3D 기울기 / 눕힘 (-60 ~ +60도)
-  tiltY?: number; // 좌우 3D 원근 회전 (-60 ~ +60도)
+  tiltY?: number; // 3D 시선/방향 회전 (0 ~ 360도 연속 회전)
   flipped?: boolean; // 좌우 반전
+  isBackView?: boolean;
   zIndex?: number;
 }
 
