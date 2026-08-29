@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
 import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice } from '../types/farm';
 import { 
@@ -21,7 +21,7 @@ import {
   getRandomStoryEvent
 } from '../services/pokeFarmService';
 import { 
-  Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X
+  Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import './PokeFarmGame.css';
 
@@ -308,6 +308,84 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [graduatingModal, setGraduatingModal] = useState<GraduationDiploma | null>(null);
   const [selectedDiploma, setSelectedDiploma] = useState<GraduationDiploma | null>(null);
 
+  // 🧭 네비게이션 탭 가로 스크롤 & 마우스 휠 & 드래그 상태
+  const navTabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isDraggingTabs, setIsDraggingTabs] = useState(false);
+  const dragStartXRef = useRef(0);
+  const dragScrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const checkNavScroll = useCallback(() => {
+    if (!navTabsRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = navTabsRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+  }, []);
+
+  const handleNavWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!navTabsRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      navTabsRef.current.scrollLeft += e.deltaY * 0.9;
+      checkNavScroll();
+    }
+  };
+
+  const handleTabsMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!navTabsRef.current) return;
+    setIsDraggingTabs(true);
+    dragStartXRef.current = e.pageX - navTabsRef.current.offsetLeft;
+    dragScrollLeftRef.current = navTabsRef.current.scrollLeft;
+    hasDraggedRef.current = false;
+  };
+
+  const handleTabsMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDraggingTabs || !navTabsRef.current) return;
+    const x = e.pageX - navTabsRef.current.offsetLeft;
+    const walk = (x - dragStartXRef.current) * 1.3;
+    if (Math.abs(walk) > 4) {
+      hasDraggedRef.current = true;
+    }
+    navTabsRef.current.scrollLeft = dragScrollLeftRef.current - walk;
+    checkNavScroll();
+  };
+
+  const handleTabsMouseUpOrLeave = () => {
+    setIsDraggingTabs(false);
+  };
+
+  const handleScrollNav = (direction: 'left' | 'right') => {
+    if (!navTabsRef.current) return;
+    const scrollAmount = direction === 'left' ? -240 : 240;
+    navTabsRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    setTimeout(checkNavScroll, 220);
+  };
+
+  const handleTabClick = (callback: () => void) => {
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
+      return;
+    }
+    callback();
+  };
+
+  useEffect(() => {
+    checkNavScroll();
+    const handleResize = () => checkNavScroll();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [checkNavScroll]);
+
+  useEffect(() => {
+    if (!navTabsRef.current) return;
+    const activeBtn = navTabsRef.current.querySelector<HTMLButtonElement>('.farm-tab.active');
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+    checkNavScroll();
+  }, [activeTab, checkNavScroll]);
+
   // 💼 아르바이트 현장 체험 애니메이션 모달 상태
   const [jobShiftModal, setJobShiftModal] = useState<{
     active: boolean;
@@ -396,8 +474,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   // ⛺ 두부월드 미니홈피 상태
   const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'arcade' | 'guestbook' | 'stickers' | 'neighbors'>('home');
-  const [currentBgmSong, setCurrentBgmSong] = useState(farmState.bgmSong || '프리스타일 - Y (Feat. 지선)');
-  const [isPlayingBgm, setIsPlayingBgm] = useState(false);
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
@@ -3157,45 +3233,80 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         </div>
       </div>
 
-      {/* 🧭 Farm Navigation Tabs */}
-      <nav className="farm-nav-tabs">
-        <button className={`farm-tab ${activeTab === 'minihome' ? 'active' : ''}`} onClick={() => { setActiveTab('minihome'); setVisitingFarm(null); }}>
-          🏠 두부 미니홈피 (Minihp)
-        </button>
-        <button className={`farm-tab ${activeTab === 'yard' ? 'active' : ''}`} onClick={() => { setActiveTab('yard'); setVisitingFarm(null); }}>
-          🌿 내 농장 마당 (Farm)
-        </button>
-        <button className={`farm-tab ${activeTab === 'arcade' ? 'active' : ''}`} onClick={() => { setActiveTab('arcade'); setVisitingFarm(null); }}>
-          🎮 두부 오락실 (Games)
-        </button>
-        <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => setActiveTab('neighbors')}>
-          👥 이웃 파도타기 (Neighbors)
-        </button>
-        <button className={`farm-tab ${activeTab === 'adopt' ? 'active' : ''}`} onClick={() => { setActiveTab('adopt'); setVisitingFarm(null); }}>
-          🐣 분양소 (Adopt)
-        </button>
-        <button className={`farm-tab ${activeTab === 'evolve' ? 'active' : ''}`} onClick={() => { setActiveTab('evolve'); setVisitingFarm(null); }}>
-          ✨ 진화의 방 (Evolve)
-        </button>
-        <button className={`farm-tab ${activeTab === 'jobs' ? 'active' : ''}`} onClick={() => { setActiveTab('jobs'); setVisitingFarm(null); }}>
-          💼 아르바이트 (Jobs)
-        </button>
-        <button className={`farm-tab ${activeTab === 'expedition' ? 'active' : ''}`} onClick={() => { setActiveTab('expedition'); setVisitingFarm(null); }}>
-          🌲 사내 탐험 (Expedition)
-        </button>
-        <button className={`farm-tab ${activeTab === 'daycare' ? 'active' : ''}`} onClick={() => { setActiveTab('daycare'); setVisitingFarm(null); }}>
-          🥚 알 부화소 (Daycare)
-        </button>
-        <button className={`farm-tab ${activeTab === 'lottery' ? 'active' : ''}`} onClick={() => { setActiveTab('lottery'); setVisitingFarm(null); }}>
-          🎰 행운 복권 (Lottery)
-        </button>
-        <button className={`farm-tab ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => { setActiveTab('shop'); setVisitingFarm(null); }}>
-          🛍️ 상점 (Shop)
-        </button>
-        <button className={`farm-tab ${activeTab === 'diplomas' ? 'active' : ''}`} onClick={() => { setActiveTab('diplomas'); setVisitingFarm(null); }}>
-          📖 도감 & 졸업 (Pokedex)
-        </button>
-      </nav>
+      {/* 🧭 Farm Navigation Tabs Bar */}
+      <div className="farm-nav-tabs-container">
+        {canScrollLeft && (
+          <button
+            type="button"
+            className="nav-scroll-btn left"
+            onClick={() => handleScrollNav('left')}
+            aria-label="왼쪽 탭으로 스크롤"
+            title="왼쪽 탭으로 이동"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
+
+        <nav
+          ref={navTabsRef}
+          className={`farm-nav-tabs ${isDraggingTabs ? 'is-dragging' : ''}`}
+          onWheel={handleNavWheel}
+          onMouseDown={handleTabsMouseDown}
+          onMouseMove={handleTabsMouseMove}
+          onMouseUp={handleTabsMouseUpOrLeave}
+          onMouseLeave={handleTabsMouseUpOrLeave}
+          onScroll={checkNavScroll}
+        >
+          <button className={`farm-tab ${activeTab === 'minihome' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('minihome'); setVisitingFarm(null); })}>
+            🏠 두부 미니홈피 (Minihp)
+          </button>
+          <button className={`farm-tab ${activeTab === 'yard' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('yard'); setVisitingFarm(null); })}>
+            🌿 내 농장 마당 (Farm)
+          </button>
+          <button className={`farm-tab ${activeTab === 'arcade' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('arcade'); setVisitingFarm(null); })}>
+            🎮 두부 오락실 (Games)
+          </button>
+          <button className={`farm-tab ${activeTab === 'neighbors' ? 'active' : ''}`} onClick={() => handleTabClick(() => setActiveTab('neighbors'))}>
+            👥 이웃 파도타기 (Neighbors)
+          </button>
+          <button className={`farm-tab ${activeTab === 'adopt' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('adopt'); setVisitingFarm(null); })}>
+            🐣 분양소 (Adopt)
+          </button>
+          <button className={`farm-tab ${activeTab === 'evolve' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('evolve'); setVisitingFarm(null); })}>
+            ✨ 진화의 방 (Evolve)
+          </button>
+          <button className={`farm-tab ${activeTab === 'jobs' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('jobs'); setVisitingFarm(null); })}>
+            💼 아르바이트 (Jobs)
+          </button>
+          <button className={`farm-tab ${activeTab === 'expedition' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('expedition'); setVisitingFarm(null); })}>
+            🌲 사내 탐험 (Expedition)
+          </button>
+          <button className={`farm-tab ${activeTab === 'daycare' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('daycare'); setVisitingFarm(null); })}>
+            🥚 알 부화소 (Daycare)
+          </button>
+          <button className={`farm-tab ${activeTab === 'lottery' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('lottery'); setVisitingFarm(null); })}>
+            🎰 행운 복권 (Lottery)
+          </button>
+          <button className={`farm-tab ${activeTab === 'shop' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('shop'); setVisitingFarm(null); })}>
+            🛍️ 상점 (Shop)
+          </button>
+          <button className={`farm-tab ${activeTab === 'diplomas' ? 'active' : ''}`} onClick={() => handleTabClick(() => { setActiveTab('diplomas'); setVisitingFarm(null); })}>
+            📖 도감 & 졸업 (Pokedex)
+          </button>
+        </nav>
+
+        {canScrollRight && (
+          <button
+            type="button"
+            className="nav-scroll-btn right"
+            onClick={() => handleScrollNav('right')}
+            aria-label="오른쪽 탭으로 스크롤"
+            title="오른쪽 탭으로 이동"
+          >
+            <ChevronRight size={18} />
+          </button>
+        )}
+      </div>
 
       {/* ⚠️ Action Toast Alert */}
       {actionAlert && (
@@ -3211,13 +3322,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
            ========================================================================= */}
         {(activeTab === 'minihome' || visitingFarm) && (
           <div className="dubuworld-minihompy-wrapper">
-            {/* 🌐 상단 브라우저 헤더 바 */}
+            {/* 🌐 상단 미니홈피 타이틀 바 */}
             <div className="dubuworld-top-browser-bar">
-              <div className="dubuworld-url-box">
-                <span className="dubuworld-logo">Dubuworld</span>
-                <span className="dubuworld-url-text">
-                  http://minihp.dubuworld.com/poke_farm/{displayOwnerName}
-                </span>
+              <div className="dubuworld-header-title-box">
+                <span className="dubuworld-title-icon">⛺</span>
+                <h3 className="dubuworld-title-text">{displayFarmName}</h3>
+                <span className="dubuworld-owner-tag">by {displayOwnerName}</span>
               </div>
               <div className="dubuworld-header-actions">
                 <span className="dubuworld-visitor-counter">
@@ -3228,7 +3338,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   <button
                     className="excel-btn primary"
                     onClick={() => setVisitingFarm(null)}
-                    style={{ padding: '3px 10px', fontSize: '0.8rem' }}
+                    style={{ padding: '4px 12px', fontSize: '0.8rem' }}
                   >
                     🔙 내 미니홈피로 돌아가기
                   </button>
@@ -3327,42 +3437,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         : `💖 1촌 응원 하트 선물하기! (${5 - todayHeartsSent}/5회 남음)`}
                     </button>
                   )}
-
-                  {/* BGM 주크박스 플레이어 */}
-                  <div className="dubuworld-bgm-widget">
-                    <div className="bgm-header">
-                      <span>🎵 Minihp BGM Jukebox</span>
-                      <div className={`sound-wave-bars ${isPlayingBgm ? 'playing' : ''}`}>
-                        <span className="bar b1"></span>
-                        <span className="bar b2"></span>
-                        <span className="bar b3"></span>
-                        <span className="bar b4"></span>
-                      </div>
-                    </div>
-                    <div className="bgm-title-scroll">
-                      <span>▶ {currentBgmSong}</span>
-                    </div>
-                    <div className="bgm-controls">
-                      <button
-                        className="bgm-btn"
-                        onClick={() => setIsPlayingBgm(!isPlayingBgm)}
-                      >
-                        {isPlayingBgm ? '⏸️ 일시정지' : '▶️ 재생'}
-                      </button>
-                      <select
-                        className="bgm-select"
-                        value={currentBgmSong}
-                        onChange={e => setCurrentBgmSong(e.target.value)}
-                      >
-                        <option value="프리스타일 - Y (Feat. 지선)">🎵 프리스타일 - Y</option>
-                        <option value="쿨 - 아로하 (Aroha)">🎵 쿨 - 아로하</option>
-                        <option value="허밍어반스테레오 - Hawaiian Couple">🎵 Hawaiian Couple</option>
-                        <option value="에픽하이 - Fly (Feat. Amin. J)">🎵 에픽하이 - Fly</option>
-                        <option value="포켓몬 BGM - 태초마을 (Pallet Town)">🎵 태초마을 BGM</option>
-                        <option value="포켓몬센터 - 힐링 멜로디">🎵 포켓몬센터 BGM</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
               </div>
 
