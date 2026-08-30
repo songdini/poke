@@ -33,6 +33,22 @@ function ensureDataFile() {
   }
 }
 
+function sortRankingsList(list) {
+  return list.sort((a, b) => {
+    const aNoHint = (a.hintsUsed || 0) === 0;
+    const bNoHint = (b.hintsUsed || 0) === 0;
+    // 1순위: 노힌트 유저는 힌트를 사용한 유저보다 무조건 상단에 위치
+    if (aNoHint !== bNoHint) {
+      return aNoHint ? -1 : 1;
+    }
+    // 2순위: 소요 시간(초) 빠른 순
+    if (a.time !== b.time) return a.time - b.time;
+    // 3순위: 힌트 사용 횟수 적은 순
+    if (a.hintsUsed !== b.hintsUsed) return a.hintsUsed - b.hintsUsed;
+    return (a.id || '').localeCompare(b.id || '');
+  });
+}
+
 export function loadRankings() {
   ensureDataFile();
   if (rankingsCache) return rankingsCache;
@@ -41,12 +57,12 @@ export function loadRankings() {
     const raw = fs.readFileSync(FILE_PATH, 'utf-8');
     const parsed = JSON.parse(raw);
     rankingsCache = {
-      easy: parsed.easy || [],
-      medium: parsed.medium || [],
-      hard: parsed.hard || [],
-      expert: parsed.expert || [],
-      legendary: parsed.legendary || [],
-      god: parsed.god || []
+      easy: sortRankingsList(parsed.easy || []).slice(0, 10),
+      medium: sortRankingsList(parsed.medium || []).slice(0, 10),
+      hard: sortRankingsList(parsed.hard || []).slice(0, 10),
+      expert: sortRankingsList(parsed.expert || []).slice(0, 10),
+      legendary: sortRankingsList(parsed.legendary || []).slice(0, 10),
+      god: sortRankingsList(parsed.god || []).slice(0, 10)
     };
   } catch (e) {
     console.error('[SudokuRanking] 랭킹 로드 오류, 기본값 복구:', e);
@@ -118,11 +134,7 @@ export function recordSudokuScore(difficulty, username, timeSeconds, hintsUsed =
   };
 
   list.push(newEntry);
-  list.sort((a, b) => {
-    if (a.time !== b.time) return a.time - b.time;
-    if (a.hintsUsed !== b.hintsUsed) return a.hintsUsed - b.hintsUsed;
-    return a.id.localeCompare(b.id);
-  });
+  sortRankingsList(list);
 
   allRankings[diffKey] = list.slice(0, 10);
   rankingsCache = allRankings;

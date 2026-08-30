@@ -9,7 +9,8 @@ export interface EvolutionStage {
   sprite: string;
   showdownSprite: string;
   types: PokemonType[];
-  genCategory?: 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special';
+  genCategory?: 'gen1' | 'gen1-2' | 'gen2-3' | 'gen4-5' | 'gen6-7' | 'gen8-9' | 'special';
+  isStarter?: boolean; // 🐣 분양소에서 분양받을 수 있는 공식 스타팅 포켓몬 여부
   isEeveeBranch?: boolean;
 }
 
@@ -183,7 +184,8 @@ export interface MinihompySticker {
   icon?: string;
   label?: string;
   text?: string; // 💬 자유 텍스트 / 말풍선 내용
-  type?: 'sticker' | 'text' | 'bubble' | 'sign' | 'banner';
+  type?: 'sticker' | 'text' | 'bubble' | 'sign' | 'banner' | 'skill_fx';
+  skillFxId?: string; // 💥 포켓몬 고유스킬 이펙트 ID
   x: number; // percentage 0-95
   y: number; // percentage 0-90
   scale?: number; // 0.6 ~ 2.0

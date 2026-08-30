@@ -163,48 +163,104 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     });
   }, [fixedMask]);
 
-  // 🟣 🟠 🟢 헷갈림 표시된 총 셀 개수
-  const totalMarkedCount = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
+  // 🟣 🟠 🟢 헷갈림 표시된 색상별 및 총 셀 개수
+  const purpleCount = React.useMemo(
+    () => markedMask.reduce((acc, row) => acc + row.filter(color => color === 'purple').length, 0),
+    [markedMask]
+  );
+  const orangeCount = React.useMemo(
+    () => markedMask.reduce((acc, row) => acc + row.filter(color => color === 'orange').length, 0),
+    [markedMask]
+  );
+  const greenCount = React.useMemo(
+    () => markedMask.reduce((acc, row) => acc + row.filter(color => color === 'green').length, 0),
+    [markedMask]
+  );
+  const totalMarkedCount = purpleCount + orangeCount + greenCount;
 
-  // 1. 헷갈림 마킹(보라/주황/초록)만 일반 확정(파란색)으로 전체 해제
-  const handleClearAllMarks = React.useCallback(() => {
-    const count = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
+  // 1. 헷갈림 마킹(보라/주황/초록)만 일반 확정(파란색)으로 해제/원복
+  const handleClearMarks = React.useCallback((targetColor: 'purple' | 'orange' | 'green' | 'all' = 'all') => {
+    let count = 0;
+    if (targetColor === 'purple') count = purpleCount;
+    else if (targetColor === 'orange') count = orangeCount;
+    else if (targetColor === 'green') count = greenCount;
+    else count = totalMarkedCount;
+
     if (count === 0) {
       setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
       return;
     }
-    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
-    setMessage(`🧹 총 ${count}개 셀의 헷갈림 표시(보라/주황/초록)를 일반 확정(파랑)으로 변경했습니다.`);
-  }, [markedMask]);
 
-  // 2. 헷갈림(보라/주황/초록)으로 입력된 숫자들을 한 번에 싹 지우기 (가설 롤백)
-  const handleClearAllMarkedValues = React.useCallback(() => {
-    const count = markedMask.reduce((acc, row) => acc + row.filter(color => color !== 'none').length, 0);
+    const colorName =
+      targetColor === 'purple'
+        ? '헷갈림1(보라색)'
+        : targetColor === 'orange'
+        ? '헷갈림2(주황색)'
+        : targetColor === 'green'
+        ? '헷갈림3(초록색)'
+        : '모든 헷갈림';
+
+    setMarkedMask(prev =>
+      prev.map(row =>
+        row.map(color => {
+          if (targetColor === 'all') return 'none';
+          return color === targetColor ? 'none' : color;
+        })
+      )
+    );
+    setMessage(`🧹 ${colorName} 표시(${count}개)를 일반 확정(파랑)으로 변경했습니다.`);
+  }, [purpleCount, orangeCount, greenCount, totalMarkedCount]);
+
+  // 2. 헷갈림(보라/주황/초록)으로 입력된 숫자들을 색상별 또는 전체 싹 지우기 (가설 롤백)
+  const handleClearMarkedValues = React.useCallback((targetColor: 'purple' | 'orange' | 'green' | 'all' = 'all') => {
+    let count = 0;
+    if (targetColor === 'purple') count = purpleCount;
+    else if (targetColor === 'orange') count = orangeCount;
+    else if (targetColor === 'green') count = greenCount;
+    else count = totalMarkedCount;
+
     if (count === 0) {
-      setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
+      const colorLabel = targetColor === 'purple' ? '보라색' : targetColor === 'orange' ? '주황색' : targetColor === 'green' ? '초록색' : '';
+      setMessage(`ℹ️ 현재 표시된 ${colorLabel} 헷갈림 셀이 없습니다.`);
       return;
     }
-    if (!window.confirm(`🎨 헷갈림(보라/주황/초록)으로 입력된 ${count}개 셀의 숫자를 모두 지우시겠습니까?`)) {
+
+    const colorName =
+      targetColor === 'purple'
+        ? '헷갈림1(보라색)'
+        : targetColor === 'orange'
+        ? '헷갈림2(주황색)'
+        : targetColor === 'green'
+        ? '헷갈림3(초록색)'
+        : '모든 헷갈림(보라/주황/초록)';
+
+    if (!window.confirm(`🎨 ${colorName}으로 입력된 ${count}개 셀의 숫자를 삭제하시겠습니까?`)) {
       return;
     }
 
     const newGrid = grid.map(r => [...r]);
+    const nextMarked = markedMask.map(r => [...r]);
     const clearedCells: Array<{ row: number; col: number }> = [];
+
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        if (markedMask[r][c] !== 'none' && !fixedMask[r][c]) {
+        const cellColor = markedMask[r][c];
+        const isMatch = targetColor === 'all' ? cellColor !== 'none' : cellColor === targetColor;
+        if (isMatch && !fixedMask[r][c]) {
           newGrid[r][c] = 0;
+          nextMarked[r][c] = 'none';
           clearedCells.push({ row: r, col: c });
         }
       }
     }
+
     setGrid(newGrid);
-    setMarkedMask(Array(9).fill('none').map(() => Array(9).fill('none')));
+    setMarkedMask(nextMarked);
     if (socket && socket.connected) {
       socket.emit('sudoku-batch-clear', { room, cells: clearedCells, username });
     }
-    setMessage(`🗑️ 헷갈림(보라/주황/초록)으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 지웠습니다.`);
-  }, [markedMask, grid, fixedMask, socket, room, username]);
+    setMessage(`🗑️ ${colorName}으로 입력되었던 ${count}개 셀의 숫자를 모두 깨끗이 삭제했습니다.`);
+  }, [purpleCount, orangeCount, greenCount, totalMarkedCount, markedMask, grid, fixedMask, socket, room, username]);
 
   // 소켓 연결 및 이벤트 핸들링
   useEffect(() => {
@@ -297,13 +353,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
       if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
         e.preventDefault();
-        handleClearAllMarkedValues();
+        handleClearMarkedValues('all');
         return;
       }
 
       if (e.shiftKey && (e.key === 'm' || e.key === 'M')) {
         e.preventDefault();
-        handleClearAllMarks();
+        handleClearMarks('all');
         return;
       }
 
@@ -328,7 +384,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell, handleClearAllMarkedValues, handleClearAllMarks]);
+  }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell, handleClearMarkedValues, handleClearMarks]);
 
   // 퍼즐 시작
   const handleStartGame = (diff: Difficulty) => {
@@ -572,22 +628,51 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             </div>
           )}
           {totalMarkedCount > 0 && (
-            <>
+            <div className="marked-actions-ribbon-group" style={{ display: 'inline-flex', gap: '4px', flexWrap: 'wrap' }}>
+              {purpleCount > 0 && (
+                <button
+                  className="excel-btn marked-purple-del-btn"
+                  onClick={() => handleClearMarkedValues('purple')}
+                  title="보라색(헷갈림1)으로 입력된 숫자들을 삭제합니다."
+                >
+                  🗑️ 🟣 보라 삭제 ({purpleCount})
+                </button>
+              )}
+              {orangeCount > 0 && (
+                <button
+                  className="excel-btn marked-orange-del-btn"
+                  onClick={() => handleClearMarkedValues('orange')}
+                  title="주황색(헷갈림2)으로 입력된 숫자들을 삭제합니다."
+                >
+                  🗑️ 🟠 주황 삭제 ({orangeCount})
+                </button>
+              )}
+              {greenCount > 0 && (
+                <button
+                  className="excel-btn marked-green-del-btn"
+                  onClick={() => handleClearMarkedValues('green')}
+                  title="초록색(헷갈림3)으로 입력된 숫자들을 삭제합니다."
+                >
+                  🗑️ 🟢 초록 삭제 ({greenCount})
+                </button>
+              )}
+              {totalMarkedCount > 0 && (
+                <button
+                  className="excel-btn marked-delete-btn"
+                  onClick={() => handleClearMarkedValues('all')}
+                  title="모든 헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
+                >
+                  🗑️ 전체 헷갈림 삭제 ({totalMarkedCount})
+                </button>
+              )}
               <button
                 className="excel-btn marked-clear-btn"
-                onClick={handleClearAllMarks}
+                onClick={() => handleClearMarks('all')}
                 title="모든 헷갈림(보라/주황/초록) 셀을 일반 파란색 확정으로 일괄 전환합니다. (단축키: Shift+M)"
               >
-                🧹 헷갈림 색상 원복 ({totalMarkedCount})
+                🧹 색상 원복 ({totalMarkedCount})
               </button>
-              <button
-                className="excel-btn marked-delete-btn"
-                onClick={handleClearAllMarkedValues}
-                title="헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
-              >
-                🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
-              </button>
-            </>
+            </div>
           )}
           {selectedCell && (
             <button
@@ -785,24 +870,59 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               </div>
 
               {totalMarkedCount > 0 && (
-                <div style={{ display: 'flex', gap: '6px', width: '100%', marginTop: 6 }}>
+                <div className="numpad-marked-del-grid" style={{ display: 'flex', gap: '4px', width: '100%', marginTop: 6, flexWrap: 'wrap' }}>
+                  {purpleCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-purple-del-btn"
+                      onClick={() => handleClearMarkedValues('purple')}
+                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
+                      title="보라색(헷갈림1) 숫자만 삭제"
+                    >
+                      🗑️ 🟣보라 ({purpleCount})
+                    </button>
+                  )}
+                  {orangeCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-orange-del-btn"
+                      onClick={() => handleClearMarkedValues('orange')}
+                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
+                      title="주황색(헷갈림2) 숫자만 삭제"
+                    >
+                      🗑️ 🟠주황 ({orangeCount})
+                    </button>
+                  )}
+                  {greenCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-green-del-btn"
+                      onClick={() => handleClearMarkedValues('green')}
+                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
+                      title="초록색(헷갈림3) 숫자만 삭제"
+                    >
+                      🗑️ 🟢초록 ({greenCount})
+                    </button>
+                  )}
+                  {totalMarkedCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-delete-btn"
+                      onClick={() => handleClearMarkedValues('all')}
+                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
+                      title="모든 헷갈림 가설 숫자 일괄 삭제"
+                    >
+                      🗑️ 전체 ({totalMarkedCount})
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="excel-btn marked-clear-btn"
-                    onClick={handleClearAllMarks}
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
-                    title="모든 헷갈림(보라/주황/초록) 셀을 일반 파란색 확정으로 일괄 전환합니다."
+                    onClick={() => handleClearMarks('all')}
+                    style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
+                    title="헷갈림 마킹을 일반 확정(파랑)으로 원복"
                   >
-                    🧹 헷갈림 색상 원복 ({totalMarkedCount})
-                  </button>
-                  <button
-                    type="button"
-                    className="excel-btn marked-delete-btn"
-                    onClick={handleClearAllMarkedValues}
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }}
-                    title="헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다."
-                  >
-                    🗑️ 헷갈림 숫자 삭제 ({totalMarkedCount})
+                    🧹 원복 ({totalMarkedCount})
                   </button>
                 </div>
               )}

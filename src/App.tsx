@@ -472,9 +472,10 @@ function AppMain() {
   const currentMeta = selectedGame ? GAMES_LIST.find(g => g.key === selectedGame) : null;
   const currentSession = selectedGame ? gameSessions[selectedGame] : null;
   const currentSavedOwner = (typeof window !== 'undefined' && localStorage.getItem('pokefarm_saved_owner')) || '지우';
+  const isGamePlaying = Boolean(selectedGame && selectedGame !== 'pokefarm' && currentSession);
 
   return (
-    <div className="dubu-portal-app">
+    <div className={`dubu-portal-app ${isGamePlaying ? 'is-game-playing' : ''}`}>
       {/* 🚨 Emergency Boss Key Screen Overlay */}
       {isBossMode && <BossScreen onToggle={() => setIsBossMode(false)} />}
 

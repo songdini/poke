@@ -6459,5 +6459,1480 @@
   background: #fef2f2;
 }
 
+/* =========================================================================
+   📱 Mobile Responsiveness for Dubuworld Minihompy & Miniroom
+   ========================================================================= */
+@media (max-width: 768px) {
+  .dubuworld-minihompy-wrapper {
+    padding: 8px;
+    border-radius: 12px;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
 
+  .dubuworld-top-browser-bar {
+    padding: 8px 10px;
+    gap: 6px;
+    border-radius: 8px;
+  }
 
+  .dubuworld-header-title-box {
+    gap: 6px;
+  }
+
+  .dubuworld-title-text {
+    font-size: 0.95rem;
+  }
+
+  .dubuworld-owner-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  .dubuworld-header-actions {
+    gap: 6px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dubuworld-visitor-counter {
+    gap: 4px;
+    font-size: 0.72rem;
+  }
+
+  .today-badge,
+  .total-badge {
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
+
+  .dubuworld-main-frame {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dubuworld-card {
+    padding: 10px;
+    border-radius: 10px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  /* 🧭 서브탭 가로 스크롤 가능하도록 처리하여 줄바꿈 깨짐 방지 */
+  .dubuworld-subtabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .dubuworld-subtabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cytab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+
+  /* 🖼️ 미니룸 캔버스 뷰포트 모바일 최적화 */
+  .miniroom-viewport-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .miniroom-canvas-container,
+  .miniroom-canvas-container.compact {
+    width: 100%;
+    height: 290px;
+    min-height: 260px;
+    max-height: 330px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .miniroom-window {
+    width: 48px;
+    height: 40px;
+    top: 6px;
+    right: 10px;
+  }
+
+  .window-sun {
+    font-size: 0.95rem;
+  }
+
+  .window-cloud {
+    font-size: 0.75rem;
+  }
+
+  /* 🐾 미니룸 내 포켓몬 및 스티커 모바일 사이즈 최적화 */
+  .poke-sprite {
+    width: 52px;
+    height: 52px;
+  }
+
+  .pokemon-name-tag {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .stk-icon {
+    font-size: 1.8rem;
+  }
+
+  .custom-decor-text {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    max-width: 90%;
+    word-break: break-word;
+  }
+
+  /* 🎨 미니룸 배경 선택 바 모바일 가로 스크롤 */
+  .miniroom-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .bg-select-group {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    width: 100%;
+  }
+
+  .bg-select-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bg-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  /* 🌟 데코 서브모드 & 카테고리 필터 모바일 가로 스크롤 */
+  .decor-submode-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .decor-submode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .decor-subtab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+
+  .decor-category-filters {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  .decor-category-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-filter-chip {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+  }
+
+  /* 🎨 스티커 팔레트 모바일 그리드 */
+  .sticker-palette-grid {
+    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+    gap: 6px;
+    max-height: 280px;
+    padding: 2px;
+  }
+
+  .sticker-palette-item {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .sticker-palette-item .stk-icon {
+    font-size: 1.5rem;
+  }
+
+  .sticker-palette-item .stk-label {
+    font-size: 0.65rem;
+  }
+
+  /* 🎛️ 아이템 편집 바 모바일 최적화 */
+  .miniroom-item-editor-bar {
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 6px;
+  }
+
+  .control-row {
+    gap: 4px;
+  }
+
+  .control-title {
+    min-width: 58px;
+    font-size: 0.72rem;
+  }
+  /* 🧭 서브탭 가로 스크롤 가능하도록 처리하여 줄바꿈 깨짐 방지 */
+  .dubuworld-subtabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .dubuworld-subtabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cytab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+
+  /* 🖼️ 미니룸 캔버스 뷰포트 모바일 최적화 */
+  .miniroom-viewport-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .miniroom-canvas-container,
+  .miniroom-canvas-container.compact {
+    width: 100%;
+    height: 290px;
+    min-height: 260px;
+    max-height: 330px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .miniroom-window {
+    width: 48px;
+    height: 40px;
+    top: 6px;
+    right: 10px;
+  }
+
+  .window-sun {
+    font-size: 0.95rem;
+  }
+
+  .window-cloud {
+    font-size: 0.75rem;
+  }
+
+  /* 🐾 미니룸 내 포켓몬 및 스티커 모바일 사이즈 최적화 */
+  .poke-sprite {
+    width: 52px;
+    height: 52px;
+  }
+
+  .pokemon-name-tag {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .stk-icon {
+    font-size: 1.8rem;
+  }
+
+  .custom-decor-text {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    max-width: 90%;
+    word-break: break-word;
+  }
+
+  /* 🎨 미니룸 배경 선택 바 모바일 가로 스크롤 */
+  .miniroom-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .bg-select-group {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    width: 100%;
+  }
+
+  .bg-select-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bg-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  /* 🌟 데코 서브모드 & 카테고리 필터 모바일 가로 스크롤 */
+  .decor-submode-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .decor-submode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .decor-subtab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+
+  .decor-category-filters {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  .decor-category-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-filter-chip {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+  }
+
+  /* 🎨 스티커 팔레트 모바일 그리드 */
+  .sticker-palette-grid {
+    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+    gap: 6px;
+    max-height: 280px;
+    padding: 2px;
+  }
+
+  .sticker-palette-item {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .sticker-palette-item .stk-icon {
+    font-size: 1.5rem;
+  }
+
+  .sticker-palette-item .stk-label {
+    font-size: 0.65rem;
+  }
+
+  /* 🎛️ 아이템 편집 바 모바일 최적화 */
+  .miniroom-item-editor-bar {
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 6px;
+  }
+
+  .control-row {
+    gap: 4px;
+  }
+
+  .control-title {
+    min-width: 58px;
+    font-size: 0.72rem;
+  }
+
+  .angle-range-slider {
+    min-width: 80px;
+  }
+
+  /* ⬅️ 프로필 카드 요소 모바일 최적화 */
+  .dubuworld-photo-frame {
+    padding: 10px;
+  }
+
+  .profile-sprite {
+    width: 80px;
+    height: 80px;
+  }
+
+  .profile-details-list {
+    padding: 8px 10px;
+    font-size: 0.76rem;
+  }
+
+  .dubuworld-status-box {
+    padding: 8px 10px;
+  }
+
+  .dubuworld-heart-btn {
+    padding: 8px;
+    font-size: 0.78rem;
+  }
+
+  /* 📝 방명록 모바일 최적화 */
+  .gb-input-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dubuworld-gb-card {
+    padding: 8px 10px;
+  }
+}
+
+/* ==========================================================================
+   🔴 3D POKÉBALL ADOPT CARDS & "짜잔!" REVEAL ANIMATIONS
+   ========================================================================== */
+
+.starter-adopt-card {
+  position: relative;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.starter-adopt-card:hover {
+  transform: translateY(-4px);
+  border-color: #ef4444;
+  box-shadow: 0 10px 24px rgba(239, 68, 68, 0.18);
+}
+
+.starter-pokeball-box {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.pokeball-realistic-3d {
+  width: 80px;
+  height: 80px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
+  animation: pokeballFloat 3s ease-in-out infinite;
+}
+
+.starter-adopt-card:hover .pokeball-realistic-3d {
+  transform: scale(1.1) rotate(12deg);
+  animation: pokeballWobbleHover 0.6s infinite alternate ease-in-out;
+}
+
+.pokeball-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pokeball-core-btn-light {
+  animation: pokeballCoreBreath 2s infinite alternate ease-in-out;
+}
+
+@keyframes pokeballFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pokeballWobbleHover {
+  0% { transform: scale(1.1) rotate(-14deg); }
+  100% { transform: scale(1.1) rotate(14deg); }
+}
+
+@keyframes pokeballCoreBreath {
+  0% { fill: #ffffff; filter: drop-shadow(0 0 2px #38bdf8); }
+  100% { fill: #fef08a; filter: drop-shadow(0 0 8px #f59e0b); }
+}
+
+.pokeball-pulse-ring {
+  position: absolute;
+  bottom: 0;
+  width: 50px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(239, 68, 68, 0.35) 0%, transparent 70%);
+  animation: pokeballShadowPulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes pokeballShadowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(0.7); opacity: 0.3; }
+}
+
+.pokeball-tap-hint {
+  position: absolute;
+  bottom: -4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.starter-adopt-card:hover .pokeball-tap-hint {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #fca5a5;
+  transform: scale(1.05);
+}
+
+.adopt-open-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 700 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.adopt-open-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 14px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* ==========================================================================
+   🎉 POKÉBALL REVEAL MODAL ("짜잔!" 이펙트)
+   ========================================================================== */
+
+.pokeball-reveal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.88);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.pokeball-reveal-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(239, 68, 68, 0.2);
+  color: #f8fafc;
+  overflow: hidden;
+  text-align: center;
+}
+
+.pokeball-opening-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  position: relative;
+}
+
+.pokeball-glow-rays {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(250, 204, 21, 0.2) 50%, transparent 70%);
+  animation: raysPulse 1.5s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes raysPulse {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.25); opacity: 1; filter: blur(4px); }
+}
+
+.pokeball-grand-model {
+  width: 140px;
+  height: 140px;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+}
+
+.pokeball-grand-model.is-wobbling {
+  animation: modalPokeballWobble 0.5s infinite ease-in-out;
+}
+
+@keyframes modalPokeballWobble {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-24deg) scale(1.05); }
+  50% { transform: rotate(0deg) scale(1); }
+  75% { transform: rotate(24deg) scale(1.05); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.pokeball-grand-model.is-bursting {
+  animation: modalPokeballBurst 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPokeballBurst {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3) rotate(5deg); }
+  100% { transform: scale(1.15) rotate(0deg); }
+}
+
+.pokeball-svg-modal {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pokeball-top-half.top-fly-open {
+  transform-origin: 50px 50px;
+  animation: topHalfOpenUp 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes topHalfOpenUp {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-24px) rotate(-18deg); }
+}
+
+.pokeball-bottom-half.bottom-lower {
+  transform-origin: 50px 50px;
+  animation: bottomHalfLower 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bottomHalfLower {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(12px); }
+}
+
+.pokeball-core-btn-pulsing {
+  animation: coreBtnFlash 0.3s infinite alternate ease-in-out;
+}
+
+@keyframes coreBtnFlash {
+  0% { fill: #facc15; filter: drop-shadow(0 0 2px #eab308); }
+  100% { fill: #ffffff; filter: drop-shadow(0 0 14px #ffffff); }
+}
+
+.pokeball-blinding-burst {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.burst-light-ring {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(250, 204, 21, 0.8) 35%, rgba(239, 68, 68, 0.4) 60%, transparent 80%);
+  animation: burstRingExpand 0.8s forwards ease-out;
+}
+
+@keyframes burstRingExpand {
+  0% { transform: scale(0.2); opacity: 0; }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { transform: scale(1.5); opacity: 0.8; filter: blur(6px); }
+}
+
+.burst-sparkle-stars {
+  position: absolute;
+  font-size: 2.2rem;
+  letter-spacing: 12px;
+  animation: starsExplosion 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes starsExplosion {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.pokeball-status-text {
+  margin-top: 18px;
+  z-index: 3;
+}
+
+.wobble-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fef08a;
+  animation: textBlink 0.8s infinite alternate ease-in-out;
+}
+
+.burst-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #38bdf8;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+}
+
+@keyframes textBlink {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; transform: scale(1.02); }
+}
+
+/* 🌟 포켓몬 등장 스테이지 */
+.pokemon-emerged-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: emergedContentFadeIn 0.5s ease-out;
+}
+
+@keyframes emergedContentFadeIn {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.emerge-fanfare-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fanfare-badge {
+  background: linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6, #3b82f6);
+  background-size: 300% 300%;
+  animation: gradientShimmer 3s ease infinite;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes gradientShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.emerge-fanfare-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+}
+
+.emerged-sprite-stage {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.emerge-light-pillar {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.4) 0%, rgba(56, 189, 248, 0.25) 50%, transparent 75%);
+  animation: pillarGlow 2s infinite alternate ease-in-out;
+}
+
+@keyframes pillarGlow {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+.emerge-particle-burst {
+  position: absolute;
+  top: -10px;
+  font-size: 1.4rem;
+  letter-spacing: 8px;
+  animation: starFloatTwinkle 2s infinite ease-in-out;
+}
+
+@keyframes starFloatTwinkle {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
+  50% { transform: translateY(-8px) scale(1.2); opacity: 1; }
+}
+
+.emerged-showdown-sprite {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  z-index: 3;
+  animation: pokemonPopEmerge 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pokemonPopEmerge {
+  0% { transform: scale(0.2) translateY(40px); opacity: 0; }
+  70% { transform: scale(1.2) translateY(-10px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.emerge-evolution-chain {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.emerge-nickname-row {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emerge-nickname-row label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.emerge-action-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.pulse-btn-large {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  padding: 10px 16px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+  animation: adoptPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes adoptPulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7); transform: scale(1.02); }
+}
+
+/* ==========================================================================
+   💥 MINIHOMPY DECOR STUDIO: POKEMON SKILL EFFECTS SHOP
+   ========================================================================== */
+
+.decor-skilleffects-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.skilleffects-banner {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border: 1px solid #4338ca;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.skilleffects-header-text h4 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.skilleffects-header-text p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.skilleffects-coin-badge {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid #fbbf24;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: #fef08a;
+}
+
+.skilleffects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.skill-fx-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.skill-fx-card:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+}
+
+.skill-fx-preview-box {
+  height: 100px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-fx-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skill-fx-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-fx-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.skill-fx-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.skill-fx-desc {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.skill-fx-buy-btn {
+  width: 100%;
+  margin-top: 4px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+}
+
+/* ==========================================================================
+   ✨ 12 SIGNATURE POKEMON SKILL EFFECTS ON MINIROOM CANVAS
+   ========================================================================== */
+
+.skill-fx-item {
+  position: absolute;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+}
+
+.skill-fx-item:active {
+  cursor: grabbing;
+}
+
+.skill-fx-display {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skill-fx-display.preview-mini {
+  width: 70px;
+  height: 70px;
+}
+
+.skill-fx-symbol {
+  font-size: 1.8rem;
+  z-index: 3;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+  animation: symbolPulse 2s infinite ease-in-out;
+}
+
+@keyframes symbolPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ⚡ 1. 피카츄: 100만볼트 (skill-fx-thunderbolt) */
+.skill-fx-thunderbolt .skill-fx-core {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.8) 0%, rgba(250, 204, 21, 0.5) 50%, transparent 75%);
+  animation: thunderCorePulse 0.15s infinite alternate ease-in-out;
+}
+
+.skill-fx-thunderbolt .skill-fx-aura {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border: 2px dashed #facc15;
+  border-radius: 50%;
+  box-shadow: 0 0 18px #eab308, inset 0 0 12px #fef08a;
+  animation: electricSpin 1.2s infinite linear;
+}
+
+@keyframes thunderCorePulse {
+  0% { transform: scale(0.9); opacity: 0.7; filter: drop-shadow(0 0 6px #facc15); }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #fef08a); }
+}
+
+@keyframes electricSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 🔥 2. 파이리: 화염방사 & 대문자 (skill-fx-fireblast) */
+.skill-fx-fireblast .skill-fx-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fef08a 0%, #f97316 45%, #dc2626 70%, transparent 85%);
+  animation: fireFlameBurn 0.4s infinite alternate ease-in-out;
+}
+
+.skill-fx-fireblast .skill-fx-aura {
+  position: absolute;
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  border: 3px double #ea580c;
+  box-shadow: 0 0 20px rgba(234, 88, 12, 0.8), inset 0 0 15px rgba(239, 68, 68, 0.6);
+  animation: flameVortex 2s infinite linear;
+}
+
+@keyframes fireFlameBurn {
+  0% { transform: scale(0.85) rotate(-5deg); opacity: 0.8; }
+  100% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+}
+
+@keyframes flameVortex {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 💧 3. 꼬부기: 하이드로펌프 (skill-fx-hydropump) */
+.skill-fx-hydropump .skill-fx-core {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #bae6fd 0%, #38bdf8 40%, #0284c7 70%, transparent 85%);
+  animation: waterRipple 1.2s infinite ease-out;
+}
+
+.skill-fx-hydropump .skill-fx-aura {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 3px solid rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 16px #0284c7, inset 0 0 10px #7dd3fc;
+  animation: waterSpin 3s infinite linear;
+}
+
+@keyframes waterRipple {
+  0% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 0.4; }
+}
+
+@keyframes waterSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* 🍃 4. 이상해씨: 솔라빔 (skill-fx-solarbeam) */
+.skill-fx-solarbeam .skill-fx-core {
+  position: absolute;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fef08a 0%, #86efac 35%, #22c55e 65%, transparent 85%);
+  animation: solarBeamPulse 0.8s infinite alternate ease-in-out;
+}
+
+.skill-fx-solarbeam .skill-fx-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 2px dashed #4ade80;
+  box-shadow: 0 0 18px #16a34a, inset 0 0 10px #bbf7d0;
+  animation: leafSpin 4s infinite linear;
+}
+
+@keyframes solarBeamPulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px #22c55e); }
+}
+
+@keyframes leafSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 🌪️ 5. 피존: 폭풍 & 에어슬래시 (skill-fx-hurricane) */
+.skill-fx-hurricane .skill-fx-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #bae6fd 40%, #7dd3fc 65%, transparent 85%);
+  animation: hurricanePulse 0.5s infinite alternate ease-in-out;
+}
+
+.skill-fx-hurricane .skill-fx-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 40%;
+  border: 3px solid #38bdf8;
+  box-shadow: 0 0 20px #0284c7;
+  animation: tornadoSpin 0.6s infinite linear;
+}
+
+@keyframes hurricanePulse {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes tornadoSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 👻 6. 팬텀: 섀도볼 (skill-fx-shadowball) */
+.skill-fx-shadowball .skill-fx-core {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e9d5ff 0%, #a855f7 40%, #581c87 75%, transparent 90%);
+  animation: shadowPulse 1s infinite alternate ease-in-out;
+}
+
+.skill-fx-shadowball .skill-fx-aura {
+  position: absolute;
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  border: 2px dashed #9333ea;
+  box-shadow: 0 0 22px #6b21a8, inset 0 0 14px #3b0764;
+  animation: shadowWisp 2.5s infinite linear;
+}
+
+@keyframes shadowPulse {
+  0% { transform: scale(0.85); opacity: 0.7; filter: drop-shadow(0 0 6px #a855f7); }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 20px #9333ea); }
+}
+
+@keyframes shadowWisp {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* 🔮 7. 뮤츠: 사이코키네시스 (skill-fx-psychic) */
+.skill-fx-psychic .skill-fx-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fce7f3 0%, #f472b6 40%, #db2777 75%, transparent 90%);
+  animation: psychicWave 1.4s infinite ease-out;
+}
+
+.skill-fx-psychic .skill-fx-aura {
+  position: absolute;
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  border: 2px solid #ec4899;
+  box-shadow: 0 0 20px #db2777, inset 0 0 12px #fbcfe8;
+  animation: psychicRings 2s infinite ease-in-out;
+}
+
+@keyframes psychicWave {
+  0% { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(1.25); opacity: 0.3; }
+}
+
+@keyframes psychicRings {
+  0%, 100% { transform: scale(0.95) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(180deg); }
+}
+
+/* 🐉 8. 망나뇽: 용성군 (skill-fx-dracometeor) */
+.skill-fx-dracometeor .skill-fx-core {
+  position: absolute;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f3e8ff 0%, #c084fc 35%, #7e22ce 65%, #1e1b4b 85%, transparent 95%);
+  animation: dracoCore 1s infinite alternate ease-in-out;
+}
+
+.skill-fx-dracometeor .skill-fx-aura {
+  position: absolute;
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  border: 3px double #a855f7;
+  box-shadow: 0 0 24px #7c3aed, inset 0 0 12px #c084fc;
+  animation: dracoAuraSpin 3s infinite linear;
+}
+
+@keyframes dracoCore {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #8b5cf6); }
+}
+
+@keyframes dracoAuraSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ⭐ 9. 잠만보: 기가임팩트 (skill-fx-gigaimpact) */
+.skill-fx-gigaimpact .skill-fx-core {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #fef08a 30%, #eab308 65%, transparent 85%);
+  animation: gigaImpactBurst 0.6s infinite alternate ease-in-out;
+}
+
+.skill-fx-gigaimpact .skill-fx-aura {
+  position: absolute;
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  border: 3px solid #ca8a04;
+  box-shadow: 0 0 26px #eab308, inset 0 0 14px #fef9c3;
+  animation: gigaShockwave 1s infinite ease-out;
+}
+
+@keyframes gigaImpactBurst {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes gigaShockwave {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* ❄️ 10. 라프라스: 절대영도 (skill-fx-blizzard) */
+.skill-fx-blizzard .skill-fx-core {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0%, #cffafe 35%, #06b6d4 70%, transparent 85%);
+  animation: blizzardPulse 1.2s infinite alternate ease-in-out;
+}
+
+.skill-fx-blizzard .skill-fx-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 2px dashed #67e8f9;
+  box-shadow: 0 0 20px #0891b2, inset 0 0 12px #ecfeff;
+  animation: blizzardSpin 4s infinite linear;
+}
+
+@keyframes blizzardPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 14px #22d3ee); }
+}
+
+@keyframes blizzardSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* 💥 11. 루카리오: 파동탄 (skill-fx-aurasphere) */
+.skill-fx-aurasphere .skill-fx-core {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #eff6ff 0%, #60a5fa 35%, #1d4ed8 75%, transparent 90%);
+  animation: auraCorePulse 0.7s infinite alternate ease-in-out;
+}
+
+.skill-fx-aurasphere .skill-fx-aura {
+  position: absolute;
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  border: 3px solid #2563eb;
+  box-shadow: 0 0 22px #1d4ed8, inset 0 0 12px #93c5fd;
+  animation: auraWaveSpin 2s infinite linear;
+}
+
+@keyframes auraCorePulse {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #3b82f6); }
+}
+
+@keyframes auraWaveSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 🌊 12. 개굴닌자: 물수리검 (skill-fx-watershuriken) */
+.skill-fx-watershuriken .skill-fx-core {
+  position: absolute;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 40%, #0369a1 75%, transparent 90%);
+  animation: shurikenWaterCore 0.8s infinite alternate ease-in-out;
+}
+
+.skill-fx-watershuriken .skill-fx-aura {
+  position: absolute;
+  width: 94px;
+  height: 94px;
+  border-radius: 20%;
+  border: 3px solid #0284c7;
+  box-shadow: 0 0 20px #0369a1, inset 0 0 12px #bae6fd;
+  animation: shurikenSpin 0.35s infinite linear;
+}
+
+@keyframes shurikenWaterCore {
+  0% { transform: scale(0.85); opacity: 0.8; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes shurikenSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -38,6 +38,140 @@ type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' 
 
 
 
+export interface PokemonSkillEffect {
+  id: string;
+  name: string;
+  pokemonName: string;
+  icon: string;
+  price: number;
+  description: string;
+  fxClass: string;
+  previewColor: string;
+}
+
+export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
+  {
+    id: 'fx_pikachu_thunder',
+    name: '100만볼트 (Thunderbolt Surge)',
+    pokemonName: '피카츄 / 라이츄',
+    icon: '⚡',
+    price: 60,
+    description: '작렬하는 100만볼트 초고압 황금 번개와 스파크 아크',
+    fxClass: 'skill-fx-thunderbolt',
+    previewColor: '#fbbf24'
+  },
+  {
+    id: 'fx_charmander_fire',
+    name: '화염방사 & 대문자 (Fire Blast)',
+    pokemonName: '파이리 / 리자몽',
+    icon: '🔥',
+    price: 60,
+    description: '맹렬하게 소용돌이치며 타오르는 업화의 불꽃과 불티',
+    fxClass: 'skill-fx-fireblast',
+    previewColor: '#f97316'
+  },
+  {
+    id: 'fx_squirtle_water',
+    name: '하이드로펌프 & 아쿠아 링 (Hydro Pump)',
+    pokemonName: '꼬부기 / 거북왕',
+    icon: '💧',
+    price: 60,
+    description: '용솟음치는 거대한 물대포 수류와 영롱한 물방울 소용돌이',
+    fxClass: 'skill-fx-hydropump',
+    previewColor: '#0ea5e9'
+  },
+  {
+    id: 'fx_bulbasaur_solar',
+    name: '솔라빔 & 꽃잎댄스 (Solar Beam)',
+    pokemonName: '이상해씨 / 이상해꽃',
+    icon: '🍃',
+    price: 60,
+    description: '태양의 에너지를 쏘아내는 눈부신 레이저 빔과 춤추는 꽃잎',
+    fxClass: 'skill-fx-solarbeam',
+    previewColor: '#22c55e'
+  },
+  {
+    id: 'fx_pidgeot_tornado',
+    name: '폭풍 & 에어슬래시 (Hurricane Cyclone)',
+    pokemonName: '피존 / 피죤투',
+    icon: '🌪️',
+    price: 50,
+    description: '초음속으로 회전하는 비행 회오리바람과 날카로운 바람의 칼날',
+    fxClass: 'skill-fx-hurricane',
+    previewColor: '#38bdf8'
+  },
+  {
+    id: 'fx_gengar_shadow',
+    name: '섀도볼 & 원한의 도깨비불 (Shadow Ball)',
+    pokemonName: '팬텀 / 고오스',
+    icon: '👻',
+    price: 70,
+    description: '심연의 어둠을 응축한 암흑 구체와 보랏빛 도깨비불 연기',
+    fxClass: 'skill-fx-shadowball',
+    previewColor: '#a855f7'
+  },
+  {
+    id: 'fx_mewtwo_psychic',
+    name: '사이코키네시스 (Psychic Wave)',
+    pokemonName: '뮤 / 뮤츠 / 에브이',
+    icon: '🔮',
+    price: 80,
+    description: '시공간을 왜곡하는 네온 핑크 염동력 링과 신비한 마법 룬',
+    fxClass: 'skill-fx-psychic',
+    previewColor: '#ec4899'
+  },
+  {
+    id: 'fx_dragonite_meteor',
+    name: '용성군 & 용의 파동 (Draco Meteor)',
+    pokemonName: '망나뇽 / 한카리아스',
+    icon: '🐉',
+    price: 80,
+    description: '하늘에서 쏟아져 내리는 유성우 운석 폭격과 드래곤 오라',
+    fxClass: 'skill-fx-dracometeor',
+    previewColor: '#8b5cf6'
+  },
+  {
+    id: 'fx_snorlax_giga',
+    name: '기가임팩트 & 황금 오라 (Giga Impact)',
+    pokemonName: '잠만보 / 챔피언',
+    icon: '⭐',
+    price: 70,
+    description: '대지를 뒤흔드는 황금빛 폭발 충격파 링과 스피드 라인',
+    fxClass: 'skill-fx-gigaimpact',
+    previewColor: '#eab308'
+  },
+  {
+    id: 'fx_lapras_blizzard',
+    name: '눈보라 & 절대영도 (Absolute Zero)',
+    pokemonName: '알로라 나인테일 / 라프라스',
+    icon: '❄️',
+    price: 60,
+    description: '영하 273도의 눈부신 다이아몬드 얼음 결정과 눈보라 폭풍',
+    fxClass: 'skill-fx-blizzard',
+    previewColor: '#67e8f9'
+  },
+  {
+    id: 'fx_lucario_aurasphere',
+    name: '파동탄 & 격투 투기 (Aura Sphere)',
+    pokemonName: '루카리오',
+    icon: '💥',
+    price: 70,
+    description: '불타는 푸른 파동 에너지 구체와 상승하는 격투 투기 오라',
+    fxClass: 'skill-fx-aurasphere',
+    previewColor: '#3b82f6'
+  },
+  {
+    id: 'fx_greninja_watershuriken',
+    name: '물수리검 & 닌자 수압 (Water Shuriken)',
+    pokemonName: '개굴닌자',
+    icon: '🌊',
+    price: 70,
+    description: '초고속으로 회전하며 발사되는 듀얼 물수리검과 수압 이펙트',
+    fxClass: 'skill-fx-watershuriken',
+    previewColor: '#0284c7'
+  }
+];
+
 export const DIVERSE_STICKERS = [
   // 🛋️ 1. 거실 & 인테리어 가구 (Living Room & Furniture)
   { id: 'sofa_leather', icon: '🛋️', label: '럭셔리 가죽 소파', category: 'living' },
@@ -288,8 +422,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [initFarmName, setInitFarmName] = useState(`${username || '지우'}의 포켓농장`);
   const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
   const [starterNickname, setStarterNickname] = useState('');
-  const [genFilter, setGenFilter] = useState<'all' | 'gen1-2' | 'gen3-4' | 'gen5-6' | 'gen7-9' | 'special'>('all');
+  const [genFilter, setGenFilter] = useState<'all' | 'gen1' | 'gen2-3' | 'gen4-5' | 'gen6-7' | 'gen8-9'>('all');
   const [shopCategory, setShopCategory] = useState<'all' | 'egg' | 'food' | 'bath' | 'toy' | 'medicine'>('all');
+
+  // 🔴 몬스터볼 등장 애니메이션 분양 모달 상태
+  const [adoptRevealModal, setAdoptRevealModal] = useState<{
+    active: boolean;
+    chainIndex: number;
+    baby: EvolutionStage;
+    chain: EvolutionStage[];
+    stage: 'wobble' | 'burst' | 'emerge';
+    nickname: string;
+  } | null>(null);
 
   // 애니메이션 & 이펙트 상태
   const [floatingHeart, setFloatingHeart] = useState<{ id: number; x: number; y: number } | null>(null);
@@ -487,7 +631,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [customFontSize, setCustomFontSize] = useState<number>(14);
   const [stickerCategory, setStickerCategory] = useState<'all' | 'living' | 'bedroom' | 'gaming' | 'kitchen' | 'garden' | 'pokemon' | 'emotional' | 'emoji'>('all');
   const [stickerSearch, setStickerSearch] = useState('');
-  const [decorSubtab, setDecorSubtab] = useState<'palette' | 'textmaker' | 'pokeplacements'>('palette');
+  const [decorSubtab, setDecorSubtab] = useState<'palette' | 'skilleffects' | 'textmaker' | 'pokeplacements'>('palette');
 
   // 🌐 소켓 및 로컬 실제 유저 농장 동기화
   useEffect(() => {
@@ -500,6 +644,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     // 2. 서버에 내 농장 정보 동기화 및 전체 활성 농장 목록 요청
     if (farmState.isInitialized && farmState.ownerName) {
       socket.emit('farm-sync', { username: farmState.ownerName, farmData: farmState });
+    } else if (username && username.trim() && username !== '지우') {
+      // 로컬에 없더라도 서버 DB에 저장된 농장이 있다면 자동 복원 시도
+      socket.emit('farm-load-my-data', { username: username.trim() });
     }
     socket.emit('farm-get-list');
 
@@ -848,6 +995,43 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     showAlert('✍️ 자유 텍스트/말풍선이 미니룸에 추가되었습니다! 드래그하여 원하는 위치에 놓아보세요.', 'success');
     setMinihompyTab('miniroom');
     setSelectedDecorItem({ type: 'sticker', id: newTextSticker.id });
+  };
+
+  // 💥 포켓몬 고유스킬 이펙트 구매 및 미니룸 배치
+  const handleAddSkillEffect = (effect: PokemonSkillEffect) => {
+    if (visitingFarm) return;
+    if (farmState.coins < effect.price) {
+      showAlert(`🪙 코인이 부족합니다! (필요: ${effect.price}P, 보유: ${farmState.coins}P)`, 'warn');
+      return;
+    }
+
+    if (!window.confirm(`🪙 [${effect.name}] 스킬 이펙트를 ${effect.price} 코인으로 구매하여 미니룸에 배치하시겠습니까?\n(보유 코인: ${farmState.coins}P ➔ 잔액: ${farmState.coins - effect.price}P)`)) {
+      return;
+    }
+
+    const newEffectSticker: MinihompySticker = {
+      id: `fx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      stickerId: effect.id,
+      skillFxId: effect.id,
+      icon: effect.icon,
+      label: effect.name,
+      type: 'skill_fx',
+      x: 45,
+      y: 45,
+      scale: 1.2,
+      flipped: false,
+      rotation: 0,
+      tiltX: 0
+    };
+
+    setFarmState(prev => ({
+      ...prev,
+      coins: prev.coins - effect.price,
+      stickers: [...(prev.stickers || []), newEffectSticker]
+    }));
+
+    showAlert(`✨ [${effect.name}] 스킬 이펙트를 구매하여 미니룸에 배치했습니다! (-${effect.price}P) 포켓몬 위에 씌워보세요!`, 'success');
+    setSelectedDecorItem({ type: 'sticker', id: newEffectSticker.id });
   };
 
   // 스티커 크기 조절
@@ -1429,18 +1613,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             return (
               <div
                 key={stk.id}
-                className={`miniroom-placed-item ${stk.text ? 'text-item' : 'sticker-item'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`miniroom-placed-item ${stk.type === 'skill_fx' ? 'skill-fx-item' : stk.text ? 'text-item' : 'sticker-item'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
                 style={{
                   left: `${stk.x}%`,
                   top: `${stk.y}%`,
                   transform: `scale(${scale}) ${flipped ? 'scaleX(-1)' : ''} rotate(${rot}deg) rotateX(${tilt}deg)`,
                   transformOrigin: 'center center',
-                  zIndex: isDragging ? 60 : isSelected ? 45 : 25
+                  zIndex: isDragging ? 60 : isSelected ? 45 : (stk.type === 'skill_fx' ? 22 : 25)
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
               >
-                {/* 1. 자유 텍스트 & 말풍선 */}
-                {stk.text ? (
+                {/* 1. 고유스킬 이펙트 */}
+                {stk.type === 'skill_fx' ? (
+                  <div className={`skill-fx-display ${stk.skillFxId || 'fx_pikachu_thunder'}`}>
+                    <div className="skill-fx-core" />
+                    <div className="skill-fx-wave" />
+                    <div className="skill-fx-aura" />
+                    <div className="skill-fx-sparks" />
+                    <span className="skill-fx-symbol">{stk.icon || '⚡'}</span>
+                  </div>
+                ) : stk.text ? (
                   <div
                     className={`custom-decor-text style-${stk.styleType || 'classic_bubble'}`}
                     style={{
@@ -1451,7 +1643,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     <span className={flipped ? 'unflip-text' : ''}>{stk.text}</span>
                   </div>
                 ) : (
-                  /* 2. 이모지/아이콘 스티커 */
+                  /* 3. 이모지/아이콘 스티커 */
                   <span className="stk-icon">{stk.icon}</span>
                 )}
 
@@ -2827,23 +3019,53 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     }));
   };
 
-  // 7. 새로운 포켓몬 분양받기
+  // 7. 새로운 포켓몬 분양받기 (몬스터볼 흔들림 -> 화려한 빛 폭발 -> 짜잔! 등장 모달)
   const handleAdoptPokemon = (chainIndex: number) => {
     if (farmState.activePokemon && !confirm('현재 돌보고 있는 포켓몬이 있습니다. 새 포켓몬으로 교체 분양받으시겠습니까?')) {
       return;
     }
 
-    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
-    const newMon = createNewFarmPokemon(chainIndex, undefined, isShinyChance);
+    const selectedChain = STARTER_CHAINS[chainIndex] || STARTER_CHAINS[0];
+    const baby = selectedChain[0];
+
+    // 몬스터볼 흔들림 -> 폭발 광채 -> "짜잔! ✨" 등장 모달 오픈!
+    setAdoptRevealModal({
+      active: true,
+      chainIndex,
+      baby,
+      chain: selectedChain,
+      stage: 'wobble',
+      nickname: ''
+    });
+
+    // 1단계: 흔들림 (650ms)
+    setTimeout(() => {
+      setAdoptRevealModal(prev => prev && prev.chainIndex === chainIndex ? { ...prev, stage: 'burst' } : prev);
+    }, 650);
+
+    // 2단계: 빛 폭발 후 짜잔 등장 (1300ms)
+    setTimeout(() => {
+      setAdoptRevealModal(prev => prev && prev.chainIndex === chainIndex ? { ...prev, stage: 'emerge' } : prev);
+      playPokemonCry(baby.id);
+    }, 1300);
+  };
+
+  // 입양 모달에서 최종 입양 확정
+  const handleConfirmAdoption = (nickname?: string) => {
+    if (!adoptRevealModal) return;
+    const { chainIndex } = adoptRevealModal;
+    const isShinyChance = Math.random() < 0.05; // 5% 확률
+    const newMon = createNewFarmPokemon(chainIndex, nickname?.trim() || undefined, isShinyChance);
 
     setFarmState(prev => ({
       ...prev,
       activePokemon: newMon
     }));
 
+    setAdoptRevealModal(null);
     setActiveTab('yard');
     playPokemonCry(newMon.speciesId);
-    showAlert(`🐣 [${newMon.name}]을(를) 성공적으로 분양받았습니다! ${isShinyChance ? '✨ [전설의 포켓몬] 당첨!' : ''}`, 'success');
+    showAlert(`🎉 [${newMon.nickname || newMon.name}]을(를) 우리 농장에 입양했습니다! ${isShinyChance ? '✨ [샤이니 이로치] 당첨!' : ''}`, 'success');
   };
 
 
@@ -2852,18 +3074,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const handleCompleteOnboarding = () => {
     const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
     const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
-    const cleanOwner = initOwnerName.trim() || '지우';
+    const cleanOwner = initOwnerName.trim() || username || '지우';
     const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
 
     localStorage.setItem('pokefarm_saved_owner', cleanOwner);
 
-    setFarmState(prev => ({
-      ...prev,
+    const newFarmState: FarmState = {
+      ...farmState,
       ownerName: cleanOwner,
       farmName: cleanFarm,
       isInitialized: true,
       activePokemon: newMon
-    }));
+    };
+
+    saveFarmState(newFarmState);
+
+    if (socket && socket.connected) {
+      socket.emit('farm-sync', { username: cleanOwner, farmData: newFarmState });
+    }
+
+    setFarmState(newFarmState);
 
     playPokemonCry(newMon.speciesId);
     showAlert(`🎉 [${cleanFarm}]이 정식 개장되었습니다! 첫 파트너 [${newMon.name}]과(와) 함께 사랑으로 키워보세요!`, 'success');
@@ -2979,14 +3209,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   </div>
                 </div>
 
-                {/* Generation Filter Chips - 일반 스타팅 포켓몬들만 제공 */}
+                {/* Generation Filter Chips - 1세대 독립 및 세대별 묶음 */}
                 <div className="gen-filter-chips">
                   {[
-                    { id: 'all', label: '전체 일반 스타팅' },
-                    { id: 'gen1-2', label: '1~2세대' },
-                    { id: 'gen3-4', label: '3~4세대' },
-                    { id: 'gen5-6', label: '5~6세대' },
-                    { id: 'gen7-9', label: '7~9세대' }
+                    { id: 'all', label: '🌟 전체 스타팅 (29종)' },
+                    { id: 'gen1', label: '🔴 1세대 (5종)' },
+                    { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
+                    { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
+                    { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
+                    { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
                   ].map(f => (
                     <button
                       key={f.id}
@@ -2999,14 +3230,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   ))}
                 </div>
 
-                {/* Starter Picker Grid - 특수/지방/전설(special)은 분양 불가 */}
+                {/* Starter Picker Grid - 오직 스타팅 포켓몬만 분양 */}
                 <div className="onboarding-starter-grid">
                   {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
                     .filter(({ chain }) => {
-                      const cat = chain[0].genCategory || 'gen1-2';
-                      if (cat === 'special') return false; // 지방/전설 포켓몬은 분양소 제외!
+                      if (!chain[0].isStarter) return false;
                       if (genFilter === 'all') return true;
-                      return cat === genFilter;
+                      return chain[0].genCategory === genFilter;
                     })
                     .map(({ chain, originalIdx }) => {
                       const baby = chain[0];
@@ -3699,6 +3929,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           🎨 가구 & 소품 팔레트 (90+)
                         </button>
                         <button
+                          className={`decor-subtab ${decorSubtab === 'skilleffects' ? 'active' : ''}`}
+                          onClick={() => setDecorSubtab('skilleffects')}
+                        >
+                          💥 고유스킬 이펙트샵 (12종)
+                        </button>
+                        <button
                           className={`decor-subtab ${decorSubtab === 'textmaker' ? 'active' : ''}`}
                           onClick={() => setDecorSubtab('textmaker')}
                         >
@@ -3711,6 +3947,50 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           🐾 포켓몬 배치 & 연출
                         </button>
                       </div>
+
+                      {/* 서브모드: 💥 포켓몬 고유스킬 이펙트 샵 */}
+                      {decorSubtab === 'skilleffects' && (
+                        <div className="decor-skilleffects-panel">
+                          <div className="skilleffects-banner">
+                            <div className="skilleffects-header-text">
+                              <h4>💥 포켓몬 고유스킬 이펙트 컬렉션</h4>
+                              <p>포켓몬의 화려한 시그니처 필살기 이펙트를 코인으로 구매하여 미니룸에 자유롭게 장착해보세요!</p>
+                            </div>
+                            <div className="skilleffects-coin-badge">
+                              🪙 보유 코인: <b>{farmState.coins} P</b>
+                            </div>
+                          </div>
+
+                          <div className="skilleffects-grid">
+                            {POKEMON_SKILL_EFFECTS.map(fx => (
+                              <div key={fx.id} className="skill-fx-card">
+                                <div className="skill-fx-preview-box" style={{ background: `radial-gradient(circle, ${fx.previewColor}33 0%, rgba(15,23,42,0.8) 80%)` }}>
+                                  <div className={`skill-fx-display preview-mini ${fx.fxClass}`}>
+                                    <div className="skill-fx-core" />
+                                    <div className="skill-fx-wave" />
+                                    <div className="skill-fx-aura" />
+                                    <div className="skill-fx-sparks" />
+                                    <span className="skill-fx-symbol">{fx.icon}</span>
+                                  </div>
+                                </div>
+                                <div className="skill-fx-card-info">
+                                  <div className="skill-fx-title-row">
+                                    <span className="skill-fx-name">{fx.name}</span>
+                                    <span className="skill-fx-tag">{fx.pokemonName}</span>
+                                  </div>
+                                  <p className="skill-fx-desc">{fx.description}</p>
+                                  <button
+                                    className="excel-btn primary skill-fx-buy-btn"
+                                    onClick={() => handleAddSkillEffect(fx)}
+                                  >
+                                    🪙 {fx.price}P 로 구매 & 배치
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* 서브모드 1: 스티커 & 가구 팔레트 */}
                       {decorSubtab === 'palette' && (
@@ -4391,16 +4671,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <h3>🐣 둡박사 포켓몬 분양소</h3>
-                  <p>원하는 일반 포켓몬을 선택하여 입양하세요! (※ 가라르/알로라/히스이 리전폼 및 전설/환상 포켓몬은 분양소 분양 불가, [🌟 전설알]에서만 부화 가능)</p>
+                  <p>스타팅 포켓몬을 몬스터볼에서 깨워 입양하세요! (※ 일반/전설 포켓몬은 [🥚 알 부화소]에서만 탄생합니다)</p>
                 </div>
-                {/* Generation Filter Chips - 일반 스타팅 포켓몬들만 제공 */}
+                {/* Generation Filter Chips - 1세대 독립 및 세대별 묶음 */}
                 <div className="gen-filter-chips">
                   {[
-                    { id: 'all', label: '전체 일반 분양' },
-                    { id: 'gen1-2', label: '1~2세대' },
-                    { id: 'gen3-4', label: '3~4세대' },
-                    { id: 'gen5-6', label: '5~6세대' },
-                    { id: 'gen7-9', label: '7~9세대' }
+                    { id: 'all', label: '🌟 전체 스타팅 (29종)' },
+                    { id: 'gen1', label: '🔴 1세대 (5종)' },
+                    { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
+                    { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
+                    { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
+                    { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
                   ].map(f => (
                     <button
                       key={f.id}
@@ -4418,17 +4699,46 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
             <div className="starter-cards-grid">
               {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
                 .filter(({ chain }) => {
-                  const cat = chain[0].genCategory || 'gen1-2';
-                  if (cat === 'special') return false; // 지방/전설 포켓몬은 분양소 분양 제외!
+                  if (!chain[0].isStarter) return false; // 🐣 오직 스타팅 포켓몬만 분양 가능!
                   if (genFilter === 'all') return true;
-                  return cat === genFilter;
+                  return chain[0].genCategory === genFilter;
                 })
                 .map(({ chain, originalIdx }) => {
                   const baby = chain[0];
                   return (
-                    <div key={baby.id} className="starter-adopt-card">
-                      <div className="starter-avatar-box">
-                        <img src={baby.showdownSprite || baby.sprite} alt={baby.name} />
+                    <div key={baby.id} className="starter-adopt-card" onClick={() => handleAdoptPokemon(originalIdx)}>
+                      <div className="starter-pokeball-box">
+                        <div className="pokeball-realistic-3d">
+                          <svg viewBox="0 0 100 100" className="pokeball-svg">
+                            <defs>
+                              <radialGradient id={`pokeTop_${baby.id}`} cx="35%" cy="30%" r="70%">
+                                <stop offset="0%" stopColor="#ff7878" />
+                                <stop offset="45%" stopColor="#ef4444" />
+                                <stop offset="100%" stopColor="#991b1b" />
+                              </radialGradient>
+                              <radialGradient id={`pokeBot_${baby.id}`} cx="35%" cy="65%" r="70%">
+                                <stop offset="0%" stopColor="#ffffff" />
+                                <stop offset="60%" stopColor="#f1f5f9" />
+                                <stop offset="100%" stopColor="#cbd5e1" />
+                              </radialGradient>
+                              <radialGradient id={`pokeBtn_${baby.id}`} cx="40%" cy="35%" r="60%">
+                                <stop offset="0%" stopColor="#ffffff" />
+                                <stop offset="70%" stopColor="#e2e8f0" />
+                                <stop offset="100%" stopColor="#94a3b8" />
+                              </radialGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="46" fill="#0f172a" stroke="#020617" strokeWidth="4" />
+                            <path d="M 6 50 A 44 44 0 0 1 94 50 Z" fill={`url(#pokeTop_${baby.id})`} />
+                            <path d="M 6 50 A 44 44 0 0 0 94 50 Z" fill={`url(#pokeBot_${baby.id})`} />
+                            <ellipse cx="38" cy="24" rx="14" ry="7" fill="white" opacity="0.45" transform="rotate(-20 38 24)" />
+                            <rect x="6" y="46" width="88" height="8" fill="#0f172a" />
+                            <circle cx="50" cy="50" r="14" fill="#0f172a" />
+                            <circle cx="50" cy="50" r="10" fill={`url(#pokeBtn_${baby.id})`} stroke="#475569" strokeWidth="1.5" />
+                            <circle cx="50" cy="50" r="5" fill="white" className="pokeball-core-btn-light" />
+                          </svg>
+                        </div>
+                        <span className="pokeball-pulse-ring" />
+                        <span className="pokeball-tap-hint">🔴 몬스터볼 오픈</span>
                       </div>
                       <div className="starter-info">
                         <h4>{baby.name}</h4>
@@ -4441,8 +4751,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           진화 경로: {chain.map(c => c.name).join(' ➔ ')}
                         </p>
                       </div>
-                      <button className="excel-btn primary" onClick={() => handleAdoptPokemon(originalIdx)}>
-                        🐣 이 아이 입양하기
+                      <button className="excel-btn primary adopt-open-btn" onClick={(e) => { e.stopPropagation(); handleAdoptPokemon(originalIdx); }}>
+                        🔴 몬스터볼 열기 & 입양
                       </button>
                     </div>
                   );
@@ -6024,6 +6334,125 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           </div>
         );
       })()}
+
+      {/* 🔴 몬스터볼 등장 애니메이션 모달 ("짜잔!" 이펙트) */}
+      {adoptRevealModal && adoptRevealModal.active && (
+        <div className="farm-modal-backdrop pokeball-reveal-backdrop">
+          <div className={`pokeball-reveal-card stage-${adoptRevealModal.stage}`}>
+            {/* 닫기 버튼 */}
+            {adoptRevealModal.stage === 'emerge' && (
+              <button className="modal-close-btn" onClick={() => setAdoptRevealModal(null)}>✕</button>
+            )}
+
+            {/* 1. 몬스터볼 흔들림 & 빛 발산 스테이지 */}
+            {adoptRevealModal.stage !== 'emerge' ? (
+              <div className="pokeball-opening-container">
+                <div className="pokeball-glow-rays" />
+                <div className={`pokeball-grand-model ${adoptRevealModal.stage === 'wobble' ? 'is-wobbling' : 'is-bursting'}`}>
+                  <svg viewBox="0 0 100 100" className="pokeball-svg-modal">
+                    <defs>
+                      <radialGradient id="modalPokeTop" cx="35%" cy="30%" r="70%">
+                        <stop offset="0%" stopColor="#ff7878" />
+                        <stop offset="45%" stopColor="#ef4444" />
+                        <stop offset="100%" stopColor="#991b1b" />
+                      </radialGradient>
+                      <radialGradient id="modalPokeBot" cx="35%" cy="65%" r="70%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="60%" stopColor="#f1f5f9" />
+                        <stop offset="100%" stopColor="#cbd5e1" />
+                      </radialGradient>
+                      <radialGradient id="modalPokeBtn" cx="40%" cy="35%" r="60%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="70%" stopColor="#e2e8f0" />
+                        <stop offset="100%" stopColor="#94a3b8" />
+                      </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="#0f172a" stroke="#020617" strokeWidth="4" />
+                    <g className={`pokeball-top-half ${adoptRevealModal.stage === 'burst' ? 'top-fly-open' : ''}`}>
+                      <path d="M 6 50 A 44 44 0 0 1 94 50 Z" fill="url(#modalPokeTop)" />
+                      <ellipse cx="38" cy="24" rx="14" ry="7" fill="white" opacity="0.45" transform="rotate(-20 38 24)" />
+                    </g>
+                    <g className={`pokeball-bottom-half ${adoptRevealModal.stage === 'burst' ? 'bottom-lower' : ''}`}>
+                      <path d="M 6 50 A 44 44 0 0 0 94 50 Z" fill="url(#modalPokeBot)" />
+                    </g>
+                    <rect x="6" y="46" width="88" height="8" fill="#0f172a" />
+                    <circle cx="50" cy="50" r="14" fill="#0f172a" />
+                    <circle cx="50" cy="50" r="10" fill="url(#modalPokeBtn)" stroke="#475569" strokeWidth="1.5" />
+                    <circle cx="50" cy="50" r="5" fill="#facc15" className="pokeball-core-btn-pulsing" />
+                  </svg>
+                </div>
+                {adoptRevealModal.stage === 'burst' && (
+                  <div className="pokeball-blinding-burst">
+                    <div className="burst-light-ring" />
+                    <div className="burst-sparkle-stars">✨ 🌟 ⭐ 💫 💥</div>
+                  </div>
+                )}
+                <div className="pokeball-status-text">
+                  {adoptRevealModal.stage === 'wobble' ? (
+                    <p className="wobble-text">🔴 몬스터볼이 반응하며 흔들리고 있습니다...!</p>
+                  ) : (
+                    <p className="burst-text">✨ 눈부신 빛과 함께 몬스터볼이 열립니다...!</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* 2. "짜잔! ✨" 포켓몬 등장 스테이지 */
+              <div className="pokemon-emerged-container">
+                <div className="emerge-fanfare-header">
+                  <div className="fanfare-badge">🎉 짜잔! 포켓몬 등장!</div>
+                  <h2>{adoptRevealModal.baby.name}</h2>
+                  <div className="type-badge-row">
+                    {adoptRevealModal.baby.types.map(t => (
+                      <span key={t} className="type-tag">{t}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="emerged-sprite-stage">
+                  <div className="emerge-light-pillar" />
+                  <div className="emerge-particle-burst">✨ 🌟 ✨ ⭐ 💫</div>
+                  <img
+                    src={adoptRevealModal.baby.showdownSprite || adoptRevealModal.baby.sprite}
+                    alt={adoptRevealModal.baby.name}
+                    className="emerged-showdown-sprite bounce"
+                  />
+                </div>
+
+                <div className="emerge-evolution-chain">
+                  <span>진화 경로: {adoptRevealModal.chain.map(c => c.name).join(' ➔ ')}</span>
+                </div>
+
+                <div className="emerge-nickname-row">
+                  <label>✨ 애칭 (닉네임 설정):</label>
+                  <input
+                    type="text"
+                    className="dubuworld-input"
+                    value={adoptRevealModal.nickname}
+                    onChange={(e) => setAdoptRevealModal(prev => prev ? { ...prev, nickname: e.target.value } : null)}
+                    placeholder={`기본값: ${adoptRevealModal.baby.name}`}
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="emerge-action-buttons">
+                  <button
+                    className="excel-btn primary pulse-btn-large"
+                    onClick={() => handleConfirmAdoption(adoptRevealModal.nickname)}
+                  >
+                    💖 우리 농장으로 입양하기!
+                  </button>
+                  <button
+                    className="excel-btn"
+                    onClick={() => setAdoptRevealModal(null)}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

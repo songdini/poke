@@ -40,9 +40,10 @@ export function registerFarmHandlers(io, socket) {
 
     const farm = getFarm(cleanUser);
     const guestbook = getGuestbookEntries(cleanUser, 50);
+    const hasValidFarm = !!(farm && (farm.isInitialized || farm.activePokemon || (farm.graduatedPokemon && farm.graduatedPokemon.length > 0) || farm.username));
     socket.emit('farm-my-data-loaded', {
-      success: !!(farm && farm.graduatedPokemon && farm.graduatedPokemon.length > 0),
-      farm: (farm && farm.graduatedPokemon && farm.graduatedPokemon.length > 0) ? farm : null,
+      success: hasValidFarm,
+      farm: hasValidFarm ? { ...farm, isInitialized: true } : null,
       guestbook
     });
   });

@@ -700,6 +700,42 @@
   border-color: #fb7185;
 }
 
+.excel-btn.marked-purple-del-btn {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+  font-weight: 700;
+}
+
+.excel-btn.marked-purple-del-btn:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+.excel-btn.marked-orange-del-btn {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.excel-btn.marked-orange-del-btn:hover:not(:disabled) {
+  background: #ffedd5;
+  border-color: #ea580c;
+}
+
+.excel-btn.marked-green-del-btn {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.excel-btn.marked-green-del-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
@@ -842,54 +878,156 @@
     box-shadow: none;
     width: 100%;
     height: auto !important;
-    min-height: 100%;
-    overflow: visible !important;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
   }
   .sudoku-container .excel-formula-bar,
-  .sudoku-container .excel-sheet-tab-bar {
+  .sudoku-container .excel-sheet-tab-bar,
+  .sudoku-legend-bar,
+  .sudoku-guide-tip {
     display: none !important;
   }
   .sudoku-container .game-header {
-    padding: 8px 10px;
-    flex-wrap: wrap;
+    padding: 6px 10px;
+    flex-wrap: nowrap;
     gap: 6px;
   }
+  .sudoku-container .sheet-title-info h2 {
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sudoku-container .game-info {
+    gap: 4px;
+  }
+  .excel-cell-badge {
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
   .sudoku-main-workspace {
-    padding: 8px 4px;
-    gap: 10px;
+    padding: 4px 6px;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  /* 난이도 리본을 가로 스크롤 가능한 슬릭 바 형태로 압축 */
+  .sudoku-main-workspace > div:first-child {
+    display: flex !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    scrollbar-width: none;
+    justify-content: flex-start !important;
+    padding: 2px 0 !important;
+  }
+  .sudoku-main-workspace > div:first-child::-webkit-scrollbar {
+    display: none;
+  }
+  .sudoku-main-workspace > div:first-child .excel-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 3px 8px;
+    font-size: 0.74rem;
+  }
+  .marked-actions-ribbon-group {
+    display: none !important; /* 모바일에서는 하단 수식 패드에만 표시하여 상단 높이 절약 */
   }
   .sudoku-board-wrapper {
     max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px;
+    width: auto;
+    margin: 0 auto;
+    overflow: hidden;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+  .sudoku-grid-table {
+    border-collapse: collapse;
+    table-layout: fixed;
   }
   .sudoku-grid-table th {
-    width: 32px;
-    height: 22px;
-    font-size: 0.72rem;
+    width: min(9.2vw, 34px);
+    height: 18px;
+    font-size: 0.68rem;
+    padding: 0;
   }
   .sudoku-grid-table th.corner-cell,
   .sudoku-grid-table td.row-header {
-    width: 22px;
-    font-size: 0.72rem;
+    width: 18px;
+    font-size: 0.68rem;
+    padding: 0;
   }
   .sudoku-cell {
-    width: 32px;
-    height: 32px;
-    font-size: 0.95rem;
+    width: min(9.2vw, 34px);
+    height: min(9.2vw, 34px);
+    font-size: 1.05rem;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    touch-action: manipulation;
+    -webkit-user-select: none;
   }
   .sudoku-controls-panel {
-    max-width: 100%;
-    padding: 0 4px;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 0;
+  }
+  .sudoku-card {
+    padding: 6px 8px;
+    gap: 4px;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .input-mode-toggle-group {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .mode-toggle-btn {
+    flex: 1;
+    padding: 3px 2px;
+    font-size: 0.68rem;
+    text-align: center;
   }
   .numpad-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
+    margin-top: 4px;
   }
   .numpad-btn {
-    height: 38px;
-    font-size: 1rem;
+    height: 34px;
+    font-size: 1.05rem;
+    padding: 0;
+    border-radius: 3px;
+  }
+  .numpad-action-row {
+    margin-top: 4px;
+    gap: 3px;
+  }
+  .numpad-marked-del-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .numpad-marked-del-grid .excel-btn {
+    flex: 1;
+    min-width: 55px;
+    padding: 4px 2px;
+    font-size: 0.7rem;
   }
 }
 

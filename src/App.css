@@ -1,4 +1,4 @@
-﻿/* ?룪 DUBUWORLD & ARCADE MODERN PORTAL STYLESHEET */
+/* ?룪 DUBUWORLD & ARCADE MODERN PORTAL STYLESHEET */
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
 
 :root {
@@ -646,5 +646,33 @@ body {
   
   .dubu-games-cards-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* 🎮 모바일 게임 집중 모드: 게임 시작/플레이 중 상단 포털 네비바 및 게임 글로벌 탑바 숨김 */
+  .dubu-portal-app.is-game-playing .dubu-portal-navbar {
+    display: none !important;
+  }
+
+  .dubu-portal-app.is-game-playing .dubu-main-viewport {
+    padding: 0 !important;
+    min-height: 100vh;
+  }
+
+  .game-global-topbar {
+    display: none !important;
+  }
+
+  /* 🚪 모바일 게임 방 입장 시 상단 '포켓 미니홈피로 돌아가기' 버튼 숨김 */
+  .dubu-card-back-btn {
+    display: none !important;
+  }
+  
+  .dubu-join-container {
+    padding: 12px 8px;
+  }
+  
+  .dubu-join-card {
+    padding: 18px 14px;
+    border-radius: 12px;
   }
 }

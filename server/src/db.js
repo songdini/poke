@@ -493,6 +493,8 @@ export function deleteGuestbookEntry(id) {
 function parseFarmRow(row) {
   return {
     username: row.username,
+    ownerName: row.username,
+    isInitialized: true,
     farmName: row.farm_name,
     activePokemon: row.active_pokemon ? safeJsonParse(row.active_pokemon, null) : null,
     reservePokemon: row.reserve_pokemon ? safeJsonParse(row.reserve_pokemon, []) : [],
