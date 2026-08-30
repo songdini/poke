@@ -21,6 +21,7 @@
   gap: 8px;
 }
 
+
 .farm-title-box {
   display: flex;
   align-items: center;
@@ -1343,6 +1344,33 @@
 .sheet1-visit-btn:hover {
   background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
   transform: translateY(-1px);
+}
+
+.sheet1-farm-card.my-top-farm {
+  border: 2px solid #8b5cf6 !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25) !important;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+}
+
+.my-farm-tag {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: 4px;
+  box-shadow: 0 2px 4px rgba(109, 40, 217, 0.3);
+  display: inline-block;
+}
+
+.sheet1-visit-btn.my-farm-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.25);
+}
+
+.sheet1-visit-btn.my-farm-btn:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
 }
 
 .sheet1-empty-farms {

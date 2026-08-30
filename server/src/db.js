@@ -170,6 +170,15 @@ export function upsertFarm(username, farmData) {
   if (!username || !farmData) return null;
   const cleanUser = username.trim();
 
+  // 실제 DB에 기록된 하트 수 조회 (클라이언트의 오래된 세이브 데이터가 DB의 최신 하트 수를 덮어쓰지 않도록 보호)
+  const existingHeartCountRow = db.prepare('SELECT COUNT(*) as count FROM farm_hearts WHERE target_username = ?').get(cleanUser);
+  const existingFarmRow = db.prepare('SELECT hearts_count FROM farms WHERE username = ?').get(cleanUser);
+  const safeHearts = Math.max(
+    existingFarmRow ? (existingFarmRow.hearts_count || 0) : 0,
+    existingHeartCountRow ? (existingHeartCountRow.count || 0) : 0,
+    farmData.heartsCount !== undefined ? farmData.heartsCount : 0
+  );
+
   const stmt = db.prepare(`
     INSERT INTO farms (
       username, farm_name, active_pokemon, reserve_pokemon, graduated_pokemon,
@@ -188,7 +197,7 @@ export function upsertFarm(username, farmData) {
       reserve_pokemon = COALESCE(excluded.reserve_pokemon, farms.reserve_pokemon),
       graduated_pokemon = COALESCE(excluded.graduated_pokemon, farms.graduated_pokemon),
       graduated_count = COALESCE(excluded.graduated_count, farms.graduated_count),
-      hearts_count = COALESCE(excluded.hearts_count, farms.hearts_count),
+      hearts_count = MAX(COALESCE(farms.hearts_count, 0), (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username), excluded.hearts_count),
       coins = COALESCE(excluded.coins, farms.coins),
       inventory = COALESCE(excluded.inventory, farms.inventory),
       incubating_egg = COALESCE(excluded.incubating_egg, farms.incubating_egg),
@@ -220,7 +229,7 @@ export function upsertFarm(username, farmData) {
     reserve_pokemon: reservePokeStr,
     graduated_pokemon: gradPokeStr,
     graduated_count: farmData.graduatedPokemon ? farmData.graduatedPokemon.length : (farmData.graduatedCount || 0),
-    hearts_count: farmData.heartsCount !== undefined ? farmData.heartsCount : 0,
+    hearts_count: safeHearts,
     coins: farmData.coins !== undefined ? farmData.coins : 1000,
     inventory: invStr,
     incubating_egg: eggStr,
@@ -297,9 +306,13 @@ export function getFarm(username) {
   if (!row) return null;
 
   const visits = getFarmVisits(cleanUser);
+  const heartCountRow = db.prepare('SELECT COUNT(*) as count FROM farm_hearts WHERE target_username = ?').get(cleanUser);
+  const realHearts = Math.max(row.hearts_count || 0, heartCountRow ? (heartCountRow.count || 0) : 0);
+
   const parsed = parseFarmRow(row);
   return {
     ...parsed,
+    heartsCount: realHearts,
     todayCount: visits.todayCount,
     totalCount: visits.totalCount
   };
@@ -308,8 +321,10 @@ export function getFarm(username) {
 // 3. 인기 농장 TOP N 조회 (실제 하트 및 실제 방문수 반영)
 export function getPopularFarms(limit = 3) {
   const rows = db.prepare(`
-    SELECT * FROM farms 
-    ORDER BY hearts_count DESC, updated_at DESC 
+    SELECT *, 
+      MAX(COALESCE(hearts_count, 0), (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username)) as real_hearts 
+    FROM farms 
+    ORDER BY real_hearts DESC, updated_at DESC 
     LIMIT ?
   `).all(limit);
 
@@ -318,6 +333,7 @@ export function getPopularFarms(limit = 3) {
     const visits = getFarmVisits(parsed.username);
     return {
       ...parsed,
+      heartsCount: row.real_hearts !== undefined ? row.real_hearts : parsed.heartsCount,
       todayCount: visits.todayCount,
       totalCount: visits.totalCount
     };
@@ -327,8 +343,10 @@ export function getPopularFarms(limit = 3) {
 // 4. 전체 이웃 농장 목록 조회 (실제 하트 및 실제 방문수 반영)
 export function getAllFarms() {
   const rows = db.prepare(`
-    SELECT * FROM farms 
-    ORDER BY hearts_count DESC, updated_at DESC
+    SELECT *, 
+      MAX(COALESCE(hearts_count, 0), (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username)) as real_hearts 
+    FROM farms 
+    ORDER BY real_hearts DESC, updated_at DESC
   `).all();
 
   const now = Date.now();
@@ -337,6 +355,7 @@ export function getAllFarms() {
     const visits = getFarmVisits(parsed.username);
     return {
       ...parsed,
+      heartsCount: row.real_hearts !== undefined ? row.real_hearts : parsed.heartsCount,
       todayCount: visits.todayCount,
       totalCount: visits.totalCount,
       isOnline: (now - (parsed.lastActive || 0)) < 1000 * 60 * 30 // 30분 이내 활성
@@ -389,16 +408,30 @@ export function sendHeart({ targetUsername, senderUsername }) {
     };
   }
 
+  // 대상 농장 레코드 존재 보장
+  const targetFarm = db.prepare('SELECT 1 FROM farms WHERE username = ?').get(cleanTarget);
+  if (!targetFarm) {
+    upsertFarm(cleanTarget, { farmName: `${cleanTarget}님의 포켓농장` });
+  }
+  // 발신자 농장 레코드 존재 보장
+  const senderFarm = db.prepare('SELECT 1 FROM farms WHERE username = ?').get(cleanSender);
+  if (!senderFarm) {
+    upsertFarm(cleanSender, { farmName: `${cleanSender}님의 포켓농장` });
+  }
+
   // 3. 하트 로그 기록
   db.prepare('INSERT INTO farm_hearts (target_username, sender_username) VALUES (?, ?)').run(cleanTarget, cleanSender);
 
-  // 4. 대상 농장 하트수 증가 (+1) 및 코인 보상 (+100 코인)
+  // 4. 대상 농장 하트수 동기화 및 코인 보상 (+100 코인)
+  const heartCountRow = db.prepare('SELECT COUNT(*) as count FROM farm_hearts WHERE target_username = ?').get(cleanTarget);
+  const realHearts = heartCountRow ? heartCountRow.count : 1;
+
   db.prepare(`
     UPDATE farms 
-    SET hearts_count = hearts_count + 1, 
+    SET hearts_count = MAX(COALESCE(hearts_count, 0) + 1, ?), 
         coins = COALESCE(coins, 1000) + ? 
     WHERE username = ?
-  `).run(HEART_REWARD_TARGET_COINS, cleanTarget);
+  `).run(realHearts, HEART_REWARD_TARGET_COINS, cleanTarget);
 
   // 5. 하트를 보낸 발신자에게도 보답 코인 지급 (+20 코인)
   db.prepare(`
@@ -417,7 +450,7 @@ export function sendHeart({ targetUsername, senderUsername }) {
     success: true,
     targetUsername: cleanTarget,
     senderUsername: cleanSender,
-    heartsCount: targetRow ? targetRow.hearts_count : 0,
+    heartsCount: targetRow ? targetRow.hearts_count : realHearts,
     targetCoins: targetRow ? targetRow.coins : 0,
     targetRewardCoins: HEART_REWARD_TARGET_COINS,
     senderRewardCoins: HEART_REWARD_SENDER_COINS,

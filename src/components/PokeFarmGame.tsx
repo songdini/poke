@@ -644,11 +644,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     // 2. 서버에 내 농장 정보 동기화 및 전체 활성 농장 목록 요청
     if (farmState.isInitialized && farmState.ownerName) {
       socket.emit('farm-sync', { username: farmState.ownerName, farmData: farmState });
+      socket.emit('farm-load-my-data', { username: farmState.ownerName });
     } else if (username && username.trim() && username !== '지우') {
       // 로컬에 없더라도 서버 DB에 저장된 농장이 있다면 자동 복원 시도
       socket.emit('farm-load-my-data', { username: username.trim() });
     }
     socket.emit('farm-get-list');
+    socket.emit('farm-get-top3');
 
     const handleListUpdate = (serverFarms: NeighborFarmData[]) => {
       if (Array.isArray(serverFarms)) {
@@ -673,14 +675,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const handleHeartReceived = ({ targetUsername, senderUsername, heartsCount, rewardCoins }: { targetUsername: string; senderUsername?: string; heartsCount: number; rewardCoins?: number }) => {
       if (targetUsername === farmState.ownerName) {
         const bonus = rewardCoins || 100;
-        setFarmState(prev => ({
-          ...prev,
-          heartsCount,
-          coins: prev.coins + bonus
-        }));
-        showAlert(`💖 [${senderUsername || '1촌 이웃'}]님이 내 농장에 응원 하트를 선물했습니다! (+${bonus} 코인 획득 🪙)`, 'success');
+        setFarmState(prev => {
+          const next = {
+            ...prev,
+            heartsCount,
+            coins: prev.coins + bonus
+          };
+          saveFarmState(next);
+          return next;
+        });
+        showAlert(`💖 [${senderUsername || '1촌 이웃'}]님이 내 농장에 응원 하트를 선물했습니다! (+${bonus} 코인 획득 🪙 | 누적 하트: ${heartsCount}개)`, 'success');
         setFloatingHeart({ id: Date.now(), x: window.innerWidth / 2, y: window.innerHeight / 2 });
       }
+      // 이웃 목록에서도 해당 유저의 하트 수 업데이트
+      setNeighborList(prev => prev.map(f => f.username === targetUsername ? { ...f, heartsCount } : f));
       if (visitingFarm && visitingFarm.owner === targetUsername) {
         setVisitingFarm(prev => prev ? { ...prev, farm: { ...prev.farm, heartsCount } } : null);
       }
@@ -689,6 +697,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const handleHeartSentSuccess = (data: { targetUsername: string; heartsCount: number; senderRewardCoins: number; todaySent: number; remainingHearts: number }) => {
       setTodayHeartsSent(data.todaySent);
       setTodayHeartCountLocal(farmState.ownerName, data.todaySent);
+      // 이웃 목록 실시간 반영
+      setNeighborList(prev => prev.map(f => f.username === data.targetUsername ? { ...f, heartsCount: data.heartsCount } : f));
       if (visitingFarm && visitingFarm.owner === data.targetUsername) {
         setVisitingFarm(prev => prev ? { ...prev, farm: { ...prev.farm, heartsCount: data.heartsCount } } : null);
       }
@@ -731,22 +741,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const handleMyDataLoaded = (res: { success: boolean; farm: any; guestbook: GuestbookEntry[] }) => {
       if (res.success && res.farm) {
         setFarmState(prev => {
-          const gradCount = res.farm.graduatedPokemon ? res.farm.graduatedPokemon.length : 0;
-          showAlert(`🎉 서버 DB에서 [${res.farm.username || res.farm.ownerName}]님의 포켓농장 데이터(졸업생 ${gradCount}마리, 파트너 등)를 성공적으로 복원했습니다!`, 'success');
+          const updatedHearts = res.farm.heartsCount !== undefined ? Math.max(res.farm.heartsCount, prev.heartsCount) : prev.heartsCount;
           return {
             ...prev,
             ...res.farm,
-            ownerName: res.farm.username || prev.ownerName,
+            ownerName: res.farm.username || res.farm.ownerName || prev.ownerName,
             isInitialized: true,
+            heartsCount: updatedHearts,
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
             totalCount: res.farm.totalCount !== undefined ? res.farm.totalCount : prev.totalCount,
-            heartsCount: res.farm.heartsCount !== undefined ? res.farm.heartsCount : prev.heartsCount,
             guestbook: res.guestbook || prev.guestbook || []
           };
         });
-        setActiveTab('minihome');
-      } else {
-        showAlert('서버 DB에 복원 가능한 농장 데이터(졸업생 1마리 이상)가 없습니다.', 'warn');
       }
     };
 
@@ -3292,8 +3298,40 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     );
   }
 
-  // 👥 이웃 파도타기 & 실시간 인기농장 TOP 3 뷰
-  const top3RealFarms = neighborList.slice(0, 3);
+  // 👥 모든 농장(내 농장 포함) 하트 랭킹 계산
+  const allFarmsRanked: NeighborFarmData[] = React.useMemo(() => {
+    const map = new Map<string, NeighborFarmData>();
+
+    // 1. 이웃 목록 추가
+    neighborList.forEach(n => {
+      if (n.username) map.set(n.username, n);
+    });
+
+    // 2. 내 농장도 랭킹 산정에 포함 (내 하트수 반영)
+    if (farmState.isInitialized && farmState.ownerName) {
+      map.set(farmState.ownerName, {
+        username: farmState.ownerName,
+        farmName: farmState.farmName || `${farmState.ownerName}님의 포켓농장`,
+        activePokemon: farmState.activePokemon || null,
+        reservePokemon: farmState.reservePokemon || [],
+        graduatedPokemon: farmState.graduatedPokemon || [],
+        graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
+        heartsCount: farmState.heartsCount || 0,
+        bgTheme: farmState.bgTheme || 'classic',
+        stickers: farmState.stickers || [],
+        pokemonPlacements: farmState.pokemonPlacements || {},
+        statusMsg: farmState.statusMsg || '',
+        todayCount: farmState.todayCount || 0,
+        totalCount: farmState.totalCount || 0,
+        isOnline: true
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
+  }, [neighborList, farmState]);
+
+  // 🏆 실시간 인기 포켓농장 TOP 3 (내 농장도 하트가 높으면 1, 2, 3위에 당당히 표시!)
+  const top3RealFarms = allFarmsRanked.slice(0, 3);
 
   const renderNeighborsView = () => (
     <div className="farm-social-layout">
@@ -3314,10 +3352,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               if (socket && socket.connected) {
                 socket.emit('farm-get-list');
                 socket.emit('farm-get-top3');
+                if (farmState.ownerName) {
+                  socket.emit('farm-load-my-data', { username: farmState.ownerName });
+                }
               }
               const localFarms = getAllStoredFarms();
               setNeighborList(localFarms.filter(f => f.username !== farmState.ownerName));
-              showAlert('🔄 이웃 농장 목록을 최신 상태로 새로고침했습니다!', 'info');
+              showAlert('🔄 이웃 농장 및 내 하트 랭킹을 최신 상태로 새로고침했습니다!', 'info');
             }}
             title="목록 새로고침"
           >
@@ -3331,8 +3372,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
               const rankNum = idx + 1;
               const crown = rankNum === 1 ? '🥇 1위' : rankNum === 2 ? '🥈 2위' : '🥉 3위';
               const pmon = farm.activePokemon;
+              const isMyFarm = farm.username === farmState.ownerName;
               return (
-                <div key={farm.username} className={`sheet1-farm-card rank-${rankNum}`}>
+                <div key={farm.username} className={`sheet1-farm-card rank-${rankNum} ${isMyFarm ? 'my-top-farm' : ''}`}>
                   <div className="sheet1-card-top-bar">
                     <span className="sheet1-rank-badge">{crown}</span>
                     <span className="sheet1-heart-pill">💖 {farm.heartsCount.toLocaleString()}개</span>
@@ -3358,7 +3400,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
                   <div className="sheet1-farm-info">
                     <div className="sheet1-farm-name" title={farm.farmName}>{farm.farmName}</div>
-                    <div className="sheet1-farm-owner">👤 농장주: <b>{farm.username}</b></div>
+                    <div className="sheet1-farm-owner">
+                      👤 농장주: <b>{farm.username}</b> {isMyFarm && <span className="my-farm-tag">✨ 내 농장</span>}
+                    </div>
                     <div className="sheet1-farm-status-bubble">
                       💬 "{farm.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵'}"
                     </div>
@@ -3367,12 +3411,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     </div>
                   </div>
 
-                  <button
-                    className="sheet1-visit-btn"
-                    onClick={() => handleVisitNeighbor(farm.username)}
-                  >
-                    🏠 미니홈피 파도타기 ➔
-                  </button>
+                  {isMyFarm ? (
+                    <button
+                      type="button"
+                      className="sheet1-visit-btn my-farm-btn"
+                      onClick={() => {
+                        setVisitingFarm(null);
+                        setActiveTab('minihome');
+                      }}
+                    >
+                      🏡 내 미니홈피 관리 ➔
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="sheet1-visit-btn"
+                      onClick={() => handleVisitNeighbor(farm.username)}
+                    >
+                      🏠 미니홈피 파도타기 ➔
+                    </button>
+                  )}
                 </div>
               );
             })}
