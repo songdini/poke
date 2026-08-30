@@ -403,13 +403,6 @@ function AppMain() {
 
             <div className="dubu-join-actions">
               <button
-                type="button"
-                className="dubu-btn outline"
-                onClick={() => handleGameSelection('pokefarm')}
-              >
-                ◀ 두부 미니홈피로 돌아가기
-              </button>
-              <button
                 type="submit"
                 className="dubu-btn primary"
                 style={{ background: gameMeta.themeColor || '#10b981' }}

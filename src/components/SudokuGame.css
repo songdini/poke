@@ -564,47 +564,113 @@
   box-shadow: inset 0 0 0 1.5px #ef4444 !important;
 }
 
-/* 🎛️ Numpad & Controls Panel (Toggleable) */
-.sudoku-controls-panel {
-  width: 100%;
-  max-width: 460px;
+/* ==========================================================================
+   🧩 MODERN STRUCTURED SUDOKU TOOLBAR & HYPOTHESIS MANAGER
+   ========================================================================== */
+
+/* 1. 난이도 선택 리본 */
+.sudoku-diff-ribbon {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
-.sudoku-card {
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  padding: 12px;
+.sudoku-diff-ribbon .ribbon-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
 }
 
-.sudoku-card h3 {
-  margin: 0;
-  font-size: 0.88rem;
-  color: #107c41;
+.diff-btn-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* 2. 메인 툴바 */
+.sudoku-main-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sudoku-main-toolbar .toolbar-left,
+.sudoku-main-toolbar .toolbar-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.excel-btn.hint-btn {
+  background: #fefce8;
+  border-color: #fde047;
+  color: #a16207;
+  font-weight: 700;
+}
+
+.excel-btn.hint-btn:hover:not(:disabled) {
+  background: #fef9c3;
+  border-color: #eab308;
+}
+
+.excel-btn.active-toggle {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+  font-weight: 700;
+}
+
+/* 3. 선택된 셀 빠른 컨텍스트 바 */
+.sudoku-cell-context-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  max-width: 580px;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.context-cell-name {
+  color: #1e293b;
+  font-size: 0.82rem;
+}
+
+.context-divider {
+  color: #cbd5e1;
+}
+
+.context-label {
+  color: #64748b;
   font-weight: 600;
 }
 
-/* 🎨 입력 모드 토글 그룹 */
-.input-mode-toggle-group {
-  display: inline-flex;
-  background: #f3f2f1;
-  padding: 2px;
-  border-radius: 3px;
-  border: 1px solid #d4d4d4;
-  gap: 2px;
+.context-color-btns {
+  display: flex;
+  gap: 4px;
 }
 
-.mode-toggle-btn {
+.cell-mode-chip {
   padding: 3px 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: #605e5c;
-  border-radius: 2px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   display: inline-flex;
@@ -612,92 +678,111 @@
   gap: 3px;
 }
 
-.mode-toggle-btn.active-normal {
-  background: #ffffff;
-  color: #1d4ed8;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+.cell-mode-chip:hover {
+  filter: brightness(0.96);
 }
 
-.mode-toggle-btn.active-purple {
-  background: #ffffff;
-  color: #7e22ce;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(126, 34, 206, 0.15);
+.cell-mode-chip.normal.active {
+  background: #1d4ed8;
+  border-color: #1e40af;
+  color: #ffffff;
 }
 
-.mode-toggle-btn.active-orange {
-  background: #ffffff;
-  color: #c2410c;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(194, 65, 12, 0.15);
-}
-
-.mode-toggle-btn.active-green {
-  background: #ffffff;
-  color: #15803d;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.15);
-}
-
-.excel-btn.marked-purple-btn-active {
-  background: #f3e8ff;
-  border-color: #9333ea;
-  color: #6b21a8;
-  font-weight: 700;
-}
-
-.excel-btn.marked-purple-btn-active:hover:not(:disabled) {
-  background: #e9d5ff;
+.cell-mode-chip.purple.active {
+  background: #9333ea;
   border-color: #7e22ce;
+  color: #ffffff;
 }
 
-.excel-btn.marked-orange-btn-active {
-  background: #ffedd5;
-  border-color: #ea580c;
-  color: #9a3412;
-  font-weight: 700;
-}
-
-.excel-btn.marked-orange-btn-active:hover:not(:disabled) {
-  background: #fed7aa;
+.cell-mode-chip.orange.active {
+  background: #ea580c;
   border-color: #c2410c;
+  color: #ffffff;
 }
 
-.excel-btn.marked-green-btn-active {
-  background: #dcfce7;
-  border-color: #16a34a;
-  color: #14532d;
-  font-weight: 700;
-}
-
-.excel-btn.marked-green-btn-active:hover:not(:disabled) {
-  background: #bbf7d0;
+.cell-mode-chip.green.active {
+  background: #16a34a;
   border-color: #15803d;
+  color: #ffffff;
 }
 
-.excel-btn.marked-clear-btn {
-  background: #fdf4ff;
-  border-color: #d8b4fe;
-  color: #7e22ce;
+.cell-clear-quick-btn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 0.74rem;
   font-weight: 700;
+  cursor: pointer;
 }
 
-.excel-btn.marked-clear-btn:hover:not(:disabled) {
-  background: #f3e8ff;
-  border-color: #a855f7;
+.cell-clear-quick-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
 }
 
-.excel-btn.marked-delete-btn {
-  background: #fff1f2;
-  border-color: #fecdd3;
-  color: #be123c;
+/* 4. 🎨 헷갈림(가설) 셀 관리 패널 */
+.sudoku-marked-manager-box {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  width: 100%;
+  max-width: 580px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.marked-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.marked-manager-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.marked-manager-desc {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.marked-manager-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.marked-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.marked-action-row .group-label {
+  font-size: 0.74rem;
   font-weight: 700;
+  color: #475569;
+  min-width: 68px;
 }
 
-.excel-btn.marked-delete-btn:hover:not(:disabled) {
-  background: #ffe4e6;
-  border-color: #fb7185;
+.marked-action-row .group-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
 }
 
 .excel-btn.marked-purple-del-btn {
@@ -736,21 +821,165 @@
   border-color: #16a34a;
 }
 
+.excel-btn.marked-delete-btn {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #be123c;
+  font-weight: 700;
+}
+
+.excel-btn.marked-delete-btn:hover:not(:disabled) {
+  background: #ffe4e6;
+  border-color: #fb7185;
+}
+
+.excel-btn.marked-purple-revert-btn {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+  font-weight: 700;
+}
+
+.excel-btn.marked-purple-revert-btn:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+.excel-btn.marked-orange-revert-btn {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.excel-btn.marked-orange-revert-btn:hover:not(:disabled) {
+  background: #ffedd5;
+  border-color: #ea580c;
+}
+
+.excel-btn.marked-green-revert-btn {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.excel-btn.marked-green-revert-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+.excel-btn.marked-clear-btn {
+  background: #fdf4ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+  font-weight: 700;
+}
+
+.excel-btn.marked-clear-btn:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
+}
+
+/* 🎛️ Numpad & Controls Panel (Toggleable) */
+.sudoku-controls-panel {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sudoku-card {
+  background: #ffffff;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.numpad-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.numpad-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #107c41;
+}
+
+/* 🎨 입력 모드 토글 그룹 */
+.input-mode-toggle-group {
+  display: inline-flex;
+  background: #f3f2f1;
+  padding: 2px;
+  border-radius: 4px;
+  border: 1px solid #d4d4d4;
+  gap: 2px;
+}
+
+.mode-toggle-btn {
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #605e5c;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mode-toggle-btn.active-normal {
+  background: #ffffff;
+  color: #1d4ed8;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mode-toggle-btn.active-purple {
+  background: #ffffff;
+  color: #7e22ce;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(126, 34, 206, 0.15);
+}
+
+.mode-toggle-btn.active-orange {
+  background: #ffffff;
+  color: #c2410c;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(194, 65, 12, 0.15);
+}
+
+.mode-toggle-btn.active-green {
+  background: #ffffff;
+  color: #15803d;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.15);
+}
+
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 4px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .numpad-btn {
-  height: 34px;
+  height: 36px;
   font-size: 0.95rem;
   font-weight: 700;
   border: 1px solid #d4d4d4;
   background: #f3f2f1;
   color: #201f1e;
-  border-radius: 2px;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -803,6 +1032,34 @@
   margin-top: 8px;
 }
 
+.numpad-clear-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  color: #dc2626;
+  background: #ffffff;
+  border-color: #fca5a5;
+  font-weight: 700;
+}
+
+.numpad-clear-btn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.numpad-hint-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  background: #fefce8;
+  border-color: #fde047;
+  color: #a16207;
+  font-weight: 700;
+}
+
+.numpad-hint-btn:hover:not(:disabled) {
+  background: #fef9c3;
+}
+
 .sudoku-guide-tip {
   display: flex;
   flex-direction: column;
@@ -813,20 +1070,13 @@
   line-height: 1.4;
 }
 
-.action-tools-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-
 /* 🏆 Complete Banner */
 .sudoku-complete-banner {
   background: #e6f2eb;
   border: 1px solid #107c41;
   color: #0b5a2f;
   padding: 10px;
-  border-radius: 2px;
+  border-radius: 4px;
   text-align: center;
 }
 
@@ -912,30 +1162,69 @@
     width: 100%;
     box-sizing: border-box;
   }
+  
   /* 난이도 리본을 가로 스크롤 가능한 슬릭 바 형태로 압축 */
-  .sudoku-main-workspace > div:first-child {
-    display: flex !important;
-    gap: 4px !important;
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
+  .sudoku-diff-ribbon {
+    overflow-x: auto;
+    flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
-    width: 100%;
     scrollbar-width: none;
-    justify-content: flex-start !important;
-    padding: 2px 0 !important;
+    justify-content: flex-start;
+    padding: 2px 0;
+    width: 100%;
   }
-  .sudoku-main-workspace > div:first-child::-webkit-scrollbar {
+  .sudoku-diff-ribbon::-webkit-scrollbar {
     display: none;
   }
-  .sudoku-main-workspace > div:first-child .excel-btn {
+  .sudoku-diff-ribbon .ribbon-label {
+    display: none;
+  }
+  .diff-btn-group {
+    flex-wrap: nowrap;
+  }
+  .diff-btn-group .excel-btn {
     white-space: nowrap;
     flex-shrink: 0;
     padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .sudoku-main-toolbar {
+    width: 100%;
+    padding: 2px 0;
+    justify-content: space-between;
+  }
+  .sudoku-main-toolbar .excel-btn {
+    padding: 4px 8px;
     font-size: 0.74rem;
   }
-  .marked-actions-ribbon-group {
-    display: none !important; /* 모바일에서는 하단 수식 패드에만 표시하여 상단 높이 절약 */
+
+  .sudoku-cell-context-bar {
+    padding: 3px 6px;
+    gap: 4px;
+    font-size: 0.72rem;
   }
+  .cell-mode-chip {
+    padding: 2px 5px;
+    font-size: 0.68rem;
+  }
+
+  .sudoku-marked-manager-box {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .marked-manager-desc {
+    display: none;
+  }
+  .marked-action-row .group-label {
+    min-width: 52px;
+    font-size: 0.68rem;
+  }
+  .marked-action-row .excel-btn {
+    padding: 2px 5px;
+    font-size: 0.68rem;
+  }
+
   .sudoku-board-wrapper {
     max-width: 100%;
     width: auto;
@@ -1016,19 +1305,6 @@
     margin-top: 4px;
     gap: 3px;
   }
-  .numpad-marked-del-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    width: 100%;
-    margin-top: 4px;
-  }
-  .numpad-marked-del-grid .excel-btn {
-    flex: 1;
-    min-width: 55px;
-    padding: 4px 2px;
-    font-size: 0.7rem;
-  }
 }
 
 /* 🏆 Ranking Button */
@@ -1086,30 +1362,71 @@
   background: #f3f2f1;
   border-bottom: 2px solid #107c41;
   padding: 12px 16px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .rank-title-group {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rank-header-trophy {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.rank-title-text-box {
+  min-width: 0;
+  flex: 1;
 }
 
 .rank-title-group h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.98rem;
   color: #107c41;
-  font-family: 'Consolas', 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rank-subtitle {
   font-size: 0.74rem;
   color: #605e5c;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rank-close-btn {
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+  background: #ffffff;
+  border: 1px solid #d2d0ce;
+  color: #323130;
+  transition: all 0.15s ease;
+}
+
+.rank-close-btn:hover {
+  background: #fdf2f2;
+  border-color: #c50f1f;
+  color: #c50f1f;
 }
 
 /* Rank Difficulty Tabs */
@@ -1286,6 +1603,84 @@
   background: #f3f2f1;
   border-top: 1px solid #edebe9;
   padding: 10px 16px;
+}
+
+/* 📱 명예의 전당 모바일 뷰포트 최적화 */
+@media (max-width: 640px) {
+  .sudoku-rank-modal-backdrop {
+    padding: 8px;
+  }
+
+  .sudoku-rank-modal-card {
+    max-height: 92vh;
+    border-radius: 8px;
+  }
+
+  .rank-modal-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .rank-header-trophy {
+    font-size: 1.15rem;
+  }
+
+  .rank-title-group h3 {
+    font-size: 0.82rem;
+  }
+
+  .rank-subtitle {
+    font-size: 0.68rem;
+  }
+
+  .rank-close-btn {
+    padding: 4px 8px;
+    font-size: 0.76rem;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .rank-diff-tabs {
+    padding: 5px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .rank-diff-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rank-tab-btn {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .rank-table-wrapper {
+    max-height: 52vh;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .excel-rank-table {
+    font-size: 0.74rem;
+    min-width: 480px;
+  }
+
+  .excel-rank-table th,
+  .excel-rank-table td {
+    padding: 6px 8px;
+  }
+
+  .rank-modal-footer {
+    padding: 8px 12px;
+    font-size: 0.72rem;
+  }
 }
 
 

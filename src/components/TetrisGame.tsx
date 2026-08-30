@@ -1073,9 +1073,29 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ username, room = 'tetris-1', on
       {/* 🏆 High Score Ranking Panel */}
       {showRankings && (
         <div className="tetris-rankings-panel">
-          <div className="ranking-title">
-            <Trophy size={16} color="#facc15" />
-            <span>명예의 전당 (Top 10 최고 기록)</span>
+          <div className="ranking-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Trophy size={16} color="#facc15" />
+              <span>명예의 전당 (Top 10 최고 기록)</span>
+            </div>
+            <button
+              type="button"
+              className="tetris-ranking-close-btn"
+              onClick={() => setShowRankings(false)}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#cbd5e1',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                padding: '2px 8px'
+              }}
+            >
+              ✕ 닫기
+            </button>
           </div>
           {rankings.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', padding: '10px' }}>

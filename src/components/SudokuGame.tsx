@@ -178,7 +178,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
   );
   const totalMarkedCount = purpleCount + orangeCount + greenCount;
 
-  // 1. 헷갈림 마킹(보라/주황/초록)만 일반 확정(파란색)으로 해제/원복
+  // 1. 헷갈림 마킹(보라/주황/초록/전체)을 일반 확정(파란색)으로 색상 원복
   const handleClearMarks = React.useCallback((targetColor: 'purple' | 'orange' | 'green' | 'all' = 'all') => {
     let count = 0;
     if (targetColor === 'purple') count = purpleCount;
@@ -187,7 +187,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     else count = totalMarkedCount;
 
     if (count === 0) {
-      setMessage('ℹ️ 현재 표시된 헷갈림 셀이 없습니다.');
+      const colorLabel = targetColor === 'purple' ? '보라색' : targetColor === 'orange' ? '주황색' : targetColor === 'green' ? '초록색' : '';
+      setMessage(`ℹ️ 현재 표시된 ${colorLabel} 헷갈림 셀이 없습니다.`);
       return;
     }
 
@@ -198,7 +199,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         ? '헷갈림2(주황색)'
         : targetColor === 'green'
         ? '헷갈림3(초록색)'
-        : '모든 헷갈림';
+        : '모든 헷갈림(보라/주황/초록)';
 
     setMarkedMask(prev =>
       prev.map(row =>
@@ -208,7 +209,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         })
       )
     );
-    setMessage(`🧹 ${colorName} 표시(${count}개)를 일반 확정(파랑)으로 변경했습니다.`);
+    setMessage(`✨ ${colorName} 셀(${count}개)을 일반 확정(파랑)으로 원복했습니다.`);
   }, [purpleCount, orangeCount, greenCount, totalMarkedCount]);
 
   // 2. 헷갈림(보라/주황/초록)으로 입력된 숫자들을 색상별 또는 전체 싹 지우기 (가설 롤백)
@@ -574,124 +575,218 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
       {/* 📱 Main Workspace */}
       <div className="sudoku-main-workspace">
-        {/* 난이도 선택 & 패드 토글 리본 */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {(['easy', 'medium', 'hard', 'expert', 'legendary', 'god'] as Difficulty[]).map(diff => (
+        {/* 🌿 1. 난이도 선택 리본 (Difficulty Bar) */}
+        <div className="sudoku-diff-ribbon">
+          <span className="ribbon-label">난이도:</span>
+          <div className="diff-btn-group">
+            {(['easy', 'medium', 'hard', 'expert', 'legendary', 'god'] as Difficulty[]).map(diff => (
+              <button
+                key={diff}
+                className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'god' ? 'god' : diff === 'legendary' ? 'legendary' : diff === 'expert' ? 'expert' : 'primary') : ''}`}
+                onClick={() => handleStartGame(diff)}
+              >
+                {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : diff === 'expert' ? '💀 짱어려움' : diff === 'legendary' ? '👑 전설' : '🌌 신의 영역'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 🛠️ 2. 주요 게임 도구 툴바 */}
+        <div className="sudoku-main-toolbar">
+          <div className="toolbar-left">
             <button
-              key={diff}
-              className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'god' ? 'god' : diff === 'legendary' ? 'legendary' : diff === 'expert' ? 'expert' : 'primary') : ''}`}
-              onClick={() => handleStartGame(diff)}
+              className="excel-btn ranking-btn"
+              onClick={() => {
+                setSelectedRankDiff(difficulty);
+                setShowRankModal(true);
+                socket?.emit('sudoku-get-rankings');
+              }}
+              title="난이도별 실시간 명예의 전당 랭킹 순위표를 확인합니다."
             >
-              {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : diff === 'expert' ? '💀 짱어려움' : diff === 'legendary' ? '👑 전설의 스도쿠왕' : '🌌 신(神)의 영역'}
+              🏆 명예의 전당
             </button>
-          ))}
-          <button
-            className="excel-btn"
-            onClick={() => setShowNumpad(!showNumpad)}
-          >
-            {showNumpad ? '🔢 수식 패드 숨기기' : '🔢 수식 패드 보이기'}
-          </button>
-          <button
-            className="excel-btn ranking-btn"
-            onClick={() => {
-              setSelectedRankDiff(difficulty);
-              setShowRankModal(true);
-              socket?.emit('sudoku-get-rankings');
-            }}
-            title="난이도별 실시간 명예의 전당 랭킹 순위표를 확인합니다."
-          >
-            🏆 명예의 전당
-          </button>
-          {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
-            <div style={{ display: 'inline-flex', gap: '4px' }}>
-              <button
-                className={`excel-btn ${selectedCellMarkState === 'purple' ? 'marked-purple-btn-active' : ''}`}
-                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
-                title="선택된 셀의 헷갈림1(보라색) 색상을 전환합니다"
-              >
-                {selectedCellMarkState === 'purple' ? '🟣 보라 해제' : '🟣 헷갈림1'}
-              </button>
-              <button
-                className={`excel-btn ${selectedCellMarkState === 'orange' ? 'marked-orange-btn-active' : ''}`}
-                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
-                title="선택된 셀의 헷갈림2(주황색) 색상을 전환합니다"
-              >
-                {selectedCellMarkState === 'orange' ? '🟠 주황 해제' : '🟠 헷갈림2'}
-              </button>
-              <button
-                className={`excel-btn ${selectedCellMarkState === 'green' ? 'marked-green-btn-active' : ''}`}
-                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
-                title="선택된 셀의 헷갈림3(초록색) 색상을 전환합니다"
-              >
-                {selectedCellMarkState === 'green' ? '🟢 초록 해제' : '🟢 헷갈림3'}
-              </button>
-            </div>
-          )}
-          {totalMarkedCount > 0 && (
-            <div className="marked-actions-ribbon-group" style={{ display: 'inline-flex', gap: '4px', flexWrap: 'wrap' }}>
-              {purpleCount > 0 && (
-                <button
-                  className="excel-btn marked-purple-del-btn"
-                  onClick={() => handleClearMarkedValues('purple')}
-                  title="보라색(헷갈림1)으로 입력된 숫자들을 삭제합니다."
-                >
-                  🗑️ 🟣 보라 삭제 ({purpleCount})
-                </button>
-              )}
-              {orangeCount > 0 && (
-                <button
-                  className="excel-btn marked-orange-del-btn"
-                  onClick={() => handleClearMarkedValues('orange')}
-                  title="주황색(헷갈림2)으로 입력된 숫자들을 삭제합니다."
-                >
-                  🗑️ 🟠 주황 삭제 ({orangeCount})
-                </button>
-              )}
-              {greenCount > 0 && (
-                <button
-                  className="excel-btn marked-green-del-btn"
-                  onClick={() => handleClearMarkedValues('green')}
-                  title="초록색(헷갈림3)으로 입력된 숫자들을 삭제합니다."
-                >
-                  🗑️ 🟢 초록 삭제 ({greenCount})
-                </button>
-              )}
-              {totalMarkedCount > 0 && (
-                <button
-                  className="excel-btn marked-delete-btn"
-                  onClick={() => handleClearMarkedValues('all')}
-                  title="모든 헷갈림(보라/주황/초록)으로 입력된 가설 숫자들을 한 번에 모두 삭제합니다. (단축키: Shift+Delete)"
-                >
-                  🗑️ 전체 헷갈림 삭제 ({totalMarkedCount})
-                </button>
-              )}
-              <button
-                className="excel-btn marked-clear-btn"
-                onClick={() => handleClearMarks('all')}
-                title="모든 헷갈림(보라/주황/초록) 셀을 일반 파란색 확정으로 일괄 전환합니다. (단축키: Shift+M)"
-              >
-                🧹 색상 원복 ({totalMarkedCount})
-              </button>
-            </div>
-          )}
-          {selectedCell && (
             <button
-              className="excel-btn"
+              className={`excel-btn ${showNumpad ? 'active-toggle' : ''}`}
+              onClick={() => setShowNumpad(!showNumpad)}
+            >
+              {showNumpad ? '🔢 수식 패드 ON' : '🔢 수식 패드 OFF'}
+            </button>
+          </div>
+          <div className="toolbar-right">
+            <button
+              className="excel-btn hint-btn"
               onClick={handleUseHint}
-              disabled={phase !== 'playing' || completed || fixedMask[selectedCell.r][selectedCell.c]}
-              title={fixedMask[selectedCell.r][selectedCell.c] ? '이미 초기 고정된 셀입니다.' : '정답 힌트 확인'}
+              disabled={phase !== 'playing' || completed || !selectedCell || fixedMask[selectedCell.r][selectedCell.c]}
+              title={!selectedCell ? '칸을 먼저 선택해주세요' : fixedMask[selectedCell.r][selectedCell.c] ? '이미 초기 고정된 셀입니다.' : '선택 셀 정답 힌트'}
             >
               💡 힌트
             </button>
-          )}
-          <button
-            className="excel-btn close"
-            onClick={handleReset}
-            disabled={phase !== 'playing'}
-          >
-            🔄 리셋
-          </button>
+            <button
+              className="excel-btn close"
+              onClick={handleReset}
+              disabled={phase !== 'playing'}
+            >
+              🔄 새판 리셋
+            </button>
+          </div>
         </div>
+
+        {/* 🎯 3. 선택된 셀 빠른 색상 설정 바 */}
+        {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
+          <div className="sudoku-cell-context-bar">
+            <span className="context-cell-name">
+              📍 <b>Cell {String.fromCharCode(65 + selectedCell.c)}{selectedCell.r + 1}</b>
+            </span>
+            <span className="context-divider">|</span>
+            <span className="context-label">색상:</span>
+            <div className="context-color-btns">
+              <button
+                type="button"
+                className={`cell-mode-chip normal ${selectedCellMarkState === 'none' ? 'active' : ''}`}
+                onClick={() => {
+                  setMarkedMask(prev => {
+                    const next = prev.map(row => [...row]);
+                    next[selectedCell.r][selectedCell.c] = 'none';
+                    return next;
+                  });
+                }}
+              >
+                🔵 확정
+              </button>
+              <button
+                type="button"
+                className={`cell-mode-chip purple ${selectedCellMarkState === 'purple' ? 'active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
+              >
+                🟣 헷갈림1
+              </button>
+              <button
+                type="button"
+                className={`cell-mode-chip orange ${selectedCellMarkState === 'orange' ? 'active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
+              >
+                🟠 헷갈림2
+              </button>
+              <button
+                type="button"
+                className={`cell-mode-chip green ${selectedCellMarkState === 'green' ? 'active' : ''}`}
+                onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
+              >
+                🟢 헷갈림3
+              </button>
+            </div>
+            <span className="context-divider">|</span>
+            <button
+              type="button"
+              className="cell-clear-quick-btn"
+              onClick={() => handleNumberInput(0)}
+              title="선택된 셀 지우기"
+            >
+              🧽 지우기
+            </button>
+          </div>
+        )}
+
+        {/* 🎨 4. 헷갈림(가설) 셀 전용 관리 패널 (색상별 삭제 & 색상별 확정 원복) */}
+        {totalMarkedCount > 0 && (
+          <div className="sudoku-marked-manager-box">
+            <div className="marked-manager-header">
+              <span className="marked-manager-title">🎨 헷갈림(가설) 셀 관리 (총 {totalMarkedCount}개)</span>
+              <span className="marked-manager-desc">색상별 가설을 한 번에 삭제하거나 일반 확정(파란색)으로 원복할 수 있습니다.</span>
+            </div>
+            <div className="marked-manager-actions">
+              {/* 🗑️ 가설 숫자 삭제 그룹 */}
+              <div className="marked-action-row">
+                <span className="group-label">🗑️ 숫자 삭제:</span>
+                <div className="group-btns">
+                  {purpleCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-purple-del-btn"
+                      onClick={() => handleClearMarkedValues('purple')}
+                      title="보라색(헷갈림1) 숫자들을 모두 삭제합니다."
+                    >
+                      🟣 보라 삭제 ({purpleCount})
+                    </button>
+                  )}
+                  {orangeCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-orange-del-btn"
+                      onClick={() => handleClearMarkedValues('orange')}
+                      title="주황색(헷갈림2) 숫자들을 모두 삭제합니다."
+                    >
+                      🟠 주황 삭제 ({orangeCount})
+                    </button>
+                  )}
+                  {greenCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-green-del-btn"
+                      onClick={() => handleClearMarkedValues('green')}
+                      title="초록색(헷갈림3) 숫자들을 모두 삭제합니다."
+                    >
+                      🟢 초록 삭제 ({greenCount})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="excel-btn marked-delete-btn"
+                    onClick={() => handleClearMarkedValues('all')}
+                    title="모든 헷갈림 숫자를 일괄 삭제합니다. (단축키: Shift+Delete)"
+                  >
+                    🗑️ 전체 삭제 ({totalMarkedCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* ✨ 일반 확정 원복 그룹 */}
+              <div className="marked-action-row">
+                <span className="group-label">✨ 확정 원복:</span>
+                <div className="group-btns">
+                  {purpleCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-purple-revert-btn"
+                      onClick={() => handleClearMarks('purple')}
+                      title="보라색(헷갈림1) 셀들을 일반 확정(파랑)으로 원복합니다."
+                    >
+                      🟣 보라 원복 ({purpleCount})
+                    </button>
+                  )}
+                  {orangeCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-orange-revert-btn"
+                      onClick={() => handleClearMarks('orange')}
+                      title="주황색(헷갈림2) 셀들을 일반 확정(파랑)으로 원복합니다."
+                    >
+                      🟠 주황 원복 ({orangeCount})
+                    </button>
+                  )}
+                  {greenCount > 0 && (
+                    <button
+                      type="button"
+                      className="excel-btn marked-green-revert-btn"
+                      onClick={() => handleClearMarks('green')}
+                      title="초록색(헷갈림3) 셀들을 일반 확정(파랑)으로 원복합니다."
+                    >
+                      🟢 초록 원복 ({greenCount})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="excel-btn marked-clear-btn"
+                    onClick={() => handleClearMarks('all')}
+                    title="모든 헷갈림 셀들을 일반 확정(파랑)으로 일괄 원복합니다. (단축키: Shift+M)"
+                  >
+                    🧹 전체 원복 ({totalMarkedCount})
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 🎨 셀 구분 범례 (Legend) */}
         <div className="sudoku-legend-bar">
@@ -699,7 +794,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             <span className="legend-sample fixed">5</span> 문제 (고정)
           </span>
           <span className="legend-item user">
-            <span className="legend-sample user">7</span> 확정 입력 (파랑)
+            <span className="legend-sample user">7</span> 확정 (파랑)
           </span>
           <span className="legend-item marked-purple">
             <span className="legend-sample marked-purple">4</span> 헷갈림1 (보라)
@@ -775,8 +870,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         {showNumpad && (
           <div className="sudoku-controls-panel">
             <div className="sudoku-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: '6px' }}>
-                <h3 style={{ margin: 0, fontSize: '0.9rem' }}>🔢 수식 입력 패드</h3>
+              <div className="numpad-header-row">
+                <span className="numpad-title">🔢 수식 입력 패드</span>
                 
                 {/* 입력 모드 토글 (일반 파랑 vs 헷갈림 보라/주황/초록) */}
                 <div className="input-mode-toggle-group">
@@ -786,7 +881,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     onClick={() => setInputMode('normal')}
                     title="일반 확정 숫자 입력 모드 (파란색)"
                   >
-                    🔵 일반 확정
+                    🔵 확정
                   </button>
                   <button
                     type="button"
@@ -794,7 +889,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     onClick={() => setInputMode('purple')}
                     title="헷갈림1 가설 숫자 입력 모드 (보라색)"
                   >
-                    🟣 헷갈림1 (보라)
+                    🟣 헷갈림1
                   </button>
                   <button
                     type="button"
@@ -802,7 +897,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     onClick={() => setInputMode('orange')}
                     title="헷갈림2 가설 숫자 입력 모드 (주황색)"
                   >
-                    🟠 헷갈림2 (주황)
+                    🟠 헷갈림2
                   </button>
                   <button
                     type="button"
@@ -810,7 +905,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     onClick={() => setInputMode('green')}
                     title="헷갈림3 가설 숫자 입력 모드 (초록색)"
                   >
-                    🟢 헷갈림3 (초록)
+                    🟢 헷갈림3
                   </button>
                 </div>
               </div>
@@ -832,100 +927,23 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               <div className="numpad-action-row">
                 <button
                   type="button"
-                  className="excel-btn"
+                  className="excel-btn numpad-clear-btn"
                   onClick={() => handleNumberInput(0)}
                   disabled={completed}
-                  style={{ flex: 1, padding: '6px 8px' }}
+                  title="선택된 셀 지우기 (Backspace / 0)"
                 >
                   🧽 셀 지우기
                 </button>
-                {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
-                  <div style={{ display: 'flex', gap: '3px', flex: 3 }}>
-                    <button
-                      type="button"
-                      className={`excel-btn ${selectedCellMarkState === 'purple' ? 'marked-purple-btn-active' : ''}`}
-                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
-                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
-                    >
-                      {selectedCellMarkState === 'purple' ? '🟣 보라 해제' : '🟣 헷갈림1'}
-                    </button>
-                    <button
-                      type="button"
-                      className={`excel-btn ${selectedCellMarkState === 'orange' ? 'marked-orange-btn-active' : ''}`}
-                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
-                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
-                    >
-                      {selectedCellMarkState === 'orange' ? '🟠 주황 해제' : '🟠 헷갈림2'}
-                    </button>
-                    <button
-                      type="button"
-                      className={`excel-btn ${selectedCellMarkState === 'green' ? 'marked-green-btn-active' : ''}`}
-                      onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
-                      style={{ flex: 1, padding: '6px 4px', fontSize: '0.75rem' }}
-                    >
-                      {selectedCellMarkState === 'green' ? '🟢 초록 해제' : '🟢 헷갈림3'}
-                    </button>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  className="excel-btn numpad-hint-btn"
+                  onClick={handleUseHint}
+                  disabled={phase !== 'playing' || completed || !selectedCell || fixedMask[selectedCell.r][selectedCell.c]}
+                  title="정답 힌트 확인"
+                >
+                  💡 힌트 확인
+                </button>
               </div>
-
-              {totalMarkedCount > 0 && (
-                <div className="numpad-marked-del-grid" style={{ display: 'flex', gap: '4px', width: '100%', marginTop: 6, flexWrap: 'wrap' }}>
-                  {purpleCount > 0 && (
-                    <button
-                      type="button"
-                      className="excel-btn marked-purple-del-btn"
-                      onClick={() => handleClearMarkedValues('purple')}
-                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
-                      title="보라색(헷갈림1) 숫자만 삭제"
-                    >
-                      🗑️ 🟣보라 ({purpleCount})
-                    </button>
-                  )}
-                  {orangeCount > 0 && (
-                    <button
-                      type="button"
-                      className="excel-btn marked-orange-del-btn"
-                      onClick={() => handleClearMarkedValues('orange')}
-                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
-                      title="주황색(헷갈림2) 숫자만 삭제"
-                    >
-                      🗑️ 🟠주황 ({orangeCount})
-                    </button>
-                  )}
-                  {greenCount > 0 && (
-                    <button
-                      type="button"
-                      className="excel-btn marked-green-del-btn"
-                      onClick={() => handleClearMarkedValues('green')}
-                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
-                      title="초록색(헷갈림3) 숫자만 삭제"
-                    >
-                      🗑️ 🟢초록 ({greenCount})
-                    </button>
-                  )}
-                  {totalMarkedCount > 0 && (
-                    <button
-                      type="button"
-                      className="excel-btn marked-delete-btn"
-                      onClick={() => handleClearMarkedValues('all')}
-                      style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
-                      title="모든 헷갈림 가설 숫자 일괄 삭제"
-                    >
-                      🗑️ 전체 ({totalMarkedCount})
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="excel-btn marked-clear-btn"
-                    onClick={() => handleClearMarks('all')}
-                    style={{ flex: 1, padding: '5px 4px', fontSize: '0.74rem' }}
-                    title="헷갈림 마킹을 일반 확정(파랑)으로 원복"
-                  >
-                    🧹 원복 ({totalMarkedCount})
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -969,10 +987,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
             {/* Modal Title */}
             <div className="rank-modal-header">
               <div className="rank-title-group">
-                <span style={{ fontSize: '1.4rem' }}>🏆</span>
-                <div>
-                  <h3>Table 07: Sudoku_Hall_Of_Fame.xlsx</h3>
-                  <span className="rank-subtitle">난이도별 타임어택 실시간 Top 10 명예의 전당</span>
+                <span className="rank-header-trophy">🏆</span>
+                <div className="rank-title-text-box">
+                  <h3>스도쿠 명예의 전당 (Sudoku Hall of Fame)</h3>
+                  <span className="rank-subtitle">난이도별 타임어택 실시간 Top 10 순위표</span>
                 </div>
               </div>
               <button
