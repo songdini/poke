@@ -10,11 +10,45 @@ import {
   getFarmVisits,
   addGuestbookEntry,
   getGuestbookEntries,
-  deleteGuestbookEntry
+  deleteGuestbookEntry,
+  registerFarmUser,
+  loginFarmUser,
+  checkFarmUserExists,
+  changeFarmPassword
 } from '../db.js';
 
-// 🏡 포켓농장 (PokéFarm) SQLite 기반 소셜 핸들러: 실시간 이웃 농장 방문, 하트 응원, 방명록 시스템
+// 🏡 포켓농장 (PokéFarm) SQLite 기반 소셜 핸들러: 실시간 이웃 농장 방문, 하트 응원, 방명록 시스템, 회원가입/로그인 인증
 export function registerFarmHandlers(io, socket) {
+  // 🔐 0-1. 회원가입 및 신규 농장 개설
+  socket.on('farm-register', ({ username, password, farmData }) => {
+    const result = registerFarmUser({ username, password, farmData });
+    socket.emit('farm-register-result', result);
+    if (result.success) {
+      broadcastFarmList(io);
+    }
+  });
+
+  // 🔐 0-2. 기존 농장 로그인 (다른 기기 및 브라우저에서 동일 농장 로드)
+  socket.on('farm-login', ({ username, password }) => {
+    const result = loginFarmUser({ username, password });
+    socket.emit('farm-login-result', result);
+    if (result.success) {
+      broadcastFarmList(io);
+    }
+  });
+
+  // 🔐 0-3. 사용자 아이디 중복 및 비밀번호 존재 여부 확인
+  socket.on('farm-check-user', ({ username }) => {
+    const result = checkFarmUserExists(username);
+    socket.emit('farm-check-user-result', result);
+  });
+
+  // 🔐 0-4. 비밀번호 변경
+  socket.on('farm-change-password', ({ username, oldPassword, newPassword }) => {
+    const result = changeFarmPassword({ username, oldPassword, newPassword });
+    socket.emit('farm-change-password-result', result);
+  });
+
   // 1. 농장 상태 동기화 및 SQLite DB 저장 (UPSERT)
   socket.on('farm-sync', ({ username, farmData }) => {
     if (!username || !farmData) return;

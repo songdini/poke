@@ -3338,6 +3338,14 @@ export function getInitialFarmState(ownerName: string): FarmState {
 
 export const FARM_CURRENT_SAVE_KEY = 'pokefarm_save_data_current_active';
 
+// 🚪 현재 활성 농장 세션 및 캐시 초기화 (로그아웃 시 사용)
+export function clearFarmLocalSession(): void {
+  try {
+    localStorage.removeItem(FARM_CURRENT_SAVE_KEY);
+    localStorage.removeItem('pokefarm_saved_owner');
+  } catch (e) {}
+}
+
 // 유효한 농장 세이브 데이터인지 판별 (생성 완료된 농장)
 export function isValidFarmSave(state: any): state is FarmState {
   if (!state || typeof state !== 'object') return false;

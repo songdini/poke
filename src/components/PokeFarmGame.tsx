@@ -19,7 +19,9 @@ import {
   EEVEE_BRANCHES,
   getRandomEeveeEvolution,
   getRandomStoryEvent,
-  getMaxStatForStage
+  getMaxStatForStage,
+  getInitialFarmState,
+  clearFarmLocalSession
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
@@ -32,6 +34,8 @@ interface PokeFarmGameProps {
   initialVisitingUser?: string | null;
   onClearInitialVisitingUser?: () => void;
   onSelectGame?: (gameKey: string) => void;
+  onUserLogin?: (username: string) => void;
+  onUserLogout?: () => void;
 }
 
 type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
@@ -406,7 +410,15 @@ export const getDiplomaActiveSprite = (
   };
 };
 
-export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser }) => {
+export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
+  username,
+  onLeaveRoom,
+  initialVisitingUser,
+  onClearInitialVisitingUser,
+  onSelectGame: _onSelectGame,
+  onUserLogin,
+  onUserLogout
+}) => {
   const { socket } = useSocket();
 
   // 농장 전체 로컬 상태
@@ -416,14 +428,43 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 💖 오늘 보낸 1촌 하트 횟수 (하루 최대 5회 제한)
   const [todayHeartsSent, setTodayHeartsSent] = useState<number>(() => getTodayHeartCountLocal(farmState.ownerName || username || '지우'));
 
-  // 🐣 온보딩 위저드 상태 (농장주 이름 입력 ➔ 스타팅 포켓몬 선택)
+  // 🐣 온보딩 위저드 상태 (스타팅 포켓몬 선택)
   const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
-  const [initOwnerName, setInitOwnerName] = useState(username || '지우');
-  const [initFarmName, setInitFarmName] = useState(`${username || '지우'}의 포켓농장`);
   const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
   const [starterNickname, setStarterNickname] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | 'gen1' | 'gen2-3' | 'gen4-5' | 'gen6-7' | 'gen8-9'>('all');
   const [shopCategory, setShopCategory] = useState<'all' | 'egg' | 'food' | 'bath' | 'toy' | 'medicine'>('all');
+
+  // 🔐 회원가입 및 로그인 모달/화면 상태
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  // 로그인 폼
+  const [loginUsername, setLoginUsername] = useState(username && username !== '지우' ? username : '');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // 회원가입 폼
+  const [registerUsername, setRegisterUsername] = useState('');
+  const [registerFarmName, setRegisterFarmName] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // 비밀번호 변경 모달
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // 로그아웃 확인 모달
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // 🔴 몬스터볼 등장 애니메이션 분양 모달 상태
   const [adoptRevealModal, setAdoptRevealModal] = useState<{
@@ -756,6 +797,84 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       }
     };
 
+    // 🔐 로그인 결과 처리
+    const handleLoginResult = (res: { success: boolean; reason?: string; message?: string; farm?: any; guestbook?: GuestbookEntry[] }) => {
+      setIsLoggingIn(false);
+      if (res.success && res.farm) {
+        const loadedFarm = res.farm;
+        const cleanUser = loadedFarm.username || loadedFarm.ownerName;
+        const newState: FarmState = {
+          ...getInitialFarmState(cleanUser),
+          ...loadedFarm,
+          ownerName: cleanUser,
+          isInitialized: true,
+          guestbook: res.guestbook || []
+        };
+        setFarmState(newState);
+        saveFarmState(newState);
+        localStorage.setItem('pokefarm_saved_owner', cleanUser);
+        if (onUserLogin) {
+          onUserLogin(cleanUser);
+        }
+        showAlert(res.message || `🎉 [${cleanUser}]님의 농장 데이터를 성공적으로 불러왔습니다!`, 'success');
+        setLoginError('');
+        setLoginPassword('');
+        if (loadedFarm.activePokemon) {
+          playPokemonCry(loadedFarm.activePokemon.speciesId);
+        }
+      } else {
+        setLoginError(res.message || '로그인에 실패했습니다.');
+        showAlert(res.message || '로그인 실패', 'warn');
+      }
+    };
+
+    // 🔐 회원가입 및 신규 개설 결과 처리
+    const handleRegisterResult = (res: { success: boolean; reason?: string; message?: string; farm?: any; guestbook?: GuestbookEntry[] }) => {
+      setIsRegistering(false);
+      if (res.success && res.farm) {
+        const loadedFarm = res.farm;
+        const cleanUser = loadedFarm.username || loadedFarm.ownerName;
+        const newState: FarmState = {
+          ...getInitialFarmState(cleanUser),
+          ...loadedFarm,
+          ownerName: cleanUser,
+          isInitialized: true,
+          guestbook: res.guestbook || []
+        };
+        setFarmState(newState);
+        saveFarmState(newState);
+        localStorage.setItem('pokefarm_saved_owner', cleanUser);
+        if (onUserLogin) {
+          onUserLogin(cleanUser);
+        }
+        showAlert(`🎉 [${cleanUser}]님의 포켓농장이 정식 개설되었습니다! 환영합니다!`, 'success');
+        setRegisterError('');
+        setRegisterPassword('');
+        setRegisterPasswordConfirm('');
+        if (loadedFarm.activePokemon) {
+          playPokemonCry(loadedFarm.activePokemon.speciesId);
+        }
+      } else {
+        setRegisterError(res.message || '농장 개설에 실패했습니다.');
+        showAlert(res.message || '농장 개설 실패', 'warn');
+      }
+    };
+
+    // 🔐 비밀번호 변경 결과 처리
+    const handleChangePasswordResult = (res: { success: boolean; message?: string }) => {
+      setIsChangingPassword(false);
+      if (res.success) {
+        setShowChangePasswordModal(false);
+        setOldPassword('');
+        setNewPassword('');
+        setNewPasswordConfirm('');
+        setChangePasswordError('');
+        showAlert(res.message || '비밀번호가 성공적으로 변경되었습니다.', 'success');
+      } else {
+        setChangePasswordError(res.message || '비밀번호 변경에 실패했습니다.');
+      }
+    };
+
     socket.emit('farm-get-daily-hearts', { username: farmState.ownerName });
 
     socket.on('farm-list-update', handleListUpdate);
@@ -767,6 +886,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     socket.on('farm-daily-hearts-info', handleDailyHeartsInfo);
     socket.on('farm-guestbook-updated', handleGuestbookUpdated);
     socket.on('farm-my-data-loaded', handleMyDataLoaded);
+    socket.on('farm-login-result', handleLoginResult);
+    socket.on('farm-register-result', handleRegisterResult);
+    socket.on('farm-change-password-result', handleChangePasswordResult);
 
     return () => {
       socket.off('farm-list-update', handleListUpdate);
@@ -778,8 +900,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       socket.off('farm-daily-hearts-info', handleDailyHeartsInfo);
       socket.off('farm-guestbook-updated', handleGuestbookUpdated);
       socket.off('farm-my-data-loaded', handleMyDataLoaded);
+      socket.off('farm-login-result', handleLoginResult);
+      socket.off('farm-register-result', handleRegisterResult);
+      socket.off('farm-change-password-result', handleChangePasswordResult);
     };
-  }, [socket, farmState.ownerName, farmState.isInitialized]);
+  }, [socket, farmState.ownerName, farmState.isInitialized, onUserLogin]);
 
   // 📌 외부(시트1 게임목록 상단 등)에서 특정 유저 미니홈피 방문 요청 시 자동 전환
   useEffect(() => {
@@ -3076,36 +3201,133 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
 
 
-  // 9. 온보딩 완료 처리 (농장 설립 & 첫 파트너 포켓몬 분양)
-  const handleCompleteOnboarding = () => {
-    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
-    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
-    const cleanOwner = initOwnerName.trim() || username || '지우';
-    const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
-
-    localStorage.setItem('pokefarm_saved_owner', cleanOwner);
-
-    const newFarmState: FarmState = {
-      ...farmState,
-      ownerName: cleanOwner,
-      farmName: cleanFarm,
-      isInitialized: true,
-      activePokemon: newMon
-    };
-
-    saveFarmState(newFarmState);
-
-    if (socket && socket.connected) {
-      socket.emit('farm-sync', { username: cleanOwner, farmData: newFarmState });
+  // 🔐 1. 기존 농장 로그인 제출
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    const cleanUser = loginUsername.trim();
+    if (!cleanUser) {
+      setLoginError('농장 아이디(닉네임)를 입력해주세요.');
+      return;
+    }
+    if (!socket || !socket.connected) {
+      setLoginError('서버에 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      return;
     }
 
-    setFarmState(newFarmState);
-
-    playPokemonCry(newMon.speciesId);
-    showAlert(`🎉 [${cleanFarm}]이 정식 개장되었습니다! 첫 파트너 [${newMon.name}]과(와) 함께 사랑으로 키워보세요!`, 'success');
+    setIsLoggingIn(true);
+    socket.emit('farm-login', {
+      username: cleanUser,
+      password: loginPassword
+    });
   };
 
-  // 🐣 만약 아직 농장이 설립되지 않았다면 온보딩 2단계 위저드 표시
+  // 🔐 2. 신규 농장 개설 1단계 -> 2단계
+  const handleRegisterNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError('');
+    const cleanUser = registerUsername.trim();
+    if (!cleanUser || cleanUser.length < 2) {
+      setRegisterError('농장주 닉네임(아이디)은 최소 2자 이상 입력해주세요.');
+      return;
+    }
+    if (cleanUser.length > 30) {
+      setRegisterError('아이디는 30자 이하로 입력해주세요.');
+      return;
+    }
+    if (!registerPassword || registerPassword.length < 4) {
+      setRegisterError('비밀번호는 최소 4자 이상이어야 합니다.');
+      return;
+    }
+    if (registerPassword !== registerPasswordConfirm) {
+      setRegisterError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    setOnboardingStep('starter');
+  };
+
+  // 🔐 3. 신규 농장 개설 최종 완료 처리 (회원가입 & 첫 파트너 포켓몬 분양)
+  const handleCompleteRegistration = () => {
+    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
+    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
+    const cleanOwner = registerUsername.trim();
+    const cleanFarm = registerFarmName.trim() || `${cleanOwner}님의 포켓농장`;
+
+    if (!socket || !socket.connected) {
+      showAlert('서버와 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warn');
+      return;
+    }
+
+    setIsRegistering(true);
+    socket.emit('farm-register', {
+      username: cleanOwner,
+      password: registerPassword,
+      farmData: {
+        farmName: cleanFarm,
+        activePokemon: newMon,
+        reservePokemon: [],
+        graduatedPokemon: [],
+        graduatedCount: 0,
+        heartsCount: 0,
+        coins: 1500,
+        inventory: { oran_berry: 5, mild_soap: 3, toy_ball: 2 },
+        bgTheme: 'classic',
+        stickers: [
+          { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20, type: 'sticker', scale: 1 },
+          { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15, type: 'sticker', scale: 1 },
+          { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75, type: 'sticker', scale: 1 },
+          { id: 'stk_init_4', stickerId: 'txt_welcome', text: '두부월드에 오신 것을 환영해요! ✨', label: '환영 말풍선', x: 28, y: 18, type: 'bubble', styleType: 'classic_bubble', scale: 1 }
+        ],
+        pokemonPlacements: {},
+        statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
+        bgmSong: '프리스타일 - Y (Feat. 지선)'
+      }
+    });
+  };
+
+  // 🔐 4. 비밀번호 변경 제출
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordError('');
+    if (!newPassword || newPassword.length < 4) {
+      setChangePasswordError('새 비밀번호는 최소 4자 이상이어야 합니다.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setChangePasswordError('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    if (!socket || !socket.connected) {
+      setChangePasswordError('서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    socket.emit('farm-change-password', {
+      username: farmState.ownerName,
+      oldPassword,
+      newPassword
+    });
+  };
+
+  // 🔐 5. 농장 로그아웃
+  const handleLogout = () => {
+    setShowLogoutConfirm(false);
+    clearFarmLocalSession();
+    const blankState = getInitialFarmState('');
+    setFarmState(blankState);
+    setLoginUsername('');
+    setLoginPassword('');
+    setAuthMode('login');
+    if (onUserLogout) {
+      onUserLogout();
+    }
+    showAlert('👋 정상적으로 로그아웃되었습니다. 다른 기기에서도 아이디와 비밀번호로 언제든 다시 로그인할 수 있습니다.', 'info');
+  };
+
+  // 🐣 아직 농장에 로그인하지 않았거나 개설되지 않은 경우: 로그인 & 신규 개설 포털 표시
   if (!farmState.isInitialized) {
     const selectedChain = STARTER_CHAINS[selectedStarterIdx] || STARTER_CHAINS[0];
     const starterBaby = selectedChain[0];
@@ -3113,184 +3335,311 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     return (
       <div className="poke-farm-container dubu-modern-theme">
         <div className="farm-onboarding-wrapper">
-          <div className="onboarding-card">
-            {onboardingStep === 'name' ? (
-              /* STEP 1: 농장주 & 농장 이름 설정 */
-              <div className="onboarding-step-content">
-                <div className="onboarding-badge">STEP 1 / 2</div>
-                <div className="onboarding-icon">🏡</div>
-                <h2>포켓농장 개설 신고서</h2>
+          <div className="onboarding-card auth-card">
+            {/* 상단 모드 전환 탭 */}
+            <div className="auth-tab-switch">
+              <button
+                type="button"
+                className={`auth-mode-tab ${authMode === 'login' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('login'); setLoginError(''); }}
+              >
+                🔑 기존 농장 로그인 (기기 간 연동)
+              </button>
+              <button
+                type="button"
+                className={`auth-mode-tab ${authMode === 'register' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('register'); setRegisterError(''); setOnboardingStep('name'); }}
+              >
+                🌱 새 농장 개설하기
+              </button>
+            </div>
+
+            {authMode === 'login' ? (
+              /* =============================================================
+                 1. 기존 농장 로그인 모드 (어느 기기에서든 내 농장 불러오기)
+                 ============================================================= */
+              <div className="onboarding-step-content auth-step-content">
+                <div className="onboarding-icon">🔑</div>
+                <h2>두부월드 포켓농장 로그인</h2>
                 <p className="onboarding-desc">
-                  포켓농장에 오신 것을 환영합니다!<br />
-                  먼저 농장주님의 닉네임과 농장 이름을 지어주세요.
+                  아이디와 비밀번호로 로그인하면 어느 기기에서든<br />
+                  내 소중한 포켓몬과 미니홈피, 졸업생 데이터를 그대로 불러옵니다!
                 </p>
 
-                <div className="onboarding-form">
+                {loginError && (
+                  <div className="auth-error-banner">
+                    ⚠️ {loginError}
+                  </div>
+                )}
+
+                <form onSubmit={handleLoginSubmit} className="onboarding-form">
                   <div className="onboarding-input-group">
-                    <label>👤 농장주 닉네임</label>
+                    <label>👤 농장 아이디 (닉네임)</label>
                     <input
                       type="text"
-                      value={initOwnerName}
-                      onChange={e => {
-                        setInitOwnerName(e.target.value);
-                        setInitFarmName(`${e.target.value}의 포켓농장`);
-                      }}
-                      placeholder="예: 지우"
-                      maxLength={100}
+                      value={loginUsername}
+                      onChange={e => setLoginUsername(e.target.value)}
+                      placeholder="내 농장 아이디를 입력하세요"
+                      required
+                      minLength={2}
+                      maxLength={30}
+                      autoFocus
                     />
                   </div>
 
                   <div className="onboarding-input-group">
-                    <label>🏷️ 농장 이름</label>
+                    <div className="input-label-row">
+                      <label>🔒 농장 비밀번호</label>
+                      <button
+                        type="button"
+                        className="toggle-pw-btn"
+                        onClick={() => setShowLoginPassword(prev => !prev)}
+                      >
+                        {showLoginPassword ? '🙈 숨기기' : '👁️ 보기'}
+                      </button>
+                    </div>
                     <input
-                      type="text"
-                      value={initFarmName}
-                      onChange={e => setInitFarmName(e.target.value)}
-                      placeholder="예: 지우의 힐링 포켓농장"
-                      maxLength={100}
+                      type={showLoginPassword ? 'text' : 'password'}
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
+                      placeholder="비밀번호를 입력하세요"
+                      required
                     />
                   </div>
 
-                  <div className="onboarding-restore-box" style={{ margin: '10px 0 16px', textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      className="excel-btn"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: '#f0fdf4',
-                        color: '#166534',
-                        border: '1px solid #bbf7d0',
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        borderRadius: '6px'
-                      }}
-                      onClick={() => {
-                        if (!initOwnerName.trim()) {
-                          showAlert('조회할 닉네임을 먼저 입력해 주세요!', 'warn');
-                          return;
-                        }
-                        if (socket && socket.connected) {
-                          socket.emit('farm-load-my-data', { username: initOwnerName.trim() });
-                          showAlert(`🔍 [${initOwnerName.trim()}]님의 기존 농장 데이터를 서버 DB에서 조회 중입니다...`, 'info');
-                        } else {
-                          showAlert('서버와 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warn');
-                        }
-                      }}
-                    >
-                      ☁️ 서버 DB에서 이전 내 농장 데이터(졸업생/포켓몬) 찾아 복원하기
-                    </button>
+                  <div className="auth-legacy-tip">
+                    💡 <span>비밀번호 도입 이전에 생성된 기존 농장은 첫 로그인 시 입력한 비밀번호가 계정 비밀번호로 자동 설정됩니다.</span>
                   </div>
 
                   <button
-                    className="excel-btn primary onboarding-next-btn"
-                    onClick={() => {
-                      if (!initOwnerName.trim()) {
-                        showAlert('농장주 이름을 입력해 주세요!', 'warn');
-                        return;
-                      }
-                      setOnboardingStep('starter');
-                    }}
+                    type="submit"
+                    className="excel-btn primary onboarding-next-btn auth-submit-btn"
+                    disabled={isLoggingIn}
                   >
-                    다음: 파트너 포켓몬 선택하기 ➔
+                    {isLoggingIn ? '🔄 농장 데이터 불러오는 중...' : '🚀 내 농장 불러오기 (로그인)'}
                   </button>
-                </div>
+
+                  <div className="auth-switch-prompt">
+                    아직 농장이 없으신가요?{' '}
+                    <button
+                      type="button"
+                      className="auth-link-btn"
+                      onClick={() => { setAuthMode('register'); setOnboardingStep('name'); }}
+                    >
+                      🌱 새 농장 개설하기 ➔
+                    </button>
+                  </div>
+                </form>
               </div>
             ) : (
-              /* STEP 2: 첫 번째 스타팅 포켓몬 선택 */
-              <div className="onboarding-step-content">
-                <div className="onboarding-badge">STEP 2 / 2</div>
-                <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
-                <p className="onboarding-desc">
-                  함께할 첫 아기 포켓몬을 선택하세요! (※ 가라르/알로라/히스이 등 지방 리전폼 및 전설/환상 포켓몬은 분양받을 수 없으며, 상점의 [🌟 전설 & 특수 포켓몬 알]을 통해서만 부화시킬 수 있습니다)
-                </p>
+              /* =============================================================
+                 2. 새 농장 개설하기 모드 (회원가입 + 스타팅 분양)
+                 ============================================================= */
+              onboardingStep === 'name' ? (
+                /* STEP 1: 농장주 닉네임, 농장 이름, 비밀번호 설정 */
+                <div className="onboarding-step-content auth-step-content">
+                  <div className="onboarding-badge">STEP 1 / 2</div>
+                  <div className="onboarding-icon">🏡</div>
+                  <h2>포켓농장 개설 신고서</h2>
+                  <p className="onboarding-desc">
+                    포켓농장에 오신 것을 환영합니다!<br />
+                    농장주님의 닉네임과 다른 기기에서도 로그인할 비밀번호를 설정해주세요.
+                  </p>
 
-                {/* Selected Preview Box */}
-                <div className="selected-starter-preview-banner">
-                  <img src={starterBaby.showdownSprite || starterBaby.sprite} alt={starterBaby.name} className="preview-sprite" />
-                  <div className="preview-text">
-                    <h3>{starterBaby.name}</h3>
-                    <span className="types-text">타입: {starterBaby.types.join('/')}</span>
-                    <span className="evolution-text">진화: {selectedChain.map(c => c.name).join(' ➔ ')}</span>
-                  </div>
-                </div>
+                  {registerError && (
+                    <div className="auth-error-banner">
+                      ⚠️ {registerError}
+                    </div>
+                  )}
 
-                {/* Generation Filter Chips - 1세대 독립 및 세대별 묶음 */}
-                <div className="gen-filter-chips">
-                  {[
-                    { id: 'all', label: '🌟 전체 스타팅 (29종)' },
-                    { id: 'gen1', label: '🔴 1세대 (5종)' },
-                    { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
-                    { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
-                    { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
-                    { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
-                  ].map(f => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
-                      onClick={() => setGenFilter(f.id as typeof genFilter)}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
+                  <form onSubmit={handleRegisterNextStep} className="onboarding-form">
+                    <div className="onboarding-input-group">
+                      <label>👤 농장주 닉네임 (로그인 아이디)</label>
+                      <input
+                        type="text"
+                        value={registerUsername}
+                        onChange={e => {
+                          setRegisterUsername(e.target.value);
+                          if (!registerFarmName || registerFarmName.includes('포켓농장')) {
+                            setRegisterFarmName(`${e.target.value}님의 포켓농장`);
+                          }
+                        }}
+                        placeholder="예: 지우"
+                        required
+                        minLength={2}
+                        maxLength={30}
+                        autoFocus
+                      />
+                    </div>
 
-                {/* Starter Picker Grid - 오직 스타팅 포켓몬만 분양 */}
-                <div className="onboarding-starter-grid">
-                  {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
-                    .filter(({ chain }) => {
-                      if (!chain[0].isStarter) return false;
-                      if (genFilter === 'all') return true;
-                      return chain[0].genCategory === genFilter;
-                    })
-                    .map(({ chain, originalIdx }) => {
-                      const baby = chain[0];
-                      const isSelected = originalIdx === selectedStarterIdx;
-                      return (
-                        <div
-                          key={baby.id}
-                          className={`onboarding-starter-chip ${isSelected ? 'selected' : ''}`}
-                          onClick={() => {
-                            setSelectedStarterIdx(originalIdx);
-                            playPokemonCry(baby.id);
-                          }}
+                    <div className="onboarding-input-group">
+                      <label>🏷️ 농장 이름</label>
+                      <input
+                        type="text"
+                        value={registerFarmName}
+                        onChange={e => setRegisterFarmName(e.target.value)}
+                        placeholder="예: 지우의 힐링 포켓농장"
+                        maxLength={50}
+                      />
+                    </div>
+
+                    <div className="onboarding-input-group">
+                      <div className="input-label-row">
+                        <label>🔒 계정 비밀번호 (최소 4자)</label>
+                        <button
+                          type="button"
+                          className="toggle-pw-btn"
+                          onClick={() => setShowRegisterPassword(prev => !prev)}
                         >
-                          <img src={baby.sprite} alt={baby.name} />
-                          <span>{baby.name}</span>
+                          {showRegisterPassword ? '🙈 숨기기' : '👁️ 보기'}
+                        </button>
+                      </div>
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={registerPassword}
+                        onChange={e => setRegisterPassword(e.target.value)}
+                        placeholder="4자 이상 비밀번호 입력"
+                        required
+                        minLength={4}
+                      />
+                    </div>
+
+                    <div className="onboarding-input-group">
+                      <label>🔒 비밀번호 확인</label>
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={registerPasswordConfirm}
+                        onChange={e => setRegisterPasswordConfirm(e.target.value)}
+                        placeholder="비밀번호 다시 입력"
+                        required
+                        minLength={4}
+                      />
+                      {registerPassword && registerPasswordConfirm && (
+                        <div className={`pw-match-badge ${registerPassword === registerPasswordConfirm ? 'match' : 'mismatch'}`}>
+                          {registerPassword === registerPasswordConfirm ? '✅ 비밀번호가 일치합니다' : '❌ 비밀번호가 일치하지 않습니다'}
                         </div>
-                      );
-                    })}
-                </div>
+                      )}
+                    </div>
 
-                {/* Nickname Input & Welcome Bonus Info */}
-                <div className="onboarding-extra-section">
-                  <div className="onboarding-input-group">
-                    <label>✨ 포켓몬 닉네임 (선택 사항)</label>
-                    <input
-                      type="text"
-                      value={starterNickname}
-                      onChange={e => setStarterNickname(e.target.value)}
-                      placeholder={`기본값: ${starterBaby.name}`}
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="welcome-bonus-box">
-                    <strong>🎁 웰컴 스타터 개장 지원금:</strong>
-                    <span>🪙 500 코인 + 🫐 오랭열매 5개 + 🧼 거품비누 3개 + ⚽ 장난감 2개</span>
-                  </div>
-
-                  <div className="onboarding-actions-row">
-                    <button className="excel-btn" onClick={() => setOnboardingStep('name')}>
-                      ◀ 이전 단계
+                    <button
+                      type="submit"
+                      className="excel-btn primary onboarding-next-btn"
+                    >
+                      다음: 파트너 포켓몬 선택하기 ➔
                     </button>
-                    <button className="excel-btn primary onboarding-finish-btn" onClick={handleCompleteOnboarding}>
-                      🎉 포켓농장 정식 개장하기!
-                    </button>
+
+                    <div className="auth-switch-prompt">
+                      이미 농장 계정이 있으신가요?{' '}
+                      <button
+                        type="button"
+                        className="auth-link-btn"
+                        onClick={() => { setAuthMode('login'); }}
+                      >
+                        🔑 기존 농장 로그인 ➔
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                /* STEP 2: 첫 번째 스타팅 포켓몬 선택 & 개장 */
+                <div className="onboarding-step-content">
+                  <div className="onboarding-badge">STEP 2 / 2</div>
+                  <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
+                  <p className="onboarding-desc">
+                    함께할 첫 아기 포켓몬을 선택하세요! (※ 가라르/알로라/히스이 등 지방 리전폼 및 전설/환상 포켓몬은 분양받을 수 없으며, 상점의 [🌟 전설 & 특수 포켓몬 알]을 통해서만 부화시킬 수 있습니다)
+                  </p>
+
+                  {/* Selected Preview Box */}
+                  <div className="selected-starter-preview-banner">
+                    <img src={starterBaby.showdownSprite || starterBaby.sprite} alt={starterBaby.name} className="preview-sprite" />
+                    <div className="preview-text">
+                      <h3>{starterBaby.name}</h3>
+                      <span className="types-text">타입: {starterBaby.types.join('/')}</span>
+                      <span className="evolution-text">진화: {selectedChain.map(c => c.name).join(' ➔ ')}</span>
+                    </div>
+                  </div>
+
+                  {/* Generation Filter Chips */}
+                  <div className="gen-filter-chips">
+                    {[
+                      { id: 'all', label: '🌟 전체 스타팅 (29종)' },
+                      { id: 'gen1', label: '🔴 1세대 (5종)' },
+                      { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
+                      { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
+                      { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
+                      { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
+                        onClick={() => setGenFilter(f.id as typeof genFilter)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Starter Picker Grid */}
+                  <div className="onboarding-starter-grid">
+                    {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
+                      .filter(({ chain }) => {
+                        if (!chain[0].isStarter) return false;
+                        if (genFilter === 'all') return true;
+                        return chain[0].genCategory === genFilter;
+                      })
+                      .map(({ chain, originalIdx }) => {
+                        const baby = chain[0];
+                        const isSelected = originalIdx === selectedStarterIdx;
+                        return (
+                          <div
+                            key={baby.id}
+                            className={`onboarding-starter-chip ${isSelected ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedStarterIdx(originalIdx);
+                              playPokemonCry(baby.id);
+                            }}
+                          >
+                            <img src={baby.sprite} alt={baby.name} />
+                            <span>{baby.name}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Nickname Input & Welcome Bonus Info */}
+                  <div className="onboarding-extra-section">
+                    <div className="onboarding-input-group">
+                      <label>✨ 포켓몬 닉네임 (선택 사항)</label>
+                      <input
+                        type="text"
+                        value={starterNickname}
+                        onChange={e => setStarterNickname(e.target.value)}
+                        placeholder={`기본값: ${starterBaby.name}`}
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="welcome-bonus-box">
+                      <strong>🎁 웰컴 스타터 개장 지원금:</strong>
+                      <span>🪙 1,500 코인 + 🫐 오랭열매 5개 + 🧼 거품비누 3개 + ⚽ 장난감 2개</span>
+                    </div>
+
+                    <div className="onboarding-actions-row">
+                      <button className="excel-btn" onClick={() => setOnboardingStep('name')}>
+                        ◀ 이전 단계
+                      </button>
+                      <button
+                        className="excel-btn primary onboarding-finish-btn"
+                        onClick={handleCompleteRegistration}
+                        disabled={isRegistering}
+                      >
+                        {isRegistering ? '🔄 농장 개설 중...' : '🎉 포켓농장 정식 개장하기!'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
@@ -3571,9 +3920,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           <span className="kpi-chip coins">🪙 {farmState.coins.toLocaleString()} P</span>
           <span className="kpi-chip hearts">💖 {farmState.heartsCount} 하트</span>
           <span className="kpi-chip diplomas">🎓 {farmState.graduatedPokemon.length}마리 졸업</span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowChangePasswordModal(true);
+              setOldPassword('');
+              setNewPassword('');
+              setNewPasswordConfirm('');
+              setChangePasswordError('');
+            }}
+            className="excel-btn farm-auth-btn"
+            title="농장 비밀번호 변경"
+          >
+            🔒 비밀번호 변경
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLogoutConfirm(true)}
+            className="excel-btn farm-auth-btn logout"
+            title="농장 로그아웃 및 계정 전환"
+          >
+            🚪 로그아웃
+          </button>
           {onLeaveRoom && (
             <button onClick={onLeaveRoom} className="excel-btn close" style={{ marginLeft: 6 }}>
-              🚪 메인으로
+              🏠 메인으로
             </button>
           )}
         </div>
@@ -6508,6 +6879,108 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 🔒 비밀번호 변경 모달 */}
+      {showChangePasswordModal && (
+        <div className="farm-modal-overlay" onClick={() => setShowChangePasswordModal(false)}>
+          <div className="farm-modal-dialog change-pw-modal" onClick={e => e.stopPropagation()}>
+            <div className="farm-modal-header">
+              <h3>🔒 농장 비밀번호 변경</h3>
+              <button className="modal-close-btn" onClick={() => setShowChangePasswordModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleChangePasswordSubmit} className="change-pw-form">
+              <p className="modal-desc">
+                [<b>{farmState.ownerName}</b>] 농장의 새로운 비밀번호를 설정합니다.
+              </p>
+
+              {changePasswordError && (
+                <div className="auth-error-banner">⚠️ {changePasswordError}</div>
+              )}
+
+              <div className="onboarding-input-group">
+                <label>현재 비밀번호 (기존에 설정된 경우)</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={oldPassword}
+                  onChange={e => setOldPassword(e.target.value)}
+                  placeholder="현재 비밀번호 (최초 설정 시 비워두기 가능)"
+                />
+              </div>
+
+              <div className="onboarding-input-group">
+                <div className="input-label-row">
+                  <label>새 비밀번호 (최소 4자)</label>
+                  <button
+                    type="button"
+                    className="toggle-pw-btn"
+                    onClick={() => setShowChangePassword(prev => !prev)}
+                  >
+                    {showChangePassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="새 비밀번호 입력"
+                  required
+                  minLength={4}
+                />
+              </div>
+
+              <div className="onboarding-input-group">
+                <label>새 비밀번호 확인</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={newPasswordConfirm}
+                  onChange={e => setNewPasswordConfirm(e.target.value)}
+                  placeholder="새 비밀번호 다시 입력"
+                  required
+                  minLength={4}
+                />
+              </div>
+
+              <div className="modal-actions-row">
+                <button type="button" className="excel-btn" onClick={() => setShowChangePasswordModal(false)}>
+                  취소
+                </button>
+                <button type="submit" className="excel-btn primary" disabled={isChangingPassword}>
+                  {isChangingPassword ? '변경 중...' : '비밀번호 변경하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🚪 로그아웃 확인 모달 */}
+      {showLogoutConfirm && (
+        <div className="farm-modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="farm-modal-dialog logout-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="farm-modal-header">
+              <h3>🚪 농장 로그아웃</h3>
+              <button className="modal-close-btn" onClick={() => setShowLogoutConfirm(false)}>✕</button>
+            </div>
+            <div className="logout-modal-body">
+              <div className="logout-icon">👋</div>
+              <p className="logout-confirm-text">
+                [<b>{farmState.ownerName}</b>]님의 농장에서 로그아웃하시겠습니까?
+              </p>
+              <p className="logout-sub-text">
+                농장 데이터는 서버 데이터베이스에 안전하게 영구 보관되며, 언제든지 어느 기기에서든 아이디와 비밀번호로 다시 로그인할 수 있습니다.
+              </p>
+              <div className="modal-actions-row">
+                <button type="button" className="excel-btn" onClick={() => setShowLogoutConfirm(false)}>
+                  계속 플레이하기
+                </button>
+                <button type="button" className="excel-btn close" onClick={handleLogout}>
+                  🚪 로그아웃
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -968,26 +968,62 @@
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  gap: 4px;
-  margin-top: 6px;
+  gap: 5px;
+  margin-top: 8px;
 }
 
 .numpad-btn {
-  height: 36px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border: 1px solid #d4d4d4;
-  background: #f3f2f1;
-  color: #201f1e;
-  border-radius: 3px;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.1s ease;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  padding: 2px 0;
 }
 
-.numpad-btn:hover {
-  background: #107c41;
-  color: #ffffff;
-  border-color: #0b5a2f;
+.numpad-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.numpad-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: #cbd5e1;
+}
+
+.numpad-num {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+  font-family: 'Consolas', 'Segoe UI', monospace;
+}
+
+.numpad-count-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+  margin-top: 3px;
+}
+
+.numpad-count-badge.done {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+.numpad-btn.is-completed {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  opacity: 0.65;
 }
 
 .numpad-btn.purple-mode-btn {
@@ -996,10 +1032,9 @@
   background: #faf5ff;
 }
 
-.numpad-btn.purple-mode-btn:hover {
-  background: #9333ea;
-  color: #ffffff;
-  border-color: #7e22ce;
+.numpad-btn.purple-mode-btn:hover:not(:disabled) {
+  background: #f3e8ff;
+  border-color: #a855f7;
 }
 
 .numpad-btn.orange-mode-btn {
@@ -1008,10 +1043,9 @@
   background: #fff7ed;
 }
 
-.numpad-btn.orange-mode-btn:hover {
-  background: #ea580c;
-  color: #ffffff;
-  border-color: #c2410c;
+.numpad-btn.orange-mode-btn:hover:not(:disabled) {
+  background: #ffedd5;
+  border-color: #f97316;
 }
 
 .numpad-btn.green-mode-btn {
@@ -1020,44 +1054,61 @@
   background: #f0fdf4;
 }
 
-.numpad-btn.green-mode-btn:hover {
-  background: #16a34a;
-  color: #ffffff;
-  border-color: #15803d;
+.numpad-btn.green-mode-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #22c55e;
 }
 
 .numpad-action-row {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .numpad-clear-btn {
   flex: 1;
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  color: #dc2626;
-  background: #ffffff;
-  border-color: #fca5a5;
-  font-weight: 700;
+  height: 44px;
+  font-size: 0.9rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  touch-action: manipulation;
 }
 
 .numpad-clear-btn:hover:not(:disabled) {
-  background: #fef2f2;
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.numpad-clear-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .numpad-hint-btn {
   flex: 1;
-  padding: 6px 10px;
-  font-size: 0.8rem;
+  height: 44px;
+  font-size: 0.9rem;
   background: #fefce8;
-  border-color: #fde047;
-  color: #a16207;
-  font-weight: 700;
+  border: 1px solid #fde047;
+  color: #854d0e;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  touch-action: manipulation;
 }
 
 .numpad-hint-btn:hover:not(:disabled) {
   background: #fef9c3;
+  border-color: #eab308;
+}
+
+.numpad-hint-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .sudoku-guide-tip {
@@ -1682,5 +1733,292 @@
     font-size: 0.72rem;
   }
 }
+
+/* =========================================================================
+   📱 Mobile & Tablet Responsive Optimizations (Clean, Touch-Friendly UI)
+   ========================================================================= */
+
+@media (max-width: 768px) {
+  .sudoku-container.excel-stealth-theme {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .sudoku-container .excel-formula-bar {
+    height: 28px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
+
+  .sudoku-container .excel-name-box {
+    min-width: 90px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
+
+  .sudoku-container .game-header {
+    padding: 8px 10px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sudoku-container .sheet-title-info h2 {
+    font-size: 0.9rem;
+  }
+
+  .sudoku-container .game-info {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .excel-cell-badge {
+    padding: 3px 6px;
+    font-size: 0.72rem;
+  }
+
+  .sudoku-main-workspace {
+    padding: 8px 6px;
+    gap: 10px;
+  }
+
+  /* 🌿 난이도 버튼 (터치 친화적 가로 스크롤 / 래핑) */
+  .sudoku-diff-ribbon {
+    gap: 4px;
+    width: 100%;
+  }
+
+  .sudoku-diff-ribbon .ribbon-label {
+    display: none;
+  }
+
+  .diff-btn-group {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    padding: 2px 0;
+  }
+
+  .diff-btn-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .diff-btn-group .excel-btn {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    min-height: 38px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* 🛠️ 주요 도구 툴바 */
+  .sudoku-main-toolbar {
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+  }
+
+  .sudoku-main-toolbar .toolbar-left,
+  .sudoku-main-toolbar .toolbar-right {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .sudoku-main-toolbar .excel-btn {
+    flex: 1;
+    min-height: 40px;
+    padding: 6px 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* 🎯 선택된 셀 빠른 색상 바 */
+  .sudoku-cell-context-bar {
+    width: 100%;
+    max-width: 100%;
+    padding: 6px 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 6px;
+  }
+
+  .cell-mode-chip {
+    padding: 5px 8px;
+    font-size: 0.76rem;
+    min-height: 32px;
+    border-radius: 4px;
+  }
+
+  .cell-clear-quick-btn {
+    padding: 5px 8px;
+    font-size: 0.76rem;
+    min-height: 32px;
+  }
+
+  /* 🧩 9x9 스도쿠 보드판 */
+  .sudoku-board-wrapper {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .sudoku-grid-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .sudoku-grid-table th {
+    width: auto;
+    height: 20px;
+    font-size: 0.7rem;
+    padding: 0;
+  }
+
+  .sudoku-grid-table th.corner-cell {
+    width: 18px;
+  }
+
+  .sudoku-grid-table td.row-header {
+    width: 18px;
+    font-size: 0.7rem;
+    padding: 0;
+  }
+
+  .sudoku-cell {
+    width: auto;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    font-size: 1.25rem;
+    font-weight: 800;
+    padding: 0;
+    touch-action: manipulation;
+  }
+
+  .sudoku-cell.user-input,
+  .sudoku-cell.fixed {
+    font-size: 1.25rem;
+  }
+
+  .sudoku-cell.user-input.marked-purple,
+  .sudoku-cell.user-input.marked-orange,
+  .sudoku-cell.user-input.marked-green {
+    font-size: 1.25rem;
+  }
+
+  /* 🎨 범례 */
+  .sudoku-legend-bar {
+    gap: 8px;
+    font-size: 0.7rem;
+    margin-bottom: 4px;
+  }
+
+  .legend-item {
+    gap: 3px;
+  }
+
+  .legend-sample {
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+  }
+
+  /* 🎛️ 수식 패드 */
+  .sudoku-controls-panel {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .sudoku-card {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .numpad-header-row {
+    margin-bottom: 6px;
+  }
+
+  .numpad-title {
+    font-size: 0.8rem;
+  }
+
+  .input-mode-toggle-group {
+    padding: 2px;
+  }
+
+  .mode-toggle-btn {
+    padding: 5px 8px;
+    font-size: 0.74rem;
+    min-height: 32px;
+    border-radius: 4px;
+  }
+
+  .numpad-grid {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .numpad-btn {
+    height: 52px;
+    border-radius: 6px;
+  }
+
+  .numpad-num {
+    font-size: 1.35rem;
+  }
+
+  .numpad-count-badge {
+    font-size: 0.64rem;
+  }
+
+  .numpad-action-row {
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .numpad-clear-btn,
+  .numpad-hint-btn {
+    height: 46px;
+    font-size: 0.92rem;
+    border-radius: 8px;
+  }
+
+  .sudoku-guide-tip {
+    font-size: 0.72rem;
+    padding: 0 4px;
+  }
+}
+
+@media (max-width: 380px) {
+  .sudoku-cell {
+    font-size: 1.1rem !important;
+  }
+
+  .numpad-btn {
+    height: 46px;
+  }
+
+  .numpad-num {
+    font-size: 1.2rem;
+  }
+
+  .mode-toggle-btn {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+  }
+}
+
 
 

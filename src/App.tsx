@@ -236,6 +236,23 @@ function AppMain() {
     setFormRoom(`ROOM_${randRoom}`);
   };
 
+  const handleUserLogin = (user: string) => {
+    localStorage.setItem('pokefarm_saved_owner', user);
+    setFormUsername(user);
+    setGameSessions(prev => ({
+      ...prev,
+      pokefarm: { username: user, room: 'local', gameType: 'pokefarm' }
+    }));
+  };
+
+  const handleUserLogout = () => {
+    localStorage.removeItem('pokefarm_saved_owner');
+    setGameSessions(prev => ({
+      ...prev,
+      pokefarm: { username: '', room: 'local', gameType: 'pokefarm' }
+    }));
+  };
+
   const renderActiveGameViewport = () => {
     if (!selectedGame) return null;
     const currentMeta = GAMES_LIST.find(g => g.key === selectedGame);
@@ -273,6 +290,8 @@ function AppMain() {
               onClearInitialVisitingUser={() => setVisitingFarmUser(null)}
               onLeaveRoom={() => handleLeaveGame('pokefarm')}
               onSelectGame={(gameKey) => handleGameSelection(gameKey as GameKey)}
+              onUserLogin={handleUserLogin}
+              onUserLogout={handleUserLogout}
             />
           )}
         </div>
