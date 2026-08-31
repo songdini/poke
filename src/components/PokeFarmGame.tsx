@@ -308,18 +308,22 @@ const setTodayHeartCountLocal = (owner: string, count: number) => {
   localStorage.setItem(`pokefarm_hearts_given_${owner}_${today}`, String(count));
 };
 
-// 🎓 졸업생 포켓몬 진화 체인 탐색 헬퍼 (진화 전/후 모든 모습 지원)
+// 🎓 졸업생 포켓몬 진화 체인 탐색 헬퍼 (진화 전/후 모든 모습 완벽 지원)
 export const getEvolutionChainForDiploma = (diploma: GraduationDiploma): EvolutionStage[] => {
+  // 1. STARTER_CHAINS에서 전체 진화 체인 우선 탐색 (파이리->리자드->리자몽 등 모든 단계 복원)
+  const fullChain = STARTER_CHAINS.find(chain =>
+    chain.some(st => st.id === diploma.speciesId || st.name === diploma.name || diploma.name.includes(st.name))
+  );
+  if (fullChain && fullChain.length > 1) {
+    return fullChain;
+  }
+
+  // 2. diploma에 저장된 evolutionChain이 2단계 이상이면 사용
   if (diploma.evolutionChain && diploma.evolutionChain.length > 0) {
     return diploma.evolutionChain;
   }
-  // STARTER_CHAINS에서 speciesId 또는 name으로 탐색
-  const found = STARTER_CHAINS.find(chain =>
-    chain.some(st => st.id === diploma.speciesId || st.name === diploma.name || diploma.name.includes(st.name))
-  );
-  if (found) return found;
 
-  // 단일 stage fallback
+  // 3. 단일 stage fallback
   return [{
     id: diploma.speciesId,
     name: diploma.name,
@@ -1439,11 +1443,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 🎓 졸업생 포켓몬 진화 전/후 외형 모습 변경 핸들러
   const handleSetDiplomaForm = (diplomaId: string, formIndex: number) => {
     if (visitingFarm) return;
+
+    let updatedName = '';
+
     setFarmState(prev => {
-      const nextGrad = prev.graduatedPokemon.map(d => {
-        if (d.id === diplomaId) {
+      const nextGrad = (prev.graduatedPokemon || []).map((d, idx) => {
+        const isTarget = d.id === diplomaId || d.pokemonUid === diplomaId || String(d.id) === String(diplomaId) || diplomaId === `grad_${d.id}` || diplomaId === `grad_${idx}`;
+        if (isTarget) {
           const chain = getEvolutionChainForDiploma(d);
           const stage = chain[formIndex] || chain[chain.length - 1];
+          updatedName = stage.name;
           let spr = stage.showdownSprite || stage.sprite;
           if (d.isShiny && stage.id) {
             spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
@@ -1462,10 +1471,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         graduatedPokemon: nextGrad
       };
     });
+
     setSelectedDiploma(prev => {
-      if (prev && prev.id === diplomaId) {
+      if (!prev) return null;
+      const isTarget = prev.id === diplomaId || prev.pokemonUid === diplomaId || String(prev.id) === String(diplomaId) || !diplomaId;
+      if (isTarget) {
         const chain = getEvolutionChainForDiploma(prev);
         const stage = chain[formIndex] || chain[chain.length - 1];
+        if (!updatedName) updatedName = stage.name;
         let spr = stage.showdownSprite || stage.sprite;
         if (prev.isShiny && stage.id) {
           spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
@@ -1479,7 +1492,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       }
       return prev;
     });
-    showAlert('✨ 졸업생 포켓몬의 미니룸 외형 모습이 변경되었습니다!', 'success');
+
+    setGraduatingModal(prev => {
+      if (!prev) return null;
+      const isTarget = prev.id === diplomaId || prev.pokemonUid === diplomaId || String(prev.id) === String(diplomaId) || !diplomaId;
+      if (isTarget) {
+        const chain = getEvolutionChainForDiploma(prev);
+        const stage = chain[formIndex] || chain[chain.length - 1];
+        if (!updatedName) updatedName = stage.name;
+        let spr = stage.showdownSprite || stage.sprite;
+        if (prev.isShiny && stage.id) {
+          spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
+        }
+        return {
+          ...prev,
+          selectedFormIndex: formIndex,
+          displaySprite: spr,
+          displayName: stage.name
+        };
+      }
+      return prev;
+    });
+
+    showAlert(`✨ 미니룸에 표시될 졸업생 포켓몬 외형이 [${updatedName || '선택한 진화 형태'}] 모습으로 변경되었습니다!`, 'success');
   };
 
   // 포켓몬 위치 및 3D 방향 조회 헬퍼
@@ -6728,7 +6763,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 </div>
 
                 <div className="cert-body">
-                  <img src={activeForm.sprite} alt={activeForm.name} className="cert-pokemon-sprite" />
+                  <img
+                    src={activeForm.sprite}
+                    alt={activeForm.name}
+                    className="cert-pokemon-sprite"
+                    onError={(e) => {
+                      e.currentTarget.src = activeForm.fallbackSprite || dip.sprite;
+                    }}
+                  />
                   <div className="cert-name-block">
                     <strong>포켓몬: {dip.nickname} ({dip.name}) {activeForm.name !== dip.name ? `[현재 외형: ${activeForm.name}]` : ''}</strong>
                     <span>육성 농장주: {dip.ownerName}</span>
@@ -6744,11 +6786,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                           return (
                             <button
                               key={st.id || sIdx}
+                              type="button"
                               className={`cert-stage-btn ${isCur ? 'active' : ''}`}
-                              onClick={() => handleSetDiplomaForm(dip.id, sIdx)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetDiplomaForm(dip.id, sIdx);
+                              }}
                               title={`${st.name} 모습으로 미니룸에 표시`}
                             >
-                              <img src={st.sprite} alt={st.name} />
+                              <img
+                                src={st.sprite}
+                                alt={st.name}
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${st.id}.png`;
+                                }}
+                              />
                               <span>{sIdx === 0 ? '🐣 기본' : sIdx === chain.length - 1 ? '👑 최종' : `⚡ ${sIdx + 1}단`}: {st.name}</span>
                             </button>
                           );
