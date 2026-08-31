@@ -7605,6 +7605,13 @@
   50% { transform: scale(1.15); }
 }
 
+.skill-fx-core,
+.skill-fx-wave,
+.skill-fx-aura,
+.skill-fx-sparks {
+  pointer-events: none;
+}
+
 /* ⚡ 1. 피카츄: 100만볼트 (skill-fx-thunderbolt) */
 .skill-fx-thunderbolt .skill-fx-core {
   position: absolute;

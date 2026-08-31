@@ -674,6 +674,41 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const [stickerSearch, setStickerSearch] = useState('');
   const [decorSubtab, setDecorSubtab] = useState<'palette' | 'skilleffects' | 'textmaker' | 'pokeplacements'>('palette');
 
+  // 👥 모든 농장(내 농장 포함) 하트 랭킹 계산 (React Hooks 규칙 준수를 위해 상단에 선언)
+  const allFarmsRanked: NeighborFarmData[] = React.useMemo(() => {
+    const map = new Map<string, NeighborFarmData>();
+
+    // 1. 이웃 목록 추가
+    neighborList.forEach(n => {
+      if (n.username) map.set(n.username, n);
+    });
+
+    // 2. 내 농장도 랭킹 산정에 포함 (내 하트수 반영)
+    if (farmState.isInitialized && farmState.ownerName) {
+      map.set(farmState.ownerName, {
+        username: farmState.ownerName,
+        farmName: farmState.farmName || `${farmState.ownerName}님의 포켓농장`,
+        activePokemon: farmState.activePokemon || null,
+        reservePokemon: farmState.reservePokemon || [],
+        graduatedPokemon: farmState.graduatedPokemon || [],
+        graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
+        heartsCount: farmState.heartsCount || 0,
+        bgTheme: farmState.bgTheme || 'classic',
+        stickers: farmState.stickers || [],
+        pokemonPlacements: farmState.pokemonPlacements || {},
+        statusMsg: farmState.statusMsg || '',
+        todayCount: farmState.todayCount || 0,
+        totalCount: farmState.totalCount || 0,
+        isOnline: true
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
+  }, [neighborList, farmState]);
+
+  // 🏆 실시간 인기 포켓농장 TOP 3 (내 농장도 하트가 높으면 1, 2, 3위에 당당히 표시!)
+  const top3RealFarms = allFarmsRanked.slice(0, 3);
+
   // 🌐 소켓 및 로컬 실제 유저 농장 동기화
   useEffect(() => {
     // 1. 브라우저 로컬스토리지에 저장된 실제 유저 농장 로드
@@ -1143,7 +1178,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const newEffectSticker: MinihompySticker = {
       id: `fx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       stickerId: effect.id,
-      skillFxId: effect.id,
+      skillFxId: effect.fxClass || effect.id,
       icon: effect.icon,
       label: effect.name,
       type: 'skill_fx',
@@ -1754,16 +1789,24 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
               >
-                {/* 1. 고유스킬 이펙트 */}
-                {stk.type === 'skill_fx' ? (
-                  <div className={`skill-fx-display ${stk.skillFxId || 'fx_pikachu_thunder'}`}>
-                    <div className="skill-fx-core" />
-                    <div className="skill-fx-wave" />
-                    <div className="skill-fx-aura" />
-                    <div className="skill-fx-sparks" />
-                    <span className="skill-fx-symbol">{stk.icon || '⚡'}</span>
-                  </div>
-                ) : stk.text ? (
+                {/* 1. 고유스킬 이펙트 (💥 이펙트 클래스 매핑 및 파티클 렌더링) */}
+                {stk.type === 'skill_fx' ? (() => {
+                  const effectMeta = POKEMON_SKILL_EFFECTS.find(
+                    e => e.id === stk.skillFxId || e.fxClass === stk.skillFxId || e.id === stk.stickerId
+                  );
+                  const activeFxClass = effectMeta?.fxClass || (stk.skillFxId?.startsWith('skill-fx-') ? stk.skillFxId : 'skill-fx-thunderbolt');
+                  const symbolIcon = stk.icon || effectMeta?.icon || '⚡';
+
+                  return (
+                    <div className={`skill-fx-display ${activeFxClass}`}>
+                      <div className="skill-fx-core" />
+                      <div className="skill-fx-wave" />
+                      <div className="skill-fx-aura" />
+                      <div className="skill-fx-sparks" />
+                      <span className="skill-fx-symbol">{symbolIcon}</span>
+                    </div>
+                  );
+                })() : stk.text ? (
                   <div
                     className={`custom-decor-text style-${stk.styleType || 'classic_bubble'}`}
                     style={{
@@ -3646,41 +3689,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       </div>
     );
   }
-
-  // 👥 모든 농장(내 농장 포함) 하트 랭킹 계산
-  const allFarmsRanked: NeighborFarmData[] = React.useMemo(() => {
-    const map = new Map<string, NeighborFarmData>();
-
-    // 1. 이웃 목록 추가
-    neighborList.forEach(n => {
-      if (n.username) map.set(n.username, n);
-    });
-
-    // 2. 내 농장도 랭킹 산정에 포함 (내 하트수 반영)
-    if (farmState.isInitialized && farmState.ownerName) {
-      map.set(farmState.ownerName, {
-        username: farmState.ownerName,
-        farmName: farmState.farmName || `${farmState.ownerName}님의 포켓농장`,
-        activePokemon: farmState.activePokemon || null,
-        reservePokemon: farmState.reservePokemon || [],
-        graduatedPokemon: farmState.graduatedPokemon || [],
-        graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
-        heartsCount: farmState.heartsCount || 0,
-        bgTheme: farmState.bgTheme || 'classic',
-        stickers: farmState.stickers || [],
-        pokemonPlacements: farmState.pokemonPlacements || {},
-        statusMsg: farmState.statusMsg || '',
-        todayCount: farmState.todayCount || 0,
-        totalCount: farmState.totalCount || 0,
-        isOnline: true
-      });
-    }
-
-    return Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
-  }, [neighborList, farmState]);
-
-  // 🏆 실시간 인기 포켓농장 TOP 3 (내 농장도 하트가 높으면 1, 2, 3위에 당당히 표시!)
-  const top3RealFarms = allFarmsRanked.slice(0, 3);
 
   const renderNeighborsView = () => (
     <div className="farm-social-layout">
