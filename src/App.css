@@ -648,6 +648,19 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .dubu-portal-app {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .dubu-main-viewport {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
   /* 🎮 모바일 게임 집중 모드: 게임 시작/플레이 중 상단 포털 네비바 및 게임 글로벌 탑바 숨김 */
   .dubu-portal-app.is-game-playing .dubu-portal-navbar {
     display: none !important;
@@ -656,6 +669,22 @@ body {
   .dubu-portal-app.is-game-playing .dubu-main-viewport {
     padding: 0 !important;
     min-height: 100vh;
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .dubu-game-viewport {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dubu-portal-app.is-game-playing .dubu-game-viewport > div {
+    height: 100%;
+    min-height: 100%;
   }
 
   .game-global-topbar {

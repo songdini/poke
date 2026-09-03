@@ -9,6 +9,7 @@ import {
   LOTTERY_SYMBOLS,
   drawLotteryReels,
   loadFarmState, 
+  getStoredNeighborFarm,
   saveFarmState, 
   createNewFarmPokemon, 
   hatchBabyPokemon,
@@ -21,10 +22,11 @@ import {
   getRandomStoryEvent,
   getMaxStatForStage,
   getInitialFarmState,
-  clearFarmLocalSession
+  clearFarmLocalSession,
+  getTodayDateString
 } from '../services/pokeFarmService';
 import { 
-  Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
+  Sparkles, Trophy, Volume2, VolumeX, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import './PokeFarmGame.css';
 
@@ -40,7 +42,123 @@ interface PokeFarmGameProps {
 
 type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
 
+export interface PokemonSkillDef {
+  slot: 1 | 2 | 3;
+  name: string;
+  fxClass: string;
+  icon: string;
+  desc: string;
+}
 
+/**
+ * 🌟 각 포켓몬 타입/계열별 최대 3개의 대표 고유스킬 프리셋 반환
+ */
+export function getPokemonSkillSet(pmon?: FarmPokemon | null): PokemonSkillDef[] {
+  if (!pmon) {
+    return [
+      { slot: 1, name: '화염방사', fxClass: 'skill-fx-fireblast', icon: '🔥', desc: '전방으로 콰아아아 뿜어내는 3중 고열 불길 스트림' },
+      { slot: 2, name: '대문자', fxClass: 'skill-fx-firekanji', icon: '☄️', desc: '거대한 불 대(大) 자 형상으로 폭발하는 업화' },
+      { slot: 3, name: '회오리불꽃', fxClass: 'skill-fx-firespin', icon: '🌪️', desc: '나선으로 회오리치는 화염 폭풍 스트림' }
+    ];
+  }
+
+  const types = pmon.types || [];
+
+  if (types.includes('fire')) {
+    return [
+      { slot: 1, name: '화염방사', fxClass: 'skill-fx-fireblast', icon: '🔥', desc: '입에서 콰아아아 뿜어내는 3중 고열 불길 스트림' },
+      { slot: 2, name: '대문자', fxClass: 'skill-fx-firekanji', icon: '☄️', desc: '거대한 불 대(大) 자 형상으로 폭발하는 업화' },
+      { slot: 3, name: '회오리불꽃', fxClass: 'skill-fx-firespin', icon: '🌪️', desc: '나선으로 회오리치는 화염 폭풍 스트림' }
+    ];
+  }
+
+  if (types.includes('water')) {
+    return [
+      { slot: 1, name: '하이드로펌프', fxClass: 'skill-fx-hydropump', icon: '💧', desc: '입에서 뿜어나오는 3중 고압 수류 제트 빔' },
+      { slot: 2, name: '하이드로캐논', fxClass: 'skill-fx-hydrocannon', icon: '🌊', desc: '거대 물구체가 폭발하는 고압 수압 포격' },
+      { slot: 3, name: '거품광선', fxClass: 'skill-fx-bubblebeam', icon: '🫧', desc: '무수히 쏟아지는 무지개빛 고속 거품 탄환' }
+    ];
+  }
+
+  if (types.includes('grass')) {
+    return [
+      { slot: 1, name: '솔라빔', fxClass: 'skill-fx-solarbeam', icon: '🍃', desc: '태양의 에너지를 쏘아내는 에메랄드 레이저 빔' },
+      { slot: 2, name: '덩굴채찍', fxClass: 'skill-fx-vinewhip', icon: '🌿', desc: '날카롭게 공간을 가르는 듀얼 덩굴 채찍 참격' },
+      { slot: 3, name: '꽃잎댄스', fxClass: 'skill-fx-petaldance', icon: '🌸', desc: '회오리바람을 타고 난무하는 벚꽃 잎날 폭풍' }
+    ];
+  }
+
+  if (types.includes('electric')) {
+    return [
+      { slot: 1, name: '10만볼트', fxClass: 'skill-fx-thunderbolt', icon: '⚡', desc: '전방으로 작렬하는 초고압 황금 번개 줄기' },
+      { slot: 2, name: '번개 (낙뢰)', fxClass: 'skill-fx-thunderstorm', icon: '🌩️', desc: '하늘에서 내리꽂히는 거대한 백청색 벼락 기둥' },
+      { slot: 3, name: '볼트태클', fxClass: 'skill-fx-volttackle', icon: '⚡', desc: '고압 전기를 휘감고 돌진하는 전기 충격 링' }
+    ];
+  }
+
+  if (types.includes('ghost') || types.includes('dark')) {
+    return [
+      { slot: 1, name: '섀도볼', fxClass: 'skill-fx-shadowball', icon: '👻', desc: '보랏빛 암흑 플라즈마 스트림' },
+      { slot: 2, name: '나이트헤드', fxClass: 'skill-fx-nightshade', icon: '😈', desc: '붉은 안광과 함께 뿜어지는 저주의 검은 파동' },
+      { slot: 3, name: '오물폭탄', fxClass: 'skill-fx-sludgebomb', icon: '💀', desc: '독성 액포가 연쇄 폭발하는 세례' }
+    ];
+  }
+
+  if (types.includes('psychic')) {
+    return [
+      { slot: 1, name: '사이코키네시스', fxClass: 'skill-fx-psychic', icon: '🔮', desc: '시공간을 왜곡하는 네온 핑크 염동력 파동 링' },
+      { slot: 2, name: '사이코브레이크', fxClass: 'skill-fx-psystrike', icon: '🌀', desc: '염동력 크리스탈 결정 칼날 쐐기 광선' },
+      { slot: 3, name: '프리즘배리어', fxClass: 'skill-fx-prismbarrier', icon: '🛡️', desc: '빛을 굴절시키는 무지개빛 육각형 프리즘 역장' }
+    ];
+  }
+
+  if (types.includes('dragon')) {
+    return [
+      { slot: 1, name: '용의파동', fxClass: 'skill-fx-dracometeor', icon: '🐉', desc: '용의 형상으로 전방을 휩쓰는 드래곤 브레스' },
+      { slot: 2, name: '용성군', fxClass: 'skill-fx-meteorshower', icon: '🌠', desc: '하늘에서 비처럼 쏟아지는 불타는 유성우 폭격' },
+      { slot: 3, name: '역린', fxClass: 'skill-fx-outrage', icon: '💥', desc: '붉은 분노의 드래곤 오라와 폭주 충격파' }
+    ];
+  }
+
+  if (types.includes('fighting') || types.includes('rock') || types.includes('steel')) {
+    return [
+      { slot: 1, name: '파동탄', fxClass: 'skill-fx-aurasphere', icon: '💥', desc: '타오르는 푸른 파동 에너지 탄환' },
+      { slot: 2, name: '본러시', fxClass: 'skill-fx-bonerush', icon: '⚔️', desc: '빛나는 에너지 본 블레이드 연속 난타' },
+      { slot: 3, name: '스톤에지', fxClass: 'skill-fx-stoneedge', icon: '🪨', desc: '솟구치는 날카로운 첨탑 암석과 지진파' }
+    ];
+  }
+
+  if (types.includes('ice')) {
+    return [
+      { slot: 1, name: '눈보라', fxClass: 'skill-fx-blizzard', icon: '❄️', desc: '영하 273도의 혹한 얼음 결정 눈보라 폭풍' },
+      { slot: 2, name: '냉동빔', fxClass: 'skill-fx-icebeam', icon: '🧊', desc: '모든 것을 얼려버리는 지그재그 빙결 레이저' },
+      { slot: 3, name: '오로라베일', fxClass: 'skill-fx-auroraveil', icon: '🌨️', desc: '영롱한 극광 오로라 빛장막과 서릿발' }
+    ];
+  }
+
+  if (types.includes('flying')) {
+    return [
+      { slot: 1, name: '에어슬래시', fxClass: 'skill-fx-hurricane', icon: '🌪️', desc: '초음속으로 전방을 가르는 청록빛 진공 칼날' },
+      { slot: 2, name: '태풍폭풍', fxClass: 'skill-fx-typhoon', icon: '🌀', desc: '모든 것을 빨아들이는 상승기류 회오리' },
+      { slot: 3, name: '브레이브버드', fxClass: 'skill-fx-bravebird', icon: '🪶', desc: '푸른 불꽃을 휘감은 맹금 조류 돌진 빔' }
+    ];
+  }
+
+  if (types.includes('fairy')) {
+    return [
+      { slot: 1, name: '문포스', fxClass: 'skill-fx-watershuriken', icon: '🌙', desc: '달의 에너지를 응축해 쏘아내는 요정 광선' },
+      { slot: 2, name: '매지컬샤인', fxClass: 'skill-fx-magicalshine', icon: '✨', desc: '사방을 밝히는 무지개빛 요정 섬광 폭발' },
+      { slot: 3, name: '하트스톰', fxClass: 'skill-fx-heartstorm', icon: '💖', desc: '사랑의 하트들이 소용돌이치며 뿜어지는 세례' }
+    ];
+  }
+
+  // 기본 노말
+  return [
+    { slot: 1, name: '파괴광선', fxClass: 'skill-fx-gigaimpact', icon: '⭐', desc: '모든 것을 파괴하는 거대한 황금빛 레이저 빔' },
+    { slot: 2, name: '기가임팩트', fxClass: 'skill-fx-gigaforce', icon: '💥', desc: '황금빛 충격파 링으로 감싸며 터지는 폭발' },
+    { slot: 3, name: '은혜갚기', fxClass: 'skill-fx-splashrush', icon: '🌟', desc: '하늘 높이 뿜어내는 기적의 별빛 폭죽' }
+  ];
+}
 
 export interface PokemonSkillEffect {
   id: string;
@@ -55,124 +173,244 @@ export interface PokemonSkillEffect {
 
 export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
   {
-    id: 'fx_pikachu_thunder',
-    name: '100만볼트 (Thunderbolt Surge)',
-    pokemonName: '피카츄 / 라이츄',
-    icon: '⚡',
-    price: 60,
-    description: '작렬하는 100만볼트 초고압 황금 번개와 스파크 아크',
-    fxClass: 'skill-fx-thunderbolt',
-    previewColor: '#fbbf24'
-  },
-  {
     id: 'fx_charmander_fire',
-    name: '화염방사 & 대문자 (Fire Blast)',
-    pokemonName: '파이리 / 리자몽',
+    name: '화염방사 & 대문자 (Continuous Flamethrower)',
+    pokemonName: '파이리 / 브케인 / 아차모 / 불꽃숭이 / 뚜꾸리 / 푸호꼬 / 냐오불 / 염버니 / 뜨아거 / 부스터',
     icon: '🔥',
     price: 60,
-    description: '맹렬하게 소용돌이치며 타오르는 업화의 불꽃과 불티',
+    description: '입에서 전방으로 콰아아아 뿜어져 나오는 거대한 고열 화염방사 불길 스트림 (sill-example 원작 애니메이션 스타일)',
     fxClass: 'skill-fx-fireblast',
     previewColor: '#f97316'
   },
   {
     id: 'fx_squirtle_water',
-    name: '하이드로펌프 & 아쿠아 링 (Hydro Pump)',
-    pokemonName: '꼬부기 / 거북왕',
+    name: '하이드로펌프 & 물대포 (Hydro Pump Stream)',
+    pokemonName: '꼬부기 / 리아코 / 물짱이 / 팽도리 / 수댕이 / 개구마르 / 누리공 / 울머기 / 꾸왁스 / 잉어킹 / 갸라도스 / 발챙이 / 마릴 / 샤미드',
     icon: '💧',
     price: 60,
-    description: '용솟음치는 거대한 물대포 수류와 영롱한 물방울 소용돌이',
+    description: '입에서 맹렬한 기세로 뿜어져 나가는 3중 나선 고압 수류 빔과 물보라 버블 스트림',
     fxClass: 'skill-fx-hydropump',
     previewColor: '#0ea5e9'
   },
   {
     id: 'fx_bulbasaur_solar',
-    name: '솔라빔 & 꽃잎댄스 (Solar Beam)',
-    pokemonName: '이상해씨 / 이상해꽃',
+    name: '솔라빔 & 잎날가르기 (Solar Beam Cannon)',
+    pokemonName: '이상해씨 / 치코리타 / 나무지기 / 모부기 / 주리비얀 / 도치마론 / 나몰빼미 / 흥나숭 / 나오하 / 리피아 / 세레비',
     icon: '🍃',
     price: 60,
-    description: '태양의 에너지를 쏘아내는 눈부신 레이저 빔과 춤추는 꽃잎',
+    description: '전방으로 굵고 눈부시게 방출되는 에메랄드 태양 에너지 레이저와 회전하는 잎날 커터',
     fxClass: 'skill-fx-solarbeam',
     previewColor: '#22c55e'
   },
   {
-    id: 'fx_pidgeot_tornado',
-    name: '폭풍 & 에어슬래시 (Hurricane Cyclone)',
-    pokemonName: '피존 / 피죤투',
-    icon: '🌪️',
-    price: 50,
-    description: '초음속으로 회전하는 비행 회오리바람과 날카로운 바람의 칼날',
-    fxClass: 'skill-fx-hurricane',
-    previewColor: '#38bdf8'
+    id: 'fx_pikachu_thunder',
+    name: '100만볼트 & 볼트태클 (Thunderbolt Arc Surge)',
+    pokemonName: '피카츄 / 라이츄 / 쥬피썬더 / 알로라 라이츄',
+    icon: '⚡',
+    price: 60,
+    description: '뺨과 몸에서 전방으로 지그재그 작렬하는 초고압 황금 번개 줄기와 방전 스파크',
+    fxClass: 'skill-fx-thunderbolt',
+    previewColor: '#fbbf24'
   },
   {
     id: 'fx_gengar_shadow',
-    name: '섀도볼 & 원한의 도깨비불 (Shadow Ball)',
-    pokemonName: '팬텀 / 고오스',
+    name: '섀도볼 & 암흑 파동 (Shadow Void Stream)',
+    pokemonName: '고오스 / 고우스트 / 팬텀 / 블래키 / 히스이 조로아크',
     icon: '👻',
     price: 70,
-    description: '심연의 어둠을 응축한 암흑 구체와 보랏빛 도깨비불 연기',
+    description: '심연에서 소용돌이치며 뿜어나오는 보랏빛 암흑 플라즈마 기둥과 도깨비불 엠버',
     fxClass: 'skill-fx-shadowball',
     previewColor: '#a855f7'
   },
   {
     id: 'fx_mewtwo_psychic',
-    name: '사이코키네시스 (Psychic Wave)',
-    pokemonName: '뮤 / 뮤츠 / 에브이',
+    name: '사이코키네시스 (Psychic Wave Distortion)',
+    pokemonName: '뮤 / 뮤츠 / 에브이 / 고라파덕 / 골덕 / 지라치',
     icon: '🔮',
     price: 80,
-    description: '시공간을 왜곡하는 네온 핑크 염동력 링과 신비한 마법 룬',
+    description: '전방으로 시공간을 왜곡하며 다중 방출되는 네온 핑크 염동력 파동 링과 광선',
     fxClass: 'skill-fx-psychic',
     previewColor: '#ec4899'
   },
   {
     id: 'fx_dragonite_meteor',
-    name: '용성군 & 용의 파동 (Draco Meteor)',
-    pokemonName: '망나뇽 / 한카리아스',
+    name: '용성군 & 용의 파동 (Draco Dragon Breath)',
+    pokemonName: '미뇽 / 신뇽 / 망나뇽 / 딥상어동 / 한카리아스',
     icon: '🐉',
     price: 80,
-    description: '하늘에서 쏟아져 내리는 유성우 운석 폭격과 드래곤 오라',
+    description: '용의 형상으로 전방을 휩쓰는 청록-보랏빛 드래곤 에너지 브레스와 유성 스트림',
     fxClass: 'skill-fx-dracometeor',
     previewColor: '#8b5cf6'
   },
   {
-    id: 'fx_snorlax_giga',
-    name: '기가임팩트 & 황금 오라 (Giga Impact)',
-    pokemonName: '잠만보 / 챔피언',
-    icon: '⭐',
-    price: 70,
-    description: '대지를 뒤흔드는 황금빛 폭발 충격파 링과 스피드 라인',
-    fxClass: 'skill-fx-gigaimpact',
-    previewColor: '#eab308'
-  },
-  {
-    id: 'fx_lapras_blizzard',
-    name: '눈보라 & 절대영도 (Absolute Zero)',
-    pokemonName: '알로라 나인테일 / 라프라스',
-    icon: '❄️',
-    price: 60,
-    description: '영하 273도의 눈부신 다이아몬드 얼음 결정과 눈보라 폭풍',
-    fxClass: 'skill-fx-blizzard',
-    previewColor: '#67e8f9'
-  },
-  {
     id: 'fx_lucario_aurasphere',
-    name: '파동탄 & 격투 투기 (Aura Sphere)',
-    pokemonName: '루카리오',
+    name: '파동탄 & 대지의 분노 (Aura Sphere & Earth Wave)',
+    pokemonName: '리오르 / 루카리오 / 애버라스 / 데기라스 / 마기라스 / 솔가레오',
     icon: '💥',
     price: 70,
-    description: '불타는 푸른 파동 에너지 구체와 상승하는 격투 투기 오라',
+    description: '타오르는 푸른 파동 에너지 탄환과 솟구치는 지각 충격파 펄스',
     fxClass: 'skill-fx-aurasphere',
     previewColor: '#3b82f6'
   },
   {
+    id: 'fx_lapras_blizzard',
+    name: '눈보라 & 절대영도 (Blizzard Freeze Stream)',
+    pokemonName: '알로라 식스테일 / 알로라 나인테일 / 글레이시아',
+    icon: '❄️',
+    price: 60,
+    description: '영하 273도의 얼음 결정과 눈보라 폭풍이 뿜어져 나오는 혹한의 냉기 브레스',
+    fxClass: 'skill-fx-blizzard',
+    previewColor: '#67e8f9'
+  },
+  {
+    id: 'fx_pidgeot_tornado',
+    name: '폭풍 & 에어슬래시 (Hurricane Slash Cyclone)',
+    pokemonName: '피존 / 피죤투 / 비행 포켓몬',
+    icon: '🌪️',
+    price: 50,
+    description: '초음속으로 전방을 가르는 반투명 청록색 진공 칼날 돌풍과 에어 소용돌이',
+    fxClass: 'skill-fx-hurricane',
+    previewColor: '#38bdf8'
+  },
+  {
     id: 'fx_greninja_watershuriken',
-    name: '물수리검 & 닌자 수압 (Water Shuriken)',
-    pokemonName: '개굴닌자',
+    name: '물수리검 & 문포스 (Water Shuriken & Moonblast)',
+    pokemonName: '개굴닌자 / 토게피 / 토게틱 / 토게키스 / 님피아 / 빅티니',
     icon: '🌊',
     price: 70,
-    description: '초고속으로 회전하며 발사되는 듀얼 물수리검과 수압 이펙트',
+    description: '초고속 연사되는 듀얼 물수리검 궤적과 신비로운 핑크빛 요정 달빛 광선',
     fxClass: 'skill-fx-watershuriken',
     previewColor: '#0284c7'
+  },
+  {
+    id: 'fx_snorlax_giga',
+    name: '파괴광선 & 기가임팩트 (Hyper Beam Destruction)',
+    pokemonName: '가로막구리 / 잉어킹 / 잠만보 / 일반 노말 포켓몬',
+    icon: '⭐',
+    price: 70,
+    description: '모든 것을 관통하는 거대하고 묵직한 황금빛 파괴광선 레이저 빔 스트림',
+    fxClass: 'skill-fx-gigaimpact',
+    previewColor: '#eab308'
+  },
+  {
+    id: 'fx_fire_kanji',
+    name: '대문자 (Fire Blast Kanji Burst)',
+    pokemonName: '불꽃 포켓몬 2스킬 (파이리/리자몽 등)',
+    icon: '☄️',
+    price: 65,
+    description: '거대한 불 대(大) 자 형상으로 폭발하며 전방을 집어삼키는 업화',
+    fxClass: 'skill-fx-firekanji',
+    previewColor: '#dc2626'
+  },
+  {
+    id: 'fx_fire_spin',
+    name: '회오리불꽃 (Fire Spin Cyclone)',
+    pokemonName: '불꽃 포켓몬 3스킬 (파이리/리자몽 등)',
+    icon: '🌪️',
+    price: 65,
+    description: '이중 나선으로 회전하며 전방을 불태우는 거대 화염 회오리 스트림',
+    fxClass: 'skill-fx-firespin',
+    previewColor: '#f97316'
+  },
+  {
+    id: 'fx_water_cannon',
+    name: '하이드로캐논 (Hydro Cannon Blast)',
+    pokemonName: '물 포켓몬 2스킬 (꼬부기/거북왕 등)',
+    icon: '🌊',
+    price: 65,
+    description: '초고압 압축 물구체와 수압 충격파 링이 쏘아지는 헤비 캐논',
+    fxClass: 'skill-fx-hydrocannon',
+    previewColor: '#0284c7'
+  },
+  {
+    id: 'fx_water_bubble',
+    name: '거품광선 (Bubble Beam Shower)',
+    pokemonName: '물 포켓몬 3스킬 (꼬부기/거북왕 등)',
+    icon: '🫧',
+    price: 60,
+    description: '무수히 쏟아져 나오는 무지개빛 고속 거품 탄환 세례',
+    fxClass: 'skill-fx-bubblebeam',
+    previewColor: '#38bdf8'
+  },
+  {
+    id: 'fx_grass_vinewhip',
+    name: '덩굴채찍 (Vine Whip Slash)',
+    pokemonName: '풀 포켓몬 2스킬 (이상해씨/이상해꽃 등)',
+    icon: '🌿',
+    price: 60,
+    description: '날카롭게 공간을 가르는 듀얼 에메랄드 덩굴 채찍 참격',
+    fxClass: 'skill-fx-vinewhip',
+    previewColor: '#16a34a'
+  },
+  {
+    id: 'fx_grass_petaldance',
+    name: '꽃잎댄스 (Petal Dance Tornado)',
+    pokemonName: '풀 포켓몬 3스킬 (이상해씨/이상해꽃 등)',
+    icon: '🌸',
+    price: 65,
+    description: '회오리바람을 타고 난무하는 핑크빛 벚꽃 잎날 폭풍',
+    fxClass: 'skill-fx-petaldance',
+    previewColor: '#f472b6'
+  },
+  {
+    id: 'fx_thunder_storm',
+    name: '번개 낙뢰 (Thunder Storm Column)',
+    pokemonName: '전기 포켓몬 2스킬 (피카츄/라이츄 등)',
+    icon: '🌩️',
+    price: 65,
+    description: '하늘에서 내리꽂히는 거대하고 눈부신 백청색 벼락 기둥',
+    fxClass: 'skill-fx-thunderstorm',
+    previewColor: '#facc15'
+  },
+  {
+    id: 'fx_thunder_volttackle',
+    name: '볼트태클 (Volt Tackle Rush)',
+    pokemonName: '전기 포켓몬 3스킬 (피카츄/라이츄 등)',
+    icon: '⚡',
+    price: 70,
+    description: '초고압 전기를 온몸에 휘감고 돌진하는 고속 방전 링',
+    fxClass: 'skill-fx-volttackle',
+    previewColor: '#fbbf24'
+  },
+  {
+    id: 'fx_ghost_nightshade',
+    name: '나이트헤드 (Night Shade Gaze)',
+    pokemonName: '고스트/악 포켓몬 2스킬 (팬텀 등)',
+    icon: '😈',
+    price: 65,
+    description: '공포의 붉은 안광과 함께 전방으로 뿜어지는 저주의 검은 파동',
+    fxClass: 'skill-fx-nightshade',
+    previewColor: '#ef4444'
+  },
+  {
+    id: 'fx_psychic_psystrike',
+    name: '사이코브레이크 (Psystrike Blade)',
+    pokemonName: '에스퍼 포켓몬 2스킬 (뮤/뮤츠 등)',
+    icon: '🌀',
+    price: 75,
+    description: '염동력 크리스탈 결정 칼날 쐐기가 적을 꿰뚫는 광선',
+    fxClass: 'skill-fx-psystrike',
+    previewColor: '#ec4899'
+  },
+  {
+    id: 'fx_dragon_meteorshower',
+    name: '용성군 유성 폭격 (Meteor Shower Rain)',
+    pokemonName: '드래곤 포켓몬 2스킬 (망나뇽 등)',
+    icon: '🌠',
+    price: 80,
+    description: '하늘에서 비처럼 쏟아져 내리는 불타는 유성우 폭격',
+    fxClass: 'skill-fx-meteorshower',
+    previewColor: '#f97316'
+  },
+  {
+    id: 'fx_fighting_bonerush',
+    name: '본러시 & 인파이트 (Bone Rush Blades)',
+    pokemonName: '격투 포켓몬 2스킬 (루카리오 등)',
+    icon: '⚔️',
+    price: 70,
+    description: '푸른 에너지 본 블레이드로 연속 교차 난타하는 잔상',
+    fxClass: 'skill-fx-bonerush',
+    previewColor: '#3b82f6'
   }
 ];
 
@@ -432,6 +670,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 💖 오늘 보낸 1촌 하트 횟수 (하루 최대 5회 제한)
   const [todayHeartsSent, setTodayHeartsSent] = useState<number>(() => getTodayHeartCountLocal(farmState.ownerName || username || '지우'));
 
+  // 🔊 포켓몬 쓰다듬기 효과음(울음소리) ON/OFF 토글 상태 (기본 ON)
+  const [isPetSoundEnabled, setIsPetSoundEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pokefarm_pet_sound_enabled');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
   // 🐣 온보딩 위저드 상태 (스타팅 포켓몬 선택)
   const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
   const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
@@ -630,10 +877,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     id: number;
     skillName: string;
     type: string;
+    fxClass?: string;
     icon: string;
     particles: string[];
   } | null>(null);
   const [isPetJumping, setIsPetJumping] = useState(false);
+  const [selectedSkillSlot, setSelectedSkillSlot] = useState<1 | 2 | 3>(1);
 
   // 🏡 보육소 목장 정렬 및 필터 상태
   const [daycareSort, setDaycareSort] = useState<'recent' | 'species' | 'shiny' | 'type' | 'level'>('species');
@@ -652,7 +901,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const [neighborSearch, setNeighborSearch] = useState('');
 
   // ⛺ 두부월드 미니홈피 상태
-  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'guestbook' | 'stickers' | 'neighbors'>('home');
+  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'pokedex' | 'guestbook' | 'stickers' | 'neighbors'>('home');
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
@@ -749,6 +998,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           guestbook: res.guestbook || []
         });
         setActiveTab('minihome');
+        setMinihompyTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
 
@@ -821,11 +1072,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const handleMyDataLoaded = (res: { success: boolean; farm: any; guestbook: GuestbookEntry[] }) => {
       if (res.success && res.farm) {
         setFarmState(prev => {
+          // 🛡️ 보안 가드: 서버에서 날아온 데이터의 주인이 현재 내 농장주와 다르면 덮어쓰기 원천 차단
+          const incomingOwner = res.farm.username || res.farm.ownerName;
+          if (prev.ownerName && incomingOwner && prev.ownerName !== incomingOwner && prev.ownerName !== '지우') {
+            console.warn(`[PokeFarm] ⚠️ 다른 유저(${incomingOwner})의 데이터가 내 농장(${prev.ownerName})에 유입되는 것을 안전하게 차단했습니다.`);
+            return prev;
+          }
+
           const updatedHearts = res.farm.heartsCount !== undefined ? Math.max(res.farm.heartsCount, prev.heartsCount) : prev.heartsCount;
+          // 🛡️ 코인 안전 보존: 로컬에서 획득한 코인이 서버의 과거 세이브로 인해 깎이지 않도록 보호
+          const updatedCoins = Math.max(
+            res.farm.coins !== undefined && res.farm.coins !== null ? Number(res.farm.coins) : 0,
+            prev.coins !== undefined && prev.coins !== null ? Number(prev.coins) : 0
+          );
+          // 🛡️ 인벤토리 안전 병합: 로컬 획득 아이템이 서버 구버전 데이터로 덮어씌워져 소실되는 것을 방지
+          const mergedInventory = { ...(prev.inventory || {}) };
+          if (res.farm.inventory) {
+            Object.entries(res.farm.inventory).forEach(([k, v]) => {
+              mergedInventory[k] = Math.max(mergedInventory[k] || 0, Number(v) || 0);
+            });
+          }
+
           return {
             ...prev,
             ...res.farm,
-            ownerName: res.farm.username || res.farm.ownerName || prev.ownerName,
+            coins: updatedCoins,
+            inventory: mergedInventory,
+            ownerName: incomingOwner || prev.ownerName,
             isInitialized: true,
             heartsCount: updatedHearts,
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
@@ -842,9 +1115,25 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       if (res.success && res.farm) {
         const loadedFarm = res.farm;
         const cleanUser = loadedFarm.username || loadedFarm.ownerName;
+        // 🛡️ 로컬에 해당 유저의 기존 세이브가 있다면 코인 및 인벤토리를 안전하게 최대치로 병합
+        const localSaved = getStoredNeighborFarm(cleanUser);
+        const safeCoins = Math.max(
+          loadedFarm.coins !== undefined && loadedFarm.coins !== null ? Number(loadedFarm.coins) : 0,
+          localSaved?.coins !== undefined ? Number(localSaved.coins) : 0,
+          1000
+        );
+        const safeInventory = { ...(loadedFarm.inventory || {}) };
+        if (localSaved?.inventory) {
+          Object.entries(localSaved.inventory).forEach(([k, v]) => {
+            safeInventory[k] = Math.max(safeInventory[k] || 0, Number(v) || 0);
+          });
+        }
+
         const newState: FarmState = {
           ...getInitialFarmState(cleanUser),
           ...loadedFarm,
+          coins: safeCoins,
+          inventory: safeInventory,
           ownerName: cleanUser,
           isInitialized: true,
           guestbook: res.guestbook || []
@@ -970,13 +1259,28 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const currentStickers = visitingFarm ? (visitingFarm.farm.stickers || []) : (farmState.stickers || []);
   const currentStatusMsg = visitingFarm ? (visitingFarm.farm.statusMsg || '이웃의 농장에 놀러왔습니다 🎵') : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
 
+  // 👥 이웃 농장 목록 새로고침 헬퍼
+  const refreshNeighbors = useCallback(() => {
+    if (socket && socket.connected) {
+      socket.emit('farm-get-list');
+      socket.emit('farm-get-top3');
+      if (farmState.ownerName) {
+        socket.emit('farm-load-my-data', { username: farmState.ownerName });
+      }
+    }
+    const localFarms = getAllStoredFarms();
+    setNeighborList(localFarms.filter(f => f.username !== farmState.ownerName));
+  }, [socket, farmState.ownerName]);
+
   // 이웃 미니홈피 놀러가기/구경가기
   const handleVisitNeighbor = (neighborUsername: string) => {
     if (!neighborUsername) return;
     if (neighborUsername === farmState.ownerName) {
       setVisitingFarm(null);
       setActiveTab('minihome');
-      showAlert('내 포켓 미니홈피로 이동했습니다! 🏠', 'info');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert('내 포켓 미니홈피로 돌아왔습니다! 🏠', 'info');
       return;
     }
 
@@ -984,8 +1288,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       socket.emit('farm-visit-request', { targetUsername: neighborUsername, visitorUsername: farmState.ownerName });
     }
 
-    // 1. 로컬에 저장된 실제 유저 데이터 확인
-    const targetSaved = loadFarmState(neighborUsername);
+    // 1. 로컬에 저장된 실제 유저 데이터 확인 (내 활성 세션을 절대 덮어쓰지 않는 순수 읽기)
+    const targetSaved = getStoredNeighborFarm(neighborUsername);
     if (targetSaved && targetSaved.isInitialized && targetSaved.ownerName === neighborUsername) {
       setVisitingFarm({
         owner: targetSaved.ownerName,
@@ -1008,7 +1312,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         guestbook: targetSaved.guestbook || []
       });
       setActiveTab('minihome');
-      showAlert(`🏠 [${targetSaved.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert(`🏠 [${targetSaved.farmName}] 미니홈피로 파도타기 완료!`, 'success');
       return;
     }
 
@@ -1021,7 +1327,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         guestbook: []
       });
       setActiveTab('minihome');
-      showAlert(`🏠 [${foundNeighbor.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert(`🏠 [${foundNeighbor.farmName}] 미니홈피로 파도타기 완료!`, 'success');
     }
   };
 
@@ -1626,6 +1934,686 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     }
   };
 
+  // 💥 포켓몬 지속 방출형 고유스킬 스트림 렌더러 (sill-example.png 스타일 연속 방출 모션)
+  const renderSkillStreamFx = (fxClass: string, symbolIcon: string) => {
+    switch (fxClass) {
+      case 'skill-fx-fireblast':
+        return (
+          <div className="skill-blast-stream stream-fire">
+            <svg className="stream-svg fire-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="fireOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="40%" stopColor="#ea580c" />
+                  <stop offset="100%" stopColor="#dc2626" />
+                </linearGradient>
+                <linearGradient id="fireMidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#fef08a" />
+                  <stop offset="35%" stopColor="#fbbf24" />
+                  <stop offset="85%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ea580c" />
+                </linearGradient>
+                <linearGradient id="fireCoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="30%" stopColor="#ffffff" />
+                  <stop offset="70%" stopColor="#fef08a" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+                <filter id="fireGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path className="fire-wave wave-1" fill="url(#fireOuterGrad)" filter="url(#fireGlow)"
+                d="M 0 45 C 35 32, 65 18, 105 12 C 145 6, 185 0, 215 8 C 235 15, 240 30, 240 46 C 238 62, 225 78, 200 86 C 160 98, 120 90, 85 74 C 50 60, 20 54, 0 53 Z" />
+              <path className="fire-wave wave-2" fill="url(#fireMidGrad)"
+                d="M 0 46 C 30 36, 60 25, 95 22 C 130 16, 165 15, 190 25 C 210 34, 215 47, 210 56 C 198 68, 170 78, 140 74 C 105 70, 65 64, 0 52 Z" />
+              <path className="fire-wave wave-3" fill="url(#fireCoreGrad)"
+                d="M 0 47 C 25 41, 55 35, 85 34 C 115 32, 145 36, 168 45 C 178 50, 172 54, 155 57 C 128 60, 90 56, 0 51 Z" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
+              <span className="ember eb-3" />
+              <span className="ember eb-4" />
+              <span className="ember eb-5" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hydropump':
+        return (
+          <div className="skill-blast-stream stream-water">
+            <svg className="stream-svg water-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="waterOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="50%" stopColor="#0284c7" />
+                  <stop offset="100%" stopColor="#0369a1" />
+                </linearGradient>
+                <linearGradient id="waterCoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="40%" stopColor="#bae6fd" />
+                  <stop offset="100%" stopColor="#38bdf8" />
+                </linearGradient>
+                <filter id="waterGlow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path className="water-wave wave-1" fill="url(#waterOuterGrad)" filter="url(#waterGlow)"
+                d="M 0 45 C 40 28, 80 14, 125 14 C 165 14, 205 20, 225 32 C 240 42, 240 54, 225 64 C 200 75, 160 80, 120 80 C 75 78, 35 62, 0 53 Z" />
+              <path className="water-wave wave-2" fill="url(#waterCoreGrad)"
+                d="M 0 46 C 35 36, 75 26, 115 26 C 155 26, 195 32, 210 42 C 220 48, 220 54, 210 58 C 190 64, 150 68, 115 68 C 70 65, 30 55, 0 50 Z" />
+              <path className="water-spiral" stroke="#ffffff" strokeWidth="3" fill="none" strokeDasharray="8 6"
+                d="M 0 48 Q 60 22, 120 48 T 240 48" />
+            </svg>
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-2" />
+              <span className="bubble bb-3" />
+              <span className="bubble bb-4" />
+              <span className="bubble bb-5" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-thunderbolt':
+        return (
+          <div className="skill-blast-stream stream-thunder">
+            <svg className="stream-svg thunder-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <filter id="thunderGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <polyline className="thunder-bolt bolt-outer" stroke="#facc15" strokeWidth="12" fill="none" opacity="0.8"
+                points="0,48 30,30 60,62 95,20 130,68 165,24 200,64 240,46" />
+              <polyline className="thunder-bolt bolt-main" stroke="#ffffff" strokeWidth="6" fill="none" filter="url(#thunderGlow)"
+                points="0,48 30,30 60,62 95,20 130,68 165,24 200,64 240,46" />
+              <polyline className="thunder-branch br-1" stroke="#fef08a" strokeWidth="3" fill="none"
+                points="95,20 120,6 155,14" />
+              <polyline className="thunder-branch br-2" stroke="#fef08a" strokeWidth="3" fill="none"
+                points="130,68 158,86 188,78" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-2" />
+              <span className="spark sp-3" />
+              <span className="spark sp-4" />
+              <span className="spark sp-5" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-solarbeam':
+        return (
+          <div className="skill-blast-stream stream-solar">
+            <svg className="stream-svg solar-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="solarBeamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="25%" stopColor="#fef08a" />
+                  <stop offset="65%" stopColor="#4ade80" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
+                <filter id="solarGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect className="solar-beam-core" x="0" y="36" width="240" height="24" rx="12" fill="url(#solarBeamGrad)" filter="url(#solarGlow)" />
+              <rect className="solar-beam-center" x="0" y="42" width="240" height="12" rx="6" fill="#ffffff" />
+              <ellipse className="solar-ring ring-1" cx="65" cy="48" rx="16" ry="32" fill="none" stroke="#86efac" strokeWidth="3" />
+              <ellipse className="solar-ring ring-2" cx="140" cy="48" rx="18" ry="36" fill="none" stroke="#4ade80" strokeWidth="3" />
+              <ellipse className="solar-ring ring-3" cx="210" cy="48" rx="20" ry="40" fill="none" stroke="#22c55e" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles solar-leaves">
+              <span className="leaf-particle lf-1">🍃</span>
+              <span className="leaf-particle lf-2">🌿</span>
+              <span className="leaf-particle lf-3">🍃</span>
+              <span className="leaf-particle lf-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-shadowball':
+        return (
+          <div className="skill-blast-stream stream-shadow">
+            <svg className="stream-svg shadow-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="shadowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#c084fc" />
+                  <stop offset="50%" stopColor="#7e22ce" />
+                  <stop offset="100%" stopColor="#3b0764" />
+                </linearGradient>
+                <filter id="shadowGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path className="shadow-smoke sm-1" fill="url(#shadowGrad)" filter="url(#shadowGlow)"
+                d="M 0 45 C 35 18, 70 12, 115 18 C 160 24, 195 8, 225 24 C 242 38, 238 68, 210 80 C 170 92, 130 75, 85 80 C 40 85, 20 62, 0 52 Z" />
+              <path className="shadow-smoke sm-2" fill="#581c87" opacity="0.85"
+                d="M 0 46 C 30 28, 65 22, 105 30 C 145 38, 180 26, 205 38 C 220 48, 215 65, 190 70 C 155 75, 120 62, 80 65 C 40 66, 18 56, 0 50 Z" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-1">👻</span>
+              <span className="wisp ws-2">🟣</span>
+              <span className="wisp ws-3">✨</span>
+              <span className="wisp ws-4">🟣</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-psychic':
+        return (
+          <div className="skill-blast-stream stream-psychic">
+            <svg className="stream-svg psychic-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="psychicGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f472b6" />
+                  <stop offset="50%" stopColor="#db2777" />
+                  <stop offset="100%" stopColor="#9d174d" />
+                </linearGradient>
+                <filter id="psychicGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect className="psychic-core-beam" x="0" y="42" width="240" height="14" rx="7" fill="#fbcfe8" filter="url(#psychicGlow)" />
+              <ellipse className="psychic-wave-ring pw-1" cx="45" cy="49" rx="12" ry="24" fill="none" stroke="#f472b6" strokeWidth="2.5" />
+              <ellipse className="psychic-wave-ring pw-2" cx="105" cy="49" rx="18" ry="34" fill="none" stroke="#ec4899" strokeWidth="3" />
+              <ellipse className="psychic-wave-ring pw-3" cx="170" cy="49" rx="24" ry="44" fill="none" stroke="#db2777" strokeWidth="3.5" />
+              <ellipse className="psychic-wave-ring pw-4" cx="228" cy="49" rx="28" ry="50" fill="none" stroke="#be185d" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">🔮</span>
+              <span className="p-sparkle ps-2">✨</span>
+              <span className="p-sparkle ps-3">💖</span>
+              <span className="p-sparkle ps-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hurricane':
+        return (
+          <div className="skill-blast-stream stream-hurricane">
+            <svg className="stream-svg hurricane-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="hurricane-slash s-1" stroke="#38bdf8" strokeWidth="6" fill="none" opacity="0.9"
+                d="M 0 45 C 50 15, 120 10, 240 25" />
+              <path className="hurricane-slash s-2" stroke="#ffffff" strokeWidth="4" fill="none"
+                d="M 0 48 C 60 48, 140 46, 240 48" />
+              <path className="hurricane-slash s-3" stroke="#0284c7" strokeWidth="6" fill="none" opacity="0.9"
+                d="M 0 52 C 50 82, 120 86, 240 70" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🌪️</span>
+              <span className="gust g-2">💨</span>
+              <span className="gust g-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-dracometeor':
+        return (
+          <div className="skill-blast-stream stream-draco">
+            <svg className="stream-svg draco-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="dracoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#2dd4bf" />
+                  <stop offset="50%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+              <path className="draco-breath d-1" fill="url(#dracoGrad)" opacity="0.85"
+                d="M 0 46 C 40 24, 85 15, 130 18 C 175 22, 210 10, 235 28 C 245 42, 238 65, 215 78 C 175 92, 130 82, 85 78 C 45 74, 20 60, 0 52 Z" />
+            </svg>
+            <div className="stream-particles draco-stars">
+              <span className="d-star ds-1">🐉</span>
+              <span className="d-star ds-2">🌠</span>
+              <span className="d-star ds-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-gigaimpact':
+        return (
+          <div className="skill-blast-stream stream-giga">
+            <svg className="stream-svg giga-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <rect className="giga-laser" x="0" y="34" width="240" height="28" rx="14" fill="#fbbf24" opacity="0.9" />
+              <rect className="giga-core" x="0" y="40" width="240" height="16" rx="8" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles giga-shocks">
+              <span className="shock sk-1">💥</span>
+              <span className="shock sk-2">⭐</span>
+              <span className="shock sk-3">💥</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-blizzard':
+        return (
+          <div className="skill-blast-stream stream-blizzard">
+            <svg className="stream-svg blizzard-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="blizzard-cone" fill="#38bdf8" opacity="0.75"
+                d="M 0 46 C 50 20, 120 15, 240 20 C 235 50, 240 80, 240 80 C 120 85, 50 78, 0 52 Z" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-1">❄️</span>
+              <span className="flake fk-2">💎</span>
+              <span className="flake fk-3">❄️</span>
+              <span className="flake fk-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-aurasphere':
+        return (
+          <div className="skill-blast-stream stream-aura">
+            <svg className="stream-svg aura-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="aura-blast" fill="#3b82f6" opacity="0.85"
+                d="M 0 46 C 45 28, 90 20, 140 22 C 185 24, 215 32, 235 46 C 215 62, 185 70, 140 72 C 90 74, 45 66, 0 52 Z" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">💥</span>
+              <span className="pulse pu-2">🔵</span>
+              <span className="pulse pu-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-watershuriken':
+        return (
+          <div className="skill-blast-stream stream-shuriken">
+            <svg className="stream-svg shuriken-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="water-blade" stroke="#0ea5e9" strokeWidth="6" fill="none"
+                d="M 0 46 C 60 25, 120 65, 240 46" />
+            </svg>
+            <div className="stream-particles shuriken-stars">
+              <span className="sh-star ss-1">🌊</span>
+              <span className="sh-star ss-2">🌀</span>
+              <span className="sh-star ss-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firekanji':
+        return (
+          <div className="skill-blast-stream stream-firekanji">
+            <svg className="stream-svg firekanji-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="150" cy="50" r="38" fill="url(#fireMidGrad)" filter="url(#fireGlow)" opacity="0.85" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#f97316" strokeWidth="14" strokeLinecap="round" opacity="0.8" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
+              <path d="M 150 18 Q 140 50, 100 88" stroke="#dc2626" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.8" />
+              <path d="M 150 18 Q 140 50, 100 88" stroke="#ffffff" strokeWidth="8" fill="none" strokeLinecap="round" />
+              <path d="M 150 48 Q 165 65, 205 88" stroke="#dc2626" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.8" />
+              <path d="M 150 48 Q 165 65, 205 88" stroke="#ffffff" strokeWidth="8" fill="none" strokeLinecap="round" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
+              <span className="ember eb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firespin':
+        return (
+          <div className="skill-blast-stream stream-firespin">
+            <svg className="stream-svg firespin-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="fire-spin-path sp-1" stroke="#f97316" strokeWidth="12" fill="none" strokeDasharray="12 8"
+                d="M 0 50 Q 60 15, 120 50 T 240 50" />
+              <path className="fire-spin-path sp-2" stroke="#fef08a" strokeWidth="7" fill="none"
+                d="M 0 50 Q 60 85, 120 50 T 240 50" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hydrocannon':
+        return (
+          <div className="skill-blast-stream stream-hydrocannon">
+            <svg className="stream-svg hydrocannon-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="160" cy="50" r="36" fill="url(#waterOuterGrad)" filter="url(#waterGlow)" />
+              <circle cx="160" cy="50" r="22" fill="url(#waterCoreGrad)" />
+              <ellipse cx="90" cy="50" rx="20" ry="38" fill="none" stroke="#bae6fd" strokeWidth="4" />
+              <ellipse cx="40" cy="50" rx="14" ry="26" fill="none" stroke="#38bdf8" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-2" />
+              <span className="bubble bb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bubblebeam':
+        return (
+          <div className="skill-blast-stream stream-bubblebeam">
+            <svg className="stream-svg bubblebeam-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="50" cy="45" r="14" fill="#38bdf8" opacity="0.6" stroke="#ffffff" strokeWidth="2" />
+              <circle cx="95" cy="30" r="20" fill="#bae6fd" opacity="0.7" stroke="#ffffff" strokeWidth="2.5" />
+              <circle cx="110" cy="65" r="16" fill="#38bdf8" opacity="0.6" stroke="#ffffff" strokeWidth="2" />
+              <circle cx="160" cy="42" r="24" fill="#7dd3fc" opacity="0.8" stroke="#ffffff" strokeWidth="3" />
+              <circle cx="210" cy="58" r="18" fill="#bae6fd" opacity="0.7" stroke="#ffffff" strokeWidth="2" />
+            </svg>
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-3" />
+              <span className="bubble bb-4" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-vinewhip':
+        return (
+          <div className="skill-blast-stream stream-vinewhip">
+            <svg className="stream-svg vinewhip-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="vine-whip-path vw-1" stroke="#22c55e" strokeWidth="7" fill="none" strokeLinecap="round"
+                d="M 0 45 Q 70 10, 140 55 T 240 30" />
+              <path className="vine-whip-path vw-2" stroke="#16a34a" strokeWidth="7" fill="none" strokeLinecap="round"
+                d="M 0 55 Q 70 90, 140 45 T 240 70" />
+              <path className="vine-whip-leaf" stroke="#86efac" strokeWidth="3" fill="none"
+                d="M 120 48 Q 135 35, 150 48 T 180 48" />
+            </svg>
+            <div className="stream-particles solar-leaves">
+              <span className="leaf-particle lf-1">🌿</span>
+              <span className="leaf-particle lf-2">🍃</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-petaldance':
+        return (
+          <div className="skill-blast-stream stream-petaldance">
+            <svg className="stream-svg petaldance-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="petal-swirl" stroke="#f472b6" strokeWidth="8" fill="none" strokeDasharray="14 10"
+                d="M 0 50 Q 60 15, 120 50 T 240 50" />
+              <path className="petal-swirl" stroke="#fbcfe8" strokeWidth="4" fill="none"
+                d="M 0 50 Q 60 85, 120 50 T 240 50" />
+            </svg>
+            <div className="stream-particles petal-particles">
+              <span className="petal-particle pt-1">🌸</span>
+              <span className="petal-particle pt-2">🌺</span>
+              <span className="petal-particle pt-3">🌸</span>
+              <span className="petal-particle pt-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-thunderstorm':
+        return (
+          <div className="skill-blast-stream stream-thunderstorm">
+            <svg className="stream-svg thunderstorm-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="160" y1="0" x2="160" y2="100" stroke="#fef08a" strokeWidth="18" opacity="0.5" />
+              <polyline points="160,0 145,35 175,60 150,100" stroke="#ffffff" strokeWidth="8" fill="none" filter="url(#thunderGlow)" />
+              <ellipse cx="150" cy="90" rx="35" ry="10" fill="none" stroke="#facc15" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-2" />
+              <span className="spark sp-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-volttackle':
+        return (
+          <div className="skill-blast-stream stream-volttackle">
+            <svg className="stream-svg volttackle-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="45" ry="32" fill="url(#fireMidGrad)" opacity="0.6" />
+              <circle cx="140" cy="50" r="25" fill="#ffffff" filter="url(#thunderGlow)" />
+              <line x1="0" y1="50" x2="240" y2="50" stroke="#fef08a" strokeWidth="8" strokeDasharray="16 10" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-4" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-nightshade':
+        return (
+          <div className="skill-blast-stream stream-nightshade">
+            <svg className="stream-svg nightshade-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="50" cy="42" r="7" fill="#ef4444" filter="url(#shadowGlow)" />
+              <circle cx="80" cy="42" r="7" fill="#ef4444" filter="url(#shadowGlow)" />
+              <path className="shadow-smoke" fill="#3b0764" opacity="0.9"
+                d="M 80 45 C 120 20, 160 15, 240 30 C 230 70, 170 85, 120 75 Z" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-1">😈</span>
+              <span className="wisp ws-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-sludgebomb':
+        return (
+          <div className="skill-blast-stream stream-sludge">
+            <svg className="stream-svg sludge-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="70" cy="50" r="16" fill="#7e22ce" />
+              <circle cx="130" cy="40" r="22" fill="#581c87" />
+              <circle cx="190" cy="55" r="28" fill="#3b0764" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-2">💀</span>
+              <span className="wisp ws-4">🟣</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-psystrike':
+        return (
+          <div className="skill-blast-stream stream-psystrike">
+            <svg className="stream-svg psystrike-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="60,40 120,50 60,60" fill="#f472b6" filter="url(#psychicGlow)" />
+              <polygon points="120,32 200,50 120,68" fill="#ffffff" filter="url(#psychicGlow)" />
+              <line x1="0" y1="50" x2="240" y2="50" stroke="#db2777" strokeWidth="6" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">🌀</span>
+              <span className="p-sparkle ps-2">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-prismbarrier':
+        return (
+          <div className="skill-blast-stream stream-prism">
+            <svg className="stream-svg prism-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="120,15 160,15 180,50 160,85 120,85 100,50" fill="rgba(244,114,182,0.3)" stroke="#ec4899" strokeWidth="3" />
+              <polygon points="150,25 180,25 195,50 180,75 150,75 135,50" fill="rgba(192,132,252,0.3)" stroke="#a855f7" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-3">🛡️</span>
+              <span className="p-sparkle ps-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-meteorshower':
+        return (
+          <div className="skill-blast-stream stream-meteor">
+            <svg className="stream-svg meteor-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="80" y1="10" x2="160" y2="90" stroke="#f97316" strokeWidth="8" strokeLinecap="round" />
+              <circle cx="160" cy="90" r="14" fill="#fbbf24" filter="url(#fireGlow)" />
+              <line x1="120" y1="5" x2="210" y2="75" stroke="#ec4899" strokeWidth="6" strokeLinecap="round" />
+              <circle cx="210" cy="75" r="12" fill="#f472b6" />
+            </svg>
+            <div className="stream-particles draco-stars">
+              <span className="d-star ds-1">🌠</span>
+              <span className="d-star ds-2">☄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-outrage':
+        return (
+          <div className="skill-blast-stream stream-outrage">
+            <svg className="stream-svg outrage-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="130" cy="50" r="42" fill="url(#fireOuterGrad)" opacity="0.75" />
+              <circle cx="130" cy="50" r="28" fill="#991b1b" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bonerush':
+        return (
+          <div className="skill-blast-stream stream-bonerush">
+            <svg className="stream-svg bonerush-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="70" y1="20" x2="180" y2="80" stroke="#60a5fa" strokeWidth="8" strokeLinecap="round" />
+              <line x1="70" y1="80" x2="180" y2="20" stroke="#93c5fd" strokeWidth="8" strokeLinecap="round" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">⚔️</span>
+              <span className="pulse pu-2">💥</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-stoneedge':
+        return (
+          <div className="skill-blast-stream stream-stoneedge">
+            <svg className="stream-svg stoneedge-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="50,85 70,30 90,85" fill="#78350f" stroke="#b45309" strokeWidth="3" />
+              <polygon points="110,90 140,15 170,90" fill="#92400e" stroke="#d97706" strokeWidth="3" />
+              <polygon points="180,88 205,35 230,88" fill="#78350f" stroke="#b45309" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">🪨</span>
+              <span className="pulse pu-3">💥</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-icebeam':
+        return (
+          <div className="skill-blast-stream stream-icebeam">
+            <svg className="stream-svg icebeam-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polyline points="0,50 30,35 60,65 100,30 140,70 180,35 240,50" stroke="#ffffff" strokeWidth="5" fill="none" filter="url(#waterGlow)" />
+              <polyline points="0,50 30,35 60,65 100,30 140,70 180,35 240,50" stroke="#38bdf8" strokeWidth="10" fill="none" opacity="0.75" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-1">🧊</span>
+              <span className="flake fk-2">❄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-auroraveil':
+        return (
+          <div className="skill-blast-stream stream-auroraveil">
+            <svg className="stream-svg auroraveil-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path d="M 0 35 Q 60 70, 120 35 T 240 35" stroke="#2dd4bf" strokeWidth="12" fill="none" opacity="0.7" />
+              <path d="M 0 55 Q 60 20, 120 55 T 240 55" stroke="#c084fc" strokeWidth="10" fill="none" opacity="0.7" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-3">✨</span>
+              <span className="flake fk-4">❄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-typhoon':
+        return (
+          <div className="skill-blast-stream stream-typhoon">
+            <svg className="stream-svg typhoon-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="35" ry="45" fill="none" stroke="#38bdf8" strokeWidth="6" strokeDasharray="14 8" />
+              <ellipse cx="140" cy="50" rx="18" ry="24" fill="none" stroke="#ffffff" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🌀</span>
+              <span className="gust g-2">💨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bravebird':
+        return (
+          <div className="skill-blast-stream stream-bravebird">
+            <svg className="stream-svg bravebird-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="60,20 180,50 60,80 90,50" fill="#0284c7" filter="url(#waterGlow)" />
+              <polygon points="80,30 190,50 80,70 105,50" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🪶</span>
+              <span className="gust g-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-magicalshine':
+        return (
+          <div className="skill-blast-stream stream-magicalshine">
+            <svg className="stream-svg magicalshine-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="140" cy="50" r="32" fill="#ffffff" filter="url(#psychicGlow)" />
+              <line x1="80" y1="50" x2="200" y2="50" stroke="#f472b6" strokeWidth="6" />
+              <line x1="140" y1="10" x2="140" y2="90" stroke="#fbbf24" strokeWidth="6" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">✨</span>
+              <span className="p-sparkle ps-2">💖</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-heartstorm':
+        return (
+          <div className="skill-blast-stream stream-heartstorm">
+            <div className="stream-particles heart-particles">
+              <span className="heart-p hp-1">💖</span>
+              <span className="heart-p hp-2">💕</span>
+              <span className="heart-p hp-3">💓</span>
+              <span className="heart-p hp-4">💖</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-gigaforce':
+        return (
+          <div className="skill-blast-stream stream-gigaforce">
+            <svg className="stream-svg gigaforce-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="42" ry="42" fill="none" stroke="#eab308" strokeWidth="7" />
+              <ellipse cx="140" cy="50" rx="24" ry="24" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles giga-shocks">
+              <span className="shock sk-1">💥</span>
+              <span className="shock sk-2">⭐</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-splashrush':
+        return (
+          <div className="skill-blast-stream stream-splashrush">
+            <div className="stream-particles splash-particles">
+              <span className="splash-p sp-1">🐟</span>
+              <span className="splash-p sp-2">✨</span>
+              <span className="splash-p sp-3">🌟</span>
+              <span className="splash-p sp-4">🎉</span>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="skill-blast-stream stream-generic">
+            <span className="generic-icon">{symbolIcon}</span>
+          </div>
+        );
+    }
+  };
+
   // 🖼️ 미니룸 캔버스 렌더러
   const renderMiniroomCanvas = ({ compact = false }: { compact?: boolean }) => {
     const bgTheme = currentBgTheme || 'classic';
@@ -1834,11 +2822,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
                   return (
                     <div className={`skill-fx-display ${activeFxClass}`}>
-                      <div className="skill-fx-core" />
-                      <div className="skill-fx-wave" />
-                      <div className="skill-fx-aura" />
-                      <div className="skill-fx-sparks" />
-                      <span className="skill-fx-symbol">{symbolIcon}</span>
+                      {renderSkillStreamFx(activeFxClass, symbolIcon)}
                     </div>
                   );
                 })() : stk.text ? (
@@ -2055,8 +3039,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
+    if (!farmState.isInitialized || !farmState.ownerName || farmState.ownerName === '지우') {
+      return;
+    }
     saveFarmState(farmState);
-    if (socket && socket.connected && farmState.isInitialized && farmState.ownerName) {
+    if (socket && socket.connected) {
       socket.emit('farm-sync', {
         username: farmState.ownerName,
         farmData: {
@@ -2066,6 +3053,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           graduatedPokemon: farmState.graduatedPokemon,
           graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
           heartsCount: farmState.heartsCount,
+          coins: farmState.coins,
+          inventory: farmState.inventory,
+          incubatingEgg: farmState.incubatingEgg,
+          lotteryState: farmState.lotteryState,
           guestbook: farmState.guestbook,
           bgTheme: farmState.bgTheme,
           stickers: farmState.stickers,
@@ -2096,6 +3087,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           farm: data.farm,
           guestbook: data.guestbook
         });
+        setActiveTab('minihome');
+        setMinihompyTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
 
@@ -2136,6 +3130,50 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     setTimeout(() => setActionAlert(null), 3500);
   };
 
+  // 🔊 쓰다듬기 효과음 토글 헬퍼
+  const togglePetSound = () => {
+    setIsPetSoundEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('pokefarm_pet_sound_enabled', String(next));
+      showAlert(next ? '🔊 쓰다듬기 효과음이 켜졌습니다.' : '🔇 쓰다듬기 효과음이 꺼졌습니다.', 'info');
+      return next;
+    });
+  };
+
+  // ⚡ 하루 지나면 모든 포켓몬 에너지 100% 자동 회복 검사 & 알림
+  const checkDailyEnergyRecovery = useCallback(() => {
+    const today = getTodayDateString();
+    setFarmState(prev => {
+      if (!prev.lastEnergyRecoveryDate) {
+        return { ...prev, lastEnergyRecoveryDate: today };
+      }
+      if (prev.lastEnergyRecoveryDate !== today) {
+        const recoverEnergy = (mon: FarmPokemon) => {
+          const maxStat = getMaxStatForStage(mon.stageIndex);
+          return { ...mon, energy: maxStat };
+        };
+        const updatedActive = prev.activePokemon ? recoverEnergy(prev.activePokemon) : null;
+        const updatedReserve = prev.reservePokemon ? prev.reservePokemon.map(recoverEnergy) : [];
+
+        showAlert('☀️ 새로운 하루가 시작되었습니다! 모든 포켓몬의 에너지가 100% 가득 회복되었습니다! ⚡', 'success');
+
+        return {
+          ...prev,
+          activePokemon: updatedActive,
+          reservePokemon: updatedReserve,
+          lastEnergyRecoveryDate: today
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    checkDailyEnergyRecovery();
+    const timer = setInterval(checkDailyEnergyRecovery, 30000);
+    return () => clearInterval(timer);
+  }, [checkDailyEnergyRecovery]);
+
   // 🥚 알 부화기 온기 증가 헬퍼
   const addEggWarmth = (amount: number, reason: string) => {
     setFarmState(prev => {
@@ -2156,65 +3194,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   const pmon = farmState.activePokemon;
 
-  // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트
-  const handlePetPokemon = (e?: React.MouseEvent) => {
+  // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트 (최대 3개 스킬 중 현재 슬롯 발동)
+  const handlePetPokemon = (e?: React.MouseEvent, overrideSkill?: PokemonSkillDef) => {
     if (!pmon) return;
-    playPokemonCry(pmon.speciesId);
+    if (isPetSoundEnabled) {
+      playPokemonCry(pmon.speciesId);
+    }
     addEggWarmth(1, '포켓몬 쓰다듬기');
 
-    // 스킬 모션 정보 결정
-    let skillName = '애교부리기';
-    let skillType = 'normal';
-    let skillIcon = '⭐';
-    let particles = ['⭐', '✨', '💛', '💖', '🎉'];
+    const skillSet = getPokemonSkillSet(pmon);
+    const targetSkill = overrideSkill || skillSet.find(s => s.slot === selectedSkillSlot) || skillSet[0];
 
-    if (pmon.types.includes('water')) {
-      skillName = pmon.level >= 30 ? '하이드로펌프' : '물대포';
-      skillType = 'water';
-      skillIcon = '🌊';
-      particles = ['🌊', '💦', '🫧', '💧', '✨'];
-    } else if (pmon.types.includes('fire')) {
-      skillName = pmon.level >= 30 ? '화염방사' : '불꽃세례';
-      skillType = 'fire';
-      skillIcon = '🔥';
-      particles = ['🔥', '💥', '☄️', '♨️', '✨'];
-    } else if (pmon.types.includes('grass')) {
-      skillName = pmon.level >= 30 ? '솔라빔' : '잎날가르기';
-      skillType = 'grass';
-      skillIcon = '🍃';
-      particles = ['🍃', '🌸', '🌿', '🌱', '✨'];
-    } else if (pmon.types.includes('electric')) {
-      skillName = pmon.level >= 30 ? '볼트태클' : '10만볼트';
-      skillType = 'electric';
-      skillIcon = '⚡';
-      particles = ['⚡', '⚡', '🌟', '💛', '✨'];
-    } else if (pmon.types.includes('fairy')) {
-      skillName = '문포스';
-      skillType = 'fairy';
-      skillIcon = '💖';
-      particles = ['💖', '🌙', '🌸', '✨', '💕'];
-    } else if (pmon.types.includes('dragon')) {
-      skillName = '용의파동';
-      skillType = 'dragon';
-      skillIcon = '🐉';
-      particles = ['🐉', '☄️', '💫', '🔷', '✨'];
-    } else if (pmon.types.includes('ghost') || pmon.types.includes('psychic')) {
-      skillName = '사이코키네시스';
-      skillType = 'psychic';
-      skillIcon = '🔮';
-      particles = ['🔮', '🌌', '👻', '💜', '✨'];
-    } else if (pmon.types.includes('fighting')) {
-      skillName = '인파이트';
-      skillType = 'fighting';
-      skillIcon = '🥊';
-      particles = ['🥊', '💥', '⚡', '💪', '✨'];
-    }
+    const particles = targetSkill.icon === '🔥' || targetSkill.icon === '☄️'
+      ? ['🔥', '💥', '☄️', '♨️', '✨']
+      : targetSkill.icon === '💧' || targetSkill.icon === '🌊' || targetSkill.icon === '🫧'
+      ? ['🌊', '💦', '🫧', '💧', '✨']
+      : targetSkill.icon === '🍃' || targetSkill.icon === '🌿' || targetSkill.icon === '🌸'
+      ? ['🍃', '🌸', '🌿', '🌱', '✨']
+      : targetSkill.icon === '⚡' || targetSkill.icon === '🌩️'
+      ? ['⚡', '⚡', '🌟', '💛', '✨']
+      : ['⭐', '✨', '💫', targetSkill.icon, '🎉'];
 
     setPetSkillEffect({
       id: Date.now(),
-      skillName,
-      type: skillType,
-      icon: skillIcon,
+      skillName: targetSkill.name,
+      type: pmon.types[0] || 'normal',
+      fxClass: targetSkill.fxClass,
+      icon: targetSkill.icon,
       particles
     });
     setIsPetJumping(true);
@@ -2258,6 +3264,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         }
       };
     });
+  };
+
+  // 🎯 포켓몬 고유스킬 슬롯 직접 클릭 발동 (1, 2, 3번 스킬)
+  const handleTriggerSkillSlot = (sk: PokemonSkillDef) => {
+    setSelectedSkillSlot(sk.slot);
+    handlePetPokemon(undefined, sk);
   };
 
   // ⌨️ 단축키 [C] 입력 시 화면 어디서든 포켓몬 쓰다듬기 처리 (꾹 누르기 반복 차단)
@@ -2328,6 +3340,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
     // 💎 2. 반짝이는 원석 매각 (300 코인 획득)
     if (item.id === 'shiny_stone') {
+      if (!window.confirm('💎 [반짝이는 원석]을 사내 보석상에 매각하고 300 코인을 받으시겠습니까?')) {
+        return;
+      }
       setFarmState(prev => ({
         ...prev,
         coins: prev.coins + 300,
@@ -2342,6 +3357,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
     // 👑 3. 전설의 황금 왕관 매각 (1,000 코인 획득)
     if (item.id === 'gold_crown') {
+      if (!window.confirm('👑 [전설의 황금 왕관]은 매우 귀중한 전설의 보물입니다!\n정말로 사내 역사관에 기증하고 1,000 코인을 받으시겠습니까?')) {
+        return;
+      }
       setFarmState(prev => ({
         ...prev,
         coins: prev.coins + 1000,
@@ -3725,6 +4743,237 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     );
   }
 
+  // 📖 포켓몬 졸업 도감 렌더링 헬퍼 (내 도감 & 이웃 도감 공용)
+  const renderPokedexContent = (graduatedList: GraduationDiploma[], ownerTitle: string, isNeighbor: boolean = false) => {
+    const pokedexList = getAllPokedexEntries();
+    const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
+
+    (graduatedList || []).forEach(dip => {
+      const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
+      existing.count += 1;
+      if (dip.isShiny) existing.shinyCount += 1;
+      if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
+      if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
+      gradStats.set(dip.speciesId, existing);
+    });
+
+    const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
+    const totalSpeciesCount = pokedexList.length;
+    const totalGradCount = graduatedList?.length || 0;
+    const shinyGradCount = graduatedList?.filter(d => d.isShiny).length || 0;
+    const completionPct = totalSpeciesCount > 0 ? Math.round((unlockedCount / totalSpeciesCount) * 100) : 0;
+
+    let filteredPokedex = pokedexList;
+    if (pokedexFilter === 'unlocked') {
+      filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
+    } else if (pokedexFilter === 'locked') {
+      filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
+    } else if (pokedexFilter === 'shiny') {
+      filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
+    }
+
+    return (
+      <div className="farm-pokedex-layout">
+        {/* Header Banner & Sub View Switcher */}
+        <div className="pokedex-top-banner">
+          <div className="pokedex-banner-title">
+            <div className="pokedex-book-icon">📖</div>
+            <div>
+              <h3>{isNeighbor ? `[${ownerTitle}]님의 포켓몬 졸업 도감` : '포켓농장 공식 졸업 도감 (Official Pokedex)'}</h3>
+              <p>
+                {isNeighbor
+                  ? `[${ownerTitle}]님이 정성으로 키워 졸업시킨 포켓몬 컬렉션과 명예의 전당입니다.`
+                  : '정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="pokedex-view-tabs">
+            <button
+              className={`pokedex-subtab-btn ${pokedexSubView === 'pokedex' ? 'active' : ''}`}
+              onClick={() => setPokedexSubView('pokedex')}
+            >
+              📖 완성 도감 ({unlockedCount}/{totalSpeciesCount})
+            </button>
+            <button
+              className={`pokedex-subtab-btn ${pokedexSubView === 'diplomas' ? 'active' : ''}`}
+              onClick={() => setPokedexSubView('diplomas')}
+            >
+              📜 졸업 증서 앨범 ({totalGradCount}장)
+            </button>
+          </div>
+        </div>
+
+        {pokedexSubView === 'pokedex' ? (
+          <>
+            {/* Progress & KPI Ribbon */}
+            <div className="pokedex-stats-bar">
+              <div className="pokedex-kpi-col">
+                <span className="pokedex-kpi-label">도감 등록률</span>
+                <span className="pokedex-kpi-val">{completionPct}% ({unlockedCount}/{totalSpeciesCount}종)</span>
+              </div>
+              <div className="pokedex-bar-wrap">
+                <div className="pokedex-bar-fill" style={{ width: `${completionPct}%` }} />
+              </div>
+              <div className="pokedex-kpi-tags">
+                <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
+                <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
+              </div>
+            </div>
+
+            {/* Filter Chips */}
+            <div className="pokedex-filter-bar">
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('all')}
+              >
+                전체 ({totalSpeciesCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('unlocked')}
+              >
+                🌟 등록 완료 ({unlockedCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'locked' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('locked')}
+              >
+                🔒 미등록 ({totalSpeciesCount - unlockedCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('shiny')}
+              >
+                ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
+              </button>
+            </div>
+
+            {/* 33종 도감 카드 그리드 */}
+            <div className="pokedex-grid">
+              {filteredPokedex.map(mon => {
+                const stat = gradStats.get(mon.speciesId);
+                const isUnlocked = !!stat;
+                const hasShiny = (stat?.shinyCount || 0) > 0;
+                const isHovered = pokedexHoverId === mon.speciesId;
+
+                return (
+                  <div
+                    key={mon.speciesId}
+                    className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
+                    onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
+                    onMouseLeave={() => setPokedexHoverId(null)}
+                  >
+                    <div className="pokedex-card-header">
+                      <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
+                      {isUnlocked ? (
+                        <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
+                      ) : (
+                        <span className="pokedex-locked-label">🔒 미등록</span>
+                      )}
+                    </div>
+
+                    <div className="pokedex-img-pod">
+                      <img
+                        src={isUnlocked ? (mon.showdownSprite || mon.sprite) : mon.sprite}
+                        alt={isUnlocked ? mon.name : '미해금'}
+                        className={`pokedex-sprite-img ${!isUnlocked ? 'silhouette-img' : ''}`}
+                      />
+                      {hasShiny && (
+                        <span className="pokedex-shiny-ribbon">✨ SHINY</span>
+                      )}
+                    </div>
+
+                    <div className="pokedex-card-footer">
+                      <h4 className="pokedex-mon-name">
+                        {isUnlocked ? mon.name : '???'}
+                      </h4>
+                      <div className="pokedex-types-row">
+                        {isUnlocked ? (
+                          mon.types.map(t => (
+                            <span key={t} className={`type-tag ${t}`}>{t}</span>
+                          ))
+                        ) : (
+                          <span className="type-tag locked-tag">미확인</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 호버 상세 정보 카드 */}
+                    {isHovered && (
+                      <div className="pokedex-hover-card">
+                        {isUnlocked ? (
+                          <div className="pokedex-hover-body">
+                            <div className="hover-mon-name">
+                              {mon.name} {hasShiny && '✨'}
+                            </div>
+                            <div className="hover-row grad-highlight">
+                              🎓 <b>졸업 횟수: {stat.count}회</b>
+                            </div>
+                            {stat.shinyCount > 0 && (
+                              <div className="hover-row shiny-highlight">
+                                ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
+                              </div>
+                            )}
+                            <div className="hover-row">
+                              ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
+                            </div>
+                            <div className="hover-row date">
+                              📅 최초 졸업: {stat.firstDate}
+                            </div>
+                            {stat.nicknames.length > 0 && (
+                              <div className="hover-row nicknames">
+                                애칭: {stat.nicknames.slice(0, 2).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="pokedex-hover-body locked">
+                            <div className="hover-locked-title">🔒 미해금 포켓몬</div>
+                            <p>
+                              {isNeighbor
+                                ? `[${ownerTitle}]님이 아직 졸업시키지 않은 포켓몬입니다.`
+                                : '아직 졸업한 기록이 없습니다. Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          /* 📜 졸업 증서 앨범 뷰 */
+          <div className="pokedex-diplomas-view">
+            {(graduatedList || []).length > 0 ? (
+              <div className="diplomas-grid">
+                {(graduatedList || []).map(dip => (
+                  <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
+                    <div className="diploma-cap-icon">🎓</div>
+                    <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
+                    <h4>{dip.nickname} {dip.isShiny && '✨'}</h4>
+                    <span className="diploma-title">{dip.title}</span>
+                    <span className="diploma-date">{dip.graduatedAt} 졸업</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-yard-card">
+                <p>
+                  {isNeighbor
+                    ? `[${ownerTitle}]님이 아직 졸업시킨 포켓몬이 없습니다.`
+                    : '아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderNeighborsView = () => (
     <div className="farm-social-layout">
       {/* 🏆 실시간 인기 포켓농장 TOP 3 (하트 랭킹 명예의 전당) */}
@@ -3810,6 +5059,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       onClick={() => {
                         setVisitingFarm(null);
                         setActiveTab('minihome');
+                        setMinihompyTab('home');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                     >
                       🏡 내 미니홈피 관리 ➔
@@ -3819,8 +5070,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       type="button"
                       className="sheet1-visit-btn"
                       onClick={() => handleVisitNeighbor(farm.username)}
+                      title={`${farm.farmName} 미니홈피 놀러가기`}
                     >
-                      🏠 미니홈피 파도타기 ➔
+                      🚀 홈피 놀러가기 ➔
                     </button>
                   )}
                 </div>
@@ -3902,8 +5154,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     <button
                       className="neighbor-visit-action-btn"
                       onClick={() => handleVisitNeighbor(neighbor.username)}
+                      title={`${neighbor.farmName || neighbor.username} 미니홈피 놀러가기`}
                     >
-                      파도타기 ➔
+                      놀러가기 ➔
                     </button>
                   </div>
                 </div>
@@ -4177,8 +5430,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                         </button>
                       )}
                     </div>
-                    <div className="detail-item">
-                      <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리</b>
+                    <div
+                      className="detail-item clickable-diploma"
+                      onClick={() => setMinihompyTab('pokedex')}
+                      title="클릭하여 완성 도감 구경하기"
+                    >
+                      <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리 ➔</b>
                     </div>
                     <div className="detail-item hearts">
                       <span>💖 1촌 하트:</span> <b className="heart-num">{displayHeartsCount}개</b>
@@ -4227,20 +5484,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       🖼️ 미니룸 (Miniroom)
                     </button>
                     <button
+                      className={`cytab ${minihompyTab === 'pokedex' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('pokedex')}
+                    >
+                      📖 {visitingFarm ? `${displayOwnerName}의 도감` : '완성 도감'} ({displayGraduatedCount})
+                    </button>
+                    <button
                       className={`cytab ${minihompyTab === 'guestbook' ? 'active' : ''}`}
                       onClick={() => setMinihompyTab('guestbook')}
                     >
                       📝 방명록 ({displayGuestbook.length})
                     </button>
-                    <button
-                      className={`cytab ${minihompyTab === 'stickers' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('stickers')}
-                    >
-                      🎨 스티커 꾸미기
-                    </button>
+                    {!visitingFarm && (
+                      <button
+                        className={`cytab ${minihompyTab === 'stickers' ? 'active' : ''}`}
+                        onClick={() => setMinihompyTab('stickers')}
+                      >
+                        🎨 스티커 꾸미기
+                      </button>
+                    )}
                     <button
                       className={`cytab neighbors-tab ${minihompyTab === 'neighbors' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('neighbors')}
+                      onClick={() => {
+                        setMinihompyTab('neighbors');
+                        refreshNeighbors();
+                      }}
                     >
                       ✨ 👥 이웃 파도타기
                     </button>
@@ -4258,6 +5526,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       <div className="miniroom-preview-box" onClick={() => setMinihompyTab('stickers')}>
                         <div className="preview-label">🖼️ 클릭하여 스티커 & 방 꾸미기 ➔</div>
                         {renderMiniroomCanvas({ compact: false })}
+                      </div>
+
+                      {/* 📖 포켓몬 졸업 도감 바로가기 프리뷰 위젯 */}
+                      <div className="pokedex-home-preview-widget" onClick={() => setMinihompyTab('pokedex')}>
+                        <div className="pokedex-preview-header">
+                          <div className="pokedex-preview-title">
+                            <span className="pokedex-preview-icon">📖</span>
+                            <div>
+                              <strong>{visitingFarm ? `[${displayOwnerName}]님의 포켓몬 완성 도감` : '내 포켓농장 공식 졸업 도감'}</strong>
+                              <span>총 {displayGraduatedCount}마리 졸업 완성 • 도감 및 증서 앨범 구경하기 ➔</span>
+                            </div>
+                          </div>
+                          <span className="pokedex-go-btn">도감 열기 ➔</span>
+                        </div>
                       </div>
 
                       {/* 최근 방명록 프리뷰 */}
@@ -4321,6 +5603,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       </div>
 
                       {renderMiniroomCanvas({ compact: false })}
+                    </div>
+                  )}
+
+                  {/* 3. 📖 포켓몬 완성 도감 뷰 (내 도감 또는 이웃이 완성한 도감) */}
+                  {minihompyTab === 'pokedex' && (
+                    <div className="cytab-content pokedex-view">
+                      {renderPokedexContent(displayGraduatedPokemons, displayOwnerName, !!visitingFarm)}
                     </div>
                   )}
 
@@ -4438,11 +5727,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                               <div key={fx.id} className="skill-fx-card">
                                 <div className="skill-fx-preview-box" style={{ background: `radial-gradient(circle, ${fx.previewColor}33 0%, rgba(15,23,42,0.8) 80%)` }}>
                                   <div className={`skill-fx-display preview-mini ${fx.fxClass}`}>
-                                    <div className="skill-fx-core" />
-                                    <div className="skill-fx-wave" />
-                                    <div className="skill-fx-aura" />
-                                    <div className="skill-fx-sparks" />
-                                    <span className="skill-fx-symbol">{fx.icon}</span>
+                                    {renderSkillStreamFx(fx.fxClass, fx.icon)}
                                   </div>
                                 </div>
                                 <div className="skill-fx-card-info">
@@ -4943,6 +6228,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 {/* 🌿 Interactive Farm Pasture Screen */}
                 <div className="farm-pasture-screen" onClick={handlePetPokemon}>
                   <div className="pasture-clouds">☁️ ☀️ ☁️</div>
+
+                  {/* 🔊 쓰다듬기 효과음 켜기/끄기 플로팅 버튼 */}
+                  <div className="pasture-top-controls">
+                    <button
+                      className={`pasture-sound-toggle-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                      onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                      title={isPetSoundEnabled ? '쓰다듬기 효과음 끄기 (현재 소리 켜짐)' : '쓰다듬기 효과음 켜기 (현재 무음)'}
+                    >
+                      {isPetSoundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+                      <span>쓰다듬기 소리 {isPetSoundEnabled ? 'ON' : 'OFF'}</span>
+                    </button>
+                  </div>
+
                   <div className="pasture-ground">
                     {/* Pokémon Visual Sprite & Skill FX */}
                     <div className="farm-pokemon-stage">
@@ -4967,6 +6265,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                         </div>
                       )}
 
+                      {/* 💥 실시간 방출형 고유스킬 스트림 (sill-example.png 스타일) */}
+                      {petSkillEffect && (
+                        <div className="pasture-live-skill-stream">
+                          {renderSkillStreamFx(petSkillEffect.fxClass || 'skill-fx-fireblast', petSkillEffect.icon)}
+                        </div>
+                      )}
+
                       <img
                         src={pmon.sprites.showdownFront || pmon.sprites.front}
                         alt={pmon.nickname}
@@ -4978,6 +6283,34 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                         <button className="cry-btn" onClick={(e) => { e.stopPropagation(); playPokemonCry(pmon.speciesId); }} title="울음소리 듣기">
                           <Volume2 size={13} />
                         </button>
+                        <button
+                          className={`pet-mute-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                          onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                          title={isPetSoundEnabled ? '쓰다듬기 효과음 끄기' : '쓰다듬기 효과음 켜기'}
+                        >
+                          {isPetSoundEnabled ? <Volume2 size={11} /> : <VolumeX size={11} />}
+                          <span>{isPetSoundEnabled ? '소리 ON' : '소리 OFF'}</span>
+                        </button>
+                      </div>
+
+                      {/* ⚡ 포켓몬 고유스킬 3선 컨트롤러 (최대 3개 스킬 직접 발동) */}
+                      <div className="pasture-skills-controller">
+                        <div className="skills-btn-group">
+                          {getPokemonSkillSet(pmon).map(sk => (
+                            <button
+                              key={sk.slot}
+                              className={`skill-slot-btn ${selectedSkillSlot === sk.slot ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTriggerSkillSlot(sk);
+                              }}
+                              title={sk.desc}
+                            >
+                              <span className="sk-icon">{sk.icon}</span>
+                              <span className="sk-name">{sk.slot}. {sk.name}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -4990,7 +6323,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   )}
 
                   <div className="pasture-touch-hint">
-                    💡 포켓몬을 클릭하거나 키보드 <b>[C]</b> 키를 누르면 고유 스킬 모션과 함께 애정도(+5) 및 경험치가 상승합니다!
+                    <span>💡 포켓몬을 클릭하거나 키보드 <b>[C]</b> 키를 누르면 고유 스킬 모션과 함께 애정도(+5) 및 경험치가 상승합니다!</span>
+                    <button
+                      className={`pasture-hint-sound-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                      onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                      title="쓰다듬을 때 효과음 켜기/끄기"
+                    >
+                      {isPetSoundEnabled ? '🔊 효과음 ON' : '🔇 효과음 OFF'}
+                    </button>
                   </div>
                 </div>
 
@@ -5103,17 +6443,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     <div className="inventory-chips-row">
                       {FARM_ITEMS.map(item => {
                         const qty = farmState.inventory[item.id] || 0;
+                        const isTreasure = item.id === 'shiny_stone' || item.id === 'gold_crown';
+                        const isEgg = item.id === 'mystery_egg' || item.id === 'golden_egg';
                         return (
                           <button
                             key={item.id}
-                            className={`care-item-btn ${qty > 0 ? 'available' : 'empty'}`}
+                            className={`care-item-btn ${qty > 0 ? 'available' : 'empty'} ${isTreasure ? 'treasure-item' : ''}`}
                             onClick={() => handleUseItem(item)}
                             disabled={qty <= 0}
-                            title={`${item.description} (보유: ${qty}개)`}
+                            title={
+                              isTreasure
+                                ? `💰 ${item.name} (보유: ${qty}개) - 클릭 시 코인으로 환전/기증`
+                                : isEgg
+                                ? `🥚 ${item.name} (보유: ${qty}개) - 클릭 시 인큐베이터 입고`
+                                : `${item.description} (보유: ${qty}개)`
+                            }
                           >
                             <span className="item-icon">{item.icon}</span>
                             <span className="item-name">{item.name}</span>
                             <span className="item-qty">x{qty}</span>
+                            {isTreasure && qty > 0 && (
+                              <span style={{ fontSize: '0.62rem', background: '#eab308', color: '#1e293b', borderRadius: '4px', padding: '0 3px', fontWeight: 800, marginLeft: 2 }}>
+                                환전
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -5977,223 +7330,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         {/* =========================================================================
             TAB 6: 📖 포켓몬 졸업 도감 & 명예의 전당 (Pokedex & Diplomas)
            ========================================================================= */}
-        {activeTab === 'diplomas' && !visitingFarm && (() => {
-          const pokedexList = getAllPokedexEntries();
-          const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
-
-          (farmState.graduatedPokemon || []).forEach(dip => {
-            const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
-            existing.count += 1;
-            if (dip.isShiny) existing.shinyCount += 1;
-            if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
-            if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
-            gradStats.set(dip.speciesId, existing);
-          });
-
-          const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
-          const totalSpeciesCount = pokedexList.length;
-          const totalGradCount = farmState.graduatedPokemon?.length || 0;
-          const shinyGradCount = farmState.graduatedPokemon?.filter(d => d.isShiny).length || 0;
-          const completionPct = Math.round((unlockedCount / totalSpeciesCount) * 100);
-
-          let filteredPokedex = pokedexList;
-          if (pokedexFilter === 'unlocked') {
-            filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
-          } else if (pokedexFilter === 'locked') {
-            filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
-          } else if (pokedexFilter === 'shiny') {
-            filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
-          }
-
-          return (
-            <div className="farm-pokedex-layout">
-              {/* Header Banner & Sub View Switcher */}
-              <div className="pokedex-top-banner">
-                <div className="pokedex-banner-title">
-                  <div className="pokedex-book-icon">📖</div>
-                  <div>
-                    <h3>포켓농장 공식 졸업 도감 (Official Pokedex)</h3>
-                    <p>정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.</p>
-                  </div>
-                </div>
-
-                <div className="pokedex-view-tabs">
-                  <button
-                    className={`pokedex-subtab-btn ${pokedexSubView === 'pokedex' ? 'active' : ''}`}
-                    onClick={() => setPokedexSubView('pokedex')}
-                  >
-                    📖 완성 도감 ({unlockedCount}/{totalSpeciesCount})
-                  </button>
-                  <button
-                    className={`pokedex-subtab-btn ${pokedexSubView === 'diplomas' ? 'active' : ''}`}
-                    onClick={() => setPokedexSubView('diplomas')}
-                  >
-                    📜 졸업 증서 앨범 ({totalGradCount}장)
-                  </button>
-                </div>
-              </div>
-
-              {pokedexSubView === 'pokedex' ? (
-                <>
-                  {/* Progress & KPI Ribbon */}
-                  <div className="pokedex-stats-bar">
-                    <div className="pokedex-kpi-col">
-                      <span className="pokedex-kpi-label">도감 등록률</span>
-                      <span className="pokedex-kpi-val">{completionPct}% ({unlockedCount}/{totalSpeciesCount}종)</span>
-                    </div>
-                    <div className="pokedex-bar-wrap">
-                      <div className="pokedex-bar-fill" style={{ width: `${completionPct}%` }} />
-                    </div>
-                    <div className="pokedex-kpi-tags">
-                      <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
-                      <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
-                    </div>
-                  </div>
-
-                  {/* Filter Chips */}
-                  <div className="pokedex-filter-bar">
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'all' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('all')}
-                    >
-                      전체 ({totalSpeciesCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('unlocked')}
-                    >
-                      🌟 등록 완료 ({unlockedCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'locked' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('locked')}
-                    >
-                      🔒 미등록 ({totalSpeciesCount - unlockedCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('shiny')}
-                    >
-                      ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
-                    </button>
-                  </div>
-
-                  {/* 33종 도감 카드 그리드 */}
-                  <div className="pokedex-grid">
-                    {filteredPokedex.map(mon => {
-                      const stat = gradStats.get(mon.speciesId);
-                      const isUnlocked = !!stat;
-                      const hasShiny = (stat?.shinyCount || 0) > 0;
-                      const isHovered = pokedexHoverId === mon.speciesId;
-
-                      return (
-                        <div
-                          key={mon.speciesId}
-                          className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
-                          onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
-                          onMouseLeave={() => setPokedexHoverId(null)}
-                        >
-                          <div className="pokedex-card-header">
-                            <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
-                            {isUnlocked ? (
-                              <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
-                            ) : (
-                              <span className="pokedex-locked-label">🔒 미등록</span>
-                            )}
-                          </div>
-
-                          <div className="pokedex-img-pod">
-                            <img
-                              src={isUnlocked ? (mon.showdownSprite || mon.sprite) : mon.sprite}
-                              alt={isUnlocked ? mon.name : '미해금'}
-                              className={`pokedex-sprite-img ${!isUnlocked ? 'silhouette-img' : ''}`}
-                            />
-                            {hasShiny && (
-                              <span className="pokedex-shiny-ribbon">✨ SHINY</span>
-                            )}
-                          </div>
-
-                          <div className="pokedex-card-footer">
-                            <h4 className="pokedex-mon-name">
-                              {isUnlocked ? mon.name : '???'}
-                            </h4>
-                            <div className="pokedex-types-row">
-                              {isUnlocked ? (
-                                mon.types.map(t => (
-                                  <span key={t} className={`type-tag ${t}`}>{t}</span>
-                                ))
-                              ) : (
-                                <span className="type-tag locked-tag">미확인</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 🌟 마우스 호버 오버레이 (졸업시킨 횟수 및 정보 안내) */}
-                          {isHovered && (
-                            <div className="pokedex-hover-card">
-                              {isUnlocked ? (
-                                <div className="pokedex-hover-body">
-                                  <div className="hover-mon-name">
-                                    {mon.name} {hasShiny && '✨'}
-                                  </div>
-                                  <div className="hover-row grad-highlight">
-                                    🎓 <b>졸업 횟수: {stat.count}회</b>
-                                  </div>
-                                  {stat.shinyCount > 0 && (
-                                    <div className="hover-row shiny-highlight">
-                                      ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
-                                    </div>
-                                  )}
-                                  <div className="hover-row">
-                                    ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
-                                  </div>
-                                  <div className="hover-row date">
-                                    📅 최초 졸업: {stat.firstDate}
-                                  </div>
-                                  {stat.nicknames.length > 0 && (
-                                    <div className="hover-row nicknames">
-                                      애칭: {stat.nicknames.slice(0, 2).join(', ')}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="pokedex-hover-body locked">
-                                  <div className="hover-locked-title">🔒 미해금 포켓몬</div>
-                                  <p>아직 졸업한 기록이 없습니다.<br/>Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                /* 📜 기존 졸업 증서 앨범 뷰 */
-                <div className="pokedex-diplomas-view">
-                  {farmState.graduatedPokemon.length > 0 ? (
-                    <div className="diplomas-grid">
-                      {farmState.graduatedPokemon.map(dip => (
-                        <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
-                          <div className="diploma-cap-icon">🎓</div>
-                          <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
-                          <h4>{dip.nickname} {dip.isShiny && '✨'}</h4>
-                          <span className="diploma-title">{dip.title}</span>
-                          <span className="diploma-date">{dip.graduatedAt} 졸업</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="empty-yard-card">
-                      <p>아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {activeTab === 'diplomas' && (
+          renderPokedexContent(displayGraduatedPokemons, displayOwnerName, !!visitingFarm)
+        )}
 
       </div>
 

@@ -219,11 +219,14 @@ function AppMain() {
   const handleLeaveGame = (gameKey: GameKey) => {
     if (selectedGame === gameKey) {
       localStorage.removeItem('poke_active_game');
+      setSelectedGame(null); // 🏠 두부 오락실 메인 목록 화면으로 정상 이동
     }
-    setGameSessions(prev => ({
-      ...prev,
-      [gameKey]: null
-    }));
+    if (gameKey !== 'pokefarm') {
+      setGameSessions(prev => ({
+        ...prev,
+        [gameKey]: null
+      }));
+    }
   };
 
   const generateRandomName = () => {
@@ -560,7 +563,7 @@ function AppMain() {
         {!selectedGame ? (
           renderAllGamesGridView()
         ) : selectedGame === 'pokefarm' ? (
-          renderActiveGameViewport()
+          gameSessions.pokefarm ? renderActiveGameViewport() : renderGameJoinCard(currentMeta || GAMES_LIST[0])
         ) : !currentSession ? (
           renderGameJoinCard(currentMeta || GAMES_LIST[0])
         ) : (
