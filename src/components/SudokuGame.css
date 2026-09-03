@@ -1,605 +1,345 @@
-/* 📊 Microsoft Excel Incognito Theme for Sudoku Matrix Solver */
+/* ==========================================================================
+   📰 THE DAILY SUDOKU - AUTHENTIC NEWSPAPER PUZZLE THEME
+   - Classic newsprint paper texture & warm off-white cream tone
+   - Serif & typography inspired by traditional daily newspaper puzzles
+   - Double rule borders, ink black accents, typewriter press buttons
+   - Mobile-first ultra-compact topbar: 100% screen fit without scrolling
+   ========================================================================== */
 
-.sudoku-container.excel-stealth-theme {
+/* 📰 Fonts & Base Variables */
+:root {
+  --news-bg: #f7f5ee;
+  --news-bg-card: #fdfcf7;
+  --news-bg-elevated: #efece1;
+  --news-ink-black: #1a1a1a;
+  --news-ink-dark: #2c2a29;
+  --news-ink-muted: #66625d;
+  --news-ink-light: #9e998f;
+  --news-border-thick: #1f1f1f;
+  --news-border-thin: #cfcac0;
+  --news-border-subtle: #e2ddd4;
+  --news-pencil-blue: #1e3a8a;
+  --news-highlighter-yellow: rgba(254, 240, 138, 0.6);
+  --news-font-serif: 'Playfair Display', 'Georgia', 'Times New Roman', 'Chosunilbo', 'Batang', 'Nanum Myeongjo', serif;
+  --news-font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --news-font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+/* 📰 Main Container */
+.sudoku-container.newspaper-theme {
   width: 100%;
-  max-width: 1100px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
-  color: #201f1e;
+  background-color: var(--news-bg);
+  background-image: radial-gradient(circle at 50% 50%, #faf8f2 0%, #f4f1e6 100%);
+  border: 1px solid var(--news-border-thin);
+  box-shadow: 0 4px 20px rgba(44, 42, 41, 0.08);
+  font-family: var(--news-font-sans);
+  color: var(--news-ink-black);
   border-radius: 4px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
 }
 
-/* 📊 Excel Formula Bar */
-.sudoku-container .excel-formula-bar {
+/* --------------------------------------------------------------------------
+   📰 DESKTOP NEWSPAPER MASTHEAD (신문 제호 & 헤더)
+   -------------------------------------------------------------------------- */
+.newspaper-masthead {
   display: flex;
-  align-items: center;
-  background: #f3f2f1;
-  border-bottom: 1px solid #d4d4d4;
-  padding: 3px 8px;
-  font-size: 0.8rem;
-  height: 32px;
-  gap: 4px;
+  flex-direction: column;
+  background: var(--news-bg-card);
+  border-bottom: 2px solid var(--news-ink-black);
+  padding: 12px 20px 8px 20px;
   user-select: none;
 }
 
-.sudoku-container .excel-name-box {
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  padding: 3px 10px;
-  font-weight: 600;
-  min-width: 140px;
-  color: #201f1e;
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.sudoku-container .excel-fx-icon {
-  padding: 0 8px;
-  font-style: italic;
-  font-weight: 700;
-  color: #605e5c;
-  font-family: Georgia, serif;
-}
-
-.sudoku-container .excel-formula-input {
-  flex: 1;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  padding: 3px 10px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  color: #107c41;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 📋 Sheet Header Bar */
-.sudoku-container .game-header {
+.masthead-top-rule {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  background: #f3f2f1;
-  border-bottom: 1px solid #d4d4d4;
+  font-family: var(--news-font-serif);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--news-ink-muted);
+  border-bottom: 1px solid var(--news-ink-black);
+  padding-bottom: 4px;
+  text-transform: uppercase;
 }
 
-.sudoku-container .sheet-title-info {
+.masthead-main {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  padding: 10px 0;
+  gap: 16px;
 }
 
-.sudoku-container .sheet-title-info h2 {
+.masthead-decor-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 130px;
+}
+
+.edition-badge {
+  display: inline-block;
+  background: var(--news-ink-black);
+  color: var(--news-bg);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.edition-text {
+  font-family: var(--news-font-serif);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--news-ink-muted);
+  margin-top: 2px;
+}
+
+.masthead-title-box {
+  text-align: center;
+  flex: 1;
+}
+
+.newspaper-title {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #201f1e;
+  font-family: var(--news-font-serif);
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--news-ink-black);
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.05);
 }
 
-.sudoku-container .game-info {
+.newspaper-tagline {
+  margin: 4px 0 0 0;
+  font-family: var(--news-font-serif);
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--news-ink-muted);
+}
+
+.masthead-decor-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 130px;
+  justify-content: flex-end;
 }
 
-.excel-cell-badge {
-  padding: 4px 10px;
-  border-radius: 2px;
+.status-stamp {
+  border: 1.5px solid var(--news-ink-black);
+  border-radius: 3px;
+  padding: 3px 8px;
+  text-align: center;
+  background: #fff;
+  transform: rotate(-2deg);
+}
+
+.stamp-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--news-ink-muted);
+  letter-spacing: 0.5px;
+}
+
+.stamp-val {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--news-ink-black);
+}
+
+.masthead-bottom-rule {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 3px double var(--news-ink-black);
+  padding-top: 5px;
+  font-size: 0.76rem;
+  font-family: var(--news-font-serif);
+  color: var(--news-ink-dark);
+}
+
+.masthead-timer-box b {
+  font-family: var(--news-font-mono);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   📱 MOBILE ULTRA-COMPACT TOPBAR (모바일 전용 초슬림 일체형 상단바)
+   - 모바일 화면에서만 표시되며 상단바 높이를 약 38px로 최소화
+   -------------------------------------------------------------------------- */
+.sudoku-mobile-bar {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   🔘 NEWSPAPER BUTTONS (신문 활자 / 스탬프 스타일 버튼)
+   -------------------------------------------------------------------------- */
+.sudoku-container .news-btn {
+  font-family: var(--news-font-sans);
   font-size: 0.8rem;
-  font-weight: 600;
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  color: #201f1e;
-}
-
-.excel-cell-badge.phase {
-  background: #e6f2eb;
-  border-color: #107c41;
-  color: #0b5a2f;
-}
-
-/* 🔘 Ribbon Buttons */
-.sudoku-container .excel-btn {
-  padding: 5px 12px;
-  border-radius: 2px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 3px;
+  border: 1.5px solid var(--news-border-thick);
+  background: var(--news-bg-card);
+  color: var(--news-ink-dark);
   cursor: pointer;
-  font-family: inherit;
-  border: 1px solid #d4d4d4;
-  background: #f3f2f1;
-  color: #201f1e;
-  transition: background 0.15s, border-color 0.15s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  transition: all 0.15s ease;
+  box-shadow: 1px 1px 0 var(--news-border-thick);
+  user-select: none;
 }
 
-.sudoku-container .excel-btn:hover:not(:disabled) {
-  background: #e1dfdd;
-  border-color: #a19f9d;
+.sudoku-container .news-btn:hover:not(:disabled) {
+  background: var(--news-bg-elevated);
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0 var(--news-border-thick);
 }
 
-.sudoku-container .excel-btn.primary {
-  background: #107c41;
+.sudoku-container .news-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.sudoku-container .news-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.sudoku-container .news-btn.primary {
+  background: var(--news-ink-black);
   color: #ffffff;
-  border-color: #0b5a2f;
+  border-color: var(--news-ink-black);
 }
 
-.sudoku-container .excel-btn.primary:hover:not(:disabled) {
-  background: #0b5a2f;
+.sudoku-container .news-btn.primary:hover:not(:disabled) {
+  background: #333333;
 }
 
-.sudoku-container .excel-btn.expert {
-  background: #c50f1f;
-  color: #ffffff;
-  border-color: #a80000;
-  box-shadow: 0 1px 3px rgba(197, 15, 31, 0.3);
+.sudoku-container .news-btn.close-btn {
+  background: #fdf2f2;
+  color: #991b1b;
+  border-color: #991b1b;
 }
 
-.sudoku-container .excel-btn.expert:hover:not(:disabled) {
-  background: #a80000;
+.sudoku-container .news-btn.close-btn:hover:not(:disabled) {
+  background: #fee2e2;
 }
 
-.sudoku-container .excel-btn.legendary {
-  background: linear-gradient(135deg, #b45309 0%, #d97706 50%, #f59e0b 100%);
-  color: #ffffff;
-  border-color: #78350f;
-  font-weight: 700;
-  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+.sudoku-container .news-btn.ranking-btn {
+  background: #fffbeb;
+  border-color: #b45309;
+  color: #92400e;
 }
 
-.sudoku-container .excel-btn.legendary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #92400e 0%, #b45309 50%, #d97706 100%);
-  border-color: #451a03;
+.sudoku-container .news-btn.hint-btn {
+  background: #fefce8;
+  border-color: #854d0e;
+  color: #713f12;
 }
 
-.sudoku-container .excel-btn.god {
-  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #ec4899 100%);
-  color: #ffffff;
-  border-color: #3b0764;
-  font-weight: 800;
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.4);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  animation: godGlowPulse 2s infinite alternate;
+.sudoku-container .news-btn.reset-btn {
+  background: #f8fafc;
+  border-color: #475569;
+  color: #1e293b;
 }
 
-.sudoku-container .excel-btn.god:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3b0764 0%, #6d28d9 50%, #db2777 100%);
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.7);
+.sudoku-container .news-btn.toggle-btn.active {
+  background: #e0f2fe;
+  border-color: #0369a1;
+  color: #075985;
 }
 
-@keyframes godGlowPulse {
-  0% { box-shadow: 0 0 6px rgba(124, 58, 237, 0.4); }
-  100% { box-shadow: 0 0 14px rgba(236, 72, 153, 0.7); }
-}
-
-.sudoku-container .excel-btn.close {
-  background: #fde7e9;
-  color: #a80000;
-  border-color: #a80000;
-}
-
-/* 📱 Main Workspace */
+/* --------------------------------------------------------------------------
+   🌿 DESKTOP WORKSPACE & CONTROLS
+   -------------------------------------------------------------------------- */
 .sudoku-main-workspace {
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  background: #ffffff;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 🧩 9x9 Sudoku Grid Table (Authentic Compact Excel Cells) */
-.sudoku-board-wrapper {
-  overflow-x: auto;
-  border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  user-select: none;
-}
-
-.sudoku-grid-table {
-  border-collapse: collapse;
-  border: 1px solid #107c41;
-  background: #ffffff;
-  font-family: 'Consolas', 'Courier New', monospace;
-}
-
-.sudoku-grid-table th {
-  background: #f3f2f1;
-  color: #605e5c;
-  font-weight: 600;
-  font-size: 0.78rem;
-  border: 1px solid #d4d4d4;
-  padding: 3px;
-  text-align: center;
-  width: 38px;
-  height: 24px;
-}
-
-.sudoku-grid-table th.corner-cell {
-  background: #e1dfdd;
-  width: 28px;
-}
-
-.sudoku-grid-table td.row-header {
-  background: #f3f2f1;
-  color: #605e5c;
-  font-weight: 600;
-  font-size: 0.78rem;
-  border: 1px solid #d4d4d4;
-  text-align: center;
-  width: 28px;
-}
-
-/* 🎨 Legend Bar */
-.sudoku-legend-bar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 8px;
-  font-size: 0.78rem;
-  color: #475569;
-  user-select: none;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.legend-sample {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  border: 1px solid #cbd5e1;
-}
-
-.legend-sample.fixed {
-  background: #f1f5f9;
-  color: #0f172a;
-  font-weight: 900;
-}
-
-.legend-sample.user {
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-weight: 800;
-  border-color: #93c5fd;
-}
-
-.legend-sample.marked-purple {
-  background: #faf5ff;
-  color: #7e22ce;
-  font-weight: 900;
-  border-color: #d8b4fe;
-  position: relative;
-}
-
-.legend-sample.marked-purple::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  background-color: #9333ea;
-  border-radius: 50%;
-}
-
-.legend-sample.marked-orange {
-  background: #fff7ed;
-  color: #c2410c;
-  font-weight: 900;
-  border-color: #fed7aa;
-  position: relative;
-}
-
-.legend-sample.marked-orange::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  background-color: #ea580c;
-  border-radius: 50%;
-}
-
-.legend-sample.marked-green {
-  background: #f0fdf4;
-  color: #15803d;
-  font-weight: 900;
-  border-color: #bbf7d0;
-  position: relative;
-}
-
-.legend-sample.marked-green::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 4px;
-  height: 4px;
-  background-color: #16a34a;
-  border-radius: 50%;
-}
-
-.legend-sample.conflict {
-  background: #fee2e2;
-  color: #dc2626;
-  font-weight: 900;
-  border-color: #fca5a5;
-}
-
-.sudoku-cell {
-  width: 40px;
-  height: 34px;
-  text-align: center;
-  vertical-align: middle;
-  font-size: 1.05rem;
-  border: 1px solid #d4d4d4;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.12s ease;
-  background: #ffffff;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-/* 3x3 블록 엑셀 경계선 */
-.sudoku-cell.border-right-thick {
-  border-right: 2px solid #107c41;
-}
-
-.sudoku-cell.border-bottom-thick {
-  border-bottom: 2px solid #107c41;
-}
-
-/* 🔒 문제 고정 숫자 (진한 흑연색, 은은한 회색 배경) */
-.sudoku-cell.fixed {
-  background: #f1f5f9;
-  color: #0f172a;
-  font-weight: 900;
-}
-
-/* ✍️ 내가 입력한 확정 숫자 (선명한 로열 블루, 부드러운 하늘색 배경, 우상단 블루 포인트) */
-.sudoku-cell.user-input {
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-weight: 800;
-  font-size: 1.15rem;
-}
-
-.sudoku-cell.user-input::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 4px;
-  height: 4px;
-  background-color: #3b82f6;
-  border-radius: 50%;
-}
-
-/* 🟣 헷갈림1: 바이올렛 퍼플 (Purple) */
-.sudoku-cell.marked-purple {
-  background: #faf5ff;
-}
-
-.sudoku-cell.marked-purple::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 5px;
-  height: 5px;
-  background-color: #9333ea;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(147, 51, 234, 0.4);
-}
-
-.sudoku-cell.user-input.marked-purple {
-  background: #faf5ff;
-  color: #7e22ce;
-  font-weight: 800;
-  font-size: 1.15rem;
-}
-
-.sudoku-cell.user-input.marked-purple::after {
-  background-color: #9333ea;
-}
-
-/* 🟠 헷갈림2: 앰버 오렌지 (Orange) */
-.sudoku-cell.marked-orange {
-  background: #fff7ed;
-}
-
-.sudoku-cell.marked-orange::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 5px;
-  height: 5px;
-  background-color: #ea580c;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(234, 88, 12, 0.4);
-}
-
-.sudoku-cell.user-input.marked-orange {
-  background: #fff7ed;
-  color: #c2410c;
-  font-weight: 800;
-  font-size: 1.15rem;
-}
-
-.sudoku-cell.user-input.marked-orange::after {
-  background-color: #ea580c;
-}
-
-/* 🟢 헷갈림3: 에메랄드 그린 (Green) */
-.sudoku-cell.marked-green {
-  background: #f0fdf4;
-}
-
-.sudoku-cell.marked-green::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 5px;
-  height: 5px;
-  background-color: #16a34a;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(22, 163, 74, 0.4);
-}
-
-.sudoku-cell.user-input.marked-green {
-  background: #f0fdf4;
-  color: #15803d;
-  font-weight: 800;
-  font-size: 1.15rem;
-}
-
-.sudoku-cell.user-input.marked-green::after {
-  background-color: #16a34a;
-}
-
-/* 선택된 셀 (선명한 블루 하이라이트) */
-.sudoku-cell.selected {
-  background: #dbeafe !important;
-  outline: 2.5px solid #2563eb !important;
-  outline-offset: -2px;
-  z-index: 3;
-}
-
-/* 선택된 마킹 셀 */
-.sudoku-cell.marked-purple.selected {
-  background: #f3e8ff !important;
-  outline: 2.5px solid #9333ea !important;
-  outline-offset: -2px;
-  z-index: 3;
-}
-
-.sudoku-cell.marked-orange.selected {
-  background: #ffedd5 !important;
-  outline: 2.5px solid #ea580c !important;
-  outline-offset: -2px;
-  z-index: 3;
-}
-
-.sudoku-cell.marked-green.selected {
-  background: #dcfce7 !important;
-  outline: 2.5px solid #16a34a !important;
-  outline-offset: -2px;
-  z-index: 3;
-}
-
-/* 연관 행/열/박스 하이라이트 */
-.sudoku-cell.related {
-  background: #f8fafc;
-}
-
-.sudoku-cell.user-input.related {
-  background: #e0f2fe;
-}
-
-.sudoku-cell.marked-purple.related {
-  background: #fbf8ff;
-}
-
-.sudoku-cell.user-input.marked-purple.related {
-  background: #f5edff;
-}
-
-.sudoku-cell.marked-orange.related {
-  background: #fffaf5;
-}
-
-.sudoku-cell.user-input.marked-orange.related {
-  background: #ffedd5;
-}
-
-.sudoku-cell.marked-green.related {
-  background: #f7fee7;
-}
-
-.sudoku-cell.user-input.marked-green.related {
-  background: #dcfce7;
-}
-
-/* 같은 숫자 하이라이트 (선명한 골드 옐로우) */
-.sudoku-cell.same-number {
-  background: #fef08a !important;
-  box-shadow: inset 0 0 0 1px #facc15;
-}
-
-/* 중복 충돌 오류 셀 (선명한 레드) */
-.sudoku-cell.conflict {
-  background: #fee2e2 !important;
-  color: #dc2626 !important;
-  font-weight: 900 !important;
-  box-shadow: inset 0 0 0 1.5px #ef4444 !important;
-}
-
-/* ==========================================================================
-   🧩 MODERN STRUCTURED SUDOKU TOOLBAR & HYPOTHESIS MANAGER
-   ========================================================================== */
-
-/* 1. 난이도 선택 리본 */
+/* 난이도 리본 */
 .sudoku-diff-ribbon {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
   width: 100%;
   flex-wrap: wrap;
 }
 
 .sudoku-diff-ribbon .ribbon-label {
-  font-size: 0.78rem;
+  font-family: var(--news-font-serif);
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--news-ink-muted);
 }
 
 .diff-btn-group {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-/* 2. 메인 툴바 */
+.diff-btn-group .news-btn.diff-btn.active {
+  background: var(--news-ink-black);
+  color: #ffffff;
+  border-color: var(--news-ink-black);
+  box-shadow: 2px 2px 0 #555555;
+}
+
+.diff-btn-group .news-btn.diff-btn.active.god {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  border-color: #3b0764;
+  color: #ffffff;
+}
+
+.diff-btn-group .news-btn.diff-btn.active.legendary {
+  background: linear-gradient(135deg, #b45309, #d97706);
+  border-color: #78350f;
+  color: #ffffff;
+}
+
+.diff-btn-group .news-btn.diff-btn.active.expert {
+  background: #991b1b;
+  border-color: #7f1d1d;
+  color: #ffffff;
+}
+
+/* 메인 툴바 */
 .sudoku-main-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 580px;
+  max-width: 520px;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .sudoku-main-toolbar .toolbar-left,
@@ -609,54 +349,31 @@
   align-items: center;
 }
 
-.excel-btn.hint-btn {
-  background: #fefce8;
-  border-color: #fde047;
-  color: #a16207;
-  font-weight: 700;
-}
-
-.excel-btn.hint-btn:hover:not(:disabled) {
-  background: #fef9c3;
-  border-color: #eab308;
-}
-
-.excel-btn.active-toggle {
-  background: #e0f2fe;
-  border-color: #38bdf8;
-  color: #0369a1;
-  font-weight: 700;
-}
-
-/* 3. 선택된 셀 빠른 컨텍스트 바 */
+/* 선택 셀 컨텍스트 바 */
 .sudoku-cell-context-bar {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  padding: 5px 12px;
-  border-radius: 6px;
+  background: var(--news-bg-card);
+  border: 1px solid var(--news-border-thin);
+  padding: 4px 10px;
+  border-radius: 4px;
   font-size: 0.78rem;
-  max-width: 580px;
+  max-width: 520px;
   width: 100%;
   box-sizing: border-box;
   justify-content: center;
-  flex-wrap: wrap;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .context-cell-name {
-  color: #1e293b;
-  font-size: 0.82rem;
+  font-family: var(--news-font-serif);
+  font-weight: 700;
+  color: var(--news-ink-dark);
 }
 
 .context-divider {
-  color: #cbd5e1;
-}
-
-.context-label {
-  color: #64748b;
-  font-weight: 600;
+  color: var(--news-border-thin);
 }
 
 .context-color-btns {
@@ -666,25 +383,21 @@
 
 .cell-mode-chip {
   padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  font-size: 0.74rem;
+  border-radius: 3px;
+  border: 1px solid var(--news-border-thin);
+  background: var(--news-bg-card);
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s;
   display: inline-flex;
   align-items: center;
   gap: 3px;
 }
 
-.cell-mode-chip:hover {
-  filter: brightness(0.96);
-}
-
 .cell-mode-chip.normal.active {
-  background: #1d4ed8;
-  border-color: #1e40af;
+  background: var(--news-ink-black);
+  border-color: var(--news-ink-black);
   color: #ffffff;
 }
 
@@ -708,74 +421,64 @@
 
 .cell-clear-quick-btn {
   padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #dc2626;
-  font-size: 0.74rem;
+  border-radius: 3px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .cell-clear-quick-btn:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
+  background: #fee2e2;
 }
 
-/* 4. 🎨 헷갈림(가설) 셀 관리 패널 */
+/* 가설 마킹 관리자 패널 */
 .sudoku-marked-manager-box {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 10px 14px;
+  background: var(--news-bg-card);
+  border: 1px solid var(--news-border-thin);
+  border-radius: 4px;
+  padding: 8px 12px;
   width: 100%;
-  max-width: 580px;
+  max-width: 520px;
   box-sizing: border-box;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .marked-manager-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 6px;
-  flex-wrap: wrap;
-  gap: 4px;
+  border-bottom: 1px dashed var(--news-border-thin);
+  padding-bottom: 4px;
 }
 
 .marked-manager-title {
-  font-size: 0.82rem;
+  font-family: var(--news-font-serif);
+  font-size: 0.78rem;
   font-weight: 800;
-  color: #334155;
-}
-
-.marked-manager-desc {
-  font-size: 0.7rem;
-  color: #64748b;
+  color: var(--news-ink-dark);
 }
 
 .marked-manager-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .marked-action-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .marked-action-row .group-label {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #475569;
-  min-width: 68px;
+  color: var(--news-ink-muted);
+  min-width: 55px;
 }
 
 .marked-action-row .group-btns {
@@ -785,551 +488,524 @@
   flex: 1;
 }
 
-.excel-btn.marked-purple-del-btn {
+.marked-action-row .news-btn {
+  padding: 3px 6px;
+  font-size: 0.7rem;
+}
+
+/* 범례 */
+.sudoku-legend-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--news-ink-muted);
+  font-family: var(--news-font-serif);
+  user-select: none;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.legend-sample {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  font-size: 0.8rem;
+  border: 1px solid var(--news-border-thin);
+  font-family: var(--news-font-serif);
+}
+
+.legend-sample.fixed {
+  background: var(--news-bg-card);
+  color: var(--news-ink-black);
+  font-weight: 900;
+}
+
+.legend-sample.user {
+  background: #f0f4ff;
+  color: var(--news-pencil-blue);
+  font-weight: 700;
+}
+
+.legend-sample.marked-purple {
   background: #faf5ff;
-  border-color: #d8b4fe;
   color: #7e22ce;
-  font-weight: 700;
+  border-color: #d8b4fe;
 }
 
-.excel-btn.marked-purple-del-btn:hover:not(:disabled) {
-  background: #f3e8ff;
-  border-color: #a855f7;
-}
-
-.excel-btn.marked-orange-del-btn {
+.legend-sample.marked-orange {
   background: #fff7ed;
-  border-color: #fed7aa;
   color: #c2410c;
-  font-weight: 700;
+  border-color: #fed7aa;
 }
 
-.excel-btn.marked-orange-del-btn:hover:not(:disabled) {
-  background: #ffedd5;
-  border-color: #ea580c;
-}
-
-.excel-btn.marked-green-del-btn {
+.legend-sample.marked-green {
   background: #f0fdf4;
-  border-color: #bbf7d0;
   color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.legend-sample.conflict {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* --------------------------------------------------------------------------
+   🧩 9x9 SUDOKU GRID TABLE (신문 인쇄 스타일 격자 보드판)
+   -------------------------------------------------------------------------- */
+.sudoku-board-wrapper {
+  overflow: hidden;
+  border: 3px solid var(--news-border-thick);
+  border-radius: 2px;
+  background: var(--news-bg-card);
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.08);
+  user-select: none;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.sudoku-grid-table {
+  border-collapse: collapse;
+  background: var(--news-bg-card);
+  font-family: var(--news-font-serif);
+  table-layout: fixed;
+}
+
+.sudoku-grid-table th {
+  background: var(--news-bg-elevated);
+  color: var(--news-ink-muted);
   font-weight: 700;
+  font-size: 0.72rem;
+  border: 1px solid var(--news-border-thin);
+  padding: 2px;
+  text-align: center;
+  width: 42px;
+  height: 20px;
 }
 
-.excel-btn.marked-green-del-btn:hover:not(:disabled) {
-  background: #dcfce7;
-  border-color: #16a34a;
-}
-
-.excel-btn.marked-delete-btn {
-  background: #fff1f2;
-  border-color: #fecdd3;
-  color: #be123c;
+.sudoku-grid-table th.corner-cell,
+.sudoku-grid-table td.row-header {
+  background: var(--news-bg-elevated);
+  color: var(--news-ink-muted);
   font-weight: 700;
+  font-size: 0.72rem;
+  border: 1px solid var(--news-border-thin);
+  text-align: center;
+  width: 22px;
 }
 
-.excel-btn.marked-delete-btn:hover:not(:disabled) {
-  background: #ffe4e6;
-  border-color: #fb7185;
+.sudoku-cell {
+  width: 42px;
+  height: 42px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 1.35rem;
+  font-family: var(--news-font-serif);
+  border: 1px solid var(--news-border-thin);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.1s ease;
+  background: var(--news-bg-card);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
-.excel-btn.marked-purple-revert-btn {
+/* 3x3 굵은 신문 인쇄 괘선 */
+.sudoku-cell.border-right-thick {
+  border-right: 2.5px solid var(--news-border-thick);
+}
+
+.sudoku-cell.border-bottom-thick {
+  border-bottom: 2.5px solid var(--news-border-thick);
+}
+
+/* 🔒 문제 고정 활자 숫자 (또렷하고 묵직한 신문 인쇄체) */
+.sudoku-cell.fixed {
+  background: #fbf9f4;
+  color: var(--news-ink-black);
+  font-weight: 900;
+}
+
+/* ✍️ 사용자 입력 숫자 (신문지 위에 연필/만년필로 단정하게 적은 잉크 블루) */
+.sudoku-cell.user-input {
+  background: #f5f8ff;
+  color: var(--news-pencil-blue);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.sudoku-cell.user-input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--news-pencil-blue);
+  border-radius: 50%;
+}
+
+/* 🟣 헷갈림1: 신문 위 보라색 색연필 마킹 */
+.sudoku-cell.marked-purple {
   background: #faf5ff;
-  border-color: #d8b4fe;
+}
+
+.sudoku-cell.marked-purple::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #9333ea;
+  border-radius: 50%;
+}
+
+.sudoku-cell.user-input.marked-purple {
+  background: #faf5ff;
   color: #7e22ce;
-  font-weight: 700;
 }
 
-.excel-btn.marked-purple-revert-btn:hover:not(:disabled) {
-  background: #f3e8ff;
-  border-color: #a855f7;
-}
-
-.excel-btn.marked-orange-revert-btn {
+/* 🟠 헷갈림2: 신문 위 주황색 색연필 마킹 */
+.sudoku-cell.marked-orange {
   background: #fff7ed;
-  border-color: #fed7aa;
+}
+
+.sudoku-cell.marked-orange::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #ea580c;
+  border-radius: 50%;
+}
+
+.sudoku-cell.user-input.marked-orange {
+  background: #fff7ed;
   color: #c2410c;
-  font-weight: 700;
 }
 
-.excel-btn.marked-orange-revert-btn:hover:not(:disabled) {
-  background: #ffedd5;
-  border-color: #ea580c;
-}
-
-.excel-btn.marked-green-revert-btn {
+/* 🟢 헷갈림3: 신문 위 초록색 색연필 마킹 */
+.sudoku-cell.marked-green {
   background: #f0fdf4;
-  border-color: #bbf7d0;
+}
+
+.sudoku-cell.marked-green::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background-color: #16a34a;
+  border-radius: 50%;
+}
+
+.sudoku-cell.user-input.marked-green {
+  background: #f0fdf4;
   color: #15803d;
-  font-weight: 700;
 }
 
-.excel-btn.marked-green-revert-btn:hover:not(:disabled) {
-  background: #dcfce7;
-  border-color: #16a34a;
+/* 선택된 셀 (신문지 위에 연필로 진하게 네모를 두른 듯한 하이라이트) */
+.sudoku-cell.selected {
+  background: #ebf4ff !important;
+  outline: 2.5px solid var(--news-ink-black) !important;
+  outline-offset: -2px;
+  z-index: 4;
 }
 
-.excel-btn.marked-clear-btn {
-  background: #fdf4ff;
-  border-color: #d8b4fe;
-  color: #7e22ce;
-  font-weight: 700;
+/* 연관 셀 (옅은 신문지 음영) */
+.sudoku-cell.related {
+  background: #f4f0e6;
 }
 
-.excel-btn.marked-clear-btn:hover:not(:disabled) {
-  background: #f3e8ff;
-  border-color: #a855f7;
+.sudoku-cell.user-input.related {
+  background: #ebf1fc;
 }
 
-/* 🎛️ Numpad & Controls Panel (Toggleable) */
+/* 같은 숫자 (신문지 위에 옅은 형광펜을 칠한 듯한 투명 옐로우) */
+.sudoku-cell.same-number {
+  background: var(--news-highlighter-yellow) !important;
+}
+
+/* 오류 충돌 셀 (연필 밑줄 및 레드 경고) */
+.sudoku-cell.conflict {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  box-shadow: inset 0 0 0 1.5px #ef4444 !important;
+}
+
+/* 완성 배너 */
+.sudoku-complete-banner {
+  background: #fefce8;
+  border: 2px solid #ca8a04;
+  border-radius: 4px;
+  padding: 10px 16px;
+  text-align: center;
+  color: #713f12;
+  font-family: var(--news-font-serif);
+  animation: newsBannerPop 0.3s ease-out;
+}
+
+.sudoku-complete-banner h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+}
+
+@keyframes newsBannerPop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* --------------------------------------------------------------------------
+   🎛️ NUMPAD CONTROL PANEL (신문 조판 활자 키패드)
+   -------------------------------------------------------------------------- */
 .sudoku-controls-panel {
   width: 100%;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  max-width: 520px;
 }
 
 .sudoku-card {
-  background: #ffffff;
-  border: 1px solid #d4d4d4;
-  border-radius: 6px;
-  padding: 10px 12px;
+  background: var(--news-bg-card);
+  border: 1.5px solid var(--news-border-thick);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 2px 2px 0 var(--news-border-thick);
 }
 
 .numpad-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-  gap: 6px;
+  border-bottom: 1px dashed var(--news-border-thin);
+  padding-bottom: 4px;
+  gap: 8px;
 }
 
 .numpad-title {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #107c41;
+  font-family: var(--news-font-serif);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--news-ink-dark);
+  white-space: nowrap;
 }
 
-/* 🎨 입력 모드 토글 그룹 */
 .input-mode-toggle-group {
-  display: inline-flex;
-  background: #f3f2f1;
-  padding: 2px;
-  border-radius: 4px;
-  border: 1px solid #d4d4d4;
-  gap: 2px;
-}
-
-.mode-toggle-btn {
-  padding: 3px 8px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: #605e5c;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
+  display: flex;
   gap: 3px;
 }
 
-.mode-toggle-btn.active-normal {
-  background: #ffffff;
-  color: #1d4ed8;
+.mode-toggle-btn {
+  font-family: var(--news-font-sans);
+  font-size: 0.72rem;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 3px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--news-border-thin);
+  background: var(--news-bg-card);
+  color: var(--news-ink-dark);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.mode-toggle-btn.active-normal {
+  background: var(--news-ink-black);
+  border-color: var(--news-ink-black);
+  color: #fff;
 }
 
 .mode-toggle-btn.active-purple {
-  background: #ffffff;
-  color: #7e22ce;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(126, 34, 206, 0.15);
+  background: #9333ea;
+  border-color: #7e22ce;
+  color: #fff;
 }
 
 .mode-toggle-btn.active-orange {
-  background: #ffffff;
-  color: #c2410c;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(194, 65, 12, 0.15);
+  background: #ea580c;
+  border-color: #c2410c;
+  color: #fff;
 }
 
 .mode-toggle-btn.active-green {
-  background: #ffffff;
-  color: #15803d;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.15);
+  background: #16a34a;
+  border-color: #15803d;
+  color: #fff;
 }
 
+/* 숫자 1~9 대형 활자 그리드 */
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 4px;
-  margin-top: 6px;
 }
 
 .numpad-btn {
-  height: 36px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  border: 1px solid #d4d4d4;
-  background: #f3f2f1;
-  color: #201f1e;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--news-bg-card);
+  border: 1.5px solid var(--news-border-thick);
   border-radius: 3px;
   cursor: pointer;
-  transition: all 0.15s;
+  position: relative;
+  transition: all 0.12s;
+  box-shadow: 1px 1px 0 var(--news-border-thick);
+  padding: 0;
 }
 
-.numpad-btn:hover {
-  background: #107c41;
-  color: #ffffff;
-  border-color: #0b5a2f;
+.numpad-btn:hover:not(:disabled) {
+  background: var(--news-bg-elevated);
+  transform: translateY(-1px);
+  box-shadow: 1px 2px 0 var(--news-border-thick);
+}
+
+.numpad-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.numpad-num {
+  font-family: var(--news-font-serif);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--news-ink-black);
+  line-height: 1;
+}
+
+.numpad-count-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--news-ink-muted);
+  font-family: var(--news-font-mono);
+  line-height: 1;
+}
+
+.numpad-count-badge.done {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+.numpad-btn.is-completed {
+  opacity: 0.45;
+  background: #f4f3ee;
 }
 
 .numpad-btn.purple-mode-btn {
-  border-color: #d8b4fe;
-  color: #7e22ce;
-  background: #faf5ff;
-}
-
-.numpad-btn.purple-mode-btn:hover {
-  background: #9333ea;
-  color: #ffffff;
   border-color: #7e22ce;
+}
+.numpad-btn.purple-mode-btn .numpad-num {
+  color: #7e22ce;
 }
 
 .numpad-btn.orange-mode-btn {
-  border-color: #fed7aa;
-  color: #c2410c;
-  background: #fff7ed;
-}
-
-.numpad-btn.orange-mode-btn:hover {
-  background: #ea580c;
-  color: #ffffff;
   border-color: #c2410c;
+}
+.numpad-btn.orange-mode-btn .numpad-num {
+  color: #c2410c;
 }
 
 .numpad-btn.green-mode-btn {
-  border-color: #bbf7d0;
-  color: #15803d;
-  background: #f0fdf4;
-}
-
-.numpad-btn.green-mode-btn:hover {
-  background: #16a34a;
-  color: #ffffff;
   border-color: #15803d;
+}
+.numpad-btn.green-mode-btn .numpad-num {
+  color: #15803d;
 }
 
 .numpad-action-row {
   display: flex;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
-.numpad-clear-btn {
+.numpad-action-row .news-btn {
   flex: 1;
   padding: 6px 10px;
   font-size: 0.8rem;
-  color: #dc2626;
-  background: #ffffff;
-  border-color: #fca5a5;
+}
+
+.sudoku-message-notice {
+  font-size: 0.82rem;
   font-weight: 700;
-}
-
-.numpad-clear-btn:hover:not(:disabled) {
-  background: #fef2f2;
-}
-
-.numpad-hint-btn {
-  flex: 1;
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  background: #fefce8;
-  border-color: #fde047;
-  color: #a16207;
-  font-weight: 700;
-}
-
-.numpad-hint-btn:hover:not(:disabled) {
-  background: #fef9c3;
+  color: var(--news-ink-dark);
+  text-align: center;
+  font-family: var(--news-font-serif);
 }
 
 .sudoku-guide-tip {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.78rem;
-  color: #605e5c;
+  gap: 2px;
+  font-size: 0.72rem;
+  color: var(--news-ink-muted);
   text-align: center;
-  line-height: 1.4;
+  border-top: 1px dashed var(--news-border-thin);
+  padding-top: 6px;
+  width: 100%;
+  max-width: 520px;
 }
 
-/* 🏆 Complete Banner */
-.sudoku-complete-banner {
-  background: #e6f2eb;
-  border: 1px solid #107c41;
-  color: #0b5a2f;
-  padding: 10px;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.sudoku-complete-banner h4 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-}
-
-/* 📑 Bottom Excel Sheet Tabs */
-.sudoku-container .excel-sheet-tab-bar {
+/* 📰 신문 하단 푸터 */
+.newspaper-footer-bar {
   display: flex;
-  background: #f3f2f1;
-  border-top: 1px solid #d4d4d4;
-  padding: 4px 8px 0 8px;
-  gap: 4px;
-  font-size: 0.8rem;
+  justify-content: space-between;
   align-items: center;
+  background: var(--news-bg-card);
+  border-top: 2px solid var(--news-ink-black);
+  padding: 8px 16px;
+  font-family: var(--news-font-serif);
+  font-size: 0.74rem;
+  color: var(--news-ink-muted);
+  user-select: none;
 }
 
-.sudoku-container .excel-sheet-tab {
-  padding: 4px 12px;
-  background: #e1dfdd;
-  border: 1px solid #d4d4d4;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-  color: #605e5c;
+.footer-rank-link {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--news-ink-black);
+  font-weight: 700;
+  text-decoration: underline;
   cursor: pointer;
-  font-weight: 500;
 }
 
-.sudoku-container .excel-sheet-tab.active {
-  background: #ffffff;
-  color: #107c41;
-  font-weight: 700;
-  border-top: 2px solid #107c41;
-}
-
-.sudoku-container .excel-status-ready {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: #605e5c;
-  padding-bottom: 4px;
-}
-
-@media (max-width: 768px) {
-  .sudoku-container.excel-stealth-theme {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    width: 100%;
-    height: auto !important;
-    min-height: 100vh;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain;
-  }
-  .sudoku-container .excel-formula-bar,
-  .sudoku-container .excel-sheet-tab-bar,
-  .sudoku-legend-bar,
-  .sudoku-guide-tip {
-    display: none !important;
-  }
-  .sudoku-container .game-header {
-    padding: 6px 10px;
-    flex-wrap: nowrap;
-    gap: 6px;
-  }
-  .sudoku-container .sheet-title-info h2 {
-    font-size: 0.88rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .sudoku-container .game-info {
-    gap: 4px;
-  }
-  .excel-cell-badge {
-    padding: 2px 6px;
-    font-size: 0.72rem;
-  }
-  .sudoku-main-workspace {
-    padding: 4px 6px;
-    gap: 6px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  /* 난이도 리본을 가로 스크롤 가능한 슬릭 바 형태로 압축 */
-  .sudoku-diff-ribbon {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    justify-content: flex-start;
-    padding: 2px 0;
-    width: 100%;
-  }
-  .sudoku-diff-ribbon::-webkit-scrollbar {
-    display: none;
-  }
-  .sudoku-diff-ribbon .ribbon-label {
-    display: none;
-  }
-  .diff-btn-group {
-    flex-wrap: nowrap;
-  }
-  .diff-btn-group .excel-btn {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 3px 8px;
-    font-size: 0.72rem;
-  }
-
-  .sudoku-main-toolbar {
-    width: 100%;
-    padding: 2px 0;
-    justify-content: space-between;
-  }
-  .sudoku-main-toolbar .excel-btn {
-    padding: 4px 8px;
-    font-size: 0.74rem;
-  }
-
-  .sudoku-cell-context-bar {
-    padding: 3px 6px;
-    gap: 4px;
-    font-size: 0.72rem;
-  }
-  .cell-mode-chip {
-    padding: 2px 5px;
-    font-size: 0.68rem;
-  }
-
-  .sudoku-marked-manager-box {
-    padding: 6px 8px;
-    gap: 4px;
-  }
-  .marked-manager-desc {
-    display: none;
-  }
-  .marked-action-row .group-label {
-    min-width: 52px;
-    font-size: 0.68rem;
-  }
-  .marked-action-row .excel-btn {
-    padding: 2px 5px;
-    font-size: 0.68rem;
-  }
-
-  .sudoku-board-wrapper {
-    max-width: 100%;
-    width: auto;
-    margin: 0 auto;
-    overflow: hidden;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    display: flex;
-    justify-content: center;
-    touch-action: manipulation;
-    -webkit-touch-callout: none;
-  }
-  .sudoku-grid-table {
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
-  .sudoku-grid-table th {
-    width: min(9.2vw, 34px);
-    height: 18px;
-    font-size: 0.68rem;
-    padding: 0;
-  }
-  .sudoku-grid-table th.corner-cell,
-  .sudoku-grid-table td.row-header {
-    width: 18px;
-    font-size: 0.68rem;
-    padding: 0;
-  }
-  .sudoku-cell {
-    width: min(9.2vw, 34px);
-    height: min(9.2vw, 34px);
-    font-size: 1.05rem;
-    padding: 0;
-    text-align: center;
-    vertical-align: middle;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-  }
-  .sudoku-controls-panel {
-    width: 100%;
-    max-width: 360px;
-    margin: 0 auto;
-    padding: 0;
-  }
-  .sudoku-card {
-    padding: 6px 8px;
-    gap: 4px;
-    border-radius: 6px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-  }
-  .input-mode-toggle-group {
-    display: flex;
-    gap: 2px;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .mode-toggle-btn {
-    flex: 1;
-    padding: 3px 2px;
-    font-size: 0.68rem;
-    text-align: center;
-  }
-  .numpad-grid {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
-    margin-top: 4px;
-  }
-  .numpad-btn {
-    height: 34px;
-    font-size: 1.05rem;
-    padding: 0;
-    border-radius: 3px;
-  }
-  .numpad-action-row {
-    margin-top: 4px;
-    gap: 3px;
-  }
-}
-
-/* 🏆 Ranking Button */
-.excel-btn.ranking-btn {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border-color: #f59e0b;
+.footer-rank-link:hover {
   color: #b45309;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
 }
 
-.excel-btn.ranking-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-color: #d97706;
-}
-
-/* 🏆 Sudoku Rank Modal */
+/* --------------------------------------------------------------------------
+   🏆 HALL OF FAME NEWSPAPER MODAL (신문 호외 특집 랭킹 모달)
+   -------------------------------------------------------------------------- */
 .sudoku-rank-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
+  background: rgba(26, 26, 26, 0.65);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1338,20 +1014,20 @@
 }
 
 .sudoku-rank-modal-card {
-  background: #ffffff;
-  border: 1px solid #107c41;
-  border-radius: 8px;
+  background: var(--news-bg-card);
+  border: 3px solid var(--news-ink-black);
+  border-radius: 4px;
   width: 100%;
-  max-width: 680px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  max-width: 640px;
+  box-shadow: 4px 4px 0 var(--news-ink-black);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: rankModalSlide 0.2s ease-out;
+  animation: newsModalPop 0.2s ease-out;
 }
 
-@keyframes rankModalSlide {
-  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+@keyframes newsModalPop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -1359,175 +1035,113 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f3f2f1;
-  border-bottom: 2px solid #107c41;
-  padding: 12px 16px;
+  background: var(--news-bg);
+  border-bottom: 2px solid var(--news-ink-black);
+  padding: 10px 16px;
   gap: 12px;
-  min-width: 0;
 }
 
 .rank-title-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
+  gap: 8px;
 }
 
 .rank-header-trophy {
-  font-size: 1.35rem;
-  flex-shrink: 0;
-}
-
-.rank-title-text-box {
-  min-width: 0;
-  flex: 1;
+  font-size: 1.4rem;
 }
 
 .rank-title-group h3 {
   margin: 0;
-  font-size: 0.98rem;
-  color: #107c41;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: var(--news-font-serif);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--news-ink-black);
+  letter-spacing: 0.5px;
 }
 
 .rank-subtitle {
-  font-size: 0.74rem;
-  color: #605e5c;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  color: var(--news-ink-muted);
 }
 
-.rank-close-btn {
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  line-height: 1;
-  background: #ffffff;
-  border: 1px solid #d2d0ce;
-  color: #323130;
-  transition: all 0.15s ease;
-}
-
-.rank-close-btn:hover {
-  background: #fdf2f2;
-  border-color: #c50f1f;
-  color: #c50f1f;
-}
-
-/* Rank Difficulty Tabs */
 .rank-diff-tabs {
   display: flex;
-  background: #f8fafc;
-  border-bottom: 1px solid #cbd5e1;
+  background: var(--news-bg-elevated);
+  border-bottom: 1px solid var(--news-border-thin);
   padding: 6px 12px;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+.rank-diff-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .rank-tab-btn {
-  padding: 6px 12px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  border-radius: 4px;
-  font-size: 0.78rem;
+  padding: 4px 10px;
+  border: 1px solid var(--news-border-thick);
+  background: var(--news-bg-card);
+  border-radius: 3px;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--news-ink-dark);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
-  transition: all 0.15s;
-}
-
-.rank-tab-btn:hover {
-  background: #f1f5f9;
+  transition: all 0.12s;
 }
 
 .rank-tab-btn.active {
-  background: #107c41;
-  border-color: #0b5a2f;
-  color: #ffffff;
-}
-
-.rank-tab-btn.active.expert {
-  background: #c50f1f;
-  border-color: #a80000;
-}
-
-.rank-tab-btn.active.legendary {
-  background: linear-gradient(135deg, #b45309, #f59e0b);
-  border-color: #78350f;
-}
-
-.rank-tab-btn.active.god {
-  background: linear-gradient(135deg, #4c1d95, #ec4899);
-  border-color: #3b0764;
+  background: var(--news-ink-black);
+  color: #fff;
+  border-color: var(--news-ink-black);
 }
 
 .rank-count-badge {
   background: rgba(0, 0, 0, 0.08);
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 10px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .rank-tab-btn.active .rank-count-badge {
   background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  color: #fff;
 }
 
-/* Table Wrapper */
 .rank-table-wrapper {
-  max-height: 380px;
+  max-height: 360px;
   overflow-y: auto;
-  padding: 0;
 }
 
-.excel-rank-table {
+.news-rank-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
-  text-align: left;
+  font-size: 0.8rem;
+  font-family: var(--news-font-serif);
 }
 
-.excel-rank-table th {
-  background: #f3f2f1;
-  color: #323130;
-  padding: 8px 12px;
-  font-weight: 700;
-  border-bottom: 1px solid #d2d0ce;
-  border-right: 1px solid #edebe9;
+.news-rank-table th {
+  background: var(--news-bg-elevated);
+  color: var(--news-ink-black);
+  padding: 6px 10px;
+  font-weight: 800;
+  border-bottom: 1.5px solid var(--news-ink-black);
+  border-right: 1px solid var(--news-border-thin);
 }
 
-.excel-rank-table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid #edebe9;
-  border-right: 1px solid #f3f2f1;
-  color: #201f1e;
+.news-rank-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--news-border-thin);
+  border-right: 1px solid var(--news-border-subtle);
+  color: var(--news-ink-black);
 }
 
-.excel-rank-table tr:hover {
-  background: #f9fbf9;
-}
-
-.excel-rank-table tr.my-rank-row {
-  background: #f0fdf4 !important;
+.news-rank-table tr.my-rank-row {
+  background: #fefce8 !important;
   font-weight: 700;
 }
 
@@ -1535,152 +1149,410 @@
   text-align: center;
 }
 
-.medal-icon {
-  font-size: 1.1rem;
-}
-
 .rank-col-user {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.rank-username {
-  font-weight: 600;
+  gap: 4px;
 }
 
 .me-tag {
-  background: #107c41;
+  background: var(--news-ink-black);
   color: #ffffff;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
   padding: 1px 4px;
-  border-radius: 3px;
-}
-
-.rank-col-time {
-  color: #107c41;
-}
-
-.rank-col-hints {
-  font-size: 0.78rem;
-  color: #605e5c;
-}
-
-.rank-col-date {
-  font-size: 0.74rem;
-  color: #8a8886;
-}
-
-.empty-rank-cell {
-  padding: 40px 16px !important;
-  text-align: center;
-}
-
-.empty-rank-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: #605e5c;
-}
-
-.empty-rank-box p {
-  margin: 0;
-  font-weight: 600;
-  color: #323130;
-}
-
-.empty-rank-box span {
-  font-size: 0.76rem;
-  color: #107c41;
+  border-radius: 2px;
 }
 
 .rank-modal-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f3f2f1;
-  border-top: 1px solid #edebe9;
-  padding: 10px 16px;
+  background: var(--news-bg);
+  border-top: 1.5px solid var(--news-ink-black);
+  padding: 8px 14px;
 }
 
-/* 📱 명예의 전당 모바일 뷰포트 최적화 */
-@media (max-width: 640px) {
-  .sudoku-rank-modal-backdrop {
-    padding: 8px;
+.rank-status-ready {
+  font-family: var(--news-font-mono);
+  font-size: 0.72rem;
+  color: var(--news-ink-muted);
+}
+
+.empty-rank-cell {
+  padding: 30px 16px !important;
+  text-align: center;
+}
+
+.empty-rank-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--news-ink-muted);
+}
+
+/* ==========================================================================
+   📱 MOBILE RESPONSIVE OPTIMIZATIONS (한눈에 100% 쏙 들어오는 모바일 뷰포트)
+   - 상단바 대폭 압축 (38px 초슬림 바 하나로 모든 조작 통합)
+   - 100dvh 높이 맞춤, 스크롤 없는 완벽한 한 화면 스도쿠
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* 최외곽 컨테이너를 모바일 뷰포트 높이에 정확히 맞추고 스크롤 제거 */
+  .sudoku-container.newspaper-theme {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    touch-action: manipulation;
   }
 
-  .sudoku-rank-modal-card {
-    max-height: 92vh;
-    border-radius: 8px;
+  /* 데스크톱 거대 상단 헤더, 범례, 가이드 팁, 하단 푸터 숨김 */
+  .newspaper-masthead,
+  .sudoku-diff-ribbon,
+  .sudoku-main-toolbar,
+  .sudoku-legend-bar,
+  .sudoku-guide-tip,
+  .newspaper-footer-bar {
+    display: none !important;
   }
 
-  .rank-modal-header {
-    padding: 8px 12px;
-    gap: 8px;
-  }
-
-  .rank-header-trophy {
-    font-size: 1.15rem;
-  }
-
-  .rank-title-group h3 {
-    font-size: 0.82rem;
-  }
-
-  .rank-subtitle {
-    font-size: 0.68rem;
-  }
-
-  .rank-close-btn {
-    padding: 4px 8px;
-    font-size: 0.76rem;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
-
-  .rank-diff-tabs {
-    padding: 5px 8px;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .rank-diff-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .rank-tab-btn {
-    padding: 4px 8px;
-    font-size: 0.72rem;
-    gap: 4px;
-    white-space: nowrap;
+  /* 📰 모바일 초슬림 일체형 상단바 활성화 (단 38px 높이!) */
+  .sudoku-mobile-bar {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    background: var(--news-bg-card);
+    border-bottom: 1.5px solid var(--news-ink-black);
+    padding: 0 8px;
+    gap: 6px;
+    user-select: none;
+    box-sizing: border-box;
     flex-shrink: 0;
   }
 
-  .rank-table-wrapper {
-    max-height: 52vh;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .mobile-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
   }
 
-  .excel-rank-table {
-    font-size: 0.74rem;
-    min-width: 480px;
+  .mobile-brand {
+    font-family: var(--news-font-serif);
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: var(--news-ink-black);
+    white-space: nowrap;
+    letter-spacing: -0.5px;
   }
 
-  .excel-rank-table th,
-  .excel-rank-table td {
-    padding: 6px 8px;
-  }
-
-  .rank-modal-footer {
-    padding: 8px 12px;
+  /* 난이도 드롭다운 셀렉트 (극소 공간 활용) */
+  .mobile-diff-select {
+    font-family: var(--news-font-sans);
     font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid var(--news-border-thick);
+    background: #fff;
+    color: var(--news-ink-black);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .mobile-bar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mobile-timer {
+    font-family: var(--news-font-mono);
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--news-ink-black);
+    background: #fff;
+    border: 1px solid var(--news-border-thin);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .mobile-status-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--news-ink-muted);
+  }
+
+  .mobile-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .mobile-icon-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 3px;
+    border: 1px solid var(--news-border-thick);
+    background: #fff;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    transition: background-color 0.1s;
+  }
+
+  .mobile-icon-btn:active {
+    background: var(--news-bg-elevated);
+  }
+
+  .mobile-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .mobile-icon-btn.close-btn {
+    border-color: #991b1b;
+    background: #fff5f5;
+  }
+
+  /* 📱 메인 워크스페이스: 남은 세로 공간에 100% 핏 */
+  .sudoku-main-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 4px 6px;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* 선택된 셀 색상 칩 (초슬림 1줄) */
+  .sudoku-cell-context-bar {
+    padding: 2px 6px;
+    gap: 4px;
+    height: 26px;
+    min-height: 26px;
+    font-size: 0.68rem;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 3px;
+  }
+
+  .context-cell-name {
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .cell-mode-chip {
+    padding: 2px 4px;
+    font-size: 0.66rem;
+    border-radius: 2px;
+  }
+
+  .cell-clear-quick-btn {
+    padding: 2px 4px;
+    font-size: 0.66rem;
+  }
+
+  /* 가설 마킹 관리자 */
+  .sudoku-marked-manager-box {
+    padding: 4px 6px;
+    gap: 2px;
+    max-width: 100%;
+    margin: 0;
+  }
+  .marked-manager-title {
+    font-size: 0.7rem;
+  }
+  .marked-action-row .group-label {
+    min-width: 44px;
+    font-size: 0.66rem;
+  }
+  .marked-action-row .news-btn {
+    padding: 1px 4px;
+    font-size: 0.64rem;
+  }
+
+  /* 🧩 스도쿠 보드판: 모바일 화면에 맞춰 꽉 채우되 비율 유지 */
+  .sudoku-board-wrapper {
+    width: auto;
+    max-width: 98vw;
+    max-height: calc(100dvh - 180px);
+    margin: 0 auto;
+    border: 2px solid var(--news-border-thick);
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .sudoku-grid-table {
+    width: auto;
+  }
+
+  .sudoku-grid-table th {
+    width: min(9.8vw, 36px);
+    height: 15px;
+    font-size: 0.62rem;
+    padding: 0;
+  }
+
+  .sudoku-grid-table th.corner-cell,
+  .sudoku-grid-table td.row-header {
+    width: 15px;
+    font-size: 0.62rem;
+    padding: 0;
+  }
+
+  .sudoku-cell {
+    width: min(9.8vw, 36px);
+    height: min(9.8vw, 36px);
+    font-size: 1.18rem;
+    padding: 0;
+    line-height: 1;
+    touch-action: manipulation;
+  }
+
+  .sudoku-cell.user-input,
+  .sudoku-cell.fixed {
+    font-size: 1.18rem;
+  }
+
+  /* 🎛️ 모바일 키패드 (보드 바로 아래 밀착) */
+  .sudoku-controls-panel {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .sudoku-card {
+    padding: 4px 6px;
+    gap: 3px;
+    border-radius: 4px;
+    border-width: 1px;
+    box-shadow: 1px 1px 0 var(--news-border-thick);
+  }
+
+  .numpad-header-row {
+    padding-bottom: 2px;
+  }
+
+  .numpad-title {
+    font-size: 0.72rem;
+  }
+
+  .mode-toggle-btn {
+    padding: 2px 4px;
+    font-size: 0.66rem;
+  }
+
+  .numpad-grid {
+    gap: 2px;
+  }
+
+  .numpad-btn {
+    height: 38px;
+    border-radius: 3px;
+    border-width: 1px;
+    box-shadow: 1px 1px 0 var(--news-border-thick);
+  }
+
+  .numpad-num {
+    font-size: 1.2rem;
+  }
+
+  .numpad-count-badge {
+    font-size: 0.58rem;
+    top: 1px;
+    right: 2px;
+  }
+
+  .numpad-action-row {
+    margin-top: 1px;
+    gap: 4px;
+  }
+
+  .numpad-action-row .news-btn {
+    height: 30px;
+    font-size: 0.76rem;
+    padding: 0 4px;
+  }
+
+  .sudoku-message-notice {
+    font-size: 0.72rem;
+    max-height: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
   }
 }
 
+/* 초소형 모바일 화면 (화면 높이 660px 이하 대응) */
+@media (max-width: 380px), (max-height: 680px) {
+  .sudoku-mobile-bar {
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+  }
 
+  .mobile-icon-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
+  }
+
+  .sudoku-grid-table th {
+    height: 13px;
+    font-size: 0.58rem;
+  }
+
+  .sudoku-grid-table th.corner-cell,
+  .sudoku-grid-table td.row-header {
+    width: 13px;
+    font-size: 0.58rem;
+  }
+
+  .sudoku-cell {
+    width: min(9.6vw, 32px);
+    height: min(9.6vw, 32px);
+    font-size: 1.05rem;
+  }
+
+  .numpad-btn {
+    height: 34px;
+  }
+
+  .numpad-num {
+    font-size: 1.05rem;
+  }
+
+  .numpad-action-row .news-btn {
+    height: 26px;
+    font-size: 0.7rem;
+  }
+}

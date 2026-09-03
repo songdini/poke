@@ -9,6 +9,7 @@ import {
   LOTTERY_SYMBOLS,
   drawLotteryReels,
   loadFarmState, 
+  getStoredNeighborFarm,
   saveFarmState, 
   createNewFarmPokemon, 
   hatchBabyPokemon,
@@ -19,10 +20,13 @@ import {
   EEVEE_BRANCHES,
   getRandomEeveeEvolution,
   getRandomStoryEvent,
-  getMaxStatForStage
+  getMaxStatForStage,
+  getInitialFarmState,
+  clearFarmLocalSession,
+  getTodayDateString
 } from '../services/pokeFarmService';
 import { 
-  Sparkles, Trophy, Volume2, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
+  Sparkles, Trophy, Volume2, VolumeX, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import './PokeFarmGame.css';
 
@@ -32,11 +36,129 @@ interface PokeFarmGameProps {
   initialVisitingUser?: string | null;
   onClearInitialVisitingUser?: () => void;
   onSelectGame?: (gameKey: string) => void;
+  onUserLogin?: (username: string) => void;
+  onUserLogout?: () => void;
 }
 
 type FarmTab = 'minihome' | 'yard' | 'adopt' | 'evolve' | 'jobs' | 'expedition' | 'daycare' | 'lottery' | 'shop' | 'diplomas';
 
+export interface PokemonSkillDef {
+  slot: 1 | 2 | 3;
+  name: string;
+  fxClass: string;
+  icon: string;
+  desc: string;
+}
 
+/**
+ * 🌟 각 포켓몬 타입/계열별 최대 3개의 대표 고유스킬 프리셋 반환
+ */
+export function getPokemonSkillSet(pmon?: FarmPokemon | null): PokemonSkillDef[] {
+  if (!pmon) {
+    return [
+      { slot: 1, name: '화염방사', fxClass: 'skill-fx-fireblast', icon: '🔥', desc: '전방으로 콰아아아 뿜어내는 3중 고열 불길 스트림' },
+      { slot: 2, name: '대문자', fxClass: 'skill-fx-firekanji', icon: '☄️', desc: '거대한 불 대(大) 자 형상으로 폭발하는 업화' },
+      { slot: 3, name: '회오리불꽃', fxClass: 'skill-fx-firespin', icon: '🌪️', desc: '나선으로 회오리치는 화염 폭풍 스트림' }
+    ];
+  }
+
+  const types = pmon.types || [];
+
+  if (types.includes('fire')) {
+    return [
+      { slot: 1, name: '화염방사', fxClass: 'skill-fx-fireblast', icon: '🔥', desc: '입에서 콰아아아 뿜어내는 3중 고열 불길 스트림' },
+      { slot: 2, name: '대문자', fxClass: 'skill-fx-firekanji', icon: '☄️', desc: '거대한 불 대(大) 자 형상으로 폭발하는 업화' },
+      { slot: 3, name: '회오리불꽃', fxClass: 'skill-fx-firespin', icon: '🌪️', desc: '나선으로 회오리치는 화염 폭풍 스트림' }
+    ];
+  }
+
+  if (types.includes('water')) {
+    return [
+      { slot: 1, name: '하이드로펌프', fxClass: 'skill-fx-hydropump', icon: '💧', desc: '입에서 뿜어나오는 3중 고압 수류 제트 빔' },
+      { slot: 2, name: '하이드로캐논', fxClass: 'skill-fx-hydrocannon', icon: '🌊', desc: '거대 물구체가 폭발하는 고압 수압 포격' },
+      { slot: 3, name: '거품광선', fxClass: 'skill-fx-bubblebeam', icon: '🫧', desc: '무수히 쏟아지는 무지개빛 고속 거품 탄환' }
+    ];
+  }
+
+  if (types.includes('grass')) {
+    return [
+      { slot: 1, name: '솔라빔', fxClass: 'skill-fx-solarbeam', icon: '🍃', desc: '태양의 에너지를 쏘아내는 에메랄드 레이저 빔' },
+      { slot: 2, name: '덩굴채찍', fxClass: 'skill-fx-vinewhip', icon: '🌿', desc: '날카롭게 공간을 가르는 듀얼 덩굴 채찍 참격' },
+      { slot: 3, name: '꽃잎댄스', fxClass: 'skill-fx-petaldance', icon: '🌸', desc: '회오리바람을 타고 난무하는 벚꽃 잎날 폭풍' }
+    ];
+  }
+
+  if (types.includes('electric')) {
+    return [
+      { slot: 1, name: '10만볼트', fxClass: 'skill-fx-thunderbolt', icon: '⚡', desc: '전방으로 작렬하는 초고압 황금 번개 줄기' },
+      { slot: 2, name: '번개 (낙뢰)', fxClass: 'skill-fx-thunderstorm', icon: '🌩️', desc: '하늘에서 내리꽂히는 거대한 백청색 벼락 기둥' },
+      { slot: 3, name: '볼트태클', fxClass: 'skill-fx-volttackle', icon: '⚡', desc: '고압 전기를 휘감고 돌진하는 전기 충격 링' }
+    ];
+  }
+
+  if (types.includes('ghost') || types.includes('dark')) {
+    return [
+      { slot: 1, name: '섀도볼', fxClass: 'skill-fx-shadowball', icon: '👻', desc: '보랏빛 암흑 플라즈마 스트림' },
+      { slot: 2, name: '나이트헤드', fxClass: 'skill-fx-nightshade', icon: '😈', desc: '붉은 안광과 함께 뿜어지는 저주의 검은 파동' },
+      { slot: 3, name: '오물폭탄', fxClass: 'skill-fx-sludgebomb', icon: '💀', desc: '독성 액포가 연쇄 폭발하는 세례' }
+    ];
+  }
+
+  if (types.includes('psychic')) {
+    return [
+      { slot: 1, name: '사이코키네시스', fxClass: 'skill-fx-psychic', icon: '🔮', desc: '시공간을 왜곡하는 네온 핑크 염동력 파동 링' },
+      { slot: 2, name: '사이코브레이크', fxClass: 'skill-fx-psystrike', icon: '🌀', desc: '염동력 크리스탈 결정 칼날 쐐기 광선' },
+      { slot: 3, name: '프리즘배리어', fxClass: 'skill-fx-prismbarrier', icon: '🛡️', desc: '빛을 굴절시키는 무지개빛 육각형 프리즘 역장' }
+    ];
+  }
+
+  if (types.includes('dragon')) {
+    return [
+      { slot: 1, name: '용의파동', fxClass: 'skill-fx-dracometeor', icon: '🐉', desc: '용의 형상으로 전방을 휩쓰는 드래곤 브레스' },
+      { slot: 2, name: '용성군', fxClass: 'skill-fx-meteorshower', icon: '🌠', desc: '하늘에서 비처럼 쏟아지는 불타는 유성우 폭격' },
+      { slot: 3, name: '역린', fxClass: 'skill-fx-outrage', icon: '💥', desc: '붉은 분노의 드래곤 오라와 폭주 충격파' }
+    ];
+  }
+
+  if (types.includes('fighting') || types.includes('rock') || types.includes('steel')) {
+    return [
+      { slot: 1, name: '파동탄', fxClass: 'skill-fx-aurasphere', icon: '💥', desc: '타오르는 푸른 파동 에너지 탄환' },
+      { slot: 2, name: '본러시', fxClass: 'skill-fx-bonerush', icon: '⚔️', desc: '빛나는 에너지 본 블레이드 연속 난타' },
+      { slot: 3, name: '스톤에지', fxClass: 'skill-fx-stoneedge', icon: '🪨', desc: '솟구치는 날카로운 첨탑 암석과 지진파' }
+    ];
+  }
+
+  if (types.includes('ice')) {
+    return [
+      { slot: 1, name: '눈보라', fxClass: 'skill-fx-blizzard', icon: '❄️', desc: '영하 273도의 혹한 얼음 결정 눈보라 폭풍' },
+      { slot: 2, name: '냉동빔', fxClass: 'skill-fx-icebeam', icon: '🧊', desc: '모든 것을 얼려버리는 지그재그 빙결 레이저' },
+      { slot: 3, name: '오로라베일', fxClass: 'skill-fx-auroraveil', icon: '🌨️', desc: '영롱한 극광 오로라 빛장막과 서릿발' }
+    ];
+  }
+
+  if (types.includes('flying')) {
+    return [
+      { slot: 1, name: '에어슬래시', fxClass: 'skill-fx-hurricane', icon: '🌪️', desc: '초음속으로 전방을 가르는 청록빛 진공 칼날' },
+      { slot: 2, name: '태풍폭풍', fxClass: 'skill-fx-typhoon', icon: '🌀', desc: '모든 것을 빨아들이는 상승기류 회오리' },
+      { slot: 3, name: '브레이브버드', fxClass: 'skill-fx-bravebird', icon: '🪶', desc: '푸른 불꽃을 휘감은 맹금 조류 돌진 빔' }
+    ];
+  }
+
+  if (types.includes('fairy')) {
+    return [
+      { slot: 1, name: '문포스', fxClass: 'skill-fx-watershuriken', icon: '🌙', desc: '달의 에너지를 응축해 쏘아내는 요정 광선' },
+      { slot: 2, name: '매지컬샤인', fxClass: 'skill-fx-magicalshine', icon: '✨', desc: '사방을 밝히는 무지개빛 요정 섬광 폭발' },
+      { slot: 3, name: '하트스톰', fxClass: 'skill-fx-heartstorm', icon: '💖', desc: '사랑의 하트들이 소용돌이치며 뿜어지는 세례' }
+    ];
+  }
+
+  // 기본 노말
+  return [
+    { slot: 1, name: '파괴광선', fxClass: 'skill-fx-gigaimpact', icon: '⭐', desc: '모든 것을 파괴하는 거대한 황금빛 레이저 빔' },
+    { slot: 2, name: '기가임팩트', fxClass: 'skill-fx-gigaforce', icon: '💥', desc: '황금빛 충격파 링으로 감싸며 터지는 폭발' },
+    { slot: 3, name: '은혜갚기', fxClass: 'skill-fx-splashrush', icon: '🌟', desc: '하늘 높이 뿜어내는 기적의 별빛 폭죽' }
+  ];
+}
 
 export interface PokemonSkillEffect {
   id: string;
@@ -51,124 +173,244 @@ export interface PokemonSkillEffect {
 
 export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
   {
-    id: 'fx_pikachu_thunder',
-    name: '100만볼트 (Thunderbolt Surge)',
-    pokemonName: '피카츄 / 라이츄',
-    icon: '⚡',
-    price: 60,
-    description: '작렬하는 100만볼트 초고압 황금 번개와 스파크 아크',
-    fxClass: 'skill-fx-thunderbolt',
-    previewColor: '#fbbf24'
-  },
-  {
     id: 'fx_charmander_fire',
-    name: '화염방사 & 대문자 (Fire Blast)',
-    pokemonName: '파이리 / 리자몽',
+    name: '화염방사 & 대문자 (Continuous Flamethrower)',
+    pokemonName: '파이리 / 브케인 / 아차모 / 불꽃숭이 / 뚜꾸리 / 푸호꼬 / 냐오불 / 염버니 / 뜨아거 / 부스터',
     icon: '🔥',
     price: 60,
-    description: '맹렬하게 소용돌이치며 타오르는 업화의 불꽃과 불티',
+    description: '입에서 전방으로 콰아아아 뿜어져 나오는 거대한 고열 화염방사 불길 스트림 (sill-example 원작 애니메이션 스타일)',
     fxClass: 'skill-fx-fireblast',
     previewColor: '#f97316'
   },
   {
     id: 'fx_squirtle_water',
-    name: '하이드로펌프 & 아쿠아 링 (Hydro Pump)',
-    pokemonName: '꼬부기 / 거북왕',
+    name: '하이드로펌프 & 물대포 (Hydro Pump Stream)',
+    pokemonName: '꼬부기 / 리아코 / 물짱이 / 팽도리 / 수댕이 / 개구마르 / 누리공 / 울머기 / 꾸왁스 / 잉어킹 / 갸라도스 / 발챙이 / 마릴 / 샤미드',
     icon: '💧',
     price: 60,
-    description: '용솟음치는 거대한 물대포 수류와 영롱한 물방울 소용돌이',
+    description: '입에서 맹렬한 기세로 뿜어져 나가는 3중 나선 고압 수류 빔과 물보라 버블 스트림',
     fxClass: 'skill-fx-hydropump',
     previewColor: '#0ea5e9'
   },
   {
     id: 'fx_bulbasaur_solar',
-    name: '솔라빔 & 꽃잎댄스 (Solar Beam)',
-    pokemonName: '이상해씨 / 이상해꽃',
+    name: '솔라빔 & 잎날가르기 (Solar Beam Cannon)',
+    pokemonName: '이상해씨 / 치코리타 / 나무지기 / 모부기 / 주리비얀 / 도치마론 / 나몰빼미 / 흥나숭 / 나오하 / 리피아 / 세레비',
     icon: '🍃',
     price: 60,
-    description: '태양의 에너지를 쏘아내는 눈부신 레이저 빔과 춤추는 꽃잎',
+    description: '전방으로 굵고 눈부시게 방출되는 에메랄드 태양 에너지 레이저와 회전하는 잎날 커터',
     fxClass: 'skill-fx-solarbeam',
     previewColor: '#22c55e'
   },
   {
-    id: 'fx_pidgeot_tornado',
-    name: '폭풍 & 에어슬래시 (Hurricane Cyclone)',
-    pokemonName: '피존 / 피죤투',
-    icon: '🌪️',
-    price: 50,
-    description: '초음속으로 회전하는 비행 회오리바람과 날카로운 바람의 칼날',
-    fxClass: 'skill-fx-hurricane',
-    previewColor: '#38bdf8'
+    id: 'fx_pikachu_thunder',
+    name: '100만볼트 & 볼트태클 (Thunderbolt Arc Surge)',
+    pokemonName: '피카츄 / 라이츄 / 쥬피썬더 / 알로라 라이츄',
+    icon: '⚡',
+    price: 60,
+    description: '뺨과 몸에서 전방으로 지그재그 작렬하는 초고압 황금 번개 줄기와 방전 스파크',
+    fxClass: 'skill-fx-thunderbolt',
+    previewColor: '#fbbf24'
   },
   {
     id: 'fx_gengar_shadow',
-    name: '섀도볼 & 원한의 도깨비불 (Shadow Ball)',
-    pokemonName: '팬텀 / 고오스',
+    name: '섀도볼 & 암흑 파동 (Shadow Void Stream)',
+    pokemonName: '고오스 / 고우스트 / 팬텀 / 블래키 / 히스이 조로아크',
     icon: '👻',
     price: 70,
-    description: '심연의 어둠을 응축한 암흑 구체와 보랏빛 도깨비불 연기',
+    description: '심연에서 소용돌이치며 뿜어나오는 보랏빛 암흑 플라즈마 기둥과 도깨비불 엠버',
     fxClass: 'skill-fx-shadowball',
     previewColor: '#a855f7'
   },
   {
     id: 'fx_mewtwo_psychic',
-    name: '사이코키네시스 (Psychic Wave)',
-    pokemonName: '뮤 / 뮤츠 / 에브이',
+    name: '사이코키네시스 (Psychic Wave Distortion)',
+    pokemonName: '뮤 / 뮤츠 / 에브이 / 고라파덕 / 골덕 / 지라치',
     icon: '🔮',
     price: 80,
-    description: '시공간을 왜곡하는 네온 핑크 염동력 링과 신비한 마법 룬',
+    description: '전방으로 시공간을 왜곡하며 다중 방출되는 네온 핑크 염동력 파동 링과 광선',
     fxClass: 'skill-fx-psychic',
     previewColor: '#ec4899'
   },
   {
     id: 'fx_dragonite_meteor',
-    name: '용성군 & 용의 파동 (Draco Meteor)',
-    pokemonName: '망나뇽 / 한카리아스',
+    name: '용성군 & 용의 파동 (Draco Dragon Breath)',
+    pokemonName: '미뇽 / 신뇽 / 망나뇽 / 딥상어동 / 한카리아스',
     icon: '🐉',
     price: 80,
-    description: '하늘에서 쏟아져 내리는 유성우 운석 폭격과 드래곤 오라',
+    description: '용의 형상으로 전방을 휩쓰는 청록-보랏빛 드래곤 에너지 브레스와 유성 스트림',
     fxClass: 'skill-fx-dracometeor',
     previewColor: '#8b5cf6'
   },
   {
-    id: 'fx_snorlax_giga',
-    name: '기가임팩트 & 황금 오라 (Giga Impact)',
-    pokemonName: '잠만보 / 챔피언',
-    icon: '⭐',
-    price: 70,
-    description: '대지를 뒤흔드는 황금빛 폭발 충격파 링과 스피드 라인',
-    fxClass: 'skill-fx-gigaimpact',
-    previewColor: '#eab308'
-  },
-  {
-    id: 'fx_lapras_blizzard',
-    name: '눈보라 & 절대영도 (Absolute Zero)',
-    pokemonName: '알로라 나인테일 / 라프라스',
-    icon: '❄️',
-    price: 60,
-    description: '영하 273도의 눈부신 다이아몬드 얼음 결정과 눈보라 폭풍',
-    fxClass: 'skill-fx-blizzard',
-    previewColor: '#67e8f9'
-  },
-  {
     id: 'fx_lucario_aurasphere',
-    name: '파동탄 & 격투 투기 (Aura Sphere)',
-    pokemonName: '루카리오',
+    name: '파동탄 & 대지의 분노 (Aura Sphere & Earth Wave)',
+    pokemonName: '리오르 / 루카리오 / 애버라스 / 데기라스 / 마기라스 / 솔가레오',
     icon: '💥',
     price: 70,
-    description: '불타는 푸른 파동 에너지 구체와 상승하는 격투 투기 오라',
+    description: '타오르는 푸른 파동 에너지 탄환과 솟구치는 지각 충격파 펄스',
     fxClass: 'skill-fx-aurasphere',
     previewColor: '#3b82f6'
   },
   {
+    id: 'fx_lapras_blizzard',
+    name: '눈보라 & 절대영도 (Blizzard Freeze Stream)',
+    pokemonName: '알로라 식스테일 / 알로라 나인테일 / 글레이시아',
+    icon: '❄️',
+    price: 60,
+    description: '영하 273도의 얼음 결정과 눈보라 폭풍이 뿜어져 나오는 혹한의 냉기 브레스',
+    fxClass: 'skill-fx-blizzard',
+    previewColor: '#67e8f9'
+  },
+  {
+    id: 'fx_pidgeot_tornado',
+    name: '폭풍 & 에어슬래시 (Hurricane Slash Cyclone)',
+    pokemonName: '피존 / 피죤투 / 비행 포켓몬',
+    icon: '🌪️',
+    price: 50,
+    description: '초음속으로 전방을 가르는 반투명 청록색 진공 칼날 돌풍과 에어 소용돌이',
+    fxClass: 'skill-fx-hurricane',
+    previewColor: '#38bdf8'
+  },
+  {
     id: 'fx_greninja_watershuriken',
-    name: '물수리검 & 닌자 수압 (Water Shuriken)',
-    pokemonName: '개굴닌자',
+    name: '물수리검 & 문포스 (Water Shuriken & Moonblast)',
+    pokemonName: '개굴닌자 / 토게피 / 토게틱 / 토게키스 / 님피아 / 빅티니',
     icon: '🌊',
     price: 70,
-    description: '초고속으로 회전하며 발사되는 듀얼 물수리검과 수압 이펙트',
+    description: '초고속 연사되는 듀얼 물수리검 궤적과 신비로운 핑크빛 요정 달빛 광선',
     fxClass: 'skill-fx-watershuriken',
     previewColor: '#0284c7'
+  },
+  {
+    id: 'fx_snorlax_giga',
+    name: '파괴광선 & 기가임팩트 (Hyper Beam Destruction)',
+    pokemonName: '가로막구리 / 잉어킹 / 잠만보 / 일반 노말 포켓몬',
+    icon: '⭐',
+    price: 70,
+    description: '모든 것을 관통하는 거대하고 묵직한 황금빛 파괴광선 레이저 빔 스트림',
+    fxClass: 'skill-fx-gigaimpact',
+    previewColor: '#eab308'
+  },
+  {
+    id: 'fx_fire_kanji',
+    name: '대문자 (Fire Blast Kanji Burst)',
+    pokemonName: '불꽃 포켓몬 2스킬 (파이리/리자몽 등)',
+    icon: '☄️',
+    price: 65,
+    description: '거대한 불 대(大) 자 형상으로 폭발하며 전방을 집어삼키는 업화',
+    fxClass: 'skill-fx-firekanji',
+    previewColor: '#dc2626'
+  },
+  {
+    id: 'fx_fire_spin',
+    name: '회오리불꽃 (Fire Spin Cyclone)',
+    pokemonName: '불꽃 포켓몬 3스킬 (파이리/리자몽 등)',
+    icon: '🌪️',
+    price: 65,
+    description: '이중 나선으로 회전하며 전방을 불태우는 거대 화염 회오리 스트림',
+    fxClass: 'skill-fx-firespin',
+    previewColor: '#f97316'
+  },
+  {
+    id: 'fx_water_cannon',
+    name: '하이드로캐논 (Hydro Cannon Blast)',
+    pokemonName: '물 포켓몬 2스킬 (꼬부기/거북왕 등)',
+    icon: '🌊',
+    price: 65,
+    description: '초고압 압축 물구체와 수압 충격파 링이 쏘아지는 헤비 캐논',
+    fxClass: 'skill-fx-hydrocannon',
+    previewColor: '#0284c7'
+  },
+  {
+    id: 'fx_water_bubble',
+    name: '거품광선 (Bubble Beam Shower)',
+    pokemonName: '물 포켓몬 3스킬 (꼬부기/거북왕 등)',
+    icon: '🫧',
+    price: 60,
+    description: '무수히 쏟아져 나오는 무지개빛 고속 거품 탄환 세례',
+    fxClass: 'skill-fx-bubblebeam',
+    previewColor: '#38bdf8'
+  },
+  {
+    id: 'fx_grass_vinewhip',
+    name: '덩굴채찍 (Vine Whip Slash)',
+    pokemonName: '풀 포켓몬 2스킬 (이상해씨/이상해꽃 등)',
+    icon: '🌿',
+    price: 60,
+    description: '날카롭게 공간을 가르는 듀얼 에메랄드 덩굴 채찍 참격',
+    fxClass: 'skill-fx-vinewhip',
+    previewColor: '#16a34a'
+  },
+  {
+    id: 'fx_grass_petaldance',
+    name: '꽃잎댄스 (Petal Dance Tornado)',
+    pokemonName: '풀 포켓몬 3스킬 (이상해씨/이상해꽃 등)',
+    icon: '🌸',
+    price: 65,
+    description: '회오리바람을 타고 난무하는 핑크빛 벚꽃 잎날 폭풍',
+    fxClass: 'skill-fx-petaldance',
+    previewColor: '#f472b6'
+  },
+  {
+    id: 'fx_thunder_storm',
+    name: '번개 낙뢰 (Thunder Storm Column)',
+    pokemonName: '전기 포켓몬 2스킬 (피카츄/라이츄 등)',
+    icon: '🌩️',
+    price: 65,
+    description: '하늘에서 내리꽂히는 거대하고 눈부신 백청색 벼락 기둥',
+    fxClass: 'skill-fx-thunderstorm',
+    previewColor: '#facc15'
+  },
+  {
+    id: 'fx_thunder_volttackle',
+    name: '볼트태클 (Volt Tackle Rush)',
+    pokemonName: '전기 포켓몬 3스킬 (피카츄/라이츄 등)',
+    icon: '⚡',
+    price: 70,
+    description: '초고압 전기를 온몸에 휘감고 돌진하는 고속 방전 링',
+    fxClass: 'skill-fx-volttackle',
+    previewColor: '#fbbf24'
+  },
+  {
+    id: 'fx_ghost_nightshade',
+    name: '나이트헤드 (Night Shade Gaze)',
+    pokemonName: '고스트/악 포켓몬 2스킬 (팬텀 등)',
+    icon: '😈',
+    price: 65,
+    description: '공포의 붉은 안광과 함께 전방으로 뿜어지는 저주의 검은 파동',
+    fxClass: 'skill-fx-nightshade',
+    previewColor: '#ef4444'
+  },
+  {
+    id: 'fx_psychic_psystrike',
+    name: '사이코브레이크 (Psystrike Blade)',
+    pokemonName: '에스퍼 포켓몬 2스킬 (뮤/뮤츠 등)',
+    icon: '🌀',
+    price: 75,
+    description: '염동력 크리스탈 결정 칼날 쐐기가 적을 꿰뚫는 광선',
+    fxClass: 'skill-fx-psystrike',
+    previewColor: '#ec4899'
+  },
+  {
+    id: 'fx_dragon_meteorshower',
+    name: '용성군 유성 폭격 (Meteor Shower Rain)',
+    pokemonName: '드래곤 포켓몬 2스킬 (망나뇽 등)',
+    icon: '🌠',
+    price: 80,
+    description: '하늘에서 비처럼 쏟아져 내리는 불타는 유성우 폭격',
+    fxClass: 'skill-fx-meteorshower',
+    previewColor: '#f97316'
+  },
+  {
+    id: 'fx_fighting_bonerush',
+    name: '본러시 & 인파이트 (Bone Rush Blades)',
+    pokemonName: '격투 포켓몬 2스킬 (루카리오 등)',
+    icon: '⚔️',
+    price: 70,
+    description: '푸른 에너지 본 블레이드로 연속 교차 난타하는 잔상',
+    fxClass: 'skill-fx-bonerush',
+    previewColor: '#3b82f6'
   }
 ];
 
@@ -304,18 +546,22 @@ const setTodayHeartCountLocal = (owner: string, count: number) => {
   localStorage.setItem(`pokefarm_hearts_given_${owner}_${today}`, String(count));
 };
 
-// 🎓 졸업생 포켓몬 진화 체인 탐색 헬퍼 (진화 전/후 모든 모습 지원)
+// 🎓 졸업생 포켓몬 진화 체인 탐색 헬퍼 (진화 전/후 모든 모습 완벽 지원)
 export const getEvolutionChainForDiploma = (diploma: GraduationDiploma): EvolutionStage[] => {
+  // 1. STARTER_CHAINS에서 전체 진화 체인 우선 탐색 (파이리->리자드->리자몽 등 모든 단계 복원)
+  const fullChain = STARTER_CHAINS.find(chain =>
+    chain.some(st => st.id === diploma.speciesId || st.name === diploma.name || diploma.name.includes(st.name))
+  );
+  if (fullChain && fullChain.length > 1) {
+    return fullChain;
+  }
+
+  // 2. diploma에 저장된 evolutionChain이 2단계 이상이면 사용
   if (diploma.evolutionChain && diploma.evolutionChain.length > 0) {
     return diploma.evolutionChain;
   }
-  // STARTER_CHAINS에서 speciesId 또는 name으로 탐색
-  const found = STARTER_CHAINS.find(chain =>
-    chain.some(st => st.id === diploma.speciesId || st.name === diploma.name || diploma.name.includes(st.name))
-  );
-  if (found) return found;
 
-  // 단일 stage fallback
+  // 3. 단일 stage fallback
   return [{
     id: diploma.speciesId,
     name: diploma.name,
@@ -406,7 +652,15 @@ export const getDiplomaActiveSprite = (
   };
 };
 
-export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoom, initialVisitingUser, onClearInitialVisitingUser }) => {
+export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
+  username,
+  onLeaveRoom,
+  initialVisitingUser,
+  onClearInitialVisitingUser,
+  onSelectGame: _onSelectGame,
+  onUserLogin,
+  onUserLogout
+}) => {
   const { socket } = useSocket();
 
   // 농장 전체 로컬 상태
@@ -417,14 +671,52 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 💖 오늘 보낸 1촌 하트 횟수 (하루 최대 5회 제한)
   const [todayHeartsSent, setTodayHeartsSent] = useState<number>(() => getTodayHeartCountLocal(farmState.ownerName || username || '지우'));
 
-  // 🐣 온보딩 위저드 상태 (농장주 이름 입력 ➔ 스타팅 포켓몬 선택)
+  // 🔊 포켓몬 쓰다듬기 효과음(울음소리) ON/OFF 토글 상태 (기본 ON)
+  const [isPetSoundEnabled, setIsPetSoundEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pokefarm_pet_sound_enabled');
+      if (saved !== null) return saved === 'true';
+    }
+    return true;
+  });
+
+  // 🐣 온보딩 위저드 상태 (스타팅 포켓몬 선택)
   const [onboardingStep, setOnboardingStep] = useState<'name' | 'starter'>('name');
-  const [initOwnerName, setInitOwnerName] = useState(username || '지우');
-  const [initFarmName, setInitFarmName] = useState(`${username || '지우'}의 포켓농장`);
   const [selectedStarterIdx, setSelectedStarterIdx] = useState(0);
   const [starterNickname, setStarterNickname] = useState('');
   const [genFilter, setGenFilter] = useState<'all' | 'gen1' | 'gen2-3' | 'gen4-5' | 'gen6-7' | 'gen8-9'>('all');
   const [shopCategory, setShopCategory] = useState<'all' | 'egg' | 'food' | 'bath' | 'toy' | 'medicine'>('all');
+
+  // 🔐 회원가입 및 로그인 모달/화면 상태
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  // 로그인 폼
+  const [loginUsername, setLoginUsername] = useState(username && username !== '지우' ? username : '');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // 회원가입 폼
+  const [registerUsername, setRegisterUsername] = useState('');
+  const [registerFarmName, setRegisterFarmName] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // 비밀번호 변경 모달
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // 로그아웃 확인 모달
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // 🔴 몬스터볼 등장 애니메이션 분양 모달 상태
   const [adoptRevealModal, setAdoptRevealModal] = useState<{
@@ -586,10 +878,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     id: number;
     skillName: string;
     type: string;
+    fxClass?: string;
     icon: string;
     particles: string[];
   } | null>(null);
   const [isPetJumping, setIsPetJumping] = useState(false);
+  const [selectedSkillSlot, setSelectedSkillSlot] = useState<1 | 2 | 3>(1);
 
   // 🏡 보육소 목장 정렬 및 필터 상태
   const [daycareSort, setDaycareSort] = useState<'recent' | 'species' | 'shiny' | 'type' | 'level'>('species');
@@ -608,7 +902,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [neighborSearch, setNeighborSearch] = useState('');
 
   // ⛺ 두부월드 미니홈피 상태
-  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'guestbook' | 'stickers' | 'neighbors'>('home');
+  const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'pokedex' | 'guestbook' | 'stickers' | 'neighbors'>('home');
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
@@ -633,6 +927,41 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const [stickerCategory, setStickerCategory] = useState<'all' | 'living' | 'bedroom' | 'gaming' | 'kitchen' | 'garden' | 'pokemon' | 'emotional' | 'emoji'>('all');
   const [stickerSearch, setStickerSearch] = useState('');
   const [decorSubtab, setDecorSubtab] = useState<'palette' | 'skilleffects' | 'textmaker' | 'pokeplacements'>('palette');
+
+  // 👥 모든 농장(내 농장 포함) 하트 랭킹 계산 (React Hooks 규칙 준수를 위해 상단에 선언)
+  const allFarmsRanked: NeighborFarmData[] = React.useMemo(() => {
+    const map = new Map<string, NeighborFarmData>();
+
+    // 1. 이웃 목록 추가
+    neighborList.forEach(n => {
+      if (n.username) map.set(n.username, n);
+    });
+
+    // 2. 내 농장도 랭킹 산정에 포함 (내 하트수 반영)
+    if (farmState.isInitialized && farmState.ownerName) {
+      map.set(farmState.ownerName, {
+        username: farmState.ownerName,
+        farmName: farmState.farmName || `${farmState.ownerName}님의 포켓농장`,
+        activePokemon: farmState.activePokemon || null,
+        reservePokemon: farmState.reservePokemon || [],
+        graduatedPokemon: farmState.graduatedPokemon || [],
+        graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
+        heartsCount: farmState.heartsCount || 0,
+        bgTheme: farmState.bgTheme || 'classic',
+        stickers: farmState.stickers || [],
+        pokemonPlacements: farmState.pokemonPlacements || {},
+        statusMsg: farmState.statusMsg || '',
+        todayCount: farmState.todayCount || 0,
+        totalCount: farmState.totalCount || 0,
+        isOnline: true
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
+  }, [neighborList, farmState]);
+
+  // 🏆 실시간 인기 포켓농장 TOP 3 (내 농장도 하트가 높으면 1, 2, 3위에 당당히 표시!)
+  const top3RealFarms = allFarmsRanked.slice(0, 3);
 
   // 🌐 소켓 및 로컬 실제 유저 농장 동기화
   useEffect(() => {
@@ -672,6 +1001,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           guestbook: res.guestbook || []
         });
         setActiveTab('minihome');
+        setMinihompyTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
 
@@ -745,6 +1076,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       isServerSyncReadyRef.current = true;
       if (res.success && res.farm) {
         setFarmState(prev => {
+          // 🛡️ 보안 가드: 서버에서 날아온 데이터의 주인이 현재 내 농장주와 다르면 덮어쓰기 원천 차단
+          const incomingOwner = res.farm.username || res.farm.ownerName;
+          if (prev.ownerName && incomingOwner && prev.ownerName !== incomingOwner && prev.ownerName !== '지우') {
+            console.warn(`[PokeFarm] ⚠️ 다른 유저(${incomingOwner})의 데이터가 내 농장(${prev.ownerName})에 유입되는 것을 안전하게 차단했습니다.`);
+            return prev;
+          }
+
           const serverTime = res.farm.lastActive || 0;
           const localTime = prev.lastActive || 0;
 
@@ -754,14 +1092,28 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           }
 
           const updatedHearts = res.farm.heartsCount !== undefined ? Math.max(res.farm.heartsCount, prev.heartsCount) : prev.heartsCount;
+
+          // 🛡️ 코인 안전 보존: 로컬에서 획득한 코인이 서버의 과거 세이브로 인해 깎이지 않도록 보호
+          const updatedCoins = Math.max(
+            res.farm.coins !== undefined && res.farm.coins !== null ? Number(res.farm.coins) : 0,
+            prev.coins !== undefined && prev.coins !== null ? Number(prev.coins) : 0
+          );
+          // 🛡️ 인벤토리 안전 병합: 로컬 획득 아이템이 서버 구버전 데이터로 덮어씌워져 소실되는 것을 방지
+          const mergedInventory = { ...(prev.inventory || {}) };
+          if (res.farm.inventory) {
+            Object.entries(res.farm.inventory).forEach(([k, v]) => {
+              mergedInventory[k] = Math.max(mergedInventory[k] || 0, Number(v) || 0);
+            });
+          }
+
           const merged: FarmState = {
             ...prev,
             ...res.farm,
-            ownerName: res.farm.username || res.farm.ownerName || prev.ownerName,
+            coins: updatedCoins,
+            inventory: mergedInventory,
+            ownerName: incomingOwner || prev.ownerName,
             isInitialized: true,
             heartsCount: updatedHearts,
-            coins: res.farm.coins !== undefined ? res.farm.coins : prev.coins,
-            inventory: res.farm.inventory || prev.inventory,
             incubatingEgg: res.farm.incubatingEgg !== undefined ? res.farm.incubatingEgg : prev.incubatingEgg,
             lotteryState: res.farm.lotteryState || prev.lotteryState,
             lastActive: serverTime || Date.now(),
@@ -772,6 +1124,100 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           saveFarmState(merged);
           return merged;
         });
+      }
+    };
+
+    // 🔐 로그인 결과 처리
+    const handleLoginResult = (res: { success: boolean; reason?: string; message?: string; farm?: any; guestbook?: GuestbookEntry[] }) => {
+      setIsLoggingIn(false);
+      if (res.success && res.farm) {
+        const loadedFarm = res.farm;
+        const cleanUser = loadedFarm.username || loadedFarm.ownerName;
+        // 🛡️ 로컬에 해당 유저의 기존 세이브가 있다면 코인 및 인벤토리를 안전하게 최대치로 병합
+        const localSaved = getStoredNeighborFarm(cleanUser);
+        const safeCoins = Math.max(
+          loadedFarm.coins !== undefined && loadedFarm.coins !== null ? Number(loadedFarm.coins) : 0,
+          localSaved?.coins !== undefined ? Number(localSaved.coins) : 0,
+          1000
+        );
+        const safeInventory = { ...(loadedFarm.inventory || {}) };
+        if (localSaved?.inventory) {
+          Object.entries(localSaved.inventory).forEach(([k, v]) => {
+            safeInventory[k] = Math.max(safeInventory[k] || 0, Number(v) || 0);
+          });
+        }
+
+        const newState: FarmState = {
+          ...getInitialFarmState(cleanUser),
+          ...loadedFarm,
+          coins: safeCoins,
+          inventory: safeInventory,
+          ownerName: cleanUser,
+          isInitialized: true,
+          guestbook: res.guestbook || []
+        };
+        setFarmState(newState);
+        saveFarmState(newState);
+        localStorage.setItem('pokefarm_saved_owner', cleanUser);
+        if (onUserLogin) {
+          onUserLogin(cleanUser);
+        }
+        showAlert(res.message || `🎉 [${cleanUser}]님의 농장 데이터를 성공적으로 불러왔습니다!`, 'success');
+        setLoginError('');
+        setLoginPassword('');
+        if (loadedFarm.activePokemon) {
+          playPokemonCry(loadedFarm.activePokemon.speciesId);
+        }
+      } else {
+        setLoginError(res.message || '로그인에 실패했습니다.');
+        showAlert(res.message || '로그인 실패', 'warn');
+      }
+    };
+
+    // 🔐 회원가입 및 신규 개설 결과 처리
+    const handleRegisterResult = (res: { success: boolean; reason?: string; message?: string; farm?: any; guestbook?: GuestbookEntry[] }) => {
+      setIsRegistering(false);
+      if (res.success && res.farm) {
+        const loadedFarm = res.farm;
+        const cleanUser = loadedFarm.username || loadedFarm.ownerName;
+        const newState: FarmState = {
+          ...getInitialFarmState(cleanUser),
+          ...loadedFarm,
+          ownerName: cleanUser,
+          isInitialized: true,
+          guestbook: res.guestbook || []
+        };
+        setFarmState(newState);
+        saveFarmState(newState);
+        localStorage.setItem('pokefarm_saved_owner', cleanUser);
+        if (onUserLogin) {
+          onUserLogin(cleanUser);
+        }
+        showAlert(`🎉 [${cleanUser}]님의 포켓농장이 정식 개설되었습니다! 환영합니다!`, 'success');
+        setRegisterError('');
+        setRegisterPassword('');
+        setRegisterPasswordConfirm('');
+        if (loadedFarm.activePokemon) {
+          playPokemonCry(loadedFarm.activePokemon.speciesId);
+        }
+      } else {
+        setRegisterError(res.message || '농장 개설에 실패했습니다.');
+        showAlert(res.message || '농장 개설 실패', 'warn');
+      }
+    };
+
+    // 🔐 비밀번호 변경 결과 처리
+    const handleChangePasswordResult = (res: { success: boolean; message?: string }) => {
+      setIsChangingPassword(false);
+      if (res.success) {
+        setShowChangePasswordModal(false);
+        setOldPassword('');
+        setNewPassword('');
+        setNewPasswordConfirm('');
+        setChangePasswordError('');
+        showAlert(res.message || '비밀번호가 성공적으로 변경되었습니다.', 'success');
+      } else {
+        setChangePasswordError(res.message || '비밀번호 변경에 실패했습니다.');
       }
     };
 
@@ -786,6 +1232,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     socket.on('farm-daily-hearts-info', handleDailyHeartsInfo);
     socket.on('farm-guestbook-updated', handleGuestbookUpdated);
     socket.on('farm-my-data-loaded', handleMyDataLoaded);
+    socket.on('farm-login-result', handleLoginResult);
+    socket.on('farm-register-result', handleRegisterResult);
+    socket.on('farm-change-password-result', handleChangePasswordResult);
 
     return () => {
       socket.off('farm-list-update', handleListUpdate);
@@ -797,8 +1246,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       socket.off('farm-daily-hearts-info', handleDailyHeartsInfo);
       socket.off('farm-guestbook-updated', handleGuestbookUpdated);
       socket.off('farm-my-data-loaded', handleMyDataLoaded);
+      socket.off('farm-login-result', handleLoginResult);
+      socket.off('farm-register-result', handleRegisterResult);
+      socket.off('farm-change-password-result', handleChangePasswordResult);
     };
-  }, [socket, farmState.ownerName, farmState.isInitialized]);
+  }, [socket, farmState.ownerName, farmState.isInitialized, onUserLogin]);
 
   // 📌 외부(시트1 게임목록 상단 등)에서 특정 유저 미니홈피 방문 요청 시 자동 전환
   useEffect(() => {
@@ -825,13 +1277,28 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   const currentStickers = visitingFarm ? (visitingFarm.farm.stickers || []) : (farmState.stickers || []);
   const currentStatusMsg = visitingFarm ? (visitingFarm.farm.statusMsg || '이웃의 농장에 놀러왔습니다 🎵') : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
 
+  // 👥 이웃 농장 목록 새로고침 헬퍼
+  const refreshNeighbors = useCallback(() => {
+    if (socket && socket.connected) {
+      socket.emit('farm-get-list');
+      socket.emit('farm-get-top3');
+      if (farmState.ownerName) {
+        socket.emit('farm-load-my-data', { username: farmState.ownerName });
+      }
+    }
+    const localFarms = getAllStoredFarms();
+    setNeighborList(localFarms.filter(f => f.username !== farmState.ownerName));
+  }, [socket, farmState.ownerName]);
+
   // 이웃 미니홈피 놀러가기/구경가기
   const handleVisitNeighbor = (neighborUsername: string) => {
     if (!neighborUsername) return;
     if (neighborUsername === farmState.ownerName) {
       setVisitingFarm(null);
       setActiveTab('minihome');
-      showAlert('내 포켓 미니홈피로 이동했습니다! 🏠', 'info');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert('내 포켓 미니홈피로 돌아왔습니다! 🏠', 'info');
       return;
     }
 
@@ -839,8 +1306,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       socket.emit('farm-visit-request', { targetUsername: neighborUsername, visitorUsername: farmState.ownerName });
     }
 
-    // 1. 로컬에 저장된 실제 유저 데이터 확인
-    const targetSaved = loadFarmState(neighborUsername);
+    // 1. 로컬에 저장된 실제 유저 데이터 확인 (내 활성 세션을 절대 덮어쓰지 않는 순수 읽기)
+    const targetSaved = getStoredNeighborFarm(neighborUsername);
     if (targetSaved && targetSaved.isInitialized && targetSaved.ownerName === neighborUsername) {
       setVisitingFarm({
         owner: targetSaved.ownerName,
@@ -863,7 +1330,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         guestbook: targetSaved.guestbook || []
       });
       setActiveTab('minihome');
-      showAlert(`🏠 [${targetSaved.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert(`🏠 [${targetSaved.farmName}] 미니홈피로 파도타기 완료!`, 'success');
       return;
     }
 
@@ -876,7 +1345,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         guestbook: []
       });
       setActiveTab('minihome');
-      showAlert(`🏠 [${foundNeighbor.farmName}] 미니홈피 구경을 시작합니다!`, 'success');
+      setMinihompyTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showAlert(`🏠 [${foundNeighbor.farmName}] 미니홈피로 파도타기 완료!`, 'success');
     }
   };
 
@@ -1037,7 +1508,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     const newEffectSticker: MinihompySticker = {
       id: `fx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       stickerId: effect.id,
-      skillFxId: effect.id,
+      skillFxId: effect.fxClass || effect.id,
       icon: effect.icon,
       label: effect.name,
       type: 'skill_fx',
@@ -1298,11 +1769,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 🎓 졸업생 포켓몬 진화 전/후 외형 모습 변경 핸들러
   const handleSetDiplomaForm = (diplomaId: string, formIndex: number) => {
     if (visitingFarm) return;
+
+    let updatedName = '';
+
     setFarmState(prev => {
-      const nextGrad = prev.graduatedPokemon.map(d => {
-        if (d.id === diplomaId) {
+      const nextGrad = (prev.graduatedPokemon || []).map((d, idx) => {
+        const isTarget = d.id === diplomaId || d.pokemonUid === diplomaId || String(d.id) === String(diplomaId) || diplomaId === `grad_${d.id}` || diplomaId === `grad_${idx}`;
+        if (isTarget) {
           const chain = getEvolutionChainForDiploma(d);
           const stage = chain[formIndex] || chain[chain.length - 1];
+          updatedName = stage.name;
           let spr = stage.showdownSprite || stage.sprite;
           if (d.isShiny && stage.id) {
             spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
@@ -1321,10 +1797,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         graduatedPokemon: nextGrad
       };
     });
+
     setSelectedDiploma(prev => {
-      if (prev && prev.id === diplomaId) {
+      if (!prev) return null;
+      const isTarget = prev.id === diplomaId || prev.pokemonUid === diplomaId || String(prev.id) === String(diplomaId) || !diplomaId;
+      if (isTarget) {
         const chain = getEvolutionChainForDiploma(prev);
         const stage = chain[formIndex] || chain[chain.length - 1];
+        if (!updatedName) updatedName = stage.name;
         let spr = stage.showdownSprite || stage.sprite;
         if (prev.isShiny && stage.id) {
           spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
@@ -1338,7 +1818,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       }
       return prev;
     });
-    showAlert('✨ 졸업생 포켓몬의 미니룸 외형 모습이 변경되었습니다!', 'success');
+
+    setGraduatingModal(prev => {
+      if (!prev) return null;
+      const isTarget = prev.id === diplomaId || prev.pokemonUid === diplomaId || String(prev.id) === String(diplomaId) || !diplomaId;
+      if (isTarget) {
+        const chain = getEvolutionChainForDiploma(prev);
+        const stage = chain[formIndex] || chain[chain.length - 1];
+        if (!updatedName) updatedName = stage.name;
+        let spr = stage.showdownSprite || stage.sprite;
+        if (prev.isShiny && stage.id) {
+          spr = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${stage.id}.gif`;
+        }
+        return {
+          ...prev,
+          selectedFormIndex: formIndex,
+          displaySprite: spr,
+          displayName: stage.name
+        };
+      }
+      return prev;
+    });
+
+    showAlert(`✨ 미니룸에 표시될 졸업생 포켓몬 외형이 [${updatedName || '선택한 진화 형태'}] 모습으로 변경되었습니다!`, 'success');
   };
 
   // 포켓몬 위치 및 3D 방향 조회 헬퍼
@@ -1447,6 +1949,444 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       } catch (err) {}
       setDragState(null);
+    }
+  };
+
+  // 💥 Pokémon Showdown 공식 FX 에셋 CDN 기반 고유스킬 스트림 렌더러
+  const SHOWDOWN_FX = 'https://play.pokemonshowdown.com/fx/';
+
+  const renderSkillStreamFx = (fxClass: string, symbolIcon: string = '✨') => {
+    switch (fxClass) {
+      // 🔥 불꽃 계열
+      case 'skill-fx-fireblast':
+        return (
+          <div className="skill-blast-stream stream-fire showdown-stream">
+            <svg className="stream-svg fire-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="fireOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f97316" /><stop offset="40%" stopColor="#ea580c" /><stop offset="100%" stopColor="#dc2626" />
+                </linearGradient>
+                <linearGradient id="fireMidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#fef08a" /><stop offset="35%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#ea580c" />
+                </linearGradient>
+                <filter id="fireGlow"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+              </defs>
+              <path className="fire-wave wave-1" fill="url(#fireOuterGrad)" filter="url(#fireGlow)" d="M 0 45 C 35 32, 65 18, 105 12 C 145 6, 185 0, 215 8 C 235 15, 240 30, 240 46 C 238 62, 225 78, 200 86 C 160 98, 120 90, 85 74 C 50 60, 20 54, 0 53 Z" />
+            </svg>
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-fireball-1" />
+              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-flare-core" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-fireball-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-fire-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firekanji':
+        return (
+          <div className="skill-blast-stream stream-firekanji showdown-stream">
+            <svg className="stream-svg firekanji-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="150" cy="50" r="38" fill="url(#fireMidGrad)" filter="url(#fireGlow)" opacity="0.85" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#f97316" strokeWidth="14" strokeLinecap="round" opacity="0.8" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
+            </svg>
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-kanji-core" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-kanji-top" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-kanji-bot" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-kanji-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firespin':
+        return (
+          <div className="skill-blast-stream stream-firespin showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}bluefireball.png`} alt="bluefire" className="sd-fx sd-bluefire-1" />
+              <img src={`${SHOWDOWN_FX}bluefireball.png`} alt="bluefire" className="sd-fx sd-bluefire-2" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-firespin-swirl" />
+              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-firespin-core" />
+            </div>
+          </div>
+        );
+
+      // 💧 물 계열
+      case 'skill-fx-hydropump':
+        return (
+          <div className="skill-blast-stream stream-water showdown-stream">
+            <svg className="stream-svg water-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="waterOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#38bdf8" /><stop offset="50%" stopColor="#0284c7" /><stop offset="100%" stopColor="#0369a1" />
+                </linearGradient>
+                <filter id="waterGlow"><feGaussianBlur stdDeviation="2.5" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+              </defs>
+              <path className="water-wave wave-1" fill="url(#waterOuterGrad)" filter="url(#waterGlow)" d="M 0 45 C 40 28, 80 14, 125 14 C 165 14, 205 20, 225 32 C 240 42, 240 54, 225 64 C 200 75, 160 80, 120 80 C 75 78, 35 62, 0 53 Z" />
+            </svg>
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-waterwisp-1" />
+              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-waterwisp-2" />
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-mistball-1" />
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-mistball-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-water-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hydrocannon':
+        return (
+          <div className="skill-blast-stream stream-hydrocannon showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-cannon-huge" />
+              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-cannon-wave-1" />
+              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-cannon-wave-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-cannon-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bubblebeam':
+      case 'skill-fx-watershuriken':
+        return (
+          <div className="skill-blast-stream stream-bubblebeam showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-1" />
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-2" />
+              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-3" />
+              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-bubble-wisp" />
+            </div>
+          </div>
+        );
+
+      // ⚡ 전기 계열
+      case 'skill-fx-thunderbolt':
+        return (
+          <div className="skill-blast-stream stream-thunder showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-lightning-main" />
+              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-electro-core" />
+              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-lightning-sub" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-thunder-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-thunderstorm':
+        return (
+          <div className="skill-blast-stream stream-thunderstorm showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-storm-l1" />
+              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-storm-l2" />
+              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-storm-ball" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-storm-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-volttackle':
+        return (
+          <div className="skill-blast-stream stream-volttackle showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-volt-ball-1" />
+              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-volt-ball-2" />
+              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-volt-lightning" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-volt-impact" />
+            </div>
+          </div>
+        );
+
+      // 🌿 풀 계열
+      case 'skill-fx-solarbeam':
+        return (
+          <div className="skill-blast-stream stream-solar showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}energyball.png`} alt="energyball" className="sd-fx sd-energyball-core" />
+              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-solar-leaf-1" />
+              <img src={`${SHOWDOWN_FX}leaf2.png`} alt="leaf" className="sd-fx sd-solar-leaf-2" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-solar-shine" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-vinewhip':
+        return (
+          <div className="skill-blast-stream stream-vinewhip showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-vine-leaf-1" />
+              <img src={`${SHOWDOWN_FX}leaf2.png`} alt="leaf" className="sd-fx sd-vine-leaf-2" />
+              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-vine-slash" />
+              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-vine-leaf-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-petaldance':
+        return (
+          <div className="skill-blast-stream stream-petaldance showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-1" />
+              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-2" />
+              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-3" />
+              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-4" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-petal-shine" />
+            </div>
+          </div>
+        );
+
+      // 👻 고스트/독 계열
+      case 'skill-fx-shadowball':
+        return (
+          <div className="skill-blast-stream stream-shadow showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}shadowball.png`} alt="shadowball" className="sd-fx sd-shadowball-core" />
+              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="blackwisp" className="sd-fx sd-shadow-wisp-1" />
+              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="purplewisp" className="sd-fx sd-shadow-wisp-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-shadow-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-nightshade':
+        return (
+          <div className="skill-blast-stream stream-nightshade showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}leftclaw.png`} alt="claw" className="sd-fx sd-night-claw-1" />
+              <img src={`${SHOWDOWN_FX}rightclaw.png`} alt="claw" className="sd-fx sd-night-claw-2" />
+              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="wisp" className="sd-fx sd-night-wisp" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-night-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-sludgebomb':
+        return (
+          <div className="skill-blast-stream stream-sludge showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-1" />
+              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-2" />
+              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-3" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-sludge-impact" />
+            </div>
+          </div>
+        );
+
+      // 🔮 에스퍼/페어리 계열
+      case 'skill-fx-psychic':
+        return (
+          <div className="skill-blast-stream stream-psychic showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-psychic-shine" />
+              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="pulse" className="sd-fx sd-psychic-pulse" />
+              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-psychic-rainbow" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-psystrike':
+        return (
+          <div className="skill-blast-stream stream-psystrike showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}moon.png`} alt="moon" className="sd-fx sd-psy-moon" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-psy-shine" />
+              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-psy-slash" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-psy-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-prismbarrier':
+        return (
+          <div className="skill-blast-stream stream-prism showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}moon.png`} alt="moon" className="sd-fx sd-prism-moon" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-prism-shine-1" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-prism-shine-2" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-magicalshine':
+        return (
+          <div className="skill-blast-stream stream-magicalshine showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-mshine-main" />
+              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-mshine-rainbow" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-mshine-sub" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-heartstorm':
+        return (
+          <div className="skill-blast-stream stream-heartstorm showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-1" />
+              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-2" />
+              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-3" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-heart-shine" />
+            </div>
+          </div>
+        );
+
+      // ❄️ 얼음 계열
+      case 'skill-fx-blizzard':
+        return (
+          <div className="skill-blast-stream stream-blizzard showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-iceball-core" />
+              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-icicle-1" />
+              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-icicle-2" />
+              <img src={`${SHOWDOWN_FX}icicle-pink.png`} alt="icicle" className="sd-fx sd-icicle-pink" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-icebeam':
+        return (
+          <div className="skill-blast-stream stream-icebeam showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-beam-icicle-1" />
+              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-beam-icicle-2" />
+              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-beam-iceball" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-ice-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-auroraveil':
+        return (
+          <div className="skill-blast-stream stream-auroraveil showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-aurora-rainbow" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-aurora-shine" />
+              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-aurora-ice" />
+            </div>
+          </div>
+        );
+
+      // 🥊 격투 계열
+      case 'skill-fx-closecombat':
+      case 'skill-fx-gigaforce':
+        return (
+          <div className="skill-blast-stream stream-closecombat showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}fist.png`} alt="fist" className="sd-fx sd-fist-1" />
+              <img src={`${SHOWDOWN_FX}fist1.png`} alt="fist" className="sd-fx sd-fist-2" />
+              <img src={`${SHOWDOWN_FX}rightchop.png`} alt="chop" className="sd-fx sd-chop" />
+              <img src={`${SHOWDOWN_FX}hitmarker.png`} alt="hitmarker" className="sd-fx sd-hitmarker" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-combat-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-aurasphere':
+        return (
+          <div className="skill-blast-stream stream-aura showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}energyball.png`} alt="energyball" className="sd-fx sd-aura-ball" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-aura-shine" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-aura-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bonerush':
+        return (
+          <div className="skill-blast-stream stream-bonerush showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}bone.png`} alt="bone" className="sd-fx sd-bone-1" />
+              <img src={`${SHOWDOWN_FX}bone.png`} alt="bone" className="sd-fx sd-bone-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-bone-impact" />
+            </div>
+          </div>
+        );
+
+      // 🐉 드래곤/비행 계열
+      case 'skill-fx-dracometeor':
+      case 'skill-fx-meteorshower':
+        return (
+          <div className="skill-blast-stream stream-draco showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}shadowball.png`} alt="meteor" className="sd-fx sd-draco-core" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fire" className="sd-fx sd-draco-fire-1" />
+              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fire" className="sd-fx sd-draco-fire-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-draco-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-dragonclaw':
+      case 'skill-fx-outrage':
+        return (
+          <div className="skill-blast-stream stream-outrage showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}leftclaw.png`} alt="claw" className="sd-fx sd-dclaw-1" />
+              <img src={`${SHOWDOWN_FX}rightclaw.png`} alt="claw" className="sd-fx sd-dclaw-2" />
+              <img src={`${SHOWDOWN_FX}leftslash.png`} alt="slash" className="sd-fx sd-dslash" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-dclaw-impact" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hurricane':
+      case 'skill-fx-typhoon':
+      case 'skill-fx-bravebird':
+        return (
+          <div className="skill-blast-stream stream-hurricane showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}feather.png`} alt="feather" className="sd-fx sd-hurr-feather" />
+              <img src={`${SHOWDOWN_FX}leftslash.png`} alt="slash" className="sd-fx sd-hurr-slash-1" />
+              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-hurr-slash-2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-hurr-impact" />
+            </div>
+          </div>
+        );
+
+      // 🪨 바위/땅 계열
+      case 'skill-fx-stoneedge':
+        return (
+          <div className="skill-blast-stream stream-stoneedge showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}rocks.png`} alt="rocks" className="sd-fx sd-stone-rocks" />
+              <img src={`${SHOWDOWN_FX}rock1.png`} alt="rock" className="sd-fx sd-stone-r1" />
+              <img src={`${SHOWDOWN_FX}rock2.png`} alt="rock" className="sd-fx sd-stone-r2" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-stone-impact" />
+            </div>
+          </div>
+        );
+
+      // 💥 노말 계열
+      case 'skill-fx-gigaimpact':
+        return (
+          <div className="skill-blast-stream stream-giga showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}electroball.png`} alt="giga-ball" className="sd-fx sd-giga-ball" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-giga-impact-1" />
+              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-giga-impact-2" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-splashrush':
+        return (
+          <div className="skill-blast-stream stream-splashrush showdown-stream">
+            <div className="showdown-fx-layer">
+              <img src={`${SHOWDOWN_FX}sound.png`} alt="sound" className="sd-fx sd-sound-ring-1" />
+              <img src={`${SHOWDOWN_FX}sound.png`} alt="sound" className="sd-fx sd-sound-ring-2" />
+              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-sound-shine" />
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="skill-blast-stream stream-generic showdown-stream">
+            <span className="generic-icon">{symbolIcon}</span>
+            <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-default-shine" />
+            <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-default-impact" />
+          </div>
+        );
     }
   };
 
@@ -1648,16 +2588,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 }}
                 onPointerDown={(e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
               >
-                {/* 1. 고유스킬 이펙트 */}
-                {stk.type === 'skill_fx' ? (
-                  <div className={`skill-fx-display ${stk.skillFxId || 'fx_pikachu_thunder'}`}>
-                    <div className="skill-fx-core" />
-                    <div className="skill-fx-wave" />
-                    <div className="skill-fx-aura" />
-                    <div className="skill-fx-sparks" />
-                    <span className="skill-fx-symbol">{stk.icon || '⚡'}</span>
-                  </div>
-                ) : stk.text ? (
+                {/* 1. 고유스킬 이펙트 (💥 이펙트 클래스 매핑 및 파티클 렌더링) */}
+                {stk.type === 'skill_fx' ? (() => {
+                  const effectMeta = POKEMON_SKILL_EFFECTS.find(
+                    e => e.id === stk.skillFxId || e.fxClass === stk.skillFxId || e.id === stk.stickerId
+                  );
+                  const activeFxClass = effectMeta?.fxClass || (stk.skillFxId?.startsWith('skill-fx-') ? stk.skillFxId : 'skill-fx-thunderbolt');
+                  const symbolIcon = stk.icon || effectMeta?.icon || '⚡';
+
+                  return (
+                    <div className={`skill-fx-display ${activeFxClass}`}>
+                      {renderSkillStreamFx(activeFxClass, symbolIcon)}
+                    </div>
+                  );
+                })() : stk.text ? (
                   <div
                     className={`custom-decor-text style-${stk.styleType || 'classic_bubble'}`}
                     style={{
@@ -1871,12 +2815,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
+    if (!farmState.isInitialized || !farmState.ownerName || farmState.ownerName === '지우') {
+      return;
+    }
     saveFarmState(farmState);
-
     // 🛡️ 서버 데이터 로드가 완료되기 전에는 기기의 오래된 로컬 캐시로 서버를 덮어쓰지 않음
     if (!isServerSyncReadyRef.current) return;
 
-    if (socket && socket.connected && farmState.isInitialized && farmState.ownerName) {
+    if (socket && socket.connected) {
       const now = Date.now();
       socket.emit('farm-sync', {
         username: farmState.ownerName,
@@ -1904,12 +2850,55 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
       });
     }
   }, [farmState, socket]);
-
   // 알림 토스트 헬퍼
   const showAlert = (text: string, type: 'success' | 'info' | 'warn' = 'info') => {
     setActionAlert({ text, type });
     setTimeout(() => setActionAlert(null), 3500);
   };
+
+  // 🔊 쓰다듬기 효과음 토글 헬퍼
+  const togglePetSound = () => {
+    setIsPetSoundEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('pokefarm_pet_sound_enabled', String(next));
+      showAlert(next ? '🔊 쓰다듬기 효과음이 켜졌습니다.' : '🔇 쓰다듬기 효과음이 꺼졌습니다.', 'info');
+      return next;
+    });
+  };
+
+  // ⚡ 하루 지나면 모든 포켓몬 에너지 100% 자동 회복 검사 & 알림
+  const checkDailyEnergyRecovery = useCallback(() => {
+    const today = getTodayDateString();
+    setFarmState(prev => {
+      if (!prev.lastEnergyRecoveryDate) {
+        return { ...prev, lastEnergyRecoveryDate: today };
+      }
+      if (prev.lastEnergyRecoveryDate !== today) {
+        const recoverEnergy = (mon: FarmPokemon) => {
+          const maxStat = getMaxStatForStage(mon.stageIndex);
+          return { ...mon, energy: maxStat };
+        };
+        const updatedActive = prev.activePokemon ? recoverEnergy(prev.activePokemon) : null;
+        const updatedReserve = prev.reservePokemon ? prev.reservePokemon.map(recoverEnergy) : [];
+
+        showAlert('☀️ 새로운 하루가 시작되었습니다! 모든 포켓몬의 에너지가 100% 가득 회복되었습니다! ⚡', 'success');
+
+        return {
+          ...prev,
+          activePokemon: updatedActive,
+          reservePokemon: updatedReserve,
+          lastEnergyRecoveryDate: today
+        };
+      }
+      return prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    checkDailyEnergyRecovery();
+    const timer = setInterval(checkDailyEnergyRecovery, 30000);
+    return () => clearInterval(timer);
+  }, [checkDailyEnergyRecovery]);
 
   // 🥚 알 부화기 온기 증가 헬퍼
   const addEggWarmth = (amount: number, reason: string) => {
@@ -1931,65 +2920,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
   const pmon = farmState.activePokemon;
 
-  // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트
-  const handlePetPokemon = (e?: React.MouseEvent) => {
+  // 1. 포켓몬 쓰다듬기 & 고유 스킬 모션 이펙트 (최대 3개 스킬 중 현재 슬롯 발동)
+  const handlePetPokemon = (e?: React.MouseEvent, overrideSkill?: PokemonSkillDef) => {
     if (!pmon) return;
-    playPokemonCry(pmon.speciesId);
+    if (isPetSoundEnabled) {
+      playPokemonCry(pmon.speciesId);
+    }
     addEggWarmth(1, '포켓몬 쓰다듬기');
 
-    // 스킬 모션 정보 결정
-    let skillName = '애교부리기';
-    let skillType = 'normal';
-    let skillIcon = '⭐';
-    let particles = ['⭐', '✨', '💛', '💖', '🎉'];
+    const skillSet = getPokemonSkillSet(pmon);
+    const targetSkill = overrideSkill || skillSet.find(s => s.slot === selectedSkillSlot) || skillSet[0];
 
-    if (pmon.types.includes('water')) {
-      skillName = pmon.level >= 30 ? '하이드로펌프' : '물대포';
-      skillType = 'water';
-      skillIcon = '🌊';
-      particles = ['🌊', '💦', '🫧', '💧', '✨'];
-    } else if (pmon.types.includes('fire')) {
-      skillName = pmon.level >= 30 ? '화염방사' : '불꽃세례';
-      skillType = 'fire';
-      skillIcon = '🔥';
-      particles = ['🔥', '💥', '☄️', '♨️', '✨'];
-    } else if (pmon.types.includes('grass')) {
-      skillName = pmon.level >= 30 ? '솔라빔' : '잎날가르기';
-      skillType = 'grass';
-      skillIcon = '🍃';
-      particles = ['🍃', '🌸', '🌿', '🌱', '✨'];
-    } else if (pmon.types.includes('electric')) {
-      skillName = pmon.level >= 30 ? '볼트태클' : '10만볼트';
-      skillType = 'electric';
-      skillIcon = '⚡';
-      particles = ['⚡', '⚡', '🌟', '💛', '✨'];
-    } else if (pmon.types.includes('fairy')) {
-      skillName = '문포스';
-      skillType = 'fairy';
-      skillIcon = '💖';
-      particles = ['💖', '🌙', '🌸', '✨', '💕'];
-    } else if (pmon.types.includes('dragon')) {
-      skillName = '용의파동';
-      skillType = 'dragon';
-      skillIcon = '🐉';
-      particles = ['🐉', '☄️', '💫', '🔷', '✨'];
-    } else if (pmon.types.includes('ghost') || pmon.types.includes('psychic')) {
-      skillName = '사이코키네시스';
-      skillType = 'psychic';
-      skillIcon = '🔮';
-      particles = ['🔮', '🌌', '👻', '💜', '✨'];
-    } else if (pmon.types.includes('fighting')) {
-      skillName = '인파이트';
-      skillType = 'fighting';
-      skillIcon = '🥊';
-      particles = ['🥊', '💥', '⚡', '💪', '✨'];
-    }
+    const particles = targetSkill.icon === '🔥' || targetSkill.icon === '☄️'
+      ? ['🔥', '💥', '☄️', '♨️', '✨']
+      : targetSkill.icon === '💧' || targetSkill.icon === '🌊' || targetSkill.icon === '🫧'
+      ? ['🌊', '💦', '🫧', '💧', '✨']
+      : targetSkill.icon === '🍃' || targetSkill.icon === '🌿' || targetSkill.icon === '🌸'
+      ? ['🍃', '🌸', '🌿', '🌱', '✨']
+      : targetSkill.icon === '⚡' || targetSkill.icon === '🌩️'
+      ? ['⚡', '⚡', '🌟', '💛', '✨']
+      : ['⭐', '✨', '💫', targetSkill.icon, '🎉'];
 
     setPetSkillEffect({
       id: Date.now(),
-      skillName,
-      type: skillType,
-      icon: skillIcon,
+      skillName: targetSkill.name,
+      type: pmon.types[0] || 'normal',
+      fxClass: targetSkill.fxClass,
+      icon: targetSkill.icon,
       particles
     });
     setIsPetJumping(true);
@@ -2033,6 +2990,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         }
       };
     });
+  };
+
+  // 🎯 포켓몬 고유스킬 슬롯 직접 클릭 발동 (1, 2, 3번 스킬)
+  const handleTriggerSkillSlot = (sk: PokemonSkillDef) => {
+    setSelectedSkillSlot(sk.slot);
+    handlePetPokemon(undefined, sk);
   };
 
   // ⌨️ 단축키 [C] 입력 시 화면 어디서든 포켓몬 쓰다듬기 처리 (꾹 누르기 반복 차단)
@@ -2103,6 +3066,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     // 💎 2. 반짝이는 원석 매각 (300 코인 획득)
     if (item.id === 'shiny_stone') {
+      if (!window.confirm('💎 [반짝이는 원석]을 사내 보석상에 매각하고 300 코인을 받으시겠습니까?')) {
+        return;
+      }
       setFarmState(prev => ({
         ...prev,
         coins: prev.coins + 300,
@@ -2117,6 +3083,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     // 👑 3. 전설의 황금 왕관 매각 (1,000 코인 획득)
     if (item.id === 'gold_crown') {
+      if (!window.confirm('👑 [전설의 황금 왕관]은 매우 귀중한 전설의 보물입니다!\n정말로 사내 역사관에 기증하고 1,000 코인을 받으시겠습니까?')) {
+        return;
+      }
       setFarmState(prev => ({
         ...prev,
         coins: prev.coins + 1000,
@@ -3054,36 +4023,133 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
 
 
-  // 9. 온보딩 완료 처리 (농장 설립 & 첫 파트너 포켓몬 분양)
-  const handleCompleteOnboarding = () => {
-    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
-    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
-    const cleanOwner = initOwnerName.trim() || username || '지우';
-    const cleanFarm = initFarmName.trim() || `${cleanOwner}의 포켓농장`;
-
-    localStorage.setItem('pokefarm_saved_owner', cleanOwner);
-
-    const newFarmState: FarmState = {
-      ...farmState,
-      ownerName: cleanOwner,
-      farmName: cleanFarm,
-      isInitialized: true,
-      activePokemon: newMon
-    };
-
-    saveFarmState(newFarmState);
-
-    if (socket && socket.connected) {
-      socket.emit('farm-sync', { username: cleanOwner, farmData: newFarmState });
+  // 🔐 1. 기존 농장 로그인 제출
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    const cleanUser = loginUsername.trim();
+    if (!cleanUser) {
+      setLoginError('농장 아이디(닉네임)를 입력해주세요.');
+      return;
+    }
+    if (!socket || !socket.connected) {
+      setLoginError('서버에 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      return;
     }
 
-    setFarmState(newFarmState);
-
-    playPokemonCry(newMon.speciesId);
-    showAlert(`🎉 [${cleanFarm}]이 정식 개장되었습니다! 첫 파트너 [${newMon.name}]과(와) 함께 사랑으로 키워보세요!`, 'success');
+    setIsLoggingIn(true);
+    socket.emit('farm-login', {
+      username: cleanUser,
+      password: loginPassword
+    });
   };
 
-  // 🐣 만약 아직 농장이 설립되지 않았다면 온보딩 2단계 위저드 표시
+  // 🔐 2. 신규 농장 개설 1단계 -> 2단계
+  const handleRegisterNextStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError('');
+    const cleanUser = registerUsername.trim();
+    if (!cleanUser || cleanUser.length < 2) {
+      setRegisterError('농장주 닉네임(아이디)은 최소 2자 이상 입력해주세요.');
+      return;
+    }
+    if (cleanUser.length > 30) {
+      setRegisterError('아이디는 30자 이하로 입력해주세요.');
+      return;
+    }
+    if (!registerPassword || registerPassword.length < 4) {
+      setRegisterError('비밀번호는 최소 4자 이상이어야 합니다.');
+      return;
+    }
+    if (registerPassword !== registerPasswordConfirm) {
+      setRegisterError('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    setOnboardingStep('starter');
+  };
+
+  // 🔐 3. 신규 농장 개설 최종 완료 처리 (회원가입 & 첫 파트너 포켓몬 분양)
+  const handleCompleteRegistration = () => {
+    const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
+    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
+    const cleanOwner = registerUsername.trim();
+    const cleanFarm = registerFarmName.trim() || `${cleanOwner}님의 포켓농장`;
+
+    if (!socket || !socket.connected) {
+      showAlert('서버와 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warn');
+      return;
+    }
+
+    setIsRegistering(true);
+    socket.emit('farm-register', {
+      username: cleanOwner,
+      password: registerPassword,
+      farmData: {
+        farmName: cleanFarm,
+        activePokemon: newMon,
+        reservePokemon: [],
+        graduatedPokemon: [],
+        graduatedCount: 0,
+        heartsCount: 0,
+        coins: 1500,
+        inventory: { oran_berry: 5, mild_soap: 3, toy_ball: 2 },
+        bgTheme: 'classic',
+        stickers: [
+          { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20, type: 'sticker', scale: 1 },
+          { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15, type: 'sticker', scale: 1 },
+          { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75, type: 'sticker', scale: 1 },
+          { id: 'stk_init_4', stickerId: 'txt_welcome', text: '두부월드에 오신 것을 환영해요! ✨', label: '환영 말풍선', x: 28, y: 18, type: 'bubble', styleType: 'classic_bubble', scale: 1 }
+        ],
+        pokemonPlacements: {},
+        statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
+        bgmSong: '프리스타일 - Y (Feat. 지선)'
+      }
+    });
+  };
+
+  // 🔐 4. 비밀번호 변경 제출
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordError('');
+    if (!newPassword || newPassword.length < 4) {
+      setChangePasswordError('새 비밀번호는 최소 4자 이상이어야 합니다.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setChangePasswordError('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    if (!socket || !socket.connected) {
+      setChangePasswordError('서버 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    socket.emit('farm-change-password', {
+      username: farmState.ownerName,
+      oldPassword,
+      newPassword
+    });
+  };
+
+  // 🔐 5. 농장 로그아웃
+  const handleLogout = () => {
+    setShowLogoutConfirm(false);
+    clearFarmLocalSession();
+    const blankState = getInitialFarmState('');
+    setFarmState(blankState);
+    setLoginUsername('');
+    setLoginPassword('');
+    setAuthMode('login');
+    if (onUserLogout) {
+      onUserLogout();
+    }
+    showAlert('👋 정상적으로 로그아웃되었습니다. 다른 기기에서도 아이디와 비밀번호로 언제든 다시 로그인할 수 있습니다.', 'info');
+  };
+
+  // 🐣 아직 농장에 로그인하지 않았거나 개설되지 않은 경우: 로그인 & 신규 개설 포털 표시
   if (!farmState.isInitialized) {
     const selectedChain = STARTER_CHAINS[selectedStarterIdx] || STARTER_CHAINS[0];
     const starterBaby = selectedChain[0];
@@ -3091,184 +4157,311 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     return (
       <div className="poke-farm-container dubu-modern-theme">
         <div className="farm-onboarding-wrapper">
-          <div className="onboarding-card">
-            {onboardingStep === 'name' ? (
-              /* STEP 1: 농장주 & 농장 이름 설정 */
-              <div className="onboarding-step-content">
-                <div className="onboarding-badge">STEP 1 / 2</div>
-                <div className="onboarding-icon">🏡</div>
-                <h2>포켓농장 개설 신고서</h2>
+          <div className="onboarding-card auth-card">
+            {/* 상단 모드 전환 탭 */}
+            <div className="auth-tab-switch">
+              <button
+                type="button"
+                className={`auth-mode-tab ${authMode === 'login' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('login'); setLoginError(''); }}
+              >
+                🔑 기존 농장 로그인 (기기 간 연동)
+              </button>
+              <button
+                type="button"
+                className={`auth-mode-tab ${authMode === 'register' ? 'active' : ''}`}
+                onClick={() => { setAuthMode('register'); setRegisterError(''); setOnboardingStep('name'); }}
+              >
+                🌱 새 농장 개설하기
+              </button>
+            </div>
+
+            {authMode === 'login' ? (
+              /* =============================================================
+                 1. 기존 농장 로그인 모드 (어느 기기에서든 내 농장 불러오기)
+                 ============================================================= */
+              <div className="onboarding-step-content auth-step-content">
+                <div className="onboarding-icon">🔑</div>
+                <h2>두부월드 포켓농장 로그인</h2>
                 <p className="onboarding-desc">
-                  포켓농장에 오신 것을 환영합니다!<br />
-                  먼저 농장주님의 닉네임과 농장 이름을 지어주세요.
+                  아이디와 비밀번호로 로그인하면 어느 기기에서든<br />
+                  내 소중한 포켓몬과 미니홈피, 졸업생 데이터를 그대로 불러옵니다!
                 </p>
 
-                <div className="onboarding-form">
+                {loginError && (
+                  <div className="auth-error-banner">
+                    ⚠️ {loginError}
+                  </div>
+                )}
+
+                <form onSubmit={handleLoginSubmit} className="onboarding-form">
                   <div className="onboarding-input-group">
-                    <label>👤 농장주 닉네임</label>
+                    <label>👤 농장 아이디 (닉네임)</label>
                     <input
                       type="text"
-                      value={initOwnerName}
-                      onChange={e => {
-                        setInitOwnerName(e.target.value);
-                        setInitFarmName(`${e.target.value}의 포켓농장`);
-                      }}
-                      placeholder="예: 지우"
-                      maxLength={100}
+                      value={loginUsername}
+                      onChange={e => setLoginUsername(e.target.value)}
+                      placeholder="내 농장 아이디를 입력하세요"
+                      required
+                      minLength={2}
+                      maxLength={30}
+                      autoFocus
                     />
                   </div>
 
                   <div className="onboarding-input-group">
-                    <label>🏷️ 농장 이름</label>
+                    <div className="input-label-row">
+                      <label>🔒 농장 비밀번호</label>
+                      <button
+                        type="button"
+                        className="toggle-pw-btn"
+                        onClick={() => setShowLoginPassword(prev => !prev)}
+                      >
+                        {showLoginPassword ? '🙈 숨기기' : '👁️ 보기'}
+                      </button>
+                    </div>
                     <input
-                      type="text"
-                      value={initFarmName}
-                      onChange={e => setInitFarmName(e.target.value)}
-                      placeholder="예: 지우의 힐링 포켓농장"
-                      maxLength={100}
+                      type={showLoginPassword ? 'text' : 'password'}
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
+                      placeholder="비밀번호를 입력하세요"
+                      required
                     />
                   </div>
 
-                  <div className="onboarding-restore-box" style={{ margin: '10px 0 16px', textAlign: 'center' }}>
-                    <button
-                      type="button"
-                      className="excel-btn"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: '#f0fdf4',
-                        color: '#166534',
-                        border: '1px solid #bbf7d0',
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        borderRadius: '6px'
-                      }}
-                      onClick={() => {
-                        if (!initOwnerName.trim()) {
-                          showAlert('조회할 닉네임을 먼저 입력해 주세요!', 'warn');
-                          return;
-                        }
-                        if (socket && socket.connected) {
-                          socket.emit('farm-load-my-data', { username: initOwnerName.trim() });
-                          showAlert(`🔍 [${initOwnerName.trim()}]님의 기존 농장 데이터를 서버 DB에서 조회 중입니다...`, 'info');
-                        } else {
-                          showAlert('서버와 연결되지 않았습니다. 잠시 후 다시 시도해 주세요.', 'warn');
-                        }
-                      }}
-                    >
-                      ☁️ 서버 DB에서 이전 내 농장 데이터(졸업생/포켓몬) 찾아 복원하기
-                    </button>
+                  <div className="auth-legacy-tip">
+                    💡 <span>비밀번호 도입 이전에 생성된 기존 농장은 첫 로그인 시 입력한 비밀번호가 계정 비밀번호로 자동 설정됩니다.</span>
                   </div>
 
                   <button
-                    className="excel-btn primary onboarding-next-btn"
-                    onClick={() => {
-                      if (!initOwnerName.trim()) {
-                        showAlert('농장주 이름을 입력해 주세요!', 'warn');
-                        return;
-                      }
-                      setOnboardingStep('starter');
-                    }}
+                    type="submit"
+                    className="excel-btn primary onboarding-next-btn auth-submit-btn"
+                    disabled={isLoggingIn}
                   >
-                    다음: 파트너 포켓몬 선택하기 ➔
+                    {isLoggingIn ? '🔄 농장 데이터 불러오는 중...' : '🚀 내 농장 불러오기 (로그인)'}
                   </button>
-                </div>
+
+                  <div className="auth-switch-prompt">
+                    아직 농장이 없으신가요?{' '}
+                    <button
+                      type="button"
+                      className="auth-link-btn"
+                      onClick={() => { setAuthMode('register'); setOnboardingStep('name'); }}
+                    >
+                      🌱 새 농장 개설하기 ➔
+                    </button>
+                  </div>
+                </form>
               </div>
             ) : (
-              /* STEP 2: 첫 번째 스타팅 포켓몬 선택 */
-              <div className="onboarding-step-content">
-                <div className="onboarding-badge">STEP 2 / 2</div>
-                <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
-                <p className="onboarding-desc">
-                  함께할 첫 아기 포켓몬을 선택하세요! (※ 가라르/알로라/히스이 등 지방 리전폼 및 전설/환상 포켓몬은 분양받을 수 없으며, 상점의 [🌟 전설 & 특수 포켓몬 알]을 통해서만 부화시킬 수 있습니다)
-                </p>
+              /* =============================================================
+                 2. 새 농장 개설하기 모드 (회원가입 + 스타팅 분양)
+                 ============================================================= */
+              onboardingStep === 'name' ? (
+                /* STEP 1: 농장주 닉네임, 농장 이름, 비밀번호 설정 */
+                <div className="onboarding-step-content auth-step-content">
+                  <div className="onboarding-badge">STEP 1 / 2</div>
+                  <div className="onboarding-icon">🏡</div>
+                  <h2>포켓농장 개설 신고서</h2>
+                  <p className="onboarding-desc">
+                    포켓농장에 오신 것을 환영합니다!<br />
+                    농장주님의 닉네임과 다른 기기에서도 로그인할 비밀번호를 설정해주세요.
+                  </p>
 
-                {/* Selected Preview Box */}
-                <div className="selected-starter-preview-banner">
-                  <img src={starterBaby.showdownSprite || starterBaby.sprite} alt={starterBaby.name} className="preview-sprite" />
-                  <div className="preview-text">
-                    <h3>{starterBaby.name}</h3>
-                    <span className="types-text">타입: {starterBaby.types.join('/')}</span>
-                    <span className="evolution-text">진화: {selectedChain.map(c => c.name).join(' ➔ ')}</span>
-                  </div>
-                </div>
+                  {registerError && (
+                    <div className="auth-error-banner">
+                      ⚠️ {registerError}
+                    </div>
+                  )}
 
-                {/* Generation Filter Chips - 1세대 독립 및 세대별 묶음 */}
-                <div className="gen-filter-chips">
-                  {[
-                    { id: 'all', label: '🌟 전체 스타팅 (29종)' },
-                    { id: 'gen1', label: '🔴 1세대 (5종)' },
-                    { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
-                    { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
-                    { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
-                    { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
-                  ].map(f => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
-                      onClick={() => setGenFilter(f.id as typeof genFilter)}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
+                  <form onSubmit={handleRegisterNextStep} className="onboarding-form">
+                    <div className="onboarding-input-group">
+                      <label>👤 농장주 닉네임 (로그인 아이디)</label>
+                      <input
+                        type="text"
+                        value={registerUsername}
+                        onChange={e => {
+                          setRegisterUsername(e.target.value);
+                          if (!registerFarmName || registerFarmName.includes('포켓농장')) {
+                            setRegisterFarmName(`${e.target.value}님의 포켓농장`);
+                          }
+                        }}
+                        placeholder="예: 지우"
+                        required
+                        minLength={2}
+                        maxLength={30}
+                        autoFocus
+                      />
+                    </div>
 
-                {/* Starter Picker Grid - 오직 스타팅 포켓몬만 분양 */}
-                <div className="onboarding-starter-grid">
-                  {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
-                    .filter(({ chain }) => {
-                      if (!chain[0].isStarter) return false;
-                      if (genFilter === 'all') return true;
-                      return chain[0].genCategory === genFilter;
-                    })
-                    .map(({ chain, originalIdx }) => {
-                      const baby = chain[0];
-                      const isSelected = originalIdx === selectedStarterIdx;
-                      return (
-                        <div
-                          key={baby.id}
-                          className={`onboarding-starter-chip ${isSelected ? 'selected' : ''}`}
-                          onClick={() => {
-                            setSelectedStarterIdx(originalIdx);
-                            playPokemonCry(baby.id);
-                          }}
+                    <div className="onboarding-input-group">
+                      <label>🏷️ 농장 이름</label>
+                      <input
+                        type="text"
+                        value={registerFarmName}
+                        onChange={e => setRegisterFarmName(e.target.value)}
+                        placeholder="예: 지우의 힐링 포켓농장"
+                        maxLength={50}
+                      />
+                    </div>
+
+                    <div className="onboarding-input-group">
+                      <div className="input-label-row">
+                        <label>🔒 계정 비밀번호 (최소 4자)</label>
+                        <button
+                          type="button"
+                          className="toggle-pw-btn"
+                          onClick={() => setShowRegisterPassword(prev => !prev)}
                         >
-                          <img src={baby.sprite} alt={baby.name} />
-                          <span>{baby.name}</span>
+                          {showRegisterPassword ? '🙈 숨기기' : '👁️ 보기'}
+                        </button>
+                      </div>
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={registerPassword}
+                        onChange={e => setRegisterPassword(e.target.value)}
+                        placeholder="4자 이상 비밀번호 입력"
+                        required
+                        minLength={4}
+                      />
+                    </div>
+
+                    <div className="onboarding-input-group">
+                      <label>🔒 비밀번호 확인</label>
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={registerPasswordConfirm}
+                        onChange={e => setRegisterPasswordConfirm(e.target.value)}
+                        placeholder="비밀번호 다시 입력"
+                        required
+                        minLength={4}
+                      />
+                      {registerPassword && registerPasswordConfirm && (
+                        <div className={`pw-match-badge ${registerPassword === registerPasswordConfirm ? 'match' : 'mismatch'}`}>
+                          {registerPassword === registerPasswordConfirm ? '✅ 비밀번호가 일치합니다' : '❌ 비밀번호가 일치하지 않습니다'}
                         </div>
-                      );
-                    })}
-                </div>
+                      )}
+                    </div>
 
-                {/* Nickname Input & Welcome Bonus Info */}
-                <div className="onboarding-extra-section">
-                  <div className="onboarding-input-group">
-                    <label>✨ 포켓몬 닉네임 (선택 사항)</label>
-                    <input
-                      type="text"
-                      value={starterNickname}
-                      onChange={e => setStarterNickname(e.target.value)}
-                      placeholder={`기본값: ${starterBaby.name}`}
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="welcome-bonus-box">
-                    <strong>🎁 웰컴 스타터 개장 지원금:</strong>
-                    <span>🪙 500 코인 + 🫐 오랭열매 5개 + 🧼 거품비누 3개 + ⚽ 장난감 2개</span>
-                  </div>
-
-                  <div className="onboarding-actions-row">
-                    <button className="excel-btn" onClick={() => setOnboardingStep('name')}>
-                      ◀ 이전 단계
+                    <button
+                      type="submit"
+                      className="excel-btn primary onboarding-next-btn"
+                    >
+                      다음: 파트너 포켓몬 선택하기 ➔
                     </button>
-                    <button className="excel-btn primary onboarding-finish-btn" onClick={handleCompleteOnboarding}>
-                      🎉 포켓농장 정식 개장하기!
-                    </button>
+
+                    <div className="auth-switch-prompt">
+                      이미 농장 계정이 있으신가요?{' '}
+                      <button
+                        type="button"
+                        className="auth-link-btn"
+                        onClick={() => { setAuthMode('login'); }}
+                      >
+                        🔑 기존 농장 로그인 ➔
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                /* STEP 2: 첫 번째 스타팅 포켓몬 선택 & 개장 */
+                <div className="onboarding-step-content">
+                  <div className="onboarding-badge">STEP 2 / 2</div>
+                  <h2>🐣 첫 번째 파트너 포켓몬 선택</h2>
+                  <p className="onboarding-desc">
+                    함께할 첫 아기 포켓몬을 선택하세요! (※ 가라르/알로라/히스이 등 지방 리전폼 및 전설/환상 포켓몬은 분양받을 수 없으며, 상점의 [🌟 전설 & 특수 포켓몬 알]을 통해서만 부화시킬 수 있습니다)
+                  </p>
+
+                  {/* Selected Preview Box */}
+                  <div className="selected-starter-preview-banner">
+                    <img src={starterBaby.showdownSprite || starterBaby.sprite} alt={starterBaby.name} className="preview-sprite" />
+                    <div className="preview-text">
+                      <h3>{starterBaby.name}</h3>
+                      <span className="types-text">타입: {starterBaby.types.join('/')}</span>
+                      <span className="evolution-text">진화: {selectedChain.map(c => c.name).join(' ➔ ')}</span>
+                    </div>
+                  </div>
+
+                  {/* Generation Filter Chips */}
+                  <div className="gen-filter-chips">
+                    {[
+                      { id: 'all', label: '🌟 전체 스타팅 (29종)' },
+                      { id: 'gen1', label: '🔴 1세대 (5종)' },
+                      { id: 'gen2-3', label: '🌿 2~3세대 (6종)' },
+                      { id: 'gen4-5', label: '⚡ 4~5세대 (6종)' },
+                      { id: 'gen6-7', label: '✨ 6~7세대 (6종)' },
+                      { id: 'gen8-9', label: '🔮 8~9세대 (6종)' }
+                    ].map(f => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        className={`gen-chip ${genFilter === f.id ? 'active' : ''}`}
+                        onClick={() => setGenFilter(f.id as typeof genFilter)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Starter Picker Grid */}
+                  <div className="onboarding-starter-grid">
+                    {STARTER_CHAINS.map((chain, idx) => ({ chain, originalIdx: idx }))
+                      .filter(({ chain }) => {
+                        if (!chain[0].isStarter) return false;
+                        if (genFilter === 'all') return true;
+                        return chain[0].genCategory === genFilter;
+                      })
+                      .map(({ chain, originalIdx }) => {
+                        const baby = chain[0];
+                        const isSelected = originalIdx === selectedStarterIdx;
+                        return (
+                          <div
+                            key={baby.id}
+                            className={`onboarding-starter-chip ${isSelected ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedStarterIdx(originalIdx);
+                              playPokemonCry(baby.id);
+                            }}
+                          >
+                            <img src={baby.sprite} alt={baby.name} />
+                            <span>{baby.name}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Nickname Input & Welcome Bonus Info */}
+                  <div className="onboarding-extra-section">
+                    <div className="onboarding-input-group">
+                      <label>✨ 포켓몬 닉네임 (선택 사항)</label>
+                      <input
+                        type="text"
+                        value={starterNickname}
+                        onChange={e => setStarterNickname(e.target.value)}
+                        placeholder={`기본값: ${starterBaby.name}`}
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="welcome-bonus-box">
+                      <strong>🎁 웰컴 스타터 개장 지원금:</strong>
+                      <span>🪙 1,500 코인 + 🫐 오랭열매 5개 + 🧼 거품비누 3개 + ⚽ 장난감 2개</span>
+                    </div>
+
+                    <div className="onboarding-actions-row">
+                      <button className="excel-btn" onClick={() => setOnboardingStep('name')}>
+                        ◀ 이전 단계
+                      </button>
+                      <button
+                        className="excel-btn primary onboarding-finish-btn"
+                        onClick={handleCompleteRegistration}
+                        disabled={isRegistering}
+                      >
+                        {isRegistering ? '🔄 농장 개설 중...' : '🎉 포켓농장 정식 개장하기!'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
@@ -3276,40 +4469,236 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     );
   }
 
-  // 👥 모든 농장(내 농장 포함) 하트 랭킹 계산
-  const allFarmsRanked: NeighborFarmData[] = React.useMemo(() => {
-    const map = new Map<string, NeighborFarmData>();
+  // 📖 포켓몬 졸업 도감 렌더링 헬퍼 (내 도감 & 이웃 도감 공용)
+  const renderPokedexContent = (graduatedList: GraduationDiploma[], ownerTitle: string, isNeighbor: boolean = false) => {
+    const pokedexList = getAllPokedexEntries();
+    const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
 
-    // 1. 이웃 목록 추가
-    neighborList.forEach(n => {
-      if (n.username) map.set(n.username, n);
+    (graduatedList || []).forEach(dip => {
+      const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
+      existing.count += 1;
+      if (dip.isShiny) existing.shinyCount += 1;
+      if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
+      if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
+      gradStats.set(dip.speciesId, existing);
     });
 
-    // 2. 내 농장도 랭킹 산정에 포함 (내 하트수 반영)
-    if (farmState.isInitialized && farmState.ownerName) {
-      map.set(farmState.ownerName, {
-        username: farmState.ownerName,
-        farmName: farmState.farmName || `${farmState.ownerName}님의 포켓농장`,
-        activePokemon: farmState.activePokemon || null,
-        reservePokemon: farmState.reservePokemon || [],
-        graduatedPokemon: farmState.graduatedPokemon || [],
-        graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
-        heartsCount: farmState.heartsCount || 0,
-        bgTheme: farmState.bgTheme || 'classic',
-        stickers: farmState.stickers || [],
-        pokemonPlacements: farmState.pokemonPlacements || {},
-        statusMsg: farmState.statusMsg || '',
-        todayCount: farmState.todayCount || 0,
-        totalCount: farmState.totalCount || 0,
-        isOnline: true
-      });
+    const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
+    const totalSpeciesCount = pokedexList.length;
+    const totalGradCount = graduatedList?.length || 0;
+    const shinyGradCount = graduatedList?.filter(d => d.isShiny).length || 0;
+    const completionPct = totalSpeciesCount > 0 ? Math.round((unlockedCount / totalSpeciesCount) * 100) : 0;
+
+    let filteredPokedex = pokedexList;
+    if (pokedexFilter === 'unlocked') {
+      filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
+    } else if (pokedexFilter === 'locked') {
+      filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
+    } else if (pokedexFilter === 'shiny') {
+      filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
     }
 
-    return Array.from(map.values()).sort((a, b) => (b.heartsCount || 0) - (a.heartsCount || 0));
-  }, [neighborList, farmState]);
+    return (
+      <div className="farm-pokedex-layout">
+        {/* Header Banner & Sub View Switcher */}
+        <div className="pokedex-top-banner">
+          <div className="pokedex-banner-title">
+            <div className="pokedex-book-icon">📖</div>
+            <div>
+              <h3>{isNeighbor ? `[${ownerTitle}]님의 포켓몬 졸업 도감` : '포켓농장 공식 졸업 도감 (Official Pokedex)'}</h3>
+              <p>
+                {isNeighbor
+                  ? `[${ownerTitle}]님이 정성으로 키워 졸업시킨 포켓몬 컬렉션과 명예의 전당입니다.`
+                  : '정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.'}
+              </p>
+            </div>
+          </div>
 
-  // 🏆 실시간 인기 포켓농장 TOP 3 (내 농장도 하트가 높으면 1, 2, 3위에 당당히 표시!)
-  const top3RealFarms = allFarmsRanked.slice(0, 3);
+          <div className="pokedex-view-tabs">
+            <button
+              className={`pokedex-subtab-btn ${pokedexSubView === 'pokedex' ? 'active' : ''}`}
+              onClick={() => setPokedexSubView('pokedex')}
+            >
+              📖 완성 도감 ({unlockedCount}/{totalSpeciesCount})
+            </button>
+            <button
+              className={`pokedex-subtab-btn ${pokedexSubView === 'diplomas' ? 'active' : ''}`}
+              onClick={() => setPokedexSubView('diplomas')}
+            >
+              📜 졸업 증서 앨범 ({totalGradCount}장)
+            </button>
+          </div>
+        </div>
+
+        {pokedexSubView === 'pokedex' ? (
+          <>
+            {/* Progress & KPI Ribbon */}
+            <div className="pokedex-stats-bar">
+              <div className="pokedex-kpi-col">
+                <span className="pokedex-kpi-label">도감 등록률</span>
+                <span className="pokedex-kpi-val">{completionPct}% ({unlockedCount}/{totalSpeciesCount}종)</span>
+              </div>
+              <div className="pokedex-bar-wrap">
+                <div className="pokedex-bar-fill" style={{ width: `${completionPct}%` }} />
+              </div>
+              <div className="pokedex-kpi-tags">
+                <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
+                <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
+              </div>
+            </div>
+
+            {/* Filter Chips */}
+            <div className="pokedex-filter-bar">
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('all')}
+              >
+                전체 ({totalSpeciesCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('unlocked')}
+              >
+                🌟 등록 완료 ({unlockedCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'locked' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('locked')}
+              >
+                🔒 미등록 ({totalSpeciesCount - unlockedCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('shiny')}
+              >
+                ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
+              </button>
+            </div>
+
+            {/* 33종 도감 카드 그리드 */}
+            <div className="pokedex-grid">
+              {filteredPokedex.map(mon => {
+                const stat = gradStats.get(mon.speciesId);
+                const isUnlocked = !!stat;
+                const hasShiny = (stat?.shinyCount || 0) > 0;
+                const isHovered = pokedexHoverId === mon.speciesId;
+
+                return (
+                  <div
+                    key={mon.speciesId}
+                    className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
+                    onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
+                    onMouseLeave={() => setPokedexHoverId(null)}
+                  >
+                    <div className="pokedex-card-header">
+                      <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
+                      {isUnlocked ? (
+                        <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
+                      ) : (
+                        <span className="pokedex-locked-label">🔒 미등록</span>
+                      )}
+                    </div>
+
+                    <div className="pokedex-img-pod">
+                      <img
+                        src={isUnlocked ? (mon.showdownSprite || mon.sprite) : mon.sprite}
+                        alt={isUnlocked ? mon.name : '미해금'}
+                        className={`pokedex-sprite-img ${!isUnlocked ? 'silhouette-img' : ''}`}
+                      />
+                      {hasShiny && (
+                        <span className="pokedex-shiny-ribbon">✨ SHINY</span>
+                      )}
+                    </div>
+
+                    <div className="pokedex-card-footer">
+                      <h4 className="pokedex-mon-name">
+                        {isUnlocked ? mon.name : '???'}
+                      </h4>
+                      <div className="pokedex-types-row">
+                        {isUnlocked ? (
+                          mon.types.map(t => (
+                            <span key={t} className={`type-tag ${t}`}>{t}</span>
+                          ))
+                        ) : (
+                          <span className="type-tag locked-tag">미확인</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 호버 상세 정보 카드 */}
+                    {isHovered && (
+                      <div className="pokedex-hover-card">
+                        {isUnlocked ? (
+                          <div className="pokedex-hover-body">
+                            <div className="hover-mon-name">
+                              {mon.name} {hasShiny && '✨'}
+                            </div>
+                            <div className="hover-row grad-highlight">
+                              🎓 <b>졸업 횟수: {stat.count}회</b>
+                            </div>
+                            {stat.shinyCount > 0 && (
+                              <div className="hover-row shiny-highlight">
+                                ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
+                              </div>
+                            )}
+                            <div className="hover-row">
+                              ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
+                            </div>
+                            <div className="hover-row date">
+                              📅 최초 졸업: {stat.firstDate}
+                            </div>
+                            {stat.nicknames.length > 0 && (
+                              <div className="hover-row nicknames">
+                                애칭: {stat.nicknames.slice(0, 2).join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="pokedex-hover-body locked">
+                            <div className="hover-locked-title">🔒 미해금 포켓몬</div>
+                            <p>
+                              {isNeighbor
+                                ? `[${ownerTitle}]님이 아직 졸업시키지 않은 포켓몬입니다.`
+                                : '아직 졸업한 기록이 없습니다. Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          /* 📜 졸업 증서 앨범 뷰 */
+          <div className="pokedex-diplomas-view">
+            {(graduatedList || []).length > 0 ? (
+              <div className="diplomas-grid">
+                {(graduatedList || []).map(dip => (
+                  <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
+                    <div className="diploma-cap-icon">🎓</div>
+                    <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
+                    <h4>{dip.nickname} {dip.isShiny && '✨'}</h4>
+                    <span className="diploma-title">{dip.title}</span>
+                    <span className="diploma-date">{dip.graduatedAt} 졸업</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-yard-card">
+                <p>
+                  {isNeighbor
+                    ? `[${ownerTitle}]님이 아직 졸업시킨 포켓몬이 없습니다.`
+                    : '아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderNeighborsView = () => (
     <div className="farm-social-layout">
@@ -3396,6 +4785,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       onClick={() => {
                         setVisitingFarm(null);
                         setActiveTab('minihome');
+                        setMinihompyTab('home');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                     >
                       🏡 내 미니홈피 관리 ➔
@@ -3405,8 +4796,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       type="button"
                       className="sheet1-visit-btn"
                       onClick={() => handleVisitNeighbor(farm.username)}
+                      title={`${farm.farmName} 미니홈피 놀러가기`}
                     >
-                      🏠 미니홈피 파도타기 ➔
+                      🚀 홈피 놀러가기 ➔
                     </button>
                   )}
                 </div>
@@ -3488,8 +4880,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     <button
                       className="neighbor-visit-action-btn"
                       onClick={() => handleVisitNeighbor(neighbor.username)}
+                      title={`${neighbor.farmName || neighbor.username} 미니홈피 놀러가기`}
                     >
-                      파도타기 ➔
+                      놀러가기 ➔
                     </button>
                   </div>
                 </div>
@@ -3549,9 +4942,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           <span className="kpi-chip coins">🪙 {farmState.coins.toLocaleString()} P</span>
           <span className="kpi-chip hearts">💖 {farmState.heartsCount} 하트</span>
           <span className="kpi-chip diplomas">🎓 {farmState.graduatedPokemon.length}마리 졸업</span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowChangePasswordModal(true);
+              setOldPassword('');
+              setNewPassword('');
+              setNewPasswordConfirm('');
+              setChangePasswordError('');
+            }}
+            className="excel-btn farm-auth-btn"
+            title="농장 비밀번호 변경"
+          >
+            🔒 비밀번호 변경
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLogoutConfirm(true)}
+            className="excel-btn farm-auth-btn logout"
+            title="농장 로그아웃 및 계정 전환"
+          >
+            🚪 로그아웃
+          </button>
           {onLeaveRoom && (
             <button onClick={onLeaveRoom} className="excel-btn close" style={{ marginLeft: 6 }}>
-              🚪 메인으로
+              🏠 메인으로
             </button>
           )}
         </div>
@@ -3741,8 +5156,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         </button>
                       )}
                     </div>
-                    <div className="detail-item">
-                      <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리</b>
+                    <div
+                      className="detail-item clickable-diploma"
+                      onClick={() => setMinihompyTab('pokedex')}
+                      title="클릭하여 완성 도감 구경하기"
+                    >
+                      <span>🎓 총 졸업:</span> <b>{displayGraduatedCount}마리 ➔</b>
                     </div>
                     <div className="detail-item hearts">
                       <span>💖 1촌 하트:</span> <b className="heart-num">{displayHeartsCount}개</b>
@@ -3791,20 +5210,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       🖼️ 미니룸 (Miniroom)
                     </button>
                     <button
+                      className={`cytab ${minihompyTab === 'pokedex' ? 'active' : ''}`}
+                      onClick={() => setMinihompyTab('pokedex')}
+                    >
+                      📖 {visitingFarm ? `${displayOwnerName}의 도감` : '완성 도감'} ({displayGraduatedCount})
+                    </button>
+                    <button
                       className={`cytab ${minihompyTab === 'guestbook' ? 'active' : ''}`}
                       onClick={() => setMinihompyTab('guestbook')}
                     >
                       📝 방명록 ({displayGuestbook.length})
                     </button>
-                    <button
-                      className={`cytab ${minihompyTab === 'stickers' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('stickers')}
-                    >
-                      🎨 스티커 꾸미기
-                    </button>
+                    {!visitingFarm && (
+                      <button
+                        className={`cytab ${minihompyTab === 'stickers' ? 'active' : ''}`}
+                        onClick={() => setMinihompyTab('stickers')}
+                      >
+                        🎨 스티커 꾸미기
+                      </button>
+                    )}
                     <button
                       className={`cytab neighbors-tab ${minihompyTab === 'neighbors' ? 'active' : ''}`}
-                      onClick={() => setMinihompyTab('neighbors')}
+                      onClick={() => {
+                        setMinihompyTab('neighbors');
+                        refreshNeighbors();
+                      }}
                     >
                       ✨ 👥 이웃 파도타기
                     </button>
@@ -3822,6 +5252,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       <div className="miniroom-preview-box" onClick={() => setMinihompyTab('stickers')}>
                         <div className="preview-label">🖼️ 클릭하여 스티커 & 방 꾸미기 ➔</div>
                         {renderMiniroomCanvas({ compact: false })}
+                      </div>
+
+                      {/* 📖 포켓몬 졸업 도감 바로가기 프리뷰 위젯 */}
+                      <div className="pokedex-home-preview-widget" onClick={() => setMinihompyTab('pokedex')}>
+                        <div className="pokedex-preview-header">
+                          <div className="pokedex-preview-title">
+                            <span className="pokedex-preview-icon">📖</span>
+                            <div>
+                              <strong>{visitingFarm ? `[${displayOwnerName}]님의 포켓몬 완성 도감` : '내 포켓농장 공식 졸업 도감'}</strong>
+                              <span>총 {displayGraduatedCount}마리 졸업 완성 • 도감 및 증서 앨범 구경하기 ➔</span>
+                            </div>
+                          </div>
+                          <span className="pokedex-go-btn">도감 열기 ➔</span>
+                        </div>
                       </div>
 
                       {/* 최근 방명록 프리뷰 */}
@@ -3885,6 +5329,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                       </div>
 
                       {renderMiniroomCanvas({ compact: false })}
+                    </div>
+                  )}
+
+                  {/* 3. 📖 포켓몬 완성 도감 뷰 (내 도감 또는 이웃이 완성한 도감) */}
+                  {minihompyTab === 'pokedex' && (
+                    <div className="cytab-content pokedex-view">
+                      {renderPokedexContent(displayGraduatedPokemons, displayOwnerName, !!visitingFarm)}
                     </div>
                   )}
 
@@ -4002,11 +5453,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                               <div key={fx.id} className="skill-fx-card">
                                 <div className="skill-fx-preview-box" style={{ background: `radial-gradient(circle, ${fx.previewColor}33 0%, rgba(15,23,42,0.8) 80%)` }}>
                                   <div className={`skill-fx-display preview-mini ${fx.fxClass}`}>
-                                    <div className="skill-fx-core" />
-                                    <div className="skill-fx-wave" />
-                                    <div className="skill-fx-aura" />
-                                    <div className="skill-fx-sparks" />
-                                    <span className="skill-fx-symbol">{fx.icon}</span>
+                                    {renderSkillStreamFx(fx.fxClass, fx.icon)}
                                   </div>
                                 </div>
                                 <div className="skill-fx-card-info">
@@ -4507,6 +5954,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 {/* 🌿 Interactive Farm Pasture Screen */}
                 <div className="farm-pasture-screen" onClick={handlePetPokemon}>
                   <div className="pasture-clouds">☁️ ☀️ ☁️</div>
+
+                  {/* 🔊 쓰다듬기 효과음 켜기/끄기 플로팅 버튼 */}
+                  <div className="pasture-top-controls">
+                    <button
+                      className={`pasture-sound-toggle-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                      onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                      title={isPetSoundEnabled ? '쓰다듬기 효과음 끄기 (현재 소리 켜짐)' : '쓰다듬기 효과음 켜기 (현재 무음)'}
+                    >
+                      {isPetSoundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+                      <span>쓰다듬기 소리 {isPetSoundEnabled ? 'ON' : 'OFF'}</span>
+                    </button>
+                  </div>
+
                   <div className="pasture-ground">
                     {/* Pokémon Visual Sprite & Skill FX */}
                     <div className="farm-pokemon-stage">
@@ -4531,6 +5991,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         </div>
                       )}
 
+                      {/* 💥 실시간 방출형 고유스킬 스트림 (sill-example.png 스타일) */}
+                      {petSkillEffect && (
+                        <div className="pasture-live-skill-stream">
+                          {renderSkillStreamFx(petSkillEffect.fxClass || 'skill-fx-fireblast', petSkillEffect.icon)}
+                        </div>
+                      )}
+
                       <img
                         src={pmon.sprites.showdownFront || pmon.sprites.front}
                         alt={pmon.nickname}
@@ -4542,6 +6009,34 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                         <button className="cry-btn" onClick={(e) => { e.stopPropagation(); playPokemonCry(pmon.speciesId); }} title="울음소리 듣기">
                           <Volume2 size={13} />
                         </button>
+                        <button
+                          className={`pet-mute-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                          onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                          title={isPetSoundEnabled ? '쓰다듬기 효과음 끄기' : '쓰다듬기 효과음 켜기'}
+                        >
+                          {isPetSoundEnabled ? <Volume2 size={11} /> : <VolumeX size={11} />}
+                          <span>{isPetSoundEnabled ? '소리 ON' : '소리 OFF'}</span>
+                        </button>
+                      </div>
+
+                      {/* ⚡ 포켓몬 고유스킬 3선 컨트롤러 (최대 3개 스킬 직접 발동) */}
+                      <div className="pasture-skills-controller">
+                        <div className="skills-btn-group">
+                          {getPokemonSkillSet(pmon).map(sk => (
+                            <button
+                              key={sk.slot}
+                              className={`skill-slot-btn ${selectedSkillSlot === sk.slot ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTriggerSkillSlot(sk);
+                              }}
+                              title={sk.desc}
+                            >
+                              <span className="sk-icon">{sk.icon}</span>
+                              <span className="sk-name">{sk.slot}. {sk.name}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -4554,7 +6049,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                   )}
 
                   <div className="pasture-touch-hint">
-                    💡 포켓몬을 클릭하거나 키보드 <b>[C]</b> 키를 누르면 고유 스킬 모션과 함께 애정도(+5) 및 경험치가 상승합니다!
+                    <span>💡 포켓몬을 클릭하거나 키보드 <b>[C]</b> 키를 누르면 고유 스킬 모션과 함께 애정도(+5) 및 경험치가 상승합니다!</span>
+                    <button
+                      className={`pasture-hint-sound-btn ${isPetSoundEnabled ? 'active' : 'muted'}`}
+                      onClick={(e) => { e.stopPropagation(); togglePetSound(); }}
+                      title="쓰다듬을 때 효과음 켜기/끄기"
+                    >
+                      {isPetSoundEnabled ? '🔊 효과음 ON' : '🔇 효과음 OFF'}
+                    </button>
                   </div>
                 </div>
 
@@ -4667,17 +6169,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                     <div className="inventory-chips-row">
                       {FARM_ITEMS.map(item => {
                         const qty = farmState.inventory[item.id] || 0;
+                        const isTreasure = item.id === 'shiny_stone' || item.id === 'gold_crown';
+                        const isEgg = item.id === 'mystery_egg' || item.id === 'golden_egg';
                         return (
                           <button
                             key={item.id}
-                            className={`care-item-btn ${qty > 0 ? 'available' : 'empty'}`}
+                            className={`care-item-btn ${qty > 0 ? 'available' : 'empty'} ${isTreasure ? 'treasure-item' : ''}`}
                             onClick={() => handleUseItem(item)}
                             disabled={qty <= 0}
-                            title={`${item.description} (보유: ${qty}개)`}
+                            title={
+                              isTreasure
+                                ? `💰 ${item.name} (보유: ${qty}개) - 클릭 시 코인으로 환전/기증`
+                                : isEgg
+                                ? `🥚 ${item.name} (보유: ${qty}개) - 클릭 시 인큐베이터 입고`
+                                : `${item.description} (보유: ${qty}개)`
+                            }
                           >
                             <span className="item-icon">{item.icon}</span>
                             <span className="item-name">{item.name}</span>
                             <span className="item-qty">x{qty}</span>
+                            {isTreasure && qty > 0 && (
+                              <span style={{ fontSize: '0.62rem', background: '#eab308', color: '#1e293b', borderRadius: '4px', padding: '0 3px', fontWeight: 800, marginLeft: 2 }}>
+                                환전
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -5541,223 +7056,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
         {/* =========================================================================
             TAB 6: 📖 포켓몬 졸업 도감 & 명예의 전당 (Pokedex & Diplomas)
            ========================================================================= */}
-        {activeTab === 'diplomas' && !visitingFarm && (() => {
-          const pokedexList = getAllPokedexEntries();
-          const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
-
-          (farmState.graduatedPokemon || []).forEach(dip => {
-            const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
-            existing.count += 1;
-            if (dip.isShiny) existing.shinyCount += 1;
-            if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
-            if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
-            gradStats.set(dip.speciesId, existing);
-          });
-
-          const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
-          const totalSpeciesCount = pokedexList.length;
-          const totalGradCount = farmState.graduatedPokemon?.length || 0;
-          const shinyGradCount = farmState.graduatedPokemon?.filter(d => d.isShiny).length || 0;
-          const completionPct = Math.round((unlockedCount / totalSpeciesCount) * 100);
-
-          let filteredPokedex = pokedexList;
-          if (pokedexFilter === 'unlocked') {
-            filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
-          } else if (pokedexFilter === 'locked') {
-            filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
-          } else if (pokedexFilter === 'shiny') {
-            filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
-          }
-
-          return (
-            <div className="farm-pokedex-layout">
-              {/* Header Banner & Sub View Switcher */}
-              <div className="pokedex-top-banner">
-                <div className="pokedex-banner-title">
-                  <div className="pokedex-book-icon">📖</div>
-                  <div>
-                    <h3>포켓농장 공식 졸업 도감 (Official Pokedex)</h3>
-                    <p>정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.</p>
-                  </div>
-                </div>
-
-                <div className="pokedex-view-tabs">
-                  <button
-                    className={`pokedex-subtab-btn ${pokedexSubView === 'pokedex' ? 'active' : ''}`}
-                    onClick={() => setPokedexSubView('pokedex')}
-                  >
-                    📖 완성 도감 ({unlockedCount}/{totalSpeciesCount})
-                  </button>
-                  <button
-                    className={`pokedex-subtab-btn ${pokedexSubView === 'diplomas' ? 'active' : ''}`}
-                    onClick={() => setPokedexSubView('diplomas')}
-                  >
-                    📜 졸업 증서 앨범 ({totalGradCount}장)
-                  </button>
-                </div>
-              </div>
-
-              {pokedexSubView === 'pokedex' ? (
-                <>
-                  {/* Progress & KPI Ribbon */}
-                  <div className="pokedex-stats-bar">
-                    <div className="pokedex-kpi-col">
-                      <span className="pokedex-kpi-label">도감 등록률</span>
-                      <span className="pokedex-kpi-val">{completionPct}% ({unlockedCount}/{totalSpeciesCount}종)</span>
-                    </div>
-                    <div className="pokedex-bar-wrap">
-                      <div className="pokedex-bar-fill" style={{ width: `${completionPct}%` }} />
-                    </div>
-                    <div className="pokedex-kpi-tags">
-                      <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
-                      <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
-                    </div>
-                  </div>
-
-                  {/* Filter Chips */}
-                  <div className="pokedex-filter-bar">
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'all' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('all')}
-                    >
-                      전체 ({totalSpeciesCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('unlocked')}
-                    >
-                      🌟 등록 완료 ({unlockedCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'locked' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('locked')}
-                    >
-                      🔒 미등록 ({totalSpeciesCount - unlockedCount})
-                    </button>
-                    <button
-                      className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
-                      onClick={() => setPokedexFilter('shiny')}
-                    >
-                      ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
-                    </button>
-                  </div>
-
-                  {/* 33종 도감 카드 그리드 */}
-                  <div className="pokedex-grid">
-                    {filteredPokedex.map(mon => {
-                      const stat = gradStats.get(mon.speciesId);
-                      const isUnlocked = !!stat;
-                      const hasShiny = (stat?.shinyCount || 0) > 0;
-                      const isHovered = pokedexHoverId === mon.speciesId;
-
-                      return (
-                        <div
-                          key={mon.speciesId}
-                          className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
-                          onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
-                          onMouseLeave={() => setPokedexHoverId(null)}
-                        >
-                          <div className="pokedex-card-header">
-                            <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
-                            {isUnlocked ? (
-                              <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
-                            ) : (
-                              <span className="pokedex-locked-label">🔒 미등록</span>
-                            )}
-                          </div>
-
-                          <div className="pokedex-img-pod">
-                            <img
-                              src={isUnlocked ? (mon.showdownSprite || mon.sprite) : mon.sprite}
-                              alt={isUnlocked ? mon.name : '미해금'}
-                              className={`pokedex-sprite-img ${!isUnlocked ? 'silhouette-img' : ''}`}
-                            />
-                            {hasShiny && (
-                              <span className="pokedex-shiny-ribbon">✨ SHINY</span>
-                            )}
-                          </div>
-
-                          <div className="pokedex-card-footer">
-                            <h4 className="pokedex-mon-name">
-                              {isUnlocked ? mon.name : '???'}
-                            </h4>
-                            <div className="pokedex-types-row">
-                              {isUnlocked ? (
-                                mon.types.map(t => (
-                                  <span key={t} className={`type-tag ${t}`}>{t}</span>
-                                ))
-                              ) : (
-                                <span className="type-tag locked-tag">미확인</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 🌟 마우스 호버 오버레이 (졸업시킨 횟수 및 정보 안내) */}
-                          {isHovered && (
-                            <div className="pokedex-hover-card">
-                              {isUnlocked ? (
-                                <div className="pokedex-hover-body">
-                                  <div className="hover-mon-name">
-                                    {mon.name} {hasShiny && '✨'}
-                                  </div>
-                                  <div className="hover-row grad-highlight">
-                                    🎓 <b>졸업 횟수: {stat.count}회</b>
-                                  </div>
-                                  {stat.shinyCount > 0 && (
-                                    <div className="hover-row shiny-highlight">
-                                      ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
-                                    </div>
-                                  )}
-                                  <div className="hover-row">
-                                    ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
-                                  </div>
-                                  <div className="hover-row date">
-                                    📅 최초 졸업: {stat.firstDate}
-                                  </div>
-                                  {stat.nicknames.length > 0 && (
-                                    <div className="hover-row nicknames">
-                                      애칭: {stat.nicknames.slice(0, 2).join(', ')}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="pokedex-hover-body locked">
-                                  <div className="hover-locked-title">🔒 미해금 포켓몬</div>
-                                  <p>아직 졸업한 기록이 없습니다.<br/>Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                /* 📜 기존 졸업 증서 앨범 뷰 */
-                <div className="pokedex-diplomas-view">
-                  {farmState.graduatedPokemon.length > 0 ? (
-                    <div className="diplomas-grid">
-                      {farmState.graduatedPokemon.map(dip => (
-                        <div key={dip.id} className="diploma-card" onClick={() => setSelectedDiploma(dip)}>
-                          <div className="diploma-cap-icon">🎓</div>
-                          <img src={dip.sprite} alt={dip.name} className="diploma-sprite" />
-                          <h4>{dip.nickname} {dip.isShiny && '✨'}</h4>
-                          <span className="diploma-title">{dip.title}</span>
-                          <span className="diploma-date">{dip.graduatedAt} 졸업</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="empty-yard-card">
-                      <p>아직 졸업한 포켓몬이 없습니다. 포켓몬을 끝까지 키워 멋진 졸업식을 치러보세요!</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {activeTab === 'diplomas' && (
+          renderPokedexContent(displayGraduatedPokemons, displayOwnerName, !!visitingFarm)
+        )}
 
       </div>
 
@@ -6327,7 +7628,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 </div>
 
                 <div className="cert-body">
-                  <img src={activeForm.sprite} alt={activeForm.name} className="cert-pokemon-sprite" />
+                  <img
+                    src={activeForm.sprite}
+                    alt={activeForm.name}
+                    className="cert-pokemon-sprite"
+                    onError={(e) => {
+                      e.currentTarget.src = activeForm.fallbackSprite || dip.sprite;
+                    }}
+                  />
                   <div className="cert-name-block">
                     <strong>포켓몬: {dip.nickname} ({dip.name}) {activeForm.name !== dip.name ? `[현재 외형: ${activeForm.name}]` : ''}</strong>
                     <span>육성 농장주: {dip.ownerName}</span>
@@ -6343,11 +7651,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                           return (
                             <button
                               key={st.id || sIdx}
+                              type="button"
                               className={`cert-stage-btn ${isCur ? 'active' : ''}`}
-                              onClick={() => handleSetDiplomaForm(dip.id, sIdx)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetDiplomaForm(dip.id, sIdx);
+                              }}
                               title={`${st.name} 모습으로 미니룸에 표시`}
                             >
-                              <img src={st.sprite} alt={st.name} />
+                              <img
+                                src={st.sprite}
+                                alt={st.name}
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${st.id}.png`;
+                                }}
+                              />
                               <span>{sIdx === 0 ? '🐣 기본' : sIdx === chain.length - 1 ? '👑 최종' : `⚡ ${sIdx + 1}단`}: {st.name}</span>
                             </button>
                           );
@@ -6486,6 +7804,108 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 🔒 비밀번호 변경 모달 */}
+      {showChangePasswordModal && (
+        <div className="farm-modal-overlay" onClick={() => setShowChangePasswordModal(false)}>
+          <div className="farm-modal-dialog change-pw-modal" onClick={e => e.stopPropagation()}>
+            <div className="farm-modal-header">
+              <h3>🔒 농장 비밀번호 변경</h3>
+              <button className="modal-close-btn" onClick={() => setShowChangePasswordModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleChangePasswordSubmit} className="change-pw-form">
+              <p className="modal-desc">
+                [<b>{farmState.ownerName}</b>] 농장의 새로운 비밀번호를 설정합니다.
+              </p>
+
+              {changePasswordError && (
+                <div className="auth-error-banner">⚠️ {changePasswordError}</div>
+              )}
+
+              <div className="onboarding-input-group">
+                <label>현재 비밀번호 (기존에 설정된 경우)</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={oldPassword}
+                  onChange={e => setOldPassword(e.target.value)}
+                  placeholder="현재 비밀번호 (최초 설정 시 비워두기 가능)"
+                />
+              </div>
+
+              <div className="onboarding-input-group">
+                <div className="input-label-row">
+                  <label>새 비밀번호 (최소 4자)</label>
+                  <button
+                    type="button"
+                    className="toggle-pw-btn"
+                    onClick={() => setShowChangePassword(prev => !prev)}
+                  >
+                    {showChangePassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="새 비밀번호 입력"
+                  required
+                  minLength={4}
+                />
+              </div>
+
+              <div className="onboarding-input-group">
+                <label>새 비밀번호 확인</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  value={newPasswordConfirm}
+                  onChange={e => setNewPasswordConfirm(e.target.value)}
+                  placeholder="새 비밀번호 다시 입력"
+                  required
+                  minLength={4}
+                />
+              </div>
+
+              <div className="modal-actions-row">
+                <button type="button" className="excel-btn" onClick={() => setShowChangePasswordModal(false)}>
+                  취소
+                </button>
+                <button type="submit" className="excel-btn primary" disabled={isChangingPassword}>
+                  {isChangingPassword ? '변경 중...' : '비밀번호 변경하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🚪 로그아웃 확인 모달 */}
+      {showLogoutConfirm && (
+        <div className="farm-modal-overlay" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="farm-modal-dialog logout-confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="farm-modal-header">
+              <h3>🚪 농장 로그아웃</h3>
+              <button className="modal-close-btn" onClick={() => setShowLogoutConfirm(false)}>✕</button>
+            </div>
+            <div className="logout-modal-body">
+              <div className="logout-icon">👋</div>
+              <p className="logout-confirm-text">
+                [<b>{farmState.ownerName}</b>]님의 농장에서 로그아웃하시겠습니까?
+              </p>
+              <p className="logout-sub-text">
+                농장 데이터는 서버 데이터베이스에 안전하게 영구 보관되며, 언제든지 어느 기기에서든 아이디와 비밀번호로 다시 로그인할 수 있습니다.
+              </p>
+              <div className="modal-actions-row">
+                <button type="button" className="excel-btn" onClick={() => setShowLogoutConfirm(false)}>
+                  계속 플레이하기
+                </button>
+                <button type="button" className="excel-btn close" onClick={handleLogout}>
+                  🚪 로그아웃
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

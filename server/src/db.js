@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS farms (
     username TEXT PRIMARY KEY,
     farm_name TEXT NOT NULL,
+    password_hash TEXT,
+    password_salt TEXT,
     active_pokemon TEXT,
     reserve_pokemon TEXT,
     graduated_pokemon TEXT,
@@ -79,6 +82,8 @@ db.exec(`
 `);
 
 // 🛠️ 기존 테이블 컬럼 확장 및 데이터 정합성 보정 (실제 수치 동기화)
+try { db.exec('ALTER TABLE farms ADD COLUMN password_hash TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN password_salt TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN coins INTEGER DEFAULT 1000'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN inventory TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN incubating_egg TEXT'); } catch (e) {}
@@ -160,6 +165,180 @@ function migrateFromOldJsonFiles() {
 }
 
 migrateFromOldJsonFiles();
+
+// =========================================================================
+// 🔐 비밀번호 암호화 & 인증 시스템 (Password Hashing & Auth)
+// =========================================================================
+
+export function hashPassword(password, salt = null) {
+  if (!password) return { hash: null, salt: null };
+  const useSalt = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, useSalt, 64).toString('hex');
+  return { hash, salt: useSalt };
+}
+
+export function verifyPassword(password, storedHash, storedSalt) {
+  if (!storedHash || !storedSalt || !password) return false;
+  try {
+    const { hash } = hashPassword(password, storedSalt);
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(storedHash, 'hex'));
+  } catch (e) {
+    return false;
+  }
+}
+
+// 아이디 중복 및 비밀번호 설정 여부 확인
+export function checkFarmUserExists(username) {
+  if (!username || !username.trim()) return { exists: false };
+  const cleanUser = username.trim();
+  const row = db.prepare('SELECT username, farm_name, password_hash FROM farms WHERE username = ?').get(cleanUser);
+  if (!row) return { exists: false };
+  return {
+    exists: true,
+    username: row.username,
+    farmName: row.farm_name,
+    hasPassword: !!row.password_hash
+  };
+}
+
+// 신규 농장 회원가입 & 개설
+export function registerFarmUser({ username, password, farmData = {} }) {
+  if (!username || !username.trim()) {
+    return { success: false, reason: 'invalid_username', message: '아이디(닉네임)를 입력해주세요.' };
+  }
+  const cleanUser = username.trim();
+  if (cleanUser.length < 2 || cleanUser.length > 30) {
+    return { success: false, reason: 'invalid_length', message: '아이디는 2자 이상 30자 이하이어야 합니다.' };
+  }
+  if (!password || password.length < 4) {
+    return { success: false, reason: 'invalid_password', message: '비밀번호는 최소 4자 이상이어야 합니다.' };
+  }
+
+  // 아이디 중복 검사
+  const existing = db.prepare('SELECT username FROM farms WHERE username = ?').get(cleanUser);
+  if (existing) {
+    return { success: false, reason: 'already_exists', message: '이미 존재하는 농장 아이디입니다. 기존 농장 로그인 탭에서 로그인해 주세요!' };
+  }
+
+  const { hash, salt } = hashPassword(password);
+
+  const activePokeStr = farmData.activePokemon ? JSON.stringify(farmData.activePokemon) : null;
+  const reservePokeStr = farmData.reservePokemon ? JSON.stringify(farmData.reservePokemon) : '[]';
+  const gradPokeStr = farmData.graduatedPokemon ? JSON.stringify(farmData.graduatedPokemon) : '[]';
+  const invStr = farmData.inventory ? JSON.stringify(farmData.inventory) : JSON.stringify({ 'item_oran_berry': 5, 'item_bubble_soap': 3, 'item_poke_ball_toy': 2 });
+  const eggStr = farmData.incubatingEgg ? JSON.stringify(farmData.incubatingEgg) : null;
+  const lotStr = farmData.lotteryState ? JSON.stringify(farmData.lotteryState) : null;
+  const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : '[]';
+  const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : '{}';
+
+  const stmt = db.prepare(`
+    INSERT INTO farms (
+      username, farm_name, password_hash, password_salt, active_pokemon, reserve_pokemon, graduated_pokemon,
+      graduated_count, hearts_count, coins, inventory, incubating_egg, lottery_state,
+      bg_theme, stickers, pokemon_placements,
+      status_msg, bgm_song, today_count, total_count, last_active, updated_at
+    ) VALUES (
+      @username, @farm_name, @password_hash, @password_salt, @active_pokemon, @reserve_pokemon, @graduated_pokemon,
+      @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @lottery_state,
+      @bg_theme, @stickers, @pokemon_placements,
+      @status_msg, @bgm_song, @today_count, @total_count, @last_active, CURRENT_TIMESTAMP
+    )
+  `);
+
+  stmt.run({
+    username: cleanUser,
+    farm_name: farmData.farmName || `${cleanUser}님의 포켓농장`,
+    password_hash: hash,
+    password_salt: salt,
+    active_pokemon: activePokeStr,
+    reserve_pokemon: reservePokeStr,
+    graduated_pokemon: gradPokeStr,
+    graduated_count: farmData.graduatedPokemon ? farmData.graduatedPokemon.length : (farmData.graduatedCount || 0),
+    hearts_count: 0,
+    coins: farmData.coins !== undefined ? farmData.coins : 1500,
+    inventory: invStr,
+    incubating_egg: eggStr,
+    lottery_state: lotStr,
+    bg_theme: farmData.bgTheme || 'classic',
+    stickers: stickersStr,
+    pokemon_placements: placementsStr,
+    status_msg: farmData.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
+    bgm_song: farmData.bgmSong || '프리스타일 - Y (Feat. 지선)',
+    today_count: 1,
+    total_count: 1,
+    last_active: Date.now()
+  });
+
+  recordFarmVisit(cleanUser, cleanUser);
+  const farm = getFarm(cleanUser);
+  return { success: true, farm, guestbook: [] };
+}
+
+// 기존 농장 로그인 및 데이터 로드
+export function loginFarmUser({ username, password }) {
+  if (!username || !username.trim()) {
+    return { success: false, reason: 'invalid_username', message: '농장 아이디(닉네임)를 입력해주세요.' };
+  }
+  const cleanUser = username.trim();
+  const row = db.prepare('SELECT * FROM farms WHERE username = ?').get(cleanUser);
+  if (!row) {
+    return { success: false, reason: 'user_not_found', message: '존재하지 않는 농장 아이디입니다. 새 농장 개설하기 탭에서 농장을 개설해 보세요!' };
+  }
+
+  // 기존 레거시 계정(비밀번호 미설정): 신규 비밀번호 입력 시 자동 등록
+  if (!row.password_hash) {
+    if (password && password.trim().length >= 4) {
+      const { hash, salt } = hashPassword(password.trim());
+      db.prepare('UPDATE farms SET password_hash = ?, password_salt = ? WHERE username = ?').run(hash, salt, cleanUser);
+    }
+  } else {
+    // 비밀번호가 설정된 계정: 일치 여부 엄격 검증
+    if (!password) {
+      return { success: false, reason: 'password_required', message: '농장 비밀번호를 입력해주세요.' };
+    }
+    const isMatch = verifyPassword(password, row.password_hash, row.password_salt);
+    if (!isMatch) {
+      return { success: false, reason: 'wrong_password', message: '비밀번호가 일치하지 않습니다. 다시 확인해 주세요.' };
+    }
+  }
+
+  recordFarmVisit(cleanUser, cleanUser);
+  const farm = getFarm(cleanUser);
+  const guestbook = getGuestbookEntries(cleanUser, 50);
+
+  return {
+    success: true,
+    farm,
+    guestbook,
+    message: `[${cleanUser}]님의 농장 데이터를 성공적으로 불러왔습니다!`
+  };
+}
+
+// 비밀번호 변경
+export function changeFarmPassword({ username, oldPassword, newPassword }) {
+  if (!username || !username.trim()) {
+    return { success: false, message: '농장 아이디가 올바르지 않습니다.' };
+  }
+  if (!newPassword || newPassword.length < 4) {
+    return { success: false, message: '새 비밀번호는 최소 4자 이상이어야 합니다.' };
+  }
+  const cleanUser = username.trim();
+  const row = db.prepare('SELECT * FROM farms WHERE username = ?').get(cleanUser);
+  if (!row) {
+    return { success: false, message: '존재하지 않는 농장입니다.' };
+  }
+
+  if (row.password_hash && row.password_salt) {
+    if (!oldPassword || !verifyPassword(oldPassword, row.password_hash, row.password_salt)) {
+      return { success: false, message: '현재 비밀번호가 일치하지 않습니다.' };
+    }
+  }
+
+  const { hash, salt } = hashPassword(newPassword);
+  db.prepare('UPDATE farms SET password_hash = ?, password_salt = ? WHERE username = ?').run(hash, salt, cleanUser);
+
+  return { success: true, message: '농장 비밀번호가 성공적으로 변경되었습니다.' };
+}
 
 // =========================================================================
 // 🌟 DAO 헬퍼 함수들 (Data Access Operations)

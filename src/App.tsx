@@ -219,11 +219,14 @@ function AppMain() {
   const handleLeaveGame = (gameKey: GameKey) => {
     if (selectedGame === gameKey) {
       localStorage.removeItem('poke_active_game');
+      setSelectedGame(null); // 🏠 두부 오락실 메인 목록 화면으로 정상 이동
     }
-    setGameSessions(prev => ({
-      ...prev,
-      [gameKey]: null
-    }));
+    if (gameKey !== 'pokefarm') {
+      setGameSessions(prev => ({
+        ...prev,
+        [gameKey]: null
+      }));
+    }
   };
 
   const generateRandomName = () => {
@@ -234,6 +237,23 @@ function AppMain() {
   const generateRandomRoom = () => {
     const randRoom = Math.floor(100 + Math.random() * 900);
     setFormRoom(`ROOM_${randRoom}`);
+  };
+
+  const handleUserLogin = (user: string) => {
+    localStorage.setItem('pokefarm_saved_owner', user);
+    setFormUsername(user);
+    setGameSessions(prev => ({
+      ...prev,
+      pokefarm: { username: user, room: 'local', gameType: 'pokefarm' }
+    }));
+  };
+
+  const handleUserLogout = () => {
+    localStorage.removeItem('pokefarm_saved_owner');
+    setGameSessions(prev => ({
+      ...prev,
+      pokefarm: { username: '', room: 'local', gameType: 'pokefarm' }
+    }));
   };
 
   const renderActiveGameViewport = () => {
@@ -273,6 +293,8 @@ function AppMain() {
               onClearInitialVisitingUser={() => setVisitingFarmUser(null)}
               onLeaveRoom={() => handleLeaveGame('pokefarm')}
               onSelectGame={(gameKey) => handleGameSelection(gameKey as GameKey)}
+              onUserLogin={handleUserLogin}
+              onUserLogout={handleUserLogout}
             />
           )}
         </div>
@@ -541,7 +563,7 @@ function AppMain() {
         {!selectedGame ? (
           renderAllGamesGridView()
         ) : selectedGame === 'pokefarm' ? (
-          renderActiveGameViewport()
+          gameSessions.pokefarm ? renderActiveGameViewport() : renderGameJoinCard(currentMeta || GAMES_LIST[0])
         ) : !currentSession ? (
           renderGameJoinCard(currentMeta || GAMES_LIST[0])
         ) : (

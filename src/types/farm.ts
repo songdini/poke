@@ -234,6 +234,7 @@ export interface FarmState {
   activeExpedition?: ExpeditionSession | null;
   lotteryState?: DailyLotteryState; // 🎰 일일 럭키 사내 복권 상태
   lastDailyRewardAt?: string;
+  lastEnergyRecoveryDate?: string; // ⚡ 일일 에너지 100% 자동 회복 처리 기준 날짜 (YYYY-MM-DD)
   lastActive?: number; // ⏱️ 마지막 상태 변경/저장 타임스탬프 (기기간 구버전 덮어쓰기 방지)
 }
 

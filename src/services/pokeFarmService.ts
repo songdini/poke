@@ -3275,7 +3275,11 @@ export const LOTTERY_SYMBOLS: LotterySymbol[] = [
 ];
 
 export function getTodayDateString(): string {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function drawLotteryReels(): [LotterySymbol, LotterySymbol, LotterySymbol] {
@@ -3332,11 +3336,20 @@ export function getInitialFarmState(ownerName: string): FarmState {
         timestamp: new Date().toISOString()
       }
     ],
-    heartsCount: 0
+    heartsCount: 0,
+    lastEnergyRecoveryDate: getTodayDateString()
   };
 }
 
 export const FARM_CURRENT_SAVE_KEY = 'pokefarm_save_data_current_active';
+
+// 🚪 현재 활성 농장 세션 및 캐시 초기화 (로그아웃 시 사용)
+export function clearFarmLocalSession(): void {
+  try {
+    localStorage.removeItem(FARM_CURRENT_SAVE_KEY);
+    localStorage.removeItem('pokefarm_saved_owner');
+  } catch (e) {}
+}
 
 // 유효한 농장 세이브 데이터인지 판별 (생성 완료된 농장)
 export function isValidFarmSave(state: any): state is FarmState {
@@ -3349,27 +3362,49 @@ export function isValidFarmSave(state: any): state is FarmState {
   );
 }
 
+// 🔍 이웃 농장 데이터 안전 읽기 (현재 플레이어 세션/통합 키를 절대 건드리지 않는 순수 읽기)
+export function getStoredNeighborFarm(neighborUsername: string): FarmState | null {
+  try {
+    if (!neighborUsername || !neighborUsername.trim()) return null;
+    const cleanName = neighborUsername.trim();
+    const key = `${FARM_STORAGE_KEY}_${cleanName}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const candidate = JSON.parse(raw) as FarmState;
+      if (isValidFarmSave(candidate) && candidate.ownerName === cleanName) {
+        return candidate;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to getStoredNeighborFarm:', e);
+  }
+  return null;
+}
+
 // 로컬스토리지 로드 (졸업생 0마리인 신규 농장도 정상 로드)
 export function loadFarmState(ownerName?: string): FarmState {
   try {
     let parsed: FarmState | null = null;
+    const targetOwner = ownerName && ownerName.trim() ? ownerName.trim() : null;
 
-    // 1순위: ownerName이 전달된 경우 해당 ownerName별 세이브 데이터 우선 로드
-    if (ownerName && ownerName.trim()) {
-      const ownerKey = `${FARM_STORAGE_KEY}_${ownerName.trim()}`;
+    // 1순위: ownerName이 전달된 경우 오직 해당 ownerName별 세이브 데이터만 엄격하게 로드 (다른 유저와 코인/데이터 혼동 원천 차단)
+    if (targetOwner) {
+      const ownerKey = `${FARM_STORAGE_KEY}_${targetOwner}`;
       const ownerRaw = localStorage.getItem(ownerKey);
       if (ownerRaw) {
         try {
           const candidate = JSON.parse(ownerRaw) as FarmState;
-          if (isValidFarmSave(candidate)) {
+          if (isValidFarmSave(candidate) && candidate.ownerName === targetOwner) {
             parsed = candidate;
           }
         } catch (e) {}
       }
-    }
-
-    // 2순위: 가장 최근에 플레이하던 내 브라우저 통합 세이브 데이터 (FARM_CURRENT_SAVE_KEY)
-    if (!parsed) {
+      // 특정 유저를 요청했는데 로컬에 없으면 다른 유저 데이터를 절대 훔쳐오지 않고 초기화 상태 반환
+      if (!parsed) {
+        return getInitialFarmState(targetOwner);
+      }
+    } else {
+      // 2순위: ownerName 미지정 시, 최근에 플레이하던 내 브라우저 통합 세이브 데이터 (FARM_CURRENT_SAVE_KEY)
       const currentActiveRaw = localStorage.getItem(FARM_CURRENT_SAVE_KEY);
       if (currentActiveRaw) {
         try {
@@ -3379,23 +3414,23 @@ export function loadFarmState(ownerName?: string): FarmState {
           }
         } catch (e) {}
       }
-    }
 
-    // 3순위: 브라우저에 저장된 이전의 모든 pokefarm_save_data_ 키 자동 스캔 & 복구
-    if (!parsed) {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(FARM_STORAGE_KEY) && key !== FARM_CURRENT_SAVE_KEY) {
-          const candidateRaw = localStorage.getItem(key);
-          if (candidateRaw) {
-            try {
-              const candidate = JSON.parse(candidateRaw) as FarmState;
-              if (isValidFarmSave(candidate)) {
-                parsed = candidate;
-                console.log(`[PokeFarm] 🌟 기존 농장 세이브 데이터 자동 복구 성공 (Key: ${key})`);
-                break;
-              }
-            } catch (e) {}
+      // 3순위: 브라우저에 저장된 이전 세이브 스캔
+      if (!parsed) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(FARM_STORAGE_KEY) && key !== FARM_CURRENT_SAVE_KEY) {
+            const candidateRaw = localStorage.getItem(key);
+            if (candidateRaw) {
+              try {
+                const candidate = JSON.parse(candidateRaw) as FarmState;
+                if (isValidFarmSave(candidate)) {
+                  parsed = candidate;
+                  console.log(`[PokeFarm] 🌟 기존 농장 세이브 데이터 복구 성공 (Key: ${key})`);
+                  break;
+                }
+              } catch (e) {}
+            }
           }
         }
       }
@@ -3437,6 +3472,21 @@ export function loadFarmState(ownerName?: string): FarmState {
       }
       parsed.lotteryState.jackpotPool = Math.max(1000, parsed.lotteryState.jackpotPool || 2000);
 
+      // ⚡ 하루 지나면 모든 포켓몬 에너지 100% 자동 완전 회복 로직
+      if (!parsed.lastEnergyRecoveryDate) {
+        parsed.lastEnergyRecoveryDate = today;
+      } else if (parsed.lastEnergyRecoveryDate !== today) {
+        parsed.lastEnergyRecoveryDate = today;
+        const recoverEnergy = (mon: FarmPokemon) => {
+          if (mon) {
+            mon.energy = getMaxStatForStage(mon.stageIndex);
+          }
+        };
+        if (parsed.activePokemon) recoverEnergy(parsed.activePokemon);
+        parsed.reservePokemon?.forEach(recoverEnergy);
+        console.log(`[PokeFarm] ☀️ 새 날짜 감지 (${today})! 활성 및 보관 포켓몬의 에너지가 100% 가득 회복되었습니다.`);
+      }
+
       // 💖 실제 수치 보정
       if (parsed.heartsCount === 12) {
         parsed.heartsCount = 0;
@@ -3460,9 +3510,9 @@ export function loadFarmState(ownerName?: string): FarmState {
         }
       }
 
-      // 통합 키 및 ownerName 저장 동기화
-      localStorage.setItem(FARM_CURRENT_SAVE_KEY, JSON.stringify(parsed));
-      if (parsed.ownerName) {
+      // 통합 키 및 ownerName 저장 동기화 (오직 실제 등록된 유효한 유저일 때만)
+      if (parsed.ownerName && parsed.ownerName !== '지우') {
+        localStorage.setItem(FARM_CURRENT_SAVE_KEY, JSON.stringify(parsed));
         localStorage.setItem(`${FARM_STORAGE_KEY}_${parsed.ownerName}`, JSON.stringify(parsed));
         localStorage.setItem('pokefarm_saved_owner', parsed.ownerName);
       }

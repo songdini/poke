@@ -70,6 +70,29 @@ export function formatKSTDate(dateStr: string): string {
   return dateStr;
 }
 
+export const DIFFICULTY_OPTIONS: { key: Difficulty; label: string; short: string; stars: string }[] = [
+  { key: 'easy', label: '🌱 쉬움', short: '쉬움', stars: '★☆☆☆☆' },
+  { key: 'medium', label: '⚡ 보통', short: '보통', stars: '★★☆☆☆' },
+  { key: 'hard', label: '🔥 어려움', short: '어려움', stars: '★★★☆☆' },
+  { key: 'expert', label: '💀 짱어려움', short: '짱어려움', stars: '★★★★☆' },
+  { key: 'legendary', label: '👑 전설', short: '전설', stars: '★★★★★' },
+  { key: 'god', label: '🌌 신의 영역', short: '신의 영역', stars: '✦✦✦✦✦' },
+];
+
+export function getNewspaperEditionDate(): string {
+  try {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayName = dayNames[d.getDay()];
+    return `${year}년 ${month}월 ${date}일 (${dayName}) • 조간 • 제 2026호`;
+  } catch {
+    return '2026년 9월 3일 • 제 2026호';
+  }
+}
+
 const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) => {
   const { socket } = useSocket();
 
@@ -387,6 +410,20 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedCell, phase, completed, handleNumberInput, toggleMarkCell, handleClearMarkedValues, handleClearMarks]);
 
+  // 🔢 1~9 각 숫자의 현재 보드판 채워진 개수 계산 (남은 개수 및 완료 뱃지용)
+  const numberCounts = React.useMemo(() => {
+    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const val = grid[r]?.[c];
+        if (val >= 1 && val <= 9) {
+          counts[val] = (counts[val] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }, [grid]);
+
   // 퍼즐 시작
   const handleStartGame = (diff: Difficulty) => {
     setDifficulty(diff);
@@ -395,12 +432,50 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     socket?.emit('sudoku-start', { room, difficulty: diff });
   };
 
-  // 힌트 사용
+  // 힌트 사용 (스마트 자동 셀 선택 지원)
   const handleUseHint = () => {
-    if (!selectedCell || phase !== 'playing' || completed) return;
-    const { r, c } = selectedCell;
+    if (phase !== 'playing' || completed) {
+      setMessage('💡 먼저 상단 난이도를 선택하여 게임을 시작해 주세요!');
+      return;
+    }
 
-    socket?.emit('sudoku-hint', { room, row: r, col: c, username });
+    let targetCell = selectedCell;
+
+    // 만약 선택된 셀이 없거나 이미 고정된 문제 셀이라면, 아직 숫자가 없는 빈 칸(0)을 자동으로 탐색하여 선택
+    if (!targetCell || fixedMask[targetCell.r]?.[targetCell.c]) {
+      let foundEmpty = false;
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (!fixedMask[r][c] && grid[r][c] === 0) {
+            targetCell = { r, c };
+            foundEmpty = true;
+            break;
+          }
+        }
+        if (foundEmpty) break;
+      }
+
+      // 비어 있는 칸이 없다면 사용자가 입력한 칸 중 첫 번째 선택
+      if (!foundEmpty) {
+        for (let r = 0; r < 9; r++) {
+          for (let c = 0; c < 9; c++) {
+            if (!fixedMask[r][c]) {
+              targetCell = { r, c };
+              break;
+            }
+          }
+          if (targetCell) break;
+        }
+      }
+    }
+
+    if (!targetCell) {
+      setMessage('💡 힌트를 적용할 수 있는 칸이 없습니다.');
+      return;
+    }
+
+    setSelectedCell(targetCell);
+    socket?.emit('sudoku-hint', { room, row: targetCell.r, col: targetCell.c, username });
   };
 
   // 퍼즐 초기화
@@ -527,75 +602,138 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
     return classes.join(' ');
   };
 
-  const selectedVal = selectedCell ? grid[selectedCell.r][selectedCell.c] : null;
   const selectedCellMarkState: MarkColor = selectedCell ? (markedMask[selectedCell.r]?.[selectedCell.c] || 'none') : 'none';
 
   return (
-    <div className="sudoku-container excel-stealth-theme">
-      {/* 📊 Excel Formula Bar */}
-      <div className="excel-formula-bar">
-        <div className="excel-name-box">
-          {selectedCell ? `Cell ${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}` : 'Sheet1!A1'}
+    <div className="sudoku-container newspaper-theme">
+      {/* 📰 모바일 전용 초슬림 일체형 상단바 (세로 공간 낭비 방지) */}
+      <div className="sudoku-mobile-bar">
+        <div className="mobile-bar-left">
+          <span className="mobile-brand">📰 스도쿠</span>
+          <select
+            value={difficulty}
+            onChange={(e) => handleStartGame(e.target.value as Difficulty)}
+            className="mobile-diff-select"
+          >
+            {DIFFICULTY_OPTIONS.map(opt => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="excel-fx-icon">fx</div>
-        <div className="excel-formula-input">
-          {selectedCell
-            ? `=SUDOKU_VALIDATE_CELL(Grid_${String.fromCharCode(65 + selectedCell.c)}${selectedCell.r + 1}, ${selectedVal || 0}${selectedCellMarkState === 'purple' ? ', [STATUS: UNSURE_HYPOTHESIS_1_PURPLE]' : selectedCellMarkState === 'orange' ? ', [STATUS: UNSURE_HYPOTHESIS_2_ORANGE]' : ''})`
-            : difficulty === 'god'
-            ? '=ASCEND_TO_DIVINITY(Matrix=INFINITY, AI_Escargot=TRUE)'
-            : difficulty === 'legendary'
-            ? '=LEGENDARY_MINIMUM_CLUES(Clues=17, Unique_Solution=TRUE)'
-            : '=SUDOKU_MATRIX_SOLVER(Easy, Medium, Hard, Expert, Legendary, God)'}
-        </div>
-      </div>
-
-      {/* 📋 Sheet Header Bar */}
-      <div className="game-header">
-        <div className="sheet-title-info">
-          <span style={{ fontSize: '1.2rem' }}>🧩</span>
-          <h2>Table 06: Sudoku_Matrix_Solver.xlsx</h2>
-        </div>
-        <div className="game-info">
-          <span className="excel-cell-badge phase">
-            {phase === 'waiting' ? '대기 중' : completed ? '완성됨' : '풀이 진행 중'}
-          </span>
-          {phase === 'playing' && (
-            <span className="excel-cell-badge">
+        <div className="mobile-bar-center">
+          {phase === 'playing' ? (
+            <span className="mobile-timer">
               ⏱️ {Math.floor(elapsedTime / 60).toString().padStart(2, '0')}:{(elapsedTime % 60).toString().padStart(2, '0')}
             </span>
+          ) : (
+            <span className="mobile-status-badge">{completed ? '🎉 완성' : '대기'}</span>
           )}
-          <span className="excel-cell-badge">방 #{room}</span>
+        </div>
+        <div className="mobile-bar-right">
+          <button
+            type="button"
+            className="mobile-icon-btn"
+            onClick={handleUseHint}
+            disabled={phase !== 'playing' || completed}
+            title="정답 힌트 자동 입력"
+          >
+            💡
+          </button>
+          <button
+            type="button"
+            className="mobile-icon-btn"
+            onClick={handleReset}
+            disabled={phase !== 'playing'}
+            title="새판 리셋"
+          >
+            🔄
+          </button>
+          <button
+            type="button"
+            className="mobile-icon-btn"
+            onClick={() => {
+              setSelectedRankDiff(difficulty);
+              setShowRankModal(true);
+              socket?.emit('sudoku-get-rankings');
+            }}
+            title="명예의 전당 랭킹"
+          >
+            🏆
+          </button>
           {onLeaveRoom && (
-            <button onClick={onLeaveRoom} className="excel-btn close">
-              🚪 나가기
+            <button
+              type="button"
+              className="mobile-icon-btn close-btn"
+              onClick={onLeaveRoom}
+              title="나가기"
+            >
+              🚪
             </button>
           )}
         </div>
       </div>
 
-      {/* 📱 Main Workspace */}
+      {/* 📰 데스크톱 신문 제호 헤더 (Desktop Newspaper Masthead) */}
+      <header className="newspaper-masthead">
+        <div className="masthead-top-rule">
+          <span className="masthead-issue-tag">THE DAILY PUZZLE GAZETTE</span>
+          <span className="masthead-date-tag">{getNewspaperEditionDate()}</span>
+          <span className="masthead-room-tag">ROOM #{room}</span>
+        </div>
+        <div className="masthead-main">
+          <div className="masthead-decor-left">
+            <span className="edition-badge">DAILY EDITION</span>
+            <span className="edition-text">Logic & Number Grid</span>
+          </div>
+          <div className="masthead-title-box">
+            <h1 className="newspaper-title">THE DAILY SUDOKU</h1>
+            <p className="newspaper-tagline">“A sharp mind is forged in nine by nine squares.”</p>
+          </div>
+          <div className="masthead-decor-right">
+            <div className="status-stamp">
+              <span className="stamp-label">STATUS</span>
+              <span className="stamp-val">{phase === 'waiting' ? '대기 중' : completed ? '완성됨' : '풀이 진행'}</span>
+            </div>
+            {onLeaveRoom && (
+              <button onClick={onLeaveRoom} className="news-btn close-btn">
+                🚪 나가기
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="masthead-bottom-rule">
+          <div className="masthead-timer-box">
+            ⏱️ 경과 시간: <b>{Math.floor(elapsedTime / 60).toString().padStart(2, '0')}:{(elapsedTime % 60).toString().padStart(2, '0')}</b>
+          </div>
+          <div className="masthead-rule-text">9×9 INK & PRINT GRID • VOL. 2026</div>
+        </div>
+      </header>
+
+      {/* 📱 메인 워크스페이스 */}
       <div className="sudoku-main-workspace">
-        {/* 🌿 1. 난이도 선택 리본 (Difficulty Bar) */}
+        {/* 🌿 데스크톱 난이도 리본 (Difficulty Bar) */}
         <div className="sudoku-diff-ribbon">
-          <span className="ribbon-label">난이도:</span>
+          <span className="ribbon-label">오늘의 퍼즐 난이도:</span>
           <div className="diff-btn-group">
-            {(['easy', 'medium', 'hard', 'expert', 'legendary', 'god'] as Difficulty[]).map(diff => (
+            {DIFFICULTY_OPTIONS.map(opt => (
               <button
-                key={diff}
-                className={`excel-btn ${difficulty === diff && phase === 'playing' ? (diff === 'god' ? 'god' : diff === 'legendary' ? 'legendary' : diff === 'expert' ? 'expert' : 'primary') : ''}`}
-                onClick={() => handleStartGame(diff)}
+                key={opt.key}
+                className={`news-btn diff-btn ${difficulty === opt.key && phase === 'playing' ? 'active' : ''} ${opt.key}`}
+                onClick={() => handleStartGame(opt.key)}
               >
-                {diff === 'easy' ? '🌱 쉬움' : diff === 'medium' ? '⚡ 보통' : diff === 'hard' ? '🔥 어려움' : diff === 'expert' ? '💀 짱어려움' : diff === 'legendary' ? '👑 전설' : '🌌 신의 영역'}
+                {opt.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 🛠️ 2. 주요 게임 도구 툴바 */}
+        {/* 🛠️ 데스크톱 주요 게임 도구 툴바 */}
         <div className="sudoku-main-toolbar">
           <div className="toolbar-left">
             <button
-              className="excel-btn ranking-btn"
+              className="news-btn ranking-btn"
               onClick={() => {
                 setSelectedRankDiff(difficulty);
                 setShowRankModal(true);
@@ -606,23 +744,23 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               🏆 명예의 전당
             </button>
             <button
-              className={`excel-btn ${showNumpad ? 'active-toggle' : ''}`}
+              className={`news-btn ${showNumpad ? 'active-toggle' : ''}`}
               onClick={() => setShowNumpad(!showNumpad)}
             >
-              {showNumpad ? '🔢 수식 패드 ON' : '🔢 수식 패드 OFF'}
+              {showNumpad ? '🔢 숫자 패드 ON' : '🔢 숫자 패드 OFF'}
             </button>
           </div>
           <div className="toolbar-right">
             <button
-              className="excel-btn hint-btn"
+              className="news-btn hint-btn"
               onClick={handleUseHint}
-              disabled={phase !== 'playing' || completed || !selectedCell || fixedMask[selectedCell.r][selectedCell.c]}
-              title={!selectedCell ? '칸을 먼저 선택해주세요' : fixedMask[selectedCell.r][selectedCell.c] ? '이미 초기 고정된 셀입니다.' : '선택 셀 정답 힌트'}
+              disabled={phase !== 'playing' || completed}
+              title={selectedCell ? '선택한 셀의 정답 힌트를 입력합니다.' : '빈 칸 중 하나를 자동으로 찾아 힌트를 입력합니다.'}
             >
-              💡 힌트
+              💡 힌트 사용
             </button>
             <button
-              className="excel-btn close"
+              className="news-btn reset-btn"
               onClick={handleReset}
               disabled={phase !== 'playing'}
             >
@@ -631,14 +769,13 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           </div>
         </div>
 
-        {/* 🎯 3. 선택된 셀 빠른 색상 설정 바 */}
+        {/* 🎯 3. 선택된 셀 빠른 색상(가설) 바 */}
         {selectedCell && !fixedMask[selectedCell.r]?.[selectedCell.c] && (
           <div className="sudoku-cell-context-bar">
             <span className="context-cell-name">
               📍 <b>Cell {String.fromCharCode(65 + selectedCell.c)}{selectedCell.r + 1}</b>
             </span>
             <span className="context-divider">|</span>
-            <span className="context-label">색상:</span>
             <div className="context-color-btns">
               <button
                 type="button"
@@ -651,28 +788,28 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                   });
                 }}
               >
-                🔵 확정
+                ✏️ 확정
               </button>
               <button
                 type="button"
                 className={`cell-mode-chip purple ${selectedCellMarkState === 'purple' ? 'active' : ''}`}
                 onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'purple')}
               >
-                🟣 헷갈림1
+                🟣 보라
               </button>
               <button
                 type="button"
                 className={`cell-mode-chip orange ${selectedCellMarkState === 'orange' ? 'active' : ''}`}
                 onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'orange')}
               >
-                🟠 헷갈림2
+                🟠 주황
               </button>
               <button
                 type="button"
                 className={`cell-mode-chip green ${selectedCellMarkState === 'green' ? 'active' : ''}`}
                 onClick={() => toggleMarkCell(selectedCell.r, selectedCell.c, 'green')}
               >
-                🟢 헷갈림3
+                🟢 초록
               </button>
             </div>
             <span className="context-divider">|</span>
@@ -687,100 +824,89 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
           </div>
         )}
 
-        {/* 🎨 4. 헷갈림(가설) 셀 전용 관리 패널 (색상별 삭제 & 색상별 확정 원복) */}
+        {/* 🎨 4. 헷갈림(가설) 셀 전용 관리 패널 */}
         {totalMarkedCount > 0 && (
           <div className="sudoku-marked-manager-box">
             <div className="marked-manager-header">
-              <span className="marked-manager-title">🎨 헷갈림(가설) 셀 관리 (총 {totalMarkedCount}개)</span>
-              <span className="marked-manager-desc">색상별 가설을 한 번에 삭제하거나 일반 확정(파란색)으로 원복할 수 있습니다.</span>
+              <span className="marked-manager-title">🎨 가설(색연필 마킹) 관리 (총 {totalMarkedCount}개)</span>
             </div>
             <div className="marked-manager-actions">
-              {/* 🗑️ 가설 숫자 삭제 그룹 */}
               <div className="marked-action-row">
-                <span className="group-label">🗑️ 숫자 삭제:</span>
+                <span className="group-label">🗑️ 삭제:</span>
                 <div className="group-btns">
                   {purpleCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-purple-del-btn"
+                      className="news-btn marked-purple-del-btn"
                       onClick={() => handleClearMarkedValues('purple')}
-                      title="보라색(헷갈림1) 숫자들을 모두 삭제합니다."
                     >
-                      🟣 보라 삭제 ({purpleCount})
+                      🟣 보라 ({purpleCount})
                     </button>
                   )}
                   {orangeCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-orange-del-btn"
+                      className="news-btn marked-orange-del-btn"
                       onClick={() => handleClearMarkedValues('orange')}
-                      title="주황색(헷갈림2) 숫자들을 모두 삭제합니다."
                     >
-                      🟠 주황 삭제 ({orangeCount})
+                      🟠 주황 ({orangeCount})
                     </button>
                   )}
                   {greenCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-green-del-btn"
+                      className="news-btn marked-green-del-btn"
                       onClick={() => handleClearMarkedValues('green')}
-                      title="초록색(헷갈림3) 숫자들을 모두 삭제합니다."
                     >
-                      🟢 초록 삭제 ({greenCount})
+                      🟢 초록 ({greenCount})
                     </button>
                   )}
                   <button
                     type="button"
-                    className="excel-btn marked-delete-btn"
+                    className="news-btn marked-delete-btn"
                     onClick={() => handleClearMarkedValues('all')}
-                    title="모든 헷갈림 숫자를 일괄 삭제합니다. (단축키: Shift+Delete)"
                   >
-                    🗑️ 전체 삭제 ({totalMarkedCount})
+                    🗑️ 전체 삭제
                   </button>
                 </div>
               </div>
 
-              {/* ✨ 일반 확정 원복 그룹 */}
               <div className="marked-action-row">
-                <span className="group-label">✨ 확정 원복:</span>
+                <span className="group-label">✨ 확정:</span>
                 <div className="group-btns">
                   {purpleCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-purple-revert-btn"
+                      className="news-btn marked-purple-revert-btn"
                       onClick={() => handleClearMarks('purple')}
-                      title="보라색(헷갈림1) 셀들을 일반 확정(파랑)으로 원복합니다."
                     >
-                      🟣 보라 원복 ({purpleCount})
+                      🟣 보라 ({purpleCount})
                     </button>
                   )}
                   {orangeCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-orange-revert-btn"
+                      className="news-btn marked-orange-revert-btn"
                       onClick={() => handleClearMarks('orange')}
-                      title="주황색(헷갈림2) 셀들을 일반 확정(파랑)으로 원복합니다."
                     >
-                      🟠 주황 원복 ({orangeCount})
+                      🟠 주황 ({orangeCount})
                     </button>
                   )}
                   {greenCount > 0 && (
                     <button
                       type="button"
-                      className="excel-btn marked-green-revert-btn"
+                      className="news-btn marked-green-revert-btn"
                       onClick={() => handleClearMarks('green')}
-                      title="초록색(헷갈림3) 셀들을 일반 확정(파랑)으로 원복합니다."
                     >
-                      🟢 초록 원복 ({greenCount})
+                      🟢 초록 ({greenCount})
                     </button>
                   )}
                   <button
                     type="button"
-                    className="excel-btn marked-clear-btn"
+                    className="news-btn marked-clear-btn"
                     onClick={() => handleClearMarks('all')}
-                    title="모든 헷갈림 셀들을 일반 확정(파랑)으로 일괄 원복합니다. (단축키: Shift+M)"
                   >
-                    🧹 전체 원복 ({totalMarkedCount})
+                    🧹 전체 확정
                   </button>
                 </div>
               </div>
@@ -791,26 +917,26 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         {/* 🎨 셀 구분 범례 (Legend) */}
         <div className="sudoku-legend-bar">
           <span className="legend-item fixed">
-            <span className="legend-sample fixed">5</span> 문제 (고정)
+            <span className="legend-sample fixed">5</span> 문제(활자)
           </span>
           <span className="legend-item user">
-            <span className="legend-sample user">7</span> 확정 (파랑)
+            <span className="legend-sample user">7</span> 작성(연필)
           </span>
           <span className="legend-item marked-purple">
-            <span className="legend-sample marked-purple">4</span> 헷갈림1 (보라)
+            <span className="legend-sample marked-purple">4</span> 보라
           </span>
           <span className="legend-item marked-orange">
-            <span className="legend-sample marked-orange">8</span> 헷갈림2 (주황)
+            <span className="legend-sample marked-orange">8</span> 주황
           </span>
           <span className="legend-item marked-green">
-            <span className="legend-sample marked-green">2</span> 헷갈림3 (초록)
+            <span className="legend-sample marked-green">2</span> 초록
           </span>
           <span className="legend-item conflict">
-            <span className="legend-sample conflict">3</span> 중복 오류 (빨강)
+            <span className="legend-sample conflict">3</span> 오류
           </span>
         </div>
 
-        {/* 🧩 9x9 Sudoku Grid Table (Authentic Compact Excel Cells) */}
+        {/* 🧩 9x9 Sudoku Grid Table (Newspaper Print Grid) */}
         <div className="sudoku-board-wrapper">
           <table className="sudoku-grid-table">
             <thead>
@@ -839,12 +965,12 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                         fixedMask[r][c]
                           ? '고정 문제 셀'
                           : markedMask[r][c] === 'purple'
-                          ? '헷갈림1(보라색) 표시된 셀 - 우클릭/길게누르기로 전환'
+                          ? '헷갈림1(보라색) 셀'
                           : markedMask[r][c] === 'orange'
-                          ? '헷갈림2(주황색) 표시된 셀 - 우클릭/길게누르기로 전환'
+                          ? '헷갈림2(주황색) 셀'
                           : markedMask[r][c] === 'green'
-                          ? '헷갈림3(초록색) 표시된 셀 - 우클릭/길게누르기로 전환'
-                          : '클릭하여 선택 | 우클릭/길게누르기로 헷갈림 표시'
+                          ? '헷갈림3(초록색) 셀'
+                          : '클릭하여 선택'
                       }
                     >
                       {val !== 0 ? val : ''}
@@ -859,89 +985,99 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         {/* 퍼즐 완성 배너 */}
         {completed && (
           <div className="sudoku-complete-banner">
-            <h4>🎉 스도쿠 퍼즐 완성!</h4>
+            <h4>🎉 [호외] 스도쿠 퍼즐 완성!</h4>
             <p style={{ margin: 0, fontSize: '0.85rem' }}>
-              축하합니다! [{winner}] 님이 스도쿠 행렬 분석을 완수했습니다! (소요시간: {elapsedTime}초)
+              축하합니다! [{winner}] 님이 신문 퍼즐을 훌륭히 풀어냈습니다! (소요시간: {elapsedTime}초)
             </p>
           </div>
         )}
 
-        {/* 🎛️ Numpad Control Panel (토글 가능) */}
+        {/* 🎛️ Numpad Control Panel (신문 타자기/활자 스타일 키패드) */}
         {showNumpad && (
           <div className="sudoku-controls-panel">
             <div className="sudoku-card">
               <div className="numpad-header-row">
-                <span className="numpad-title">🔢 수식 입력 패드</span>
+                <span className="numpad-title">📰 숫자 입력기</span>
                 
-                {/* 입력 모드 토글 (일반 파랑 vs 헷갈림 보라/주황/초록) */}
+                {/* 입력 모드 토글 */}
                 <div className="input-mode-toggle-group">
                   <button
                     type="button"
                     className={`mode-toggle-btn ${inputMode === 'normal' ? 'active-normal' : ''}`}
                     onClick={() => setInputMode('normal')}
-                    title="일반 확정 숫자 입력 모드 (파란색)"
+                    title="일반 확정 숫자 입력 모드"
                   >
-                    🔵 확정
+                    ✏️ 확정
                   </button>
                   <button
                     type="button"
                     className={`mode-toggle-btn ${inputMode === 'purple' ? 'active-purple' : ''}`}
                     onClick={() => setInputMode('purple')}
-                    title="헷갈림1 가설 숫자 입력 모드 (보라색)"
+                    title="헷갈림1 가설 숫자 입력 모드 (보라)"
                   >
-                    🟣 헷갈림1
+                    🟣 보라
                   </button>
                   <button
                     type="button"
                     className={`mode-toggle-btn ${inputMode === 'orange' ? 'active-orange' : ''}`}
                     onClick={() => setInputMode('orange')}
-                    title="헷갈림2 가설 숫자 입력 모드 (주황색)"
+                    title="헷갈림2 가설 숫자 입력 모드 (주황)"
                   >
-                    🟠 헷갈림2
+                    🟠 주황
                   </button>
                   <button
                     type="button"
                     className={`mode-toggle-btn ${inputMode === 'green' ? 'active-green' : ''}`}
                     onClick={() => setInputMode('green')}
-                    title="헷갈림3 가설 숫자 입력 모드 (초록색)"
+                    title="헷갈림3 가설 숫자 입력 모드 (초록)"
                   >
-                    🟢 헷갈림3
+                    🟢 초록
                   </button>
                 </div>
               </div>
 
+              {/* 1~9 대형 숫자 그리드 */}
               <div className="numpad-grid">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                  <button
-                    key={num}
-                    type="button"
-                    className={`numpad-btn ${inputMode === 'purple' ? 'purple-mode-btn' : inputMode === 'orange' ? 'orange-mode-btn' : inputMode === 'green' ? 'green-mode-btn' : ''}`}
-                    onClick={() => handleNumberInput(num)}
-                    disabled={completed}
-                  >
-                    {num}
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
+                  const placed = numberCounts[num] || 0;
+                  const isAllPlaced = placed >= 9;
+                  const remaining = Math.max(0, 9 - placed);
+
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      className={`numpad-btn ${inputMode === 'purple' ? 'purple-mode-btn' : inputMode === 'orange' ? 'orange-mode-btn' : inputMode === 'green' ? 'green-mode-btn' : ''} ${isAllPlaced ? 'is-completed' : ''}`}
+                      onClick={() => handleNumberInput(num)}
+                      disabled={completed}
+                    >
+                      <span className="numpad-num">{num}</span>
+                      <span className={`numpad-count-badge ${isAllPlaced ? 'done' : ''}`}>
+                        {isAllPlaced ? '✓' : remaining}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="numpad-action-row">
                 <button
                   type="button"
-                  className="excel-btn numpad-clear-btn"
+                  className="news-btn numpad-clear-btn"
                   onClick={() => handleNumberInput(0)}
                   disabled={completed}
-                  title="선택된 셀 지우기 (Backspace / 0)"
+                  title="선택된 셀 지우기"
                 >
                   🧽 셀 지우기
                 </button>
                 <button
                   type="button"
-                  className="excel-btn numpad-hint-btn"
+                  className="news-btn numpad-hint-btn"
                   onClick={handleUseHint}
-                  disabled={phase !== 'playing' || completed || !selectedCell || fixedMask[selectedCell.r][selectedCell.c]}
-                  title="정답 힌트 확인"
+                  disabled={phase !== 'playing' || completed}
+                  title="정답 힌트 자동 입력"
                 >
-                  💡 힌트 확인
+                  💡 힌트 사용
                 </button>
               </div>
             </div>
@@ -949,38 +1085,35 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
         )}
 
         {message && (
-          <div style={{ fontSize: '0.82rem', color: '#107c41', fontWeight: 600, textAlign: 'center' }}>
+          <div className="sudoku-message-notice">
             {message}
           </div>
         )}
 
         <div className="sudoku-guide-tip">
           <span>💡 <b>숫자 입력</b>: 가상패드 또는 키보드(1~9) | <b>지우기</b>: Backspace / 0</span>
-          <span>🎨 <b>헷갈림 색상 (보라🟣 / 주황🟠 / 초록🟢)</b>: 🖱️ 우클릭/M키 (토글) | 📱 길게 누르기 | <b>일괄삭제</b>: Shift+Delete | <b>일괄원복</b>: Shift+M</span>
+          <span>🎨 <b>헷갈림 색상 (보라🟣 / 주황🟠 / 초록🟢)</b>: 🖱️ 우클릭/M키 | 📱 길게 누르기 | <b>일괄삭제</b>: Shift+Delete</span>
         </div>
       </div>
 
-      {/* 📑 Bottom Excel Sheet Tabs */}
-      <div className="excel-sheet-tab-bar">
-        <div className="excel-sheet-tab active">Sudoku_Grid_A1_I9</div>
-        <div
-          className="excel-sheet-tab"
-          style={{ cursor: 'pointer' }}
+      {/* 📰 Bottom Newspaper Footer */}
+      <footer className="newspaper-footer-bar">
+        <span>📰 THE DAILY SUDOKU • PUZZLE SECTION</span>
+        <button
+          type="button"
+          className="footer-rank-link"
           onClick={() => {
             setSelectedRankDiff(difficulty);
             setShowRankModal(true);
             socket?.emit('sudoku-get-rankings');
           }}
         >
-          🏆 Hall_Of_Fame
-        </div>
-        <div className="excel-sheet-tab">Matrix_Analytics</div>
-        <div className="excel-sheet-tab">Validation_Check</div>
-        <div style={{ color: '#8a8886', padding: '0 6px', cursor: 'pointer' }}>+</div>
-        <div className="excel-status-ready">STATUS: READY</div>
-      </div>
+          🏆 명예의 전당 순위표
+        </button>
+        <span>DAILY BRAIN TEASER • ALL RIGHTS RESERVED</span>
+      </footer>
 
-      {/* 🏆 실시간 명예의 전당 엑셀 모달 */}
+      {/* 🏆 실시간 명예의 전당 신문 모달 (Newspaper Gazette Edition) */}
       {showRankModal && (
         <div className="sudoku-rank-modal-backdrop" onClick={() => setShowRankModal(false)}>
           <div className="sudoku-rank-modal-card" onClick={e => e.stopPropagation()}>
@@ -989,12 +1122,12 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               <div className="rank-title-group">
                 <span className="rank-header-trophy">🏆</span>
                 <div className="rank-title-text-box">
-                  <h3>스도쿠 명예의 전당 (Sudoku Hall of Fame)</h3>
+                  <h3>THE SUDOKU GAZETTE • HALL OF FAME</h3>
                   <span className="rank-subtitle">난이도별 타임어택 실시간 Top 10 순위표</span>
                 </div>
               </div>
               <button
-                className="excel-btn close rank-close-btn"
+                className="news-btn close-btn rank-close-btn"
                 onClick={() => setShowRankModal(false)}
               >
                 ✕ 닫기
@@ -1003,14 +1136,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
             {/* 난이도 탭 바 */}
             <div className="rank-diff-tabs">
-              {([
-                { key: 'easy', label: '🌱 쉬움' },
-                { key: 'medium', label: '⚡ 보통' },
-                { key: 'hard', label: '🔥 어려움' },
-                { key: 'expert', label: '💀 짱어려움' },
-                { key: 'legendary', label: '👑 전설' },
-                { key: 'god', label: '🌌 신의 영역' }
-              ] as { key: Difficulty; label: string }[]).map(tab => (
+              {DIFFICULTY_OPTIONS.map(tab => (
                 <button
                   key={tab.key}
                   className={`rank-tab-btn ${selectedRankDiff === tab.key ? 'active' : ''} ${tab.key}`}
@@ -1024,9 +1150,9 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
               ))}
             </div>
 
-            {/* 랭킹 스프레드시트 테이블 */}
+            {/* 랭킹 테이블 */}
             <div className="rank-table-wrapper">
-              <table className="excel-rank-table">
+              <table className="news-rank-table">
                 <thead>
                   <tr>
                     <th style={{ width: '60px' }}>순위</th>
@@ -1064,7 +1190,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                             ⏱️ <b>{timeStr}</b>
                           </td>
                           <td className="rank-col-hints">
-                            {entry.hintsUsed > 0 ? `${entry.hintsUsed}회` : <span style={{ color: '#107c41', fontWeight: 700 }}>노힌트 ✨</span>}
+                            {entry.hintsUsed > 0 ? `${entry.hintsUsed}회` : <span style={{ color: '#27272a', fontWeight: 700 }}>노힌트 ✨</span>}
                           </td>
                           <td className="rank-col-date">
                             {formatKSTDate(entry.date)}
@@ -1076,8 +1202,8 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
                     <tr>
                       <td colSpan={5} className="empty-rank-cell">
                         <div className="empty-rank-box">
-                          <p>아직 [{selectedRankDiff === 'easy' ? '쉬움' : selectedRankDiff === 'medium' ? '보통' : selectedRankDiff === 'hard' ? '어려움' : selectedRankDiff === 'expert' ? '짱어려움' : selectedRankDiff === 'legendary' ? '전설의 스도쿠왕' : '신의 영역'}] 난이도에 등록된 랭커가 없습니다.</p>
-                          <span>지금 퍼즐을 클리어하고 영광스러운 첫 1위 🥇의 주인공이 되어보세요!</span>
+                          <p>아직 [{DIFFICULTY_OPTIONS.find(o => o.key === selectedRankDiff)?.short || selectedRankDiff}] 난이도에 등록된 랭커가 없습니다.</p>
+                          <span>지금 퍼즐을 클리어하고 첫 1위 🥇의 주인공이 되어보세요!</span>
                         </div>
                       </td>
                     </tr>
@@ -1088,15 +1214,15 @@ const SudokuGame: React.FC<SudokuGameProps> = ({ username, room, onLeaveRoom }) 
 
             {/* Modal Footer */}
             <div className="rank-modal-footer">
-              <span className="excel-status-ready">STATUS: RANKINGS_SYNCED_LIVE</span>
+              <span className="rank-status-ready">STATUS: LIVE_SYNCHRONIZED</span>
               <button
-                className="excel-btn primary"
+                className="news-btn primary"
                 onClick={() => {
                   handleStartGame(selectedRankDiff);
                   setShowRankModal(false);
                 }}
               >
-                🎮 이 난이도로 도전하기
+                📰 이 난이도로 도전하기
               </button>
             </div>
           </div>

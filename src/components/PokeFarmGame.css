@@ -279,6 +279,24 @@
   align-items: center;
 }
 
+.pasture-live-skill-stream {
+  position: absolute;
+  left: 55%;
+  top: 10%;
+  pointer-events: none;
+  z-index: 25;
+  transform: scale(0.95);
+  transform-origin: left center;
+  animation: pastureStreamBurst 1.2s ease-out forwards;
+}
+
+@keyframes pastureStreamBurst {
+  0% { opacity: 0; transform: scale(0.5); }
+  15% { opacity: 1; transform: scale(1.05); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
 .shiny-sparkle-tag {
   position: absolute;
   top: -16px;
@@ -339,12 +357,115 @@
   align-items: center;
 }
 
+/* 🔊 쓰다듬기 효과음 토글 버튼 */
+.pet-mute-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #475569;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.pet-mute-btn.active {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.pet-mute-btn.muted {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.pet-mute-btn:hover {
+  transform: scale(1.04);
+}
+
+.pasture-top-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.pasture-sound-toggle-btn {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.pasture-sound-toggle-btn.active {
+  background: rgba(236, 253, 245, 0.95);
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.pasture-sound-toggle-btn.muted {
+  background: rgba(254, 242, 242, 0.95);
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.pasture-sound-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
 .pasture-touch-hint {
   text-align: center;
   font-size: 0.72rem;
   color: #14532d;
   background: rgba(255, 255, 255, 0.6);
-  padding: 3px 0;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pasture-hint-sound-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pasture-hint-sound-btn.active {
+  border-color: #10b981;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.pasture-hint-sound-btn.muted {
+  border-color: #ef4444;
+  color: #b91c1c;
+  background: #fef2f2;
 }
 
 .floating-heart {
@@ -4282,11 +4403,13 @@
   display: grid;
   grid-template-columns: 270px 1fr;
   gap: 14px;
+  min-height: 600px;
 }
 
 @media (max-width: 900px) {
   .dubuworld-main-frame {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
 }
 
@@ -4296,6 +4419,8 @@
   border-radius: 14px;
   padding: 14px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
 }
 
 /* ⬅️ Left Column Profile Card */
@@ -4421,6 +4546,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.detail-item.clickable-diploma {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.detail-item.clickable-diploma:hover {
+  background: #ecfdf5;
+  color: #047857;
+  transform: translateX(2px);
+}
+
+.detail-item.clickable-diploma .diploma-num {
+  color: #059669;
+  font-weight: 800;
 }
 
 .detail-item.hearts .heart-num {
@@ -4602,6 +4745,79 @@
   line-height: 1.4;
 }
 
+/* 📖 포켓몬 졸업 도감 홈 배너 위젯 */
+.pokedex-home-preview-widget {
+  background: linear-gradient(135deg, #fefce8 0%, #ecfdf5 100%);
+  border: 1.5px solid #fde047;
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 10px rgba(234, 179, 8, 0.1);
+  margin-top: 10px;
+}
+
+.pokedex-home-preview-widget:hover {
+  transform: translateY(-2px);
+  border-color: #eab308;
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.22);
+  background: linear-gradient(135deg, #fef9c3 0%, #d1fae5 100%);
+}
+
+.pokedex-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pokedex-preview-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pokedex-preview-icon {
+  font-size: 1.8rem;
+  animation: pokeballFloat 3s ease-in-out infinite;
+}
+
+.pokedex-preview-title strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #854d0e;
+  font-weight: 800;
+}
+
+.pokedex-preview-title span {
+  font-size: 0.76rem;
+  color: #a16207;
+}
+
+.pokedex-go-btn {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1.5px solid #facc15;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(202, 138, 4, 0.2);
+  transition: all 0.2s ease;
+}
+
+.pokedex-home-preview-widget:hover .pokedex-go-btn {
+  background: #facc15;
+  color: #713f12;
+  transform: scale(1.04);
+}
+
+.cytab-content.pokedex-view {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* 🖼️ Miniroom Viewport & Canvas */
 .miniroom-viewport-wrapper {
   display: flex;
@@ -4613,13 +4829,13 @@
 .miniroom-canvas-container {
   position: relative;
   width: 100%;
-  height: 360px;
-  min-height: 360px;
-  max-height: 360px;
-  border-radius: 10px;
+  height: 520px;
+  min-height: 500px;
+  max-height: 540px;
+  border-radius: 12px;
   border: 2px solid #89b3d9;
   overflow: hidden;
-  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.12);
   touch-action: none;
   user-select: none;
   background-size: cover;
@@ -4628,7 +4844,7 @@
 }
 
 .miniroom-canvas-container.compact {
-  height: 360px; /* 홈 뷰에서도 꾸미기 뷰와 100% 동일한 크기와 비율 유지 */
+  height: 520px; /* 홈 뷰에서도 꾸미기 뷰와 100% 동일한 크기와 비율 유지 */
   cursor: pointer;
 }
 
@@ -6121,31 +6337,44 @@
 .cert-stage-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: #ffffff;
   border: 1.5px solid #f59e0b;
   border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
+  padding: 5px 12px;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #78350f;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .cert-stage-btn img {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
+  pointer-events: none;
+}
+
+.cert-stage-btn span {
+  pointer-events: none;
 }
 
 .cert-stage-btn:hover {
   background: #fef3c7;
+  border-color: #d97706;
+}
+
+.cert-stage-btn:active {
+  transform: scale(0.96);
 }
 
 .cert-stage-btn.active {
   background: #f59e0b;
   color: #ffffff;
+  border-color: #d97706;
   box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
 }
 
@@ -6491,19 +6720,77 @@
    📱 Mobile Responsiveness for Dubuworld Minihompy & Miniroom
    ========================================================================= */
 @media (max-width: 768px) {
+  /* 🏡 포켓농장 모바일 최상위 컨테이너 가로 스크롤 완전 방지 */
+  .poke-farm-container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .farm-header {
+    padding: 6px 8px;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .farm-title-box {
+    gap: 6px;
+  }
+
+  .farm-title-box h2 {
+    font-size: 0.95rem;
+  }
+
+  .farm-sub {
+    font-size: 0.68rem;
+  }
+
+  .farm-kpi-bar {
+    width: 100%;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .kpi-chip {
+    padding: 2px 7px;
+    font-size: 0.68rem;
+  }
+
+  .excel-btn.farm-auth-btn,
+  .excel-btn.close {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .farm-workspace-body {
+    padding: 6px 4px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  /* ⛺ 두부월드 미니홈피 모바일 일체형 축소 프레임 */
   .dubuworld-minihompy-wrapper {
-    padding: 8px;
-    border-radius: 12px;
-    gap: 8px;
+    padding: 6px;
+    border-radius: 10px;
+    gap: 6px;
+    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
   }
 
   .dubuworld-top-browser-bar {
-    padding: 8px 10px;
+    padding: 6px 8px;
     gap: 6px;
     border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .dubuworld-header-title-box {
@@ -6511,11 +6798,11 @@
   }
 
   .dubuworld-title-text {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
   }
 
   .dubuworld-owner-tag {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     padding: 2px 6px;
   }
 
@@ -6527,456 +6814,473 @@
 
   .dubuworld-visitor-counter {
     gap: 4px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
 
   .today-badge,
   .total-badge {
     padding: 2px 6px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
 
+  /* 🖼️ 미니홈피 2단 프레임 모바일 단일 컬럼 & 가로 스크롤 방지 */
   .dubuworld-main-frame {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .dubuworld-profile-col,
+  .dubuworld-content-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .dubuworld-card {
-    padding: 10px;
+    padding: 8px;
     border-radius: 10px;
     box-sizing: border-box;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden;
   }
 
-  /* 🧭 서브탭 가로 스크롤 가능하도록 처리하여 줄바꿈 깨짐 방지 */
-  .dubuworld-subtabs {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 6px;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-
-  .dubuworld-subtabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .cytab {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 6px 10px;
-    font-size: 0.76rem;
-  }
-
-  /* 🖼️ 미니룸 캔버스 뷰포트 모바일 최적화 */
-  .miniroom-viewport-wrapper {
-    width: 100%;
-    max-width: 100%;
+  .cytab-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
-  .miniroom-canvas-container,
-  .miniroom-canvas-container.compact {
-    width: 100%;
-    height: 290px;
-    min-height: 260px;
-    max-height: 330px;
-    border-radius: 8px;
-    box-sizing: border-box;
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  .miniroom-window {
-    width: 48px;
-    height: 40px;
-    top: 6px;
-    right: 10px;
-  }
-
-  .window-sun {
-    font-size: 0.95rem;
-  }
-
-  .window-cloud {
-    font-size: 0.75rem;
-  }
-
-  /* 🐾 미니룸 내 포켓몬 및 스티커 모바일 사이즈 최적화 */
-  .poke-sprite {
-    width: 52px;
-    height: 52px;
-  }
-
-  .pokemon-name-tag {
-    font-size: 0.62rem;
-    padding: 1px 5px;
-  }
-
-  .stk-icon {
-    font-size: 1.8rem;
-  }
-
-  .custom-decor-text {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    max-width: 90%;
-    word-break: break-word;
-  }
-
-  /* 🎨 미니룸 배경 선택 바 모바일 가로 스크롤 */
-  .miniroom-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+  /* ⬅️ 프로필 카드 요소 모바일 슬림 축소 (세로 공간 50% 절약) */
+  .dubuworld-profile-col .profile-card {
+    padding: 8px;
     gap: 6px;
-    margin-bottom: 8px;
   }
 
-  .bg-select-group {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    width: 100%;
-  }
-
-  .bg-select-group::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bg-tab-btn {
-    white-space: nowrap;
-    flex-shrink: 0;
+  .profile-today-bar {
     padding: 4px 8px;
     font-size: 0.7rem;
+    border-radius: 6px;
   }
 
-  /* 🌟 데코 서브모드 & 카테고리 필터 모바일 가로 스크롤 */
-  .decor-submode-tabs {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-
-  .decor-submode-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .decor-subtab {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 5px 10px;
-    font-size: 0.76rem;
-  }
-
-  .decor-category-filters {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
-    width: 100%;
-  }
-
-  .decor-category-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  .cat-filter-chip {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 3px 10px;
-    font-size: 0.72rem;
-  }
-
-  /* 🎨 스티커 팔레트 모바일 그리드 */
-  .sticker-palette-grid {
-    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-    gap: 6px;
-    max-height: 280px;
-    padding: 2px;
-  }
-
-  .sticker-palette-item {
-    padding: 6px 4px;
-    gap: 4px;
-  }
-
-  .sticker-palette-item .stk-icon {
-    font-size: 1.5rem;
-  }
-
-  .sticker-palette-item .stk-label {
-    font-size: 0.65rem;
-  }
-
-  /* 🎛️ 아이템 편집 바 모바일 최적화 */
-  .miniroom-item-editor-bar {
-    padding: 8px;
-    width: 100%;
-    box-sizing: border-box;
-    gap: 6px;
-  }
-
-  .control-row {
-    gap: 4px;
-  }
-
-  .control-title {
-    min-width: 58px;
-    font-size: 0.72rem;
-  }
-  /* 🧭 서브탭 가로 스크롤 가능하도록 처리하여 줄바꿈 깨짐 방지 */
-  .dubuworld-subtabs {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 6px;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-
-  .dubuworld-subtabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .cytab {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 6px 10px;
-    font-size: 0.76rem;
-  }
-
-  /* 🖼️ 미니룸 캔버스 뷰포트 모바일 최적화 */
-  .miniroom-viewport-wrapper {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
-
-  .miniroom-canvas-container,
-  .miniroom-canvas-container.compact {
-    width: 100%;
-    height: 290px;
-    min-height: 260px;
-    max-height: 330px;
-    border-radius: 8px;
-    box-sizing: border-box;
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  .miniroom-window {
-    width: 48px;
-    height: 40px;
-    top: 6px;
-    right: 10px;
-  }
-
-  .window-sun {
-    font-size: 0.95rem;
-  }
-
-  .window-cloud {
-    font-size: 0.75rem;
-  }
-
-  /* 🐾 미니룸 내 포켓몬 및 스티커 모바일 사이즈 최적화 */
-  .poke-sprite {
-    width: 52px;
-    height: 52px;
-  }
-
-  .pokemon-name-tag {
-    font-size: 0.62rem;
-    padding: 1px 5px;
-  }
-
-  .stk-icon {
-    font-size: 1.8rem;
-  }
-
-  .custom-decor-text {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    max-width: 90%;
-    word-break: break-word;
-  }
-
-  /* 🎨 미니룸 배경 선택 바 모바일 가로 스크롤 */
-  .miniroom-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  .bg-select-group {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    width: 100%;
-  }
-
-  .bg-select-group::-webkit-scrollbar {
-    display: none;
-  }
-
-  .bg-tab-btn {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
-
-  /* 🌟 데코 서브모드 & 카테고리 필터 모바일 가로 스크롤 */
-  .decor-submode-tabs {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-
-  .decor-submode-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .decor-subtab {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 5px 10px;
-    font-size: 0.76rem;
-  }
-
-  .decor-category-filters {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
-    width: 100%;
-  }
-
-  .decor-category-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  .cat-filter-chip {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 3px 10px;
-    font-size: 0.72rem;
-  }
-
-  /* 🎨 스티커 팔레트 모바일 그리드 */
-  .sticker-palette-grid {
-    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-    gap: 6px;
-    max-height: 280px;
-    padding: 2px;
-  }
-
-  .sticker-palette-item {
-    padding: 6px 4px;
-    gap: 4px;
-  }
-
-  .sticker-palette-item .stk-icon {
-    font-size: 1.5rem;
-  }
-
-  .sticker-palette-item .stk-label {
-    font-size: 0.65rem;
-  }
-
-  /* 🎛️ 아이템 편집 바 모바일 최적화 */
-  .miniroom-item-editor-bar {
-    padding: 8px;
-    width: 100%;
-    box-sizing: border-box;
-    gap: 6px;
-  }
-
-  .control-row {
-    gap: 4px;
-  }
-
-  .control-title {
-    min-width: 58px;
-    font-size: 0.72rem;
-  }
-
-  .angle-range-slider {
-    min-width: 80px;
-  }
-
-  /* ⬅️ 프로필 카드 요소 모바일 최적화 */
   .dubuworld-photo-frame {
-    padding: 10px;
+    padding: 6px;
+    border-radius: 8px;
   }
 
   .profile-sprite {
-    width: 80px;
-    height: 80px;
+    width: 56px;
+    height: 56px;
   }
 
-  .profile-details-list {
-    padding: 8px 10px;
-    font-size: 0.76rem;
+  .profile-poke-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
   }
 
   .dubuworld-status-box {
-    padding: 8px 10px;
+    padding: 5px 8px;
+    border-radius: 6px;
+  }
+
+  .status-header {
+    font-size: 0.7rem;
+  }
+
+  .status-msg-text {
+    font-size: 0.72rem;
+    margin: 2px 0 0;
+  }
+
+  .profile-details-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 6px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    border-radius: 6px;
   }
 
   .dubuworld-heart-btn {
-    padding: 8px;
-    font-size: 0.78rem;
+    padding: 6px;
+    font-size: 0.75rem;
+  }
+
+  /* 🧭 서브탭 (가로 스크롤은 서브탭 내부에서만 동작, 부모 밀림 차단) */
+  .dubuworld-subtabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .dubuworld-subtabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cytab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+
+  /* 🖼️ 미니룸 환영 배너 축소 */
+  .dubuworld-welcome-banner {
+    padding: 4px 8px;
+    margin-bottom: 6px;
+  }
+
+  .dubuworld-welcome-banner h3 {
+    font-size: 0.8rem;
+  }
+
+  .dubuworld-welcome-banner p {
+    display: none; /* 모바일 높이 절약을 위해 부가 설명 숨김 */
+  }
+
+  .miniroom-preview-box {
+    margin-bottom: 6px;
+  }
+
+  .preview-label {
+    font-size: 0.68rem;
+    padding: 2px 0;
+  }
+
+  /* 🖼️ 미니룸 캔버스 뷰포트 모바일 최적화 (220px 축소 핏으로 한눈에 보기) */
+  .miniroom-viewport-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .miniroom-canvas-container,
+  .miniroom-canvas-container.compact {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 380px !important;
+    min-height: 360px !important;
+    max-height: 400px !important;
+    border-radius: 10px;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    touch-action: none;
+  }
+
+  .miniroom-window {
+    width: 50px;
+    height: 42px;
+    top: 10px;
+    right: 12px;
+  }
+
+  .window-sun {
+    font-size: 0.95rem;
+  }
+
+  .window-cloud {
+    font-size: 0.75rem;
+  }
+
+  /* 🐾 미니룸 내 포켓몬 및 스티커 모바일 사이즈 최적화 */
+  .poke-sprite {
+    width: 56px;
+    height: 56px;
+  }
+
+  .pokemon-name-tag {
+    font-size: 0.58rem;
+    padding: 1px 4px;
+  }
+
+  .stk-icon {
+    font-size: 1.4rem;
+  }
+
+  .custom-decor-text {
+    font-size: 0.72rem;
+    padding: 3px 6px;
+    max-width: 85%;
+    word-break: break-word;
+  }
+
+  /* 🎨 미니룸 배경 선택 바 모바일 가로 스크롤 */
+  .miniroom-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin-bottom: 6px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .bg-select-group {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .bg-select-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bg-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+
+  /* 🌟 데코 서브모드 & 카테고리 필터 모바일 가로 스크롤 */
+  .decor-submode-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .decor-submode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .decor-subtab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+
+  .decor-category-filters {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  .decor-category-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cat-filter-chip {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 3px 8px;
+    font-size: 0.68rem;
+  }
+
+  /* 🎨 스티커 팔레트 모바일 그리드 */
+  .sticker-palette-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 5px;
+    max-height: 240px;
+    padding: 2px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .sticker-palette-item {
+    padding: 5px 3px;
+    gap: 3px;
+  }
+
+  .sticker-palette-item .stk-icon {
+    font-size: 1.35rem;
+  }
+
+  .sticker-palette-item .stk-label {
+    font-size: 0.62rem;
+  }
+
+  /* 🎛️ 아이템 편집 바 모바일 최적화 */
+  .miniroom-item-editor-bar {
+    padding: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 4px;
+  }
+
+  .control-row {
+    gap: 4px;
+  }
+
+  .control-title {
+    min-width: 52px;
+    font-size: 0.68rem;
+  }
+
+  .angle-range-slider {
+    min-width: 70px;
   }
 
   /* 📝 방명록 모바일 최적화 */
+  .recent-guestbook-widget {
+    margin-top: 6px;
+  }
+
   .gb-input-row {
     flex-direction: column;
     gap: 6px;
   }
 
   .dubuworld-gb-card {
+    padding: 6px 8px;
+  }
+
+  /* 📖 도감 뷰 및 홈 배너 모바일 최적화 */
+  .pokedex-home-preview-widget {
     padding: 8px 10px;
+    margin-top: 6px;
+  }
+
+  .pokedex-preview-icon {
+    font-size: 1.3rem;
+  }
+
+  .pokedex-preview-title strong {
+    font-size: 0.8rem;
+  }
+
+  .pokedex-preview-title span {
+    font-size: 0.68rem;
+  }
+
+  .pokedex-go-btn {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+
+  .pokedex-top-banner {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .pokedex-book-icon {
+    font-size: 1.6rem;
+  }
+
+  .pokedex-banner-title h3 {
+    font-size: 0.92rem;
+  }
+
+  .pokedex-banner-title p {
+    font-size: 0.72rem;
+  }
+
+  .pokedex-view-tabs {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .pokedex-subtab-btn {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    flex: 1;
+    text-align: center;
+  }
+
+  .pokedex-stats-bar {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .pokedex-kpi-val {
+    font-size: 0.82rem;
+  }
+
+  .pokedex-filter-bar {
+    gap: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .pokedex-filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pokedex-filter-chip {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .pokedex-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+  }
+
+  .pokedex-card {
+    padding: 6px;
+  }
+
+  .pokedex-id-no {
+    font-size: 0.6rem;
+  }
+
+  .pokedex-grad-count-badge {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+  }
+
+  .pokedex-sprite-img {
+    width: 46px;
+    height: 46px;
+  }
+
+  .pokedex-mon-name {
+    font-size: 0.72rem;
   }
 }
 
@@ -7605,362 +7909,1596 @@
   50% { transform: scale(1.15); }
 }
 
-/* ⚡ 1. 피카츄: 100만볼트 (skill-fx-thunderbolt) */
-.skill-fx-thunderbolt .skill-fx-core {
+/* =========================================================================
+   💥 포켓몬 지속 방출형 고유스킬 스트림 (Continuous Blast Streams)
+   sill-example.png 애니메이션 원작 스타일 12종 전체 구현
+   ========================================================================= */
+
+.skill-fx-display {
+  position: relative;
+  width: 240px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.skill-fx-display.preview-mini {
+  width: 140px;
+  height: 60px;
+  transform: scale(0.65);
+  transform-origin: center center;
+}
+
+.skill-blast-stream {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+}
+
+.stream-svg {
   position: absolute;
-  width: 75px;
-  height: 75px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(254, 240, 138, 0.8) 0%, rgba(250, 204, 21, 0.5) 50%, transparent 75%);
-  animation: thunderCorePulse 0.15s infinite alternate ease-in-out;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.skill-fx-thunderbolt .skill-fx-aura {
+/* =========================================================================
+   🔥 1. 화염방사 & 대문자 (Fire Blast Stream)
+   파이리, 브케인, 아차모, 불꽃숭이, 뚜꾸리, 푸호꼬, 냐오불, 염버니, 뜨아거, 부스터 등 불꽃 전원
+   ========================================================================= */
+.stream-fire .fire-wave.wave-1 {
+  animation: fireWaveOuter 0.12s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+.stream-fire .fire-wave.wave-2 {
+  animation: fireWaveMid 0.08s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+.stream-fire .fire-wave.wave-3 {
+  animation: fireWaveCore 0.05s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+@keyframes fireWaveOuter {
+  0% { transform: scaleY(0.92) skewY(-2deg); opacity: 0.88; }
+  100% { transform: scaleY(1.08) skewY(2deg); opacity: 1; filter: drop-shadow(0 0 12px #ea580c); }
+}
+
+@keyframes fireWaveMid {
+  0% { transform: scaleY(0.88) scaleX(0.97); opacity: 0.9; }
+  100% { transform: scaleY(1.12) scaleX(1.02); opacity: 1; }
+}
+
+@keyframes fireWaveCore {
+  0% { transform: scaleY(0.85); opacity: 0.95; }
+  100% { transform: scaleY(1.18); opacity: 1; filter: drop-shadow(0 0 8px #fef08a); }
+}
+
+/* 불티 파티클 분사 */
+.fire-embers .ember {
   position: absolute;
-  width: 90px;
-  height: 90px;
-  border: 2px dashed #facc15;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  box-shadow: 0 0 18px #eab308, inset 0 0 12px #fef08a;
-  animation: electricSpin 1.2s infinite linear;
+  background: #fef08a;
+  box-shadow: 0 0 8px #f97316;
+  opacity: 0;
 }
 
-@keyframes thunderCorePulse {
-  0% { transform: scale(0.9); opacity: 0.7; filter: drop-shadow(0 0 6px #facc15); }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #fef08a); }
+.fire-embers .eb-1 { top: 38%; left: 10%; animation: emberFly 0.5s infinite linear; animation-delay: 0s; }
+.fire-embers .eb-2 { top: 48%; left: 20%; animation: emberFly 0.45s infinite linear; animation-delay: 0.1s; }
+.fire-embers .eb-3 { top: 25%; left: 35%; animation: emberFly 0.55s infinite linear; animation-delay: 0.2s; }
+.fire-embers .eb-4 { top: 62%; left: 30%; animation: emberFly 0.48s infinite linear; animation-delay: 0.15s; }
+.fire-embers .eb-5 { top: 42%; left: 45%; animation: emberFly 0.52s infinite linear; animation-delay: 0.3s; }
+
+@keyframes emberFly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  50% { opacity: 0.9; }
+  100% { transform: translate(140px, -15px) scale(0.2); opacity: 0; }
 }
 
-@keyframes electricSpin {
+/* =========================================================================
+   💧 2. 하이드로펌프 & 물대포 (Hydro Pump Stream)
+   꼬부기, 리아코, 물짱이, 팽도리, 수댕이, 개구마르, 누리공, 울머기, 꾸왁스, 잉어킹, 갸라도스 등 물 전원
+   ========================================================================= */
+.stream-water .water-wave.wave-1 {
+  animation: waterSurgeOuter 0.25s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+.stream-water .water-wave.wave-2 {
+  animation: waterSurgeCore 0.15s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+.stream-water .water-spiral {
+  animation: waterSpiralFlow 0.4s infinite linear;
+}
+
+@keyframes waterSurgeOuter {
+  0% { transform: scaleY(0.9); filter: drop-shadow(0 0 8px #0284c7); }
+  100% { transform: scaleY(1.1); filter: drop-shadow(0 0 16px #38bdf8); }
+}
+
+@keyframes waterSurgeCore {
+  0% { transform: scaleY(0.85) scaleX(0.98); }
+  100% { transform: scaleY(1.15) scaleX(1.02); }
+}
+
+@keyframes waterSpiralFlow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -28; }
+}
+
+.water-bubbles .bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px #38bdf8;
+  opacity: 0;
+}
+
+.water-bubbles .bb-1 { width: 8px; height: 8px; top: 32%; left: 15%; animation: bubbleSplash 0.6s infinite ease-out; animation-delay: 0s; }
+.water-bubbles .bb-2 { width: 11px; height: 11px; top: 48%; left: 25%; animation: bubbleSplash 0.55s infinite ease-out; animation-delay: 0.12s; }
+.water-bubbles .bb-3 { width: 6px; height: 6px; top: 60%; left: 35%; animation: bubbleSplash 0.65s infinite ease-out; animation-delay: 0.24s; }
+.water-bubbles .bb-4 { width: 9px; height: 9px; top: 28%; left: 45%; animation: bubbleSplash 0.5s infinite ease-out; animation-delay: 0.18s; }
+.water-bubbles .bb-5 { width: 7px; height: 7px; top: 52%; left: 55%; animation: bubbleSplash 0.58s infinite ease-out; animation-delay: 0.3s; }
+
+@keyframes bubbleSplash {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  100% { transform: translate(130px, 10px) scale(1.4); opacity: 0; }
+}
+
+/* =========================================================================
+   ⚡ 3. 100만볼트 & 볼트태클 (Thunderbolt Surge)
+   피카츄, 라이츄, 쥬피썬더, 알로라 라이츄 등 전기 전원
+   ========================================================================= */
+.stream-thunder .thunder-bolt.bolt-main {
+  animation: thunderBoltJitter 0.08s infinite alternate steps(2);
+}
+
+.stream-thunder .thunder-bolt.bolt-outer {
+  animation: thunderAuraFlash 0.12s infinite alternate ease-in-out;
+}
+
+.stream-thunder .thunder-branch {
+  animation: thunderBranchZap 0.1s infinite alternate steps(3);
+}
+
+@keyframes thunderBoltJitter {
+  0% { transform: translateY(-2px); filter: drop-shadow(0 0 8px #fef08a); opacity: 0.9; }
+  100% { transform: translateY(2px); filter: drop-shadow(0 0 20px #facc15); opacity: 1; }
+}
+
+@keyframes thunderAuraFlash {
+  0% { opacity: 0.5; stroke-width: 9; }
+  100% { opacity: 0.95; stroke-width: 14; }
+}
+
+@keyframes thunderBranchZap {
+  0% { opacity: 0.2; }
+  100% { opacity: 1; }
+}
+
+.thunder-sparks .spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #ffffff;
+  box-shadow: 0 0 10px #facc15, 0 0 4px #ffffff;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.thunder-sparks .sp-1 { top: 30%; left: 20%; animation: sparkJolt 0.3s infinite ease-in; animation-delay: 0s; }
+.thunder-sparks .sp-2 { top: 60%; left: 40%; animation: sparkJolt 0.25s infinite ease-in; animation-delay: 0.08s; }
+.thunder-sparks .sp-3 { top: 22%; left: 60%; animation: sparkJolt 0.35s infinite ease-in; animation-delay: 0.15s; }
+.thunder-sparks .sp-4 { top: 68%; left: 75%; animation: sparkJolt 0.28s infinite ease-in; animation-delay: 0.1s; }
+.thunder-sparks .sp-5 { top: 45%; left: 85%; animation: sparkJolt 0.32s infinite ease-in; animation-delay: 0.2s; }
+
+@keyframes sparkJolt {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.5) translate(30px, -10px); opacity: 0; }
+}
+
+/* =========================================================================
+   🍃 4. 솔라빔 & 잎날가르기 (Solar Beam Stream)
+   이상해씨, 치코리타, 나무지기, 모부기, 주리비얀, 도치마론, 나몰빼미, 흥나숭, 나오하, 리피아, 세레비 등 풀 전원
+   ========================================================================= */
+.stream-solar .solar-beam-core {
+  animation: solarCorePulse 0.2s infinite alternate ease-in-out;
+}
+
+.stream-solar .solar-ring {
+  animation: solarRingSpin 0.8s infinite linear;
+  transform-origin: center center;
+}
+
+@keyframes solarCorePulse {
+  0% { transform: scaleY(0.9); opacity: 0.85; filter: drop-shadow(0 0 10px #4ade80); }
+  100% { transform: scaleY(1.15); opacity: 1; filter: drop-shadow(0 0 24px #22c55e); }
+}
+
+@keyframes solarRingSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-/* 🔥 2. 파이리: 화염방사 & 대문자 (skill-fx-fireblast) */
-.skill-fx-fireblast .skill-fx-core {
+.solar-leaves .leaf-particle {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fef08a 0%, #f97316 45%, #dc2626 70%, transparent 85%);
-  animation: fireFlameBurn 0.4s infinite alternate ease-in-out;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: leafWhirl 0.6s infinite linear;
 }
 
-.skill-fx-fireblast .skill-fx-aura {
+.solar-leaves .lf-1 { top: 20%; left: 20%; animation-delay: 0s; }
+.solar-leaves .lf-2 { top: 55%; left: 35%; animation-delay: 0.15s; }
+.solar-leaves .lf-3 { top: 25%; left: 55%; animation-delay: 0.3s; }
+.solar-leaves .lf-4 { top: 50%; left: 75%; animation-delay: 0.45s; }
+
+@keyframes leafWhirl {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.6); opacity: 1; }
+  100% { transform: translate(110px, -15px) rotate(360deg) scale(1.1); opacity: 0; }
+}
+
+/* =========================================================================
+   👻 5. 섀도볼 & 암흑 파동 (Shadow Void Stream)
+   고오스, 고우스트, 팬텀, 블래키, 히스이 조로아크 등 고스트/악 전원
+   ========================================================================= */
+.stream-shadow .shadow-smoke.sm-1 {
+  animation: shadowVortex 0.4s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+.stream-shadow .shadow-smoke.sm-2 {
+  animation: shadowPulseCore 0.25s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+@keyframes shadowVortex {
+  0% { transform: scaleY(0.9) skewY(-3deg); filter: drop-shadow(0 0 10px #a855f7); }
+  100% { transform: scaleY(1.15) skewY(3deg); filter: drop-shadow(0 0 22px #7e22ce); }
+}
+
+@keyframes shadowPulseCore {
+  0% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.shadow-wisps .wisp {
   position: absolute;
-  width: 95px;
-  height: 95px;
-  border-radius: 50%;
-  border: 3px double #ea580c;
-  box-shadow: 0 0 20px rgba(234, 88, 12, 0.8), inset 0 0 15px rgba(239, 68, 68, 0.6);
-  animation: flameVortex 2s infinite linear;
+  font-size: 0.95rem;
+  opacity: 0;
+  animation: wispDrift 0.7s infinite ease-out;
 }
 
-@keyframes fireFlameBurn {
-  0% { transform: scale(0.85) rotate(-5deg); opacity: 0.8; }
-  100% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+.shadow-wisps .ws-1 { top: 30%; left: 25%; animation-delay: 0s; }
+.shadow-wisps .ws-2 { top: 55%; left: 45%; animation-delay: 0.2s; }
+.shadow-wisps .ws-3 { top: 22%; left: 65%; animation-delay: 0.35s; }
+.shadow-wisps .ws-4 { top: 62%; left: 80%; animation-delay: 0.5s; }
+
+@keyframes wispDrift {
+  0% { transform: translate(0, 0) scale(0.8); opacity: 1; }
+  100% { transform: translate(100px, -20px) scale(1.3); opacity: 0; }
 }
 
-@keyframes flameVortex {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* =========================================================================
+   🔮 6. 사이코키네시스 (Psychic Wave Distortion)
+   뮤, 뮤츠, 에브이, 고라파덕, 골덕, 지라치 등 에스퍼 전원
+   ========================================================================= */
+.stream-psychic .psychic-core-beam {
+  animation: psychicBeamGlow 0.2s infinite alternate ease-in-out;
 }
 
-/* 💧 3. 꼬부기: 하이드로펌프 (skill-fx-hydropump) */
-.skill-fx-hydropump .skill-fx-core {
-  position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #bae6fd 0%, #38bdf8 40%, #0284c7 70%, transparent 85%);
-  animation: waterRipple 1.2s infinite ease-out;
+.stream-psychic .psychic-wave-ring {
+  animation: psychicRingPulse 0.5s infinite alternate ease-in-out;
+  transform-origin: center center;
 }
 
-.skill-fx-hydropump .skill-fx-aura {
-  position: absolute;
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  border: 3px solid rgba(56, 189, 248, 0.6);
-  box-shadow: 0 0 16px #0284c7, inset 0 0 10px #7dd3fc;
-  animation: waterSpin 3s infinite linear;
+@keyframes psychicBeamGlow {
+  0% { opacity: 0.7; filter: drop-shadow(0 0 8px #f472b6); }
+  100% { opacity: 1; filter: drop-shadow(0 0 20px #db2777); }
 }
 
-@keyframes waterRipple {
-  0% { transform: scale(0.7); opacity: 1; }
-  100% { transform: scale(1.2); opacity: 0.4; }
-}
-
-@keyframes waterSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
-}
-
-/* 🍃 4. 이상해씨: 솔라빔 (skill-fx-solarbeam) */
-.skill-fx-solarbeam .skill-fx-core {
-  position: absolute;
-  width: 82px;
-  height: 82px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fef08a 0%, #86efac 35%, #22c55e 65%, transparent 85%);
-  animation: solarBeamPulse 0.8s infinite alternate ease-in-out;
-}
-
-.skill-fx-solarbeam .skill-fx-aura {
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 2px dashed #4ade80;
-  box-shadow: 0 0 18px #16a34a, inset 0 0 10px #bbf7d0;
-  animation: leafSpin 4s infinite linear;
-}
-
-@keyframes solarBeamPulse {
-  0% { transform: scale(0.9); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px #22c55e); }
-}
-
-@keyframes leafSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* 🌪️ 5. 피존: 폭풍 & 에어슬래시 (skill-fx-hurricane) */
-.skill-fx-hurricane .skill-fx-core {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #bae6fd 40%, #7dd3fc 65%, transparent 85%);
-  animation: hurricanePulse 0.5s infinite alternate ease-in-out;
-}
-
-.skill-fx-hurricane .skill-fx-aura {
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  border-radius: 40%;
-  border: 3px solid #38bdf8;
-  box-shadow: 0 0 20px #0284c7;
-  animation: tornadoSpin 0.6s infinite linear;
-}
-
-@keyframes hurricanePulse {
-  0% { transform: scale(0.85); opacity: 0.7; }
+@keyframes psychicRingPulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
   100% { transform: scale(1.1); opacity: 1; }
 }
 
-@keyframes tornadoSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* 👻 6. 팬텀: 섀도볼 (skill-fx-shadowball) */
-.skill-fx-shadowball .skill-fx-core {
+.psychic-sparkles .p-sparkle {
   position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #e9d5ff 0%, #a855f7 40%, #581c87 75%, transparent 90%);
-  animation: shadowPulse 1s infinite alternate ease-in-out;
+  font-size: 0.95rem;
+  opacity: 0;
+  animation: psychicFloat 0.6s infinite ease-out;
 }
 
-.skill-fx-shadowball .skill-fx-aura {
+.psychic-sparkles .ps-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.psychic-sparkles .ps-2 { top: 58%; left: 40%; animation-delay: 0.15s; }
+.psychic-sparkles .ps-3 { top: 30%; left: 65%; animation-delay: 0.3s; }
+.psychic-sparkles .ps-4 { top: 62%; left: 82%; animation-delay: 0.45s; }
+
+@keyframes psychicFloat {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 1; }
+  100% { transform: translate(90px, 0) scale(1.2); opacity: 0; }
+}
+
+/* =========================================================================
+   🌪️ 7. 폭풍 & 에어슬래시 (Hurricane Cyclone)
+   ========================================================================= */
+.stream-hurricane .hurricane-slash {
+  animation: hurricaneSlashAnim 0.15s infinite alternate ease-in-out;
+}
+
+@keyframes hurricaneSlashAnim {
+  0% { transform: translateY(-3px) scaleY(0.9); filter: drop-shadow(0 0 6px #38bdf8); }
+  100% { transform: translateY(3px) scaleY(1.1); filter: drop-shadow(0 0 16px #0284c7); }
+}
+
+.hurricane-gust .gust {
   position: absolute;
-  width: 94px;
-  height: 94px;
-  border-radius: 50%;
-  border: 2px dashed #9333ea;
-  box-shadow: 0 0 22px #6b21a8, inset 0 0 14px #3b0764;
-  animation: shadowWisp 2.5s infinite linear;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: gustFly 0.45s infinite linear;
 }
 
-@keyframes shadowPulse {
-  0% { transform: scale(0.85); opacity: 0.7; filter: drop-shadow(0 0 6px #a855f7); }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 20px #9333ea); }
+.hurricane-gust .g-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.hurricane-gust .g-2 { top: 50%; left: 45%; animation-delay: 0.15s; }
+.hurricane-gust .g-3 { top: 35%; left: 70%; animation-delay: 0.3s; }
+
+@keyframes gustFly {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 1; }
+  100% { transform: translate(120px, 0) scale(1.2); opacity: 0; }
 }
 
-@keyframes shadowWisp {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
+/* =========================================================================
+   🐉 8. 용의 파동 & 용성군 (Draco Dragon Breath)
+   ========================================================================= */
+.stream-draco .draco-breath {
+  animation: dracoBreathPulse 0.18s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
 }
 
-/* 🔮 7. 뮤츠: 사이코키네시스 (skill-fx-psychic) */
-.skill-fx-psychic .skill-fx-core {
+@keyframes dracoBreathPulse {
+  0% { transform: scaleY(0.88); filter: drop-shadow(0 0 10px #8b5cf6); }
+  100% { transform: scaleY(1.14); filter: drop-shadow(0 0 24px #ec4899); }
+}
+
+.draco-stars .d-star {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fce7f3 0%, #f472b6 40%, #db2777 75%, transparent 90%);
-  animation: psychicWave 1.4s infinite ease-out;
+  font-size: 1rem;
+  opacity: 0;
+  animation: dracoStarFly 0.5s infinite linear;
 }
 
-.skill-fx-psychic .skill-fx-aura {
+.draco-stars .ds-1 { top: 30%; left: 25%; animation-delay: 0s; }
+.draco-stars .ds-2 { top: 55%; left: 50%; animation-delay: 0.18s; }
+.draco-stars .ds-3 { top: 35%; left: 75%; animation-delay: 0.35s; }
+
+@keyframes dracoStarFly {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  100% { transform: translate(110px, -10px) scale(1.3); opacity: 0; }
+}
+
+/* =========================================================================
+   ⭐ 9. 파괴광선 & 기가임팩트 (Hyper Beam Destruction)
+   ========================================================================= */
+.stream-giga .giga-laser {
+  animation: gigaLaserPulse 0.1s infinite alternate ease-in-out;
+}
+
+@keyframes gigaLaserPulse {
+  0% { opacity: 0.75; filter: drop-shadow(0 0 10px #fbbf24); }
+  100% { opacity: 1; filter: drop-shadow(0 0 24px #f59e0b); }
+}
+
+.giga-shocks .shock {
   position: absolute;
-  width: 95px;
-  height: 95px;
-  border-radius: 50%;
-  border: 2px solid #ec4899;
-  box-shadow: 0 0 20px #db2777, inset 0 0 12px #fbcfe8;
-  animation: psychicRings 2s infinite ease-in-out;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: gigaShockFly 0.4s infinite linear;
 }
 
-@keyframes psychicWave {
+.giga-shocks .sk-1 { top: 30%; left: 20%; animation-delay: 0s; }
+.giga-shocks .sk-2 { top: 48%; left: 45%; animation-delay: 0.12s; }
+.giga-shocks .sk-3 { top: 36%; left: 70%; animation-delay: 0.25s; }
+
+@keyframes gigaShockFly {
   0% { transform: scale(0.7); opacity: 1; }
-  100% { transform: scale(1.25); opacity: 0.3; }
+  100% { transform: translate(110px, 0) scale(1.5); opacity: 0; }
 }
 
-@keyframes psychicRings {
-  0%, 100% { transform: scale(0.95) rotate(0deg); }
-  50% { transform: scale(1.1) rotate(180deg); }
+/* =========================================================================
+   ❄️ 10. 눈보라 & 절대영도 (Blizzard Freeze Stream)
+   ========================================================================= */
+.stream-blizzard .blizzard-cone {
+  animation: blizzardJitter 0.15s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
 }
 
-/* 🐉 8. 망나뇽: 용성군 (skill-fx-dracometeor) */
-.skill-fx-dracometeor .skill-fx-core {
+@keyframes blizzardJitter {
+  0% { transform: scaleY(0.9); filter: drop-shadow(0 0 8px #67e8f9); }
+  100% { transform: scaleY(1.1); filter: drop-shadow(0 0 18px #38bdf8); }
+}
+
+.blizzard-flakes .flake {
   position: absolute;
+  font-size: 1rem;
+  opacity: 0;
+  animation: flakeBlast 0.5s infinite ease-out;
+}
+
+.blizzard-flakes .fk-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.blizzard-flakes .fk-2 { top: 55%; left: 40%; animation-delay: 0.12s; }
+.blizzard-flakes .fk-3 { top: 30%; left: 65%; animation-delay: 0.25s; }
+.blizzard-flakes .fk-4 { top: 60%; left: 80%; animation-delay: 0.38s; }
+
+@keyframes flakeBlast {
+  0% { transform: translate(0, 0) scale(0.7) rotate(0deg); opacity: 1; }
+  100% { transform: translate(110px, 10px) scale(1.3) rotate(180deg); opacity: 0; }
+}
+
+/* =========================================================================
+   💥 11. 파동탄 & 대지의 분노 (Aura Sphere Stream)
+   ========================================================================= */
+.stream-aura .aura-blast {
+  animation: auraPulseWave 0.18s infinite alternate ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+@keyframes auraPulseWave {
+  0% { transform: scaleY(0.85); filter: drop-shadow(0 0 8px #3b82f6); }
+  100% { transform: scaleY(1.15); filter: drop-shadow(0 0 20px #2563eb); }
+}
+
+.aura-pulses .pulse {
+  position: absolute;
+  font-size: 1rem;
+  opacity: 0;
+  animation: pulseFly 0.45s infinite ease-out;
+}
+
+.aura-pulses .pu-1 { top: 30%; left: 25%; animation-delay: 0s; }
+.aura-pulses .pu-2 { top: 50%; left: 50%; animation-delay: 0.15s; }
+.aura-pulses .pu-3 { top: 38%; left: 75%; animation-delay: 0.3s; }
+
+@keyframes pulseFly {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 1; }
+  100% { transform: translate(100px, 0) scale(1.4); opacity: 0; }
+}
+
+/* =========================================================================
+   🌊 12. 물수리검 & 문포스 (Water Shuriken Stream)
+   ========================================================================= */
+.stream-shuriken .water-blade {
+  animation: shurikenBladeWave 0.2s infinite alternate ease-in-out;
+}
+
+@keyframes shurikenBladeWave {
+  0% { transform: translateY(-4px); filter: drop-shadow(0 0 6px #0ea5e9); }
+  100% { transform: translateY(4px); filter: drop-shadow(0 0 16px #0284c7); }
+}
+
+.shuriken-stars .sh-star {
+  position: absolute;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: shurikenSpinFly 0.4s infinite linear;
+}
+
+.shuriken-stars .ss-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.shuriken-stars .ss-2 { top: 52%; left: 45%; animation-delay: 0.12s; }
+.shuriken-stars .ss-3 { top: 35%; left: 70%; animation-delay: 0.25s; }
+
+@keyframes shurikenSpinFly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.7); opacity: 1; }
+  100% { transform: translate(110px, 0) rotate(360deg) scale(1.3); opacity: 0; }
+}
+
+/* =========================================================================
+   ⚡ 포켓몬 고유스킬 3선 컨트롤러 UI (최대 3개 스킬 선택 및 직접 발동)
+   ========================================================================= */
+
+.pasture-skills-controller {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+}
+
+.skills-btn-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 320px;
+}
+
+.skill-slot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.skill-slot-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
+}
+
+.skill-slot-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.skill-slot-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  border-color: #fef08a;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.7), 0 2px 6px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  animation: activeSkillGlow 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes activeSkillGlow {
+  0% { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5)); }
+  100% { filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.9)); }
+}
+
+.skill-slot-btn .sk-icon {
+  font-size: 0.95rem;
+}
+
+.skill-slot-btn .sk-name {
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   🔥 13. 대문자 (skill-fx-firekanji)
+   ========================================================================= */
+.stream-firekanji .firekanji-svg {
+  animation: kanjiBlastPulse 0.1s infinite alternate ease-in-out;
+}
+
+@keyframes kanjiBlastPulse {
+  0% { transform: scale(0.94); filter: drop-shadow(0 0 8px #ea580c); }
+  100% { transform: scale(1.06); filter: drop-shadow(0 0 24px #f97316); }
+}
+
+/* =========================================================================
+   🌪️ 14. 회오리불꽃 (skill-fx-firespin)
+   ========================================================================= */
+.stream-firespin .fire-spin-path {
+  animation: fireSpinFlow 0.35s infinite linear;
+}
+
+@keyframes fireSpinFlow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -40; }
+}
+
+/* =========================================================================
+   🌊 15. 하이드로캐논 (skill-fx-hydrocannon)
+   ========================================================================= */
+.stream-hydrocannon .hydrocannon-svg {
+  animation: cannonWaterPulse 0.14s infinite alternate ease-in-out;
+}
+
+@keyframes cannonWaterPulse {
+  0% { transform: scaleY(0.92) scaleX(0.96); filter: drop-shadow(0 0 8px #0284c7); }
+  100% { transform: scaleY(1.08) scaleX(1.04); filter: drop-shadow(0 0 22px #38bdf8); }
+}
+
+/* =========================================================================
+   🫧 16. 거품광선 (skill-fx-bubblebeam)
+   ========================================================================= */
+.stream-bubblebeam .bubblebeam-svg circle {
+  animation: bubblePopJitter 0.25s infinite alternate ease-in-out;
+}
+
+@keyframes bubblePopJitter {
+  0% { transform: translateY(-3px) scale(0.95); }
+  100% { transform: translateY(3px) scale(1.05); }
+}
+
+/* =========================================================================
+   🌿 17. 덩굴채찍 (skill-fx-vinewhip)
+   ========================================================================= */
+.stream-vinewhip .vine-whip-path {
+  animation: vineWhipLash 0.12s infinite alternate ease-in-out;
+}
+
+@keyframes vineWhipLash {
+  0% { transform: translateY(-4px) scaleY(0.9); filter: drop-shadow(0 0 6px #22c55e); }
+  100% { transform: translateY(4px) scaleY(1.1); filter: drop-shadow(0 0 16px #4ade80); }
+}
+
+/* =========================================================================
+   🌸 18. 꽃잎댄스 (skill-fx-petaldance)
+   ========================================================================= */
+.stream-petaldance .petal-swirl {
+  animation: petalSwirlAnim 0.4s infinite linear;
+}
+
+@keyframes petalSwirlAnim {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -48; }
+}
+
+.petal-particles .petal-particle {
+  position: absolute;
+  font-size: 1.1rem;
+  opacity: 0;
+  animation: petalFloat 0.5s infinite linear;
+}
+
+.petal-particles .pt-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.petal-particles .pt-2 { top: 55%; left: 40%; animation-delay: 0.12s; }
+.petal-particles .pt-3 { top: 32%; left: 65%; animation-delay: 0.24s; }
+.petal-particles .pt-4 { top: 58%; left: 80%; animation-delay: 0.36s; }
+
+@keyframes petalFloat {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.7); opacity: 1; }
+  100% { transform: translate(110px, -15px) rotate(360deg) scale(1.2); opacity: 0; }
+}
+
+/* =========================================================================
+   🌩️ 19. 번개 낙뢰 (skill-fx-thunderstorm)
+   ========================================================================= */
+.stream-thunderstorm .thunderstorm-svg {
+  animation: lightningStrobe 0.09s infinite alternate steps(2);
+}
+
+@keyframes lightningStrobe {
+  0% { opacity: 0.4; filter: drop-shadow(0 0 4px #fef08a); }
+  100% { opacity: 1; filter: drop-shadow(0 0 26px #facc15); }
+}
+
+/* =========================================================================
+   ⚡ 20. 볼트태클 (skill-fx-volttackle)
+   ========================================================================= */
+.stream-volttackle .volttackle-svg {
+  animation: voltTackleRush 0.08s infinite alternate ease-in-out;
+}
+
+@keyframes voltTackleRush {
+  0% { transform: scale(0.92); filter: drop-shadow(0 0 8px #facc15); }
+  100% { transform: scale(1.08); filter: drop-shadow(0 0 24px #ffffff); }
+}
+
+/* =========================================================================
+   😈 21. 나이트헤드 (skill-fx-nightshade)
+   ========================================================================= */
+.stream-nightshade .nightshade-svg circle {
+  animation: eyeGlare 0.15s infinite alternate ease-in-out;
+}
+
+@keyframes eyeGlare {
+  0% { transform: scale(0.8); filter: drop-shadow(0 0 4px #ef4444); }
+  100% { transform: scale(1.2); filter: drop-shadow(0 0 16px #dc2626); }
+}
+
+/* =========================================================================
+   🌀 22. 사이코브레이크 (skill-fx-psystrike)
+   ========================================================================= */
+.stream-psystrike polygon {
+  animation: bladeThrust 0.12s infinite alternate ease-in-out;
+}
+
+@keyframes bladeThrust {
+  0% { transform: translateX(-6px); filter: drop-shadow(0 0 8px #f472b6); }
+  100% { transform: translateX(6px); filter: drop-shadow(0 0 20px #db2777); }
+}
+
+/* =========================================================================
+   💖 23. 하트스톰 (skill-fx-heartstorm)
+   ========================================================================= */
+.heart-particles .heart-p {
+  position: absolute;
+  font-size: 1.15rem;
+  opacity: 0;
+  animation: heartFly 0.5s infinite ease-out;
+}
+
+.heart-particles .hp-1 { top: 25%; left: 20%; animation-delay: 0s; }
+.heart-particles .hp-2 { top: 55%; left: 42%; animation-delay: 0.12s; }
+.heart-particles .hp-3 { top: 30%; left: 65%; animation-delay: 0.25s; }
+.heart-particles .hp-4 { top: 58%; left: 80%; animation-delay: 0.38s; }
+
+@keyframes heartFly {
+  0% { transform: translate(0, 0) scale(0.7); opacity: 1; }
+  100% { transform: translate(110px, -10px) scale(1.4); opacity: 0; }
+}
+
+/* =========================================================================
+   🐟 24. 은혜갚기 & 튀어오르기 (skill-fx-splashrush)
+   ========================================================================= */
+.splash-particles .splash-p {
+  position: absolute;
+  font-size: 1.15rem;
+  opacity: 0;
+  animation: splashBounce 0.45s infinite ease-out;
+}
+
+.splash-particles .sp-1 { top: 35%; left: 20%; animation-delay: 0s; }
+.splash-particles .sp-2 { top: 20%; left: 45%; animation-delay: 0.1s; }
+.splash-particles .sp-3 { top: 55%; left: 65%; animation-delay: 0.22s; }
+.splash-particles .sp-4 { top: 32%; left: 82%; animation-delay: 0.32s; }
+
+@keyframes splashBounce {
+  0% { transform: translateY(15px) scale(0.7); opacity: 1; }
+  50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(15px) scale(0.6); opacity: 0; }
+}
+
+/* =========================================================================
+   🎮 POKÉMON SHOWDOWN OFFICIAL FX ENGINE ANIMATIONS
+   실제 Showdown 배틀 시뮬레이터 그래픽 에셋(fireball, lightning, shadowball 등) 다이나믹 렌더링
+   ========================================================================= */
+
+.showdown-stream {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.showdown-fx-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.sd-fx {
+  position: absolute;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 🔥 Fireball Animations */
+.sd-fireball-1 {
+  width: 34px;
+  height: 34px;
+  left: 20px;
+  top: 33px;
+  animation: sdFireRush1 0.45s infinite linear;
+}
+
+.sd-flare-core {
+  width: 54px;
+  height: 54px;
+  left: 80px;
+  top: 23px;
+  animation: sdFlarePulse 0.3s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 14px #ea580c) drop-shadow(0 0 24px #f59e0b);
+}
+
+.sd-fireball-2 {
+  width: 42px;
+  height: 42px;
+  left: 140px;
+  top: 29px;
+  animation: sdFireRush2 0.5s infinite linear;
+}
+
+.sd-fire-impact,
+.sd-kanji-impact {
+  width: 62px;
+  height: 62px;
+  right: -15px;
+  top: 19px;
+  animation: sdImpactPop 0.35s infinite ease-out;
+}
+
+@keyframes sdFireRush1 {
+  0% { transform: translate(0, 0) scale(0.6) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(80px, -8px) scale(1.1) rotate(180deg); opacity: 0; }
+}
+
+@keyframes sdFireRush2 {
+  0% { transform: translate(0, 0) scale(0.8) rotate(45deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(75px, 8px) scale(1.3) rotate(225deg); opacity: 0; }
+}
+
+@keyframes sdFlarePulse {
+  0% { transform: scale(0.88) rotate(-10deg); }
+  100% { transform: scale(1.15) rotate(15deg); }
+}
+
+@keyframes sdImpactPop {
+  0% { transform: scale(0.4) rotate(0deg); opacity: 0.2; }
+  50% { transform: scale(1.25) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 16px #f97316); }
+  100% { transform: scale(1.4) rotate(90deg); opacity: 0; }
+}
+
+/* 불대문자 */
+.sd-kanji-core {
+  width: 68px;
+  height: 68px;
+  left: 90px;
+  top: 16px;
+  animation: sdKanjiPulse 0.4s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 18px #dc2626);
+}
+
+.sd-kanji-top {
+  width: 38px;
+  height: 38px;
+  left: 45px;
+  top: 10px;
+  animation: sdFireRush1 0.5s infinite linear;
+}
+
+.sd-kanji-bot {
+  width: 38px;
+  height: 38px;
+  left: 45px;
+  top: 52px;
+  animation: sdFireRush2 0.5s infinite linear;
+}
+
+@keyframes sdKanjiPulse {
+  0% { transform: scale(0.8) rotate(0deg); }
+  100% { transform: scale(1.2) rotate(180deg); }
+}
+
+/* 도깨비불 / 회오리불꽃 */
+.sd-bluefire-1 {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 20px;
+  animation: sdBlueSwirl 0.6s infinite linear;
+  filter: drop-shadow(0 0 14px #38bdf8);
+}
+
+.sd-bluefire-2 {
+  width: 48px;
+  height: 48px;
+  left: 110px;
+  top: 40px;
+  animation: sdBlueSwirl 0.5s infinite linear reverse;
+  filter: drop-shadow(0 0 16px #0284c7);
+}
+
+.sd-firespin-swirl {
+  width: 42px;
+  height: 42px;
+  left: 70px;
+  top: 30px;
+  animation: sdBlueSwirl 0.4s infinite linear;
+}
+
+.sd-firespin-core {
+  width: 55px;
+  height: 55px;
+  left: 140px;
+  top: 22px;
+  animation: sdFlarePulse 0.35s infinite alternate;
+}
+
+@keyframes sdBlueSwirl {
+  0% { transform: rotate(0deg) translateY(-14px) rotate(0deg) scale(0.8); }
+  50% { transform: rotate(180deg) translateY(14px) rotate(-180deg) scale(1.2); }
+  100% { transform: rotate(360deg) translateY(-14px) rotate(-360deg) scale(0.8); }
+}
+
+/* 💧 Water Animations */
+.sd-waterwisp-1 {
+  width: 52px;
+  height: 52px;
+  left: 20px;
+  top: 24px;
+  animation: sdWaterRush 0.35s infinite linear;
+  filter: drop-shadow(0 0 10px #0284c7);
+}
+
+.sd-waterwisp-2 {
+  width: 60px;
+  height: 60px;
+  left: 90px;
+  top: 20px;
+  animation: sdWaterRush 0.38s infinite linear 0.1s;
+  filter: drop-shadow(0 0 12px #38bdf8);
+}
+
+.sd-mistball-1,
+.sd-mistball-core {
+  width: 50px;
+  height: 50px;
+  left: 55px;
+  top: 25px;
+  animation: sdMistFloat 0.4s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 14px #bae6fd);
+}
+
+.sd-mistball-2 {
+  width: 44px;
+  height: 44px;
+  left: 135px;
+  top: 28px;
+  animation: sdMistFloat 0.35s infinite alternate ease-in-out 0.15s;
+}
+
+.sd-water-impact,
+.sd-cannon-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #0284c7);
+}
+
+@keyframes sdWaterRush {
+  0% { transform: translateX(-10px) scale(0.7) rotate(0deg); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: translateX(80px) scale(1.2) rotate(180deg); opacity: 0; }
+}
+
+@keyframes sdMistFloat {
+  0% { transform: scale(0.8) translateY(-6px); opacity: 0.8; }
+  100% { transform: scale(1.2) translateY(6px); opacity: 1; }
+}
+
+.sd-cannon-huge {
   width: 82px;
   height: 82px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #f3e8ff 0%, #c084fc 35%, #7e22ce 65%, #1e1b4b 85%, transparent 95%);
-  animation: dracoCore 1s infinite alternate ease-in-out;
+  left: 80px;
+  top: 9px;
+  animation: sdFlarePulse 0.25s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 20px #0284c7) drop-shadow(0 0 30px #38bdf8);
 }
 
-.skill-fx-dracometeor .skill-fx-aura {
-  position: absolute;
-  width: 98px;
-  height: 98px;
-  border-radius: 50%;
-  border: 3px double #a855f7;
-  box-shadow: 0 0 24px #7c3aed, inset 0 0 12px #c084fc;
-  animation: dracoAuraSpin 3s infinite linear;
+.sd-cannon-wave-1 { width: 50px; height: 50px; left: 20px; top: 25px; animation: sdWaterRush 0.3s infinite linear; }
+.sd-cannon-wave-2 { width: 50px; height: 50px; left: 140px; top: 25px; animation: sdWaterRush 0.3s infinite linear 0.15s; }
+
+.sd-bubble-1 { width: 36px; height: 36px; left: 30px; top: 15px; animation: sdMistFloat 0.4s infinite alternate; }
+.sd-bubble-2 { width: 44px; height: 44px; left: 80px; top: 40px; animation: sdMistFloat 0.35s infinite alternate 0.1s; }
+.sd-bubble-3 { width: 40px; height: 40px; left: 140px; top: 20px; animation: sdMistFloat 0.45s infinite alternate 0.2s; }
+.sd-bubble-wisp { width: 48px; height: 48px; left: 100px; top: 26px; animation: sdWaterRush 0.4s infinite linear; }
+
+/* ⚡ Electric Animations */
+.sd-lightning-main,
+.sd-storm-l1,
+.sd-volt-lightning {
+  width: 90px;
+  height: 90px;
+  left: 60px;
+  top: 5px;
+  animation: sdLightningFlicker 0.1s infinite alternate;
+  filter: drop-shadow(0 0 16px #facc15) drop-shadow(0 0 28px #ffffff);
 }
 
-@keyframes dracoCore {
-  0% { transform: scale(0.85); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #8b5cf6); }
+.sd-lightning-sub,
+.sd-storm-l2 {
+  width: 75px;
+  height: 75px;
+  left: 120px;
+  top: 12px;
+  animation: sdLightningFlicker 0.12s infinite alternate reverse;
+  filter: drop-shadow(0 0 12px #facc15);
 }
 
-@keyframes dracoAuraSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.sd-electro-core,
+.sd-storm-ball,
+.sd-volt-ball-1 {
+  width: 52px;
+  height: 52px;
+  left: 40px;
+  top: 24px;
+  animation: sdElectroSpin 0.3s infinite linear;
+  filter: drop-shadow(0 0 14px #facc15);
 }
 
-/* ⭐ 9. 잠만보: 기가임팩트 (skill-fx-gigaimpact) */
-.skill-fx-gigaimpact .skill-fx-core {
-  position: absolute;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #fef08a 30%, #eab308 65%, transparent 85%);
-  animation: gigaImpactBurst 0.6s infinite alternate ease-in-out;
+.sd-volt-ball-2 {
+  width: 56px;
+  height: 56px;
+  left: 120px;
+  top: 22px;
+  animation: sdElectroSpin 0.25s infinite linear reverse;
 }
 
-.skill-fx-gigaimpact .skill-fx-aura {
-  position: absolute;
-  width: 98px;
-  height: 98px;
-  border-radius: 50%;
-  border: 3px solid #ca8a04;
-  box-shadow: 0 0 26px #eab308, inset 0 0 14px #fef9c3;
-  animation: gigaShockwave 1s infinite ease-out;
+.sd-thunder-impact,
+.sd-storm-impact,
+.sd-volt-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.25s infinite ease-out;
+  filter: drop-shadow(0 0 18px #facc15);
 }
 
-@keyframes gigaImpactBurst {
-  0% { transform: scale(0.85); opacity: 0.8; }
-  100% { transform: scale(1.2); opacity: 1; }
+@keyframes sdLightningFlicker {
+  0% { transform: scaleX(0.9) scaleY(0.95); opacity: 0.8; }
+  50% { transform: scaleX(1.1) scaleY(1.08); opacity: 1; }
+  100% { transform: scaleX(0.95) scaleY(1.02); opacity: 0.9; }
 }
 
-@keyframes gigaShockwave {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.3); opacity: 0; }
+@keyframes sdElectroSpin {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(0.9); }
 }
 
-/* ❄️ 10. 라프라스: 절대영도 (skill-fx-blizzard) */
-.skill-fx-blizzard .skill-fx-core {
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffffff 0%, #cffafe 35%, #06b6d4 70%, transparent 85%);
-  animation: blizzardPulse 1.2s infinite alternate ease-in-out;
+/* 🌿 Grass Animations */
+.sd-energyball-core {
+  width: 62px;
+  height: 62px;
+  left: 70px;
+  top: 19px;
+  animation: sdFlarePulse 0.3s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 18px #22c55e) drop-shadow(0 0 28px #4ade80);
 }
 
-.skill-fx-blizzard .skill-fx-aura {
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 2px dashed #67e8f9;
-  box-shadow: 0 0 20px #0891b2, inset 0 0 12px #ecfeff;
-  animation: blizzardSpin 4s infinite linear;
+.sd-solar-leaf-1,
+.sd-vine-leaf-1 {
+  width: 34px;
+  height: 34px;
+  left: 30px;
+  top: 18px;
+  animation: sdLeafFly 0.5s infinite linear;
 }
 
-@keyframes blizzardPulse {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 14px #22d3ee); }
+.sd-solar-leaf-2,
+.sd-vine-leaf-2 {
+  width: 38px;
+  height: 38px;
+  left: 110px;
+  top: 48px;
+  animation: sdLeafFly 0.45s infinite linear 0.15s;
 }
 
-@keyframes blizzardSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(-360deg); }
+.sd-vine-leaf-3 { width: 34px; height: 34px; left: 150px; top: 18px; animation: sdLeafFly 0.48s infinite linear 0.25s; }
+
+.sd-vine-slash,
+.sd-leaf-slash {
+  width: 72px;
+  height: 72px;
+  left: 100px;
+  top: 14px;
+  animation: sdSlashCut 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #22c55e);
 }
 
-/* 💥 11. 루카리오: 파동탄 (skill-fx-aurasphere) */
-.skill-fx-aurasphere .skill-fx-core {
-  position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #eff6ff 0%, #60a5fa 35%, #1d4ed8 75%, transparent 90%);
-  animation: auraCorePulse 0.7s infinite alternate ease-in-out;
+.sd-solar-shine,
+.sd-petal-shine {
+  width: 48px;
+  height: 48px;
+  right: 5px;
+  top: 26px;
+  animation: sdShineGlow 0.4s infinite alternate;
 }
 
-.skill-fx-aurasphere .skill-fx-aura {
-  position: absolute;
-  width: 94px;
-  height: 94px;
-  border-radius: 50%;
-  border: 3px solid #2563eb;
-  box-shadow: 0 0 22px #1d4ed8, inset 0 0 12px #93c5fd;
-  animation: auraWaveSpin 2s infinite linear;
+.sd-petal-1 { width: 30px; height: 30px; left: 20px; top: 25px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-petal-2 { width: 32px; height: 32px; left: 60px; top: 55px; animation: sdLeafFly 0.45s infinite linear 0.1s; }
+.sd-petal-3 { width: 34px; height: 34px; left: 110px; top: 15px; animation: sdLeafFly 0.55s infinite linear 0.2s; }
+.sd-petal-4 { width: 32px; height: 32px; left: 150px; top: 45px; animation: sdLeafFly 0.48s infinite linear 0.3s; }
+
+@keyframes sdLeafFly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.7); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(90px, -15px) rotate(360deg) scale(1.2); opacity: 0; }
 }
 
-@keyframes auraCorePulse {
-  0% { transform: scale(0.85); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 16px #3b82f6); }
+@keyframes sdSlashCut {
+  0% { transform: scale(0.4) rotate(-30deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+  100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
 }
 
-@keyframes auraWaveSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes sdShineGlow {
+  0% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
+  100% { transform: scale(1.25) rotate(90deg); opacity: 1; }
 }
 
-/* 🌊 12. 개굴닌자: 물수리검 (skill-fx-watershuriken) */
-.skill-fx-watershuriken .skill-fx-core {
-  position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #e0f2fe 0%, #38bdf8 40%, #0369a1 75%, transparent 90%);
-  animation: shurikenWaterCore 0.8s infinite alternate ease-in-out;
+/* 👻 Ghost Animations */
+.sd-shadowball-core {
+  width: 66px;
+  height: 66px;
+  left: 75px;
+  top: 17px;
+  animation: sdShadowSpin 0.35s infinite linear;
+  filter: drop-shadow(0 0 16px #7e22ce) drop-shadow(0 0 28px #3b0764);
 }
 
-.skill-fx-watershuriken .skill-fx-aura {
-  position: absolute;
-  width: 94px;
-  height: 94px;
-  border-radius: 20%;
-  border: 3px solid #0284c7;
-  box-shadow: 0 0 20px #0369a1, inset 0 0 12px #bae6fd;
-  animation: shurikenSpin 0.35s infinite linear;
+.sd-shadow-wisp-1,
+.sd-night-wisp {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 28px;
+  animation: sdBlueSwirl 0.5s infinite linear;
 }
 
-@keyframes shurikenWaterCore {
-  0% { transform: scale(0.85); opacity: 0.8; }
-  100% { transform: scale(1.15); opacity: 1; }
+.sd-shadow-wisp-2,
+.sd-sludge-wisp-1,
+.sd-sludge-wisp-2,
+.sd-sludge-wisp-3 {
+  width: 48px;
+  height: 48px;
+  left: 120px;
+  top: 24px;
+  animation: sdBlueSwirl 0.45s infinite linear reverse;
+  filter: drop-shadow(0 0 14px #a855f7);
 }
 
-@keyframes shurikenSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.sd-night-claw-1 {
+  width: 55px;
+  height: 55px;
+  left: 50px;
+  top: 15px;
+  animation: sdSlashCut 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #3b0764);
+}
+
+.sd-night-claw-2 {
+  width: 55px;
+  height: 55px;
+  left: 110px;
+  top: 30px;
+  animation: sdSlashCut 0.3s infinite ease-out 0.15s;
+  filter: drop-shadow(0 0 14px #7e22ce);
+}
+
+.sd-shadow-impact,
+.sd-night-impact,
+.sd-sludge-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 16px #581c87);
+}
+
+@keyframes sdShadowSpin {
+  0% { transform: scale(0.9) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(180deg); }
+  100% { transform: scale(0.9) rotate(360deg); }
+}
+
+/* 🥊 Fighting & Claw Animations */
+.sd-fist-1 {
+  width: 48px;
+  height: 48px;
+  left: 30px;
+  top: 25px;
+  animation: sdPunchHit 0.25s infinite ease-out;
+}
+
+.sd-fist-2,
+.sd-force-fist {
+  width: 52px;
+  height: 52px;
+  left: 95px;
+  top: 18px;
+  animation: sdPunchHit 0.25s infinite ease-out 0.12s;
+}
+
+.sd-chop {
+  width: 50px;
+  height: 50px;
+  left: 60px;
+  top: 32px;
+  animation: sdPunchHit 0.3s infinite ease-out 0.08s;
+}
+
+.sd-hitmarker,
+.sd-combat-impact,
+.sd-force-impact {
+  width: 58px;
+  height: 58px;
+  right: -5px;
+  top: 20px;
+  animation: sdImpactPop 0.25s infinite ease-out;
+  filter: drop-shadow(0 0 14px #ef4444);
+}
+
+.sd-force-foot {
+  width: 48px;
+  height: 48px;
+  left: 60px;
+  top: 30px;
+  animation: sdPunchHit 0.3s infinite ease-out;
+}
+
+@keyframes sdPunchHit {
+  0% { transform: translateX(-20px) scale(0.7); opacity: 0; }
+  50% { transform: translateX(20px) scale(1.2); opacity: 1; filter: drop-shadow(0 0 10px #f59e0b); }
+  100% { transform: translateX(40px) scale(0.9); opacity: 0; }
+}
+
+/* 🐉 Dragon Claw & Slashes */
+.sd-dclaw-1 { width: 56px; height: 56px; left: 40px; top: 12px; animation: sdSlashCut 0.3s infinite ease-out; filter: drop-shadow(0 0 14px #06b6d4); }
+.sd-dclaw-2 { width: 56px; height: 56px; left: 95px; top: 28px; animation: sdSlashCut 0.3s infinite ease-out 0.15s; filter: drop-shadow(0 0 14px #8b5cf6); }
+.sd-dslash { width: 68px; height: 68px; left: 70px; top: 16px; animation: sdSlashCut 0.35s infinite ease-out 0.08s; filter: drop-shadow(0 0 16px #ec4899); }
+.sd-dclaw-impact { width: 65px; height: 65px; right: -10px; top: 18px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+/* ❄️ Ice Animations */
+.sd-iceball-core,
+.sd-beam-iceball,
+.sd-aurora-ice {
+  width: 54px;
+  height: 54px;
+  left: 70px;
+  top: 23px;
+  animation: sdElectroSpin 0.35s infinite linear;
+  filter: drop-shadow(0 0 14px #38bdf8) drop-shadow(0 0 24px #ffffff);
+}
+
+.sd-icicle-1,
+.sd-beam-icicle-1 {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 14px;
+  animation: sdIcicleThrust 0.35s infinite ease-out;
+}
+
+.sd-icicle-2,
+.sd-beam-icicle-2 {
+  width: 50px;
+  height: 50px;
+  left: 125px;
+  top: 34px;
+  animation: sdIcicleThrust 0.35s infinite ease-out 0.12s;
+}
+
+.sd-icicle-pink {
+  width: 42px;
+  height: 42px;
+  left: 90px;
+  top: 10px;
+  animation: sdIcicleThrust 0.4s infinite ease-out 0.18s;
+  filter: drop-shadow(0 0 12px #f472b6);
+}
+
+.sd-ice-impact {
+  width: 60px;
+  height: 60px;
+  right: -8px;
+  top: 20px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 16px #38bdf8);
+}
+
+@keyframes sdIcicleThrust {
+  0% { transform: translateX(-15px) scale(0.6); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(65px) scale(1.1); opacity: 0; filter: drop-shadow(0 0 12px #ffffff); }
+}
+
+/* 🪨 Rock & Bones */
+.sd-stone-rocks { width: 60px; height: 60px; left: 80px; top: 19px; animation: sdRockDrop 0.4s infinite ease-in; filter: drop-shadow(0 0 12px #78350f); }
+.sd-stone-r1 { width: 40px; height: 40px; left: 30px; top: 14px; animation: sdRockDrop 0.35s infinite ease-in; }
+.sd-stone-r2 { width: 46px; height: 46px; left: 130px; top: 29px; animation: sdRockDrop 0.42s infinite ease-in 0.15s; }
+.sd-stone-impact { width: 64px; height: 64px; right: -8px; top: 19px; animation: sdImpactPop 0.35s infinite ease-out; }
+
+.sd-bone-1 { width: 44px; height: 44px; left: 40px; top: 24px; animation: sdElectroSpin 0.3s infinite linear; }
+.sd-bone-2 { width: 48px; height: 48px; left: 110px; top: 24px; animation: sdElectroSpin 0.3s infinite linear reverse; }
+.sd-bone-impact { width: 60px; height: 60px; right: -5px; top: 20px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+@keyframes sdRockDrop {
+  0% { transform: translate(-10px, -20px) rotate(0deg) scale(0.7); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translate(40px, 20px) rotate(180deg) scale(1.2); opacity: 0; }
+}
+
+/* 🔊 Sound & Hearts & Misc */
+.sd-sound-ring-1 {
+  width: 52px;
+  height: 52px;
+  left: 40px;
+  top: 24px;
+  animation: sdSoundWave 0.5s infinite ease-out;
+  filter: drop-shadow(0 0 12px #eab308);
+}
+
+.sd-sound-ring-2 {
+  width: 68px;
+  height: 68px;
+  left: 95px;
+  top: 17px;
+  animation: sdSoundWave 0.5s infinite ease-out 0.2s;
+  filter: drop-shadow(0 0 18px #facc15);
+}
+
+.sd-sound-shine { width: 46px; height: 46px; right: 0px; top: 27px; animation: sdShineGlow 0.35s infinite alternate; }
+
+@keyframes sdSoundWave {
+  0% { transform: scale(0.4); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.sd-heart-1 { width: 36px; height: 36px; left: 30px; top: 18px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-heart-2 { width: 40px; height: 40px; left: 80px; top: 44px; animation: sdLeafFly 0.45s infinite linear 0.12s; }
+.sd-heart-3 { width: 44px; height: 44px; left: 130px; top: 14px; animation: sdLeafFly 0.52s infinite linear 0.22s; }
+.sd-heart-shine { width: 46px; height: 46px; right: 5px; top: 24px; animation: sdShineGlow 0.35s infinite alternate; }
+
+.sd-giga-ball { width: 68px; height: 68px; left: 60px; top: 17px; animation: sdFlarePulse 0.2s infinite alternate; filter: drop-shadow(0 0 24px #eab308); }
+.sd-giga-impact-1 { width: 70px; height: 70px; left: 120px; top: 15px; animation: sdImpactPop 0.25s infinite ease-out; }
+.sd-giga-impact-2 { width: 78px; height: 78px; right: -15px; top: 11px; animation: sdImpactPop 0.25s infinite ease-out 0.1s; }
+
+.sd-hurr-feather { width: 44px; height: 44px; left: 30px; top: 18px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-hurr-slash-1 { width: 68px; height: 68px; left: 60px; top: 14px; animation: sdSlashCut 0.3s infinite ease-out; filter: drop-shadow(0 0 12px #38bdf8); }
+.sd-hurr-slash-2 { width: 72px; height: 72px; left: 110px; top: 24px; animation: sdSlashCut 0.3s infinite ease-out 0.12s; filter: drop-shadow(0 0 14px #0284c7); }
+.sd-hurr-impact { width: 62px; height: 62px; right: -10px; top: 19px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+.sd-default-shine { width: 52px; height: 52px; left: 60px; top: 24px; animation: sdShineGlow 0.35s infinite alternate; }
+.sd-default-impact { width: 66px; height: 66px; right: 0px; top: 17px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+/* =========================================================================
+   🔐 포켓농장 회원가입 & 로그인 & 비밀번호 인증 UI
+   ========================================================================= */
+
+.auth-card {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-tab-switch {
+  display: flex;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px;
+  gap: 6px;
+}
+
+.auth-mode-tab {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.auth-mode-tab:hover {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.auth-mode-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.auth-step-content {
+  padding: 24px 28px;
+}
+
+.auth-error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: shake 0.3s ease;
+}
+
+.auth-legacy-tip {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 12px 0 16px;
+}
+
+.input-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.input-label-row label {
+  margin-bottom: 0 !important;
+}
+
+.toggle-pw-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.toggle-pw-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.pw-match-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pw-match-badge.match {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.pw-match-badge.mismatch {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 800;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.auth-switch-prompt {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 16px;
+}
+
+.auth-link-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.auth-link-btn:hover {
+  color: #1d4ed8;
+}
+
+.farm-auth-btn {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.farm-auth-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.farm-auth-btn.logout {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #be123c;
+}
+
+.farm-auth-btn.logout:hover {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.change-pw-modal {
+  max-width: 440px;
+  width: 100%;
+}
+
+.change-pw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.logout-confirm-modal {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+.logout-modal-body {
+  padding: 20px;
+}
+
+.logout-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.logout-confirm-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.logout-sub-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.modal-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
 }
