@@ -412,6 +412,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 농장 전체 로컬 상태
   const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(username));
   const [activeTab, setActiveTab] = useState<FarmTab>('minihome');
+  const isServerSyncReadyRef = useRef(false); // 🛡️ 서버 최신 데이터 로드 확인 전까지 구버전 덮어쓰기 방지
 
   // 💖 오늘 보낸 1촌 하트 횟수 (하루 최대 5회 제한)
   const [todayHeartsSent, setTodayHeartsSent] = useState<number>(() => getTodayHeartCountLocal(farmState.ownerName || username || '지우'));
@@ -641,13 +642,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
 
     if (!socket) return;
 
-    // 2. 서버에 내 농장 정보 동기화 및 전체 활성 농장 목록 요청
-    if (farmState.isInitialized && farmState.ownerName) {
-      socket.emit('farm-sync', { username: farmState.ownerName, farmData: farmState });
-      socket.emit('farm-load-my-data', { username: farmState.ownerName });
-    } else if (username && username.trim() && username !== '지우') {
-      // 로컬에 없더라도 서버 DB에 저장된 농장이 있다면 자동 복원 시도
-      socket.emit('farm-load-my-data', { username: username.trim() });
+    // 2. 🛡️ 서버에서 최신 농장 데이터를 우선 요청 (절대로 로컬의 구버전 데이터로 서버를 먼저 덮어쓰지 않음)
+    const targetUser = (farmState.ownerName && farmState.ownerName !== '지우')
+      ? farmState.ownerName
+      : (username && username.trim() && username !== '지우' ? username.trim() : null);
+
+    if (targetUser) {
+      socket.emit('farm-load-my-data', { username: targetUser });
+    } else {
+      isServerSyncReadyRef.current = true;
     }
     socket.emit('farm-get-list');
     socket.emit('farm-get-top3');
@@ -739,19 +742,35 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
     };
 
     const handleMyDataLoaded = (res: { success: boolean; farm: any; guestbook: GuestbookEntry[] }) => {
+      isServerSyncReadyRef.current = true;
       if (res.success && res.farm) {
         setFarmState(prev => {
+          const serverTime = res.farm.lastActive || 0;
+          const localTime = prev.lastActive || 0;
+
+          // 로컬 데이터가 서버 데이터보다 5초 이상 최신인 오프라인 플레이 상황이 아니라면 서버 최신 데이터로 동기화
+          if (prev.isInitialized && localTime > (serverTime + 5000)) {
+            return prev;
+          }
+
           const updatedHearts = res.farm.heartsCount !== undefined ? Math.max(res.farm.heartsCount, prev.heartsCount) : prev.heartsCount;
-          return {
+          const merged: FarmState = {
             ...prev,
             ...res.farm,
             ownerName: res.farm.username || res.farm.ownerName || prev.ownerName,
             isInitialized: true,
             heartsCount: updatedHearts,
+            coins: res.farm.coins !== undefined ? res.farm.coins : prev.coins,
+            inventory: res.farm.inventory || prev.inventory,
+            incubatingEgg: res.farm.incubatingEgg !== undefined ? res.farm.incubatingEgg : prev.incubatingEgg,
+            lotteryState: res.farm.lotteryState || prev.lotteryState,
+            lastActive: serverTime || Date.now(),
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
             totalCount: res.farm.totalCount !== undefined ? res.farm.totalCount : prev.totalCount,
             guestbook: res.guestbook || prev.guestbook || []
           };
+          saveFarmState(merged);
+          return merged;
         });
       }
     };
@@ -1853,7 +1872,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
   // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
     saveFarmState(farmState);
+
+    // 🛡️ 서버 데이터 로드가 완료되기 전에는 기기의 오래된 로컬 캐시로 서버를 덮어쓰지 않음
+    if (!isServerSyncReadyRef.current) return;
+
     if (socket && socket.connected && farmState.isInitialized && farmState.ownerName) {
+      const now = Date.now();
       socket.emit('farm-sync', {
         username: farmState.ownerName,
         farmData: {
@@ -1863,6 +1887,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           graduatedPokemon: farmState.graduatedPokemon,
           graduatedCount: farmState.graduatedPokemon ? farmState.graduatedPokemon.length : 0,
           heartsCount: farmState.heartsCount,
+          coins: farmState.coins,
+          inventory: farmState.inventory,
+          incubatingEgg: farmState.incubatingEgg,
+          lotteryState: farmState.lotteryState,
           guestbook: farmState.guestbook,
           bgTheme: farmState.bgTheme,
           stickers: farmState.stickers,
@@ -1870,62 +1898,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({ username, onLeaveRoo
           statusMsg: farmState.statusMsg,
           bgmSong: farmState.bgmSong,
           todayCount: farmState.todayCount,
-          totalCount: farmState.totalCount
+          totalCount: farmState.totalCount,
+          lastActive: now
         }
       });
     }
   }, [farmState, socket]);
-
-  // 소켓 이벤트 수신
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.emit('farm-get-list');
-
-    socket.on('farm-list-update', (list: NeighborFarmData[]) => {
-      setNeighborList(list.filter(item => item.username !== farmState.ownerName));
-    });
-
-    socket.on('farm-visit-data', (data: { success: boolean; farm: NeighborFarmData; guestbook: GuestbookEntry[] }) => {
-      if (data.success && data.farm) {
-        setVisitingFarm({
-          owner: data.farm.username,
-          farm: data.farm,
-          guestbook: data.guestbook
-        });
-      }
-    });
-
-    socket.on('farm-heart-received', (data: { targetUsername: string; senderUsername: string; heartsCount: number }) => {
-      if (data.targetUsername === farmState.ownerName) {
-        setFarmState(prev => ({
-          ...prev,
-          heartsCount: data.heartsCount
-        }));
-        showAlert(`💖 [${data.senderUsername}]님이 내 포켓몬을 쓰다듬고 응원했습니다!`, 'success');
-      }
-    });
-
-    socket.on('farm-guestbook-updated', (data: { targetUsername: string; entry: GuestbookEntry; guestbook: GuestbookEntry[] }) => {
-      if (data.targetUsername === farmState.ownerName) {
-        setFarmState(prev => ({
-          ...prev,
-          guestbook: data.guestbook
-        }));
-        showAlert(`📬 새로운 방명록이 도착했습니다: "${data.entry.message}"`, 'info');
-      }
-      if (visitingFarm && visitingFarm.owner === data.targetUsername) {
-        setVisitingFarm(prev => prev ? { ...prev, guestbook: data.guestbook } : null);
-      }
-    });
-
-    return () => {
-      socket.off('farm-list-update');
-      socket.off('farm-visit-data');
-      socket.off('farm-heart-received');
-      socket.off('farm-guestbook-updated');
-    };
-  }, [socket, farmState.ownerName, visitingFarm]);
 
   // 알림 토스트 헬퍼
   const showAlert = (text: string, type: 'success' | 'info' | 'warn' = 'info') => {

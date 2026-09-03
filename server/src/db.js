@@ -170,9 +170,18 @@ export function upsertFarm(username, farmData) {
   if (!username || !farmData) return null;
   const cleanUser = username.trim();
 
-  // 실제 DB에 기록된 하트 수 조회 (클라이언트의 오래된 세이브 데이터가 DB의 최신 하트 수를 덮어쓰지 않도록 보호)
+  // 실제 DB에 기록된 하트 수 및 마지막 활성 타임스탬프 조회
   const existingHeartCountRow = db.prepare('SELECT COUNT(*) as count FROM farm_hearts WHERE target_username = ?').get(cleanUser);
-  const existingFarmRow = db.prepare('SELECT hearts_count FROM farms WHERE username = ?').get(cleanUser);
+  const existingFarmRow = db.prepare('SELECT hearts_count, coins, last_active FROM farms WHERE username = ?').get(cleanUser);
+
+  // 🛡️ 다중 기기 세이브 보호: 클라이언트가 보낸 lastActive가 서버의 last_active보다 2초 이상 이전이면 덮어쓰기 거부 (구버전 기기 세이브 역습 차단)
+  if (existingFarmRow && existingFarmRow.last_active && farmData.lastActive) {
+    if (existingFarmRow.last_active > (farmData.lastActive + 2000)) {
+      console.warn(`[SQLite DB] ⚠️ 구버전 데이터 덮어쓰기 방지 작동: ${cleanUser} (DB 최신: ${existingFarmRow.last_active} > 클라이언트: ${farmData.lastActive})`);
+      return getFarm(cleanUser);
+    }
+  }
+
   const safeHearts = Math.max(
     existingFarmRow ? (existingFarmRow.hearts_count || 0) : 0,
     existingHeartCountRow ? (existingHeartCountRow.count || 0) : 0,
@@ -200,7 +209,7 @@ export function upsertFarm(username, farmData) {
       hearts_count = MAX(COALESCE(farms.hearts_count, 0), (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username), excluded.hearts_count),
       coins = COALESCE(excluded.coins, farms.coins),
       inventory = COALESCE(excluded.inventory, farms.inventory),
-      incubating_egg = COALESCE(excluded.incubating_egg, farms.incubating_egg),
+      incubating_egg = excluded.incubating_egg,
       lottery_state = COALESCE(excluded.lottery_state, farms.lottery_state),
       bg_theme = COALESCE(excluded.bg_theme, farms.bg_theme),
       stickers = COALESCE(excluded.stickers, farms.stickers),
@@ -222,6 +231,8 @@ export function upsertFarm(username, farmData) {
   const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : null;
   const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : null;
 
+  const currentCoins = farmData.coins !== undefined ? farmData.coins : (existingFarmRow?.coins !== undefined ? existingFarmRow.coins : 1000);
+
   stmt.run({
     username: cleanUser,
     farm_name: farmData.farmName || `${cleanUser}님의 포켓농장`,
@@ -230,7 +241,7 @@ export function upsertFarm(username, farmData) {
     graduated_pokemon: gradPokeStr,
     graduated_count: farmData.graduatedPokemon ? farmData.graduatedPokemon.length : (farmData.graduatedCount || 0),
     hearts_count: safeHearts,
-    coins: farmData.coins !== undefined ? farmData.coins : 1000,
+    coins: currentCoins,
     inventory: invStr,
     incubating_egg: eggStr,
     lottery_state: lotStr,
@@ -241,7 +252,7 @@ export function upsertFarm(username, farmData) {
     bgm_song: farmData.bgmSong || '프리스타일 - Y (Feat. 지선)',
     today_count: farmData.todayCount !== undefined ? farmData.todayCount : 0,
     total_count: farmData.totalCount !== undefined ? farmData.totalCount : 0,
-    last_active: Date.now()
+    last_active: farmData.lastActive || Date.now()
   });
 
   return getFarm(cleanUser);

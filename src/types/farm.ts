@@ -234,6 +234,7 @@ export interface FarmState {
   activeExpedition?: ExpeditionSession | null;
   lotteryState?: DailyLotteryState; // 🎰 일일 럭키 사내 복권 상태
   lastDailyRewardAt?: string;
+  lastActive?: number; // ⏱️ 마지막 상태 변경/저장 타임스탬프 (기기간 구버전 덮어쓰기 방지)
 }
 
 export interface NeighborFarmData {

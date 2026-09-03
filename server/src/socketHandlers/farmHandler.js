@@ -26,6 +26,16 @@ export function registerFarmHandlers(io, socket) {
     // SQLite DB에 농장 프로필, 포켓몬, 스티커, 회전 배치 데이터 영구 저장
     const savedFarm = upsertFarm(cleanUser, farmData);
 
+    // 🛡️ 만약 클라이언트가 구버전 데이터를 전송하여 서버가 덮어쓰기를 방어한 경우, 해당 클라이언트에 최신 서버 데이터를 즉시 내려보내 동기화
+    if (savedFarm && farmData.lastActive && savedFarm.lastActive > (farmData.lastActive + 1000)) {
+      const guestbook = getGuestbookEntries(cleanUser, 50);
+      socket.emit('farm-my-data-loaded', {
+        success: true,
+        farm: savedFarm,
+        guestbook
+      });
+    }
+
     // 전체 클라이언트에 실시간 이웃 농장 및 TOP 3 랭킹 브로드캐스트
     broadcastFarmList(io);
   });

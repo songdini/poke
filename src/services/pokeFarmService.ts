@@ -3483,6 +3483,9 @@ export function saveFarmState(state: FarmState): void {
     if (!state || !isValidFarmSave(state)) {
       return;
     }
+    if (!state.lastActive) {
+      state.lastActive = Date.now();
+    }
     const jsonStr = JSON.stringify(state);
     // 1. 현재 브라우저 활성 농장 통합 키 저장
     localStorage.setItem(FARM_CURRENT_SAVE_KEY, jsonStr);
