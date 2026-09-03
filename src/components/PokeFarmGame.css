@@ -8653,6 +8653,619 @@
 }
 
 /* =========================================================================
+   🎮 POKÉMON SHOWDOWN OFFICIAL FX ENGINE ANIMATIONS
+   실제 Showdown 배틀 시뮬레이터 그래픽 에셋(fireball, lightning, shadowball 등) 다이나믹 렌더링
+   ========================================================================= */
+
+.showdown-stream {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.showdown-fx-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.sd-fx {
+  position: absolute;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 🔥 Fireball Animations */
+.sd-fireball-1 {
+  width: 34px;
+  height: 34px;
+  left: 20px;
+  top: 33px;
+  animation: sdFireRush1 0.45s infinite linear;
+}
+
+.sd-flare-core {
+  width: 54px;
+  height: 54px;
+  left: 80px;
+  top: 23px;
+  animation: sdFlarePulse 0.3s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 14px #ea580c) drop-shadow(0 0 24px #f59e0b);
+}
+
+.sd-fireball-2 {
+  width: 42px;
+  height: 42px;
+  left: 140px;
+  top: 29px;
+  animation: sdFireRush2 0.5s infinite linear;
+}
+
+.sd-fire-impact,
+.sd-kanji-impact {
+  width: 62px;
+  height: 62px;
+  right: -15px;
+  top: 19px;
+  animation: sdImpactPop 0.35s infinite ease-out;
+}
+
+@keyframes sdFireRush1 {
+  0% { transform: translate(0, 0) scale(0.6) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(80px, -8px) scale(1.1) rotate(180deg); opacity: 0; }
+}
+
+@keyframes sdFireRush2 {
+  0% { transform: translate(0, 0) scale(0.8) rotate(45deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(75px, 8px) scale(1.3) rotate(225deg); opacity: 0; }
+}
+
+@keyframes sdFlarePulse {
+  0% { transform: scale(0.88) rotate(-10deg); }
+  100% { transform: scale(1.15) rotate(15deg); }
+}
+
+@keyframes sdImpactPop {
+  0% { transform: scale(0.4) rotate(0deg); opacity: 0.2; }
+  50% { transform: scale(1.25) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 16px #f97316); }
+  100% { transform: scale(1.4) rotate(90deg); opacity: 0; }
+}
+
+/* 불대문자 */
+.sd-kanji-core {
+  width: 68px;
+  height: 68px;
+  left: 90px;
+  top: 16px;
+  animation: sdKanjiPulse 0.4s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 18px #dc2626);
+}
+
+.sd-kanji-top {
+  width: 38px;
+  height: 38px;
+  left: 45px;
+  top: 10px;
+  animation: sdFireRush1 0.5s infinite linear;
+}
+
+.sd-kanji-bot {
+  width: 38px;
+  height: 38px;
+  left: 45px;
+  top: 52px;
+  animation: sdFireRush2 0.5s infinite linear;
+}
+
+@keyframes sdKanjiPulse {
+  0% { transform: scale(0.8) rotate(0deg); }
+  100% { transform: scale(1.2) rotate(180deg); }
+}
+
+/* 도깨비불 / 회오리불꽃 */
+.sd-bluefire-1 {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 20px;
+  animation: sdBlueSwirl 0.6s infinite linear;
+  filter: drop-shadow(0 0 14px #38bdf8);
+}
+
+.sd-bluefire-2 {
+  width: 48px;
+  height: 48px;
+  left: 110px;
+  top: 40px;
+  animation: sdBlueSwirl 0.5s infinite linear reverse;
+  filter: drop-shadow(0 0 16px #0284c7);
+}
+
+.sd-firespin-swirl {
+  width: 42px;
+  height: 42px;
+  left: 70px;
+  top: 30px;
+  animation: sdBlueSwirl 0.4s infinite linear;
+}
+
+.sd-firespin-core {
+  width: 55px;
+  height: 55px;
+  left: 140px;
+  top: 22px;
+  animation: sdFlarePulse 0.35s infinite alternate;
+}
+
+@keyframes sdBlueSwirl {
+  0% { transform: rotate(0deg) translateY(-14px) rotate(0deg) scale(0.8); }
+  50% { transform: rotate(180deg) translateY(14px) rotate(-180deg) scale(1.2); }
+  100% { transform: rotate(360deg) translateY(-14px) rotate(-360deg) scale(0.8); }
+}
+
+/* 💧 Water Animations */
+.sd-waterwisp-1 {
+  width: 52px;
+  height: 52px;
+  left: 20px;
+  top: 24px;
+  animation: sdWaterRush 0.35s infinite linear;
+  filter: drop-shadow(0 0 10px #0284c7);
+}
+
+.sd-waterwisp-2 {
+  width: 60px;
+  height: 60px;
+  left: 90px;
+  top: 20px;
+  animation: sdWaterRush 0.38s infinite linear 0.1s;
+  filter: drop-shadow(0 0 12px #38bdf8);
+}
+
+.sd-mistball-1,
+.sd-mistball-core {
+  width: 50px;
+  height: 50px;
+  left: 55px;
+  top: 25px;
+  animation: sdMistFloat 0.4s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 14px #bae6fd);
+}
+
+.sd-mistball-2 {
+  width: 44px;
+  height: 44px;
+  left: 135px;
+  top: 28px;
+  animation: sdMistFloat 0.35s infinite alternate ease-in-out 0.15s;
+}
+
+.sd-water-impact,
+.sd-cannon-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #0284c7);
+}
+
+@keyframes sdWaterRush {
+  0% { transform: translateX(-10px) scale(0.7) rotate(0deg); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: translateX(80px) scale(1.2) rotate(180deg); opacity: 0; }
+}
+
+@keyframes sdMistFloat {
+  0% { transform: scale(0.8) translateY(-6px); opacity: 0.8; }
+  100% { transform: scale(1.2) translateY(6px); opacity: 1; }
+}
+
+.sd-cannon-huge {
+  width: 82px;
+  height: 82px;
+  left: 80px;
+  top: 9px;
+  animation: sdFlarePulse 0.25s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 20px #0284c7) drop-shadow(0 0 30px #38bdf8);
+}
+
+.sd-cannon-wave-1 { width: 50px; height: 50px; left: 20px; top: 25px; animation: sdWaterRush 0.3s infinite linear; }
+.sd-cannon-wave-2 { width: 50px; height: 50px; left: 140px; top: 25px; animation: sdWaterRush 0.3s infinite linear 0.15s; }
+
+.sd-bubble-1 { width: 36px; height: 36px; left: 30px; top: 15px; animation: sdMistFloat 0.4s infinite alternate; }
+.sd-bubble-2 { width: 44px; height: 44px; left: 80px; top: 40px; animation: sdMistFloat 0.35s infinite alternate 0.1s; }
+.sd-bubble-3 { width: 40px; height: 40px; left: 140px; top: 20px; animation: sdMistFloat 0.45s infinite alternate 0.2s; }
+.sd-bubble-wisp { width: 48px; height: 48px; left: 100px; top: 26px; animation: sdWaterRush 0.4s infinite linear; }
+
+/* ⚡ Electric Animations */
+.sd-lightning-main,
+.sd-storm-l1,
+.sd-volt-lightning {
+  width: 90px;
+  height: 90px;
+  left: 60px;
+  top: 5px;
+  animation: sdLightningFlicker 0.1s infinite alternate;
+  filter: drop-shadow(0 0 16px #facc15) drop-shadow(0 0 28px #ffffff);
+}
+
+.sd-lightning-sub,
+.sd-storm-l2 {
+  width: 75px;
+  height: 75px;
+  left: 120px;
+  top: 12px;
+  animation: sdLightningFlicker 0.12s infinite alternate reverse;
+  filter: drop-shadow(0 0 12px #facc15);
+}
+
+.sd-electro-core,
+.sd-storm-ball,
+.sd-volt-ball-1 {
+  width: 52px;
+  height: 52px;
+  left: 40px;
+  top: 24px;
+  animation: sdElectroSpin 0.3s infinite linear;
+  filter: drop-shadow(0 0 14px #facc15);
+}
+
+.sd-volt-ball-2 {
+  width: 56px;
+  height: 56px;
+  left: 120px;
+  top: 22px;
+  animation: sdElectroSpin 0.25s infinite linear reverse;
+}
+
+.sd-thunder-impact,
+.sd-storm-impact,
+.sd-volt-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.25s infinite ease-out;
+  filter: drop-shadow(0 0 18px #facc15);
+}
+
+@keyframes sdLightningFlicker {
+  0% { transform: scaleX(0.9) scaleY(0.95); opacity: 0.8; }
+  50% { transform: scaleX(1.1) scaleY(1.08); opacity: 1; }
+  100% { transform: scaleX(0.95) scaleY(1.02); opacity: 0.9; }
+}
+
+@keyframes sdElectroSpin {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(0.9); }
+}
+
+/* 🌿 Grass Animations */
+.sd-energyball-core {
+  width: 62px;
+  height: 62px;
+  left: 70px;
+  top: 19px;
+  animation: sdFlarePulse 0.3s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 18px #22c55e) drop-shadow(0 0 28px #4ade80);
+}
+
+.sd-solar-leaf-1,
+.sd-vine-leaf-1 {
+  width: 34px;
+  height: 34px;
+  left: 30px;
+  top: 18px;
+  animation: sdLeafFly 0.5s infinite linear;
+}
+
+.sd-solar-leaf-2,
+.sd-vine-leaf-2 {
+  width: 38px;
+  height: 38px;
+  left: 110px;
+  top: 48px;
+  animation: sdLeafFly 0.45s infinite linear 0.15s;
+}
+
+.sd-vine-leaf-3 { width: 34px; height: 34px; left: 150px; top: 18px; animation: sdLeafFly 0.48s infinite linear 0.25s; }
+
+.sd-vine-slash,
+.sd-leaf-slash {
+  width: 72px;
+  height: 72px;
+  left: 100px;
+  top: 14px;
+  animation: sdSlashCut 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #22c55e);
+}
+
+.sd-solar-shine,
+.sd-petal-shine {
+  width: 48px;
+  height: 48px;
+  right: 5px;
+  top: 26px;
+  animation: sdShineGlow 0.4s infinite alternate;
+}
+
+.sd-petal-1 { width: 30px; height: 30px; left: 20px; top: 25px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-petal-2 { width: 32px; height: 32px; left: 60px; top: 55px; animation: sdLeafFly 0.45s infinite linear 0.1s; }
+.sd-petal-3 { width: 34px; height: 34px; left: 110px; top: 15px; animation: sdLeafFly 0.55s infinite linear 0.2s; }
+.sd-petal-4 { width: 32px; height: 32px; left: 150px; top: 45px; animation: sdLeafFly 0.48s infinite linear 0.3s; }
+
+@keyframes sdLeafFly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.7); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(90px, -15px) rotate(360deg) scale(1.2); opacity: 0; }
+}
+
+@keyframes sdSlashCut {
+  0% { transform: scale(0.4) rotate(-30deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+  100% { transform: scale(1.4) rotate(45deg); opacity: 0; }
+}
+
+@keyframes sdShineGlow {
+  0% { transform: scale(0.8) rotate(0deg); opacity: 0.6; }
+  100% { transform: scale(1.25) rotate(90deg); opacity: 1; }
+}
+
+/* 👻 Ghost Animations */
+.sd-shadowball-core {
+  width: 66px;
+  height: 66px;
+  left: 75px;
+  top: 17px;
+  animation: sdShadowSpin 0.35s infinite linear;
+  filter: drop-shadow(0 0 16px #7e22ce) drop-shadow(0 0 28px #3b0764);
+}
+
+.sd-shadow-wisp-1,
+.sd-night-wisp {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 28px;
+  animation: sdBlueSwirl 0.5s infinite linear;
+}
+
+.sd-shadow-wisp-2,
+.sd-sludge-wisp-1,
+.sd-sludge-wisp-2,
+.sd-sludge-wisp-3 {
+  width: 48px;
+  height: 48px;
+  left: 120px;
+  top: 24px;
+  animation: sdBlueSwirl 0.45s infinite linear reverse;
+  filter: drop-shadow(0 0 14px #a855f7);
+}
+
+.sd-night-claw-1 {
+  width: 55px;
+  height: 55px;
+  left: 50px;
+  top: 15px;
+  animation: sdSlashCut 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 14px #3b0764);
+}
+
+.sd-night-claw-2 {
+  width: 55px;
+  height: 55px;
+  left: 110px;
+  top: 30px;
+  animation: sdSlashCut 0.3s infinite ease-out 0.15s;
+  filter: drop-shadow(0 0 14px #7e22ce);
+}
+
+.sd-shadow-impact,
+.sd-night-impact,
+.sd-sludge-impact {
+  width: 65px;
+  height: 65px;
+  right: -10px;
+  top: 18px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 16px #581c87);
+}
+
+@keyframes sdShadowSpin {
+  0% { transform: scale(0.9) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(180deg); }
+  100% { transform: scale(0.9) rotate(360deg); }
+}
+
+/* 🥊 Fighting & Claw Animations */
+.sd-fist-1 {
+  width: 48px;
+  height: 48px;
+  left: 30px;
+  top: 25px;
+  animation: sdPunchHit 0.25s infinite ease-out;
+}
+
+.sd-fist-2,
+.sd-force-fist {
+  width: 52px;
+  height: 52px;
+  left: 95px;
+  top: 18px;
+  animation: sdPunchHit 0.25s infinite ease-out 0.12s;
+}
+
+.sd-chop {
+  width: 50px;
+  height: 50px;
+  left: 60px;
+  top: 32px;
+  animation: sdPunchHit 0.3s infinite ease-out 0.08s;
+}
+
+.sd-hitmarker,
+.sd-combat-impact,
+.sd-force-impact {
+  width: 58px;
+  height: 58px;
+  right: -5px;
+  top: 20px;
+  animation: sdImpactPop 0.25s infinite ease-out;
+  filter: drop-shadow(0 0 14px #ef4444);
+}
+
+.sd-force-foot {
+  width: 48px;
+  height: 48px;
+  left: 60px;
+  top: 30px;
+  animation: sdPunchHit 0.3s infinite ease-out;
+}
+
+@keyframes sdPunchHit {
+  0% { transform: translateX(-20px) scale(0.7); opacity: 0; }
+  50% { transform: translateX(20px) scale(1.2); opacity: 1; filter: drop-shadow(0 0 10px #f59e0b); }
+  100% { transform: translateX(40px) scale(0.9); opacity: 0; }
+}
+
+/* 🐉 Dragon Claw & Slashes */
+.sd-dclaw-1 { width: 56px; height: 56px; left: 40px; top: 12px; animation: sdSlashCut 0.3s infinite ease-out; filter: drop-shadow(0 0 14px #06b6d4); }
+.sd-dclaw-2 { width: 56px; height: 56px; left: 95px; top: 28px; animation: sdSlashCut 0.3s infinite ease-out 0.15s; filter: drop-shadow(0 0 14px #8b5cf6); }
+.sd-dslash { width: 68px; height: 68px; left: 70px; top: 16px; animation: sdSlashCut 0.35s infinite ease-out 0.08s; filter: drop-shadow(0 0 16px #ec4899); }
+.sd-dclaw-impact { width: 65px; height: 65px; right: -10px; top: 18px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+/* ❄️ Ice Animations */
+.sd-iceball-core,
+.sd-beam-iceball,
+.sd-aurora-ice {
+  width: 54px;
+  height: 54px;
+  left: 70px;
+  top: 23px;
+  animation: sdElectroSpin 0.35s infinite linear;
+  filter: drop-shadow(0 0 14px #38bdf8) drop-shadow(0 0 24px #ffffff);
+}
+
+.sd-icicle-1,
+.sd-beam-icicle-1 {
+  width: 44px;
+  height: 44px;
+  left: 30px;
+  top: 14px;
+  animation: sdIcicleThrust 0.35s infinite ease-out;
+}
+
+.sd-icicle-2,
+.sd-beam-icicle-2 {
+  width: 50px;
+  height: 50px;
+  left: 125px;
+  top: 34px;
+  animation: sdIcicleThrust 0.35s infinite ease-out 0.12s;
+}
+
+.sd-icicle-pink {
+  width: 42px;
+  height: 42px;
+  left: 90px;
+  top: 10px;
+  animation: sdIcicleThrust 0.4s infinite ease-out 0.18s;
+  filter: drop-shadow(0 0 12px #f472b6);
+}
+
+.sd-ice-impact {
+  width: 60px;
+  height: 60px;
+  right: -8px;
+  top: 20px;
+  animation: sdImpactPop 0.3s infinite ease-out;
+  filter: drop-shadow(0 0 16px #38bdf8);
+}
+
+@keyframes sdIcicleThrust {
+  0% { transform: translateX(-15px) scale(0.6); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(65px) scale(1.1); opacity: 0; filter: drop-shadow(0 0 12px #ffffff); }
+}
+
+/* 🪨 Rock & Bones */
+.sd-stone-rocks { width: 60px; height: 60px; left: 80px; top: 19px; animation: sdRockDrop 0.4s infinite ease-in; filter: drop-shadow(0 0 12px #78350f); }
+.sd-stone-r1 { width: 40px; height: 40px; left: 30px; top: 14px; animation: sdRockDrop 0.35s infinite ease-in; }
+.sd-stone-r2 { width: 46px; height: 46px; left: 130px; top: 29px; animation: sdRockDrop 0.42s infinite ease-in 0.15s; }
+.sd-stone-impact { width: 64px; height: 64px; right: -8px; top: 19px; animation: sdImpactPop 0.35s infinite ease-out; }
+
+.sd-bone-1 { width: 44px; height: 44px; left: 40px; top: 24px; animation: sdElectroSpin 0.3s infinite linear; }
+.sd-bone-2 { width: 48px; height: 48px; left: 110px; top: 24px; animation: sdElectroSpin 0.3s infinite linear reverse; }
+.sd-bone-impact { width: 60px; height: 60px; right: -5px; top: 20px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+@keyframes sdRockDrop {
+  0% { transform: translate(-10px, -20px) rotate(0deg) scale(0.7); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translate(40px, 20px) rotate(180deg) scale(1.2); opacity: 0; }
+}
+
+/* 🔊 Sound & Hearts & Misc */
+.sd-sound-ring-1 {
+  width: 52px;
+  height: 52px;
+  left: 40px;
+  top: 24px;
+  animation: sdSoundWave 0.5s infinite ease-out;
+  filter: drop-shadow(0 0 12px #eab308);
+}
+
+.sd-sound-ring-2 {
+  width: 68px;
+  height: 68px;
+  left: 95px;
+  top: 17px;
+  animation: sdSoundWave 0.5s infinite ease-out 0.2s;
+  filter: drop-shadow(0 0 18px #facc15);
+}
+
+.sd-sound-shine { width: 46px; height: 46px; right: 0px; top: 27px; animation: sdShineGlow 0.35s infinite alternate; }
+
+@keyframes sdSoundWave {
+  0% { transform: scale(0.4); opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.sd-heart-1 { width: 36px; height: 36px; left: 30px; top: 18px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-heart-2 { width: 40px; height: 40px; left: 80px; top: 44px; animation: sdLeafFly 0.45s infinite linear 0.12s; }
+.sd-heart-3 { width: 44px; height: 44px; left: 130px; top: 14px; animation: sdLeafFly 0.52s infinite linear 0.22s; }
+.sd-heart-shine { width: 46px; height: 46px; right: 5px; top: 24px; animation: sdShineGlow 0.35s infinite alternate; }
+
+.sd-giga-ball { width: 68px; height: 68px; left: 60px; top: 17px; animation: sdFlarePulse 0.2s infinite alternate; filter: drop-shadow(0 0 24px #eab308); }
+.sd-giga-impact-1 { width: 70px; height: 70px; left: 120px; top: 15px; animation: sdImpactPop 0.25s infinite ease-out; }
+.sd-giga-impact-2 { width: 78px; height: 78px; right: -15px; top: 11px; animation: sdImpactPop 0.25s infinite ease-out 0.1s; }
+
+.sd-hurr-feather { width: 44px; height: 44px; left: 30px; top: 18px; animation: sdLeafFly 0.5s infinite linear; }
+.sd-hurr-slash-1 { width: 68px; height: 68px; left: 60px; top: 14px; animation: sdSlashCut 0.3s infinite ease-out; filter: drop-shadow(0 0 12px #38bdf8); }
+.sd-hurr-slash-2 { width: 72px; height: 72px; left: 110px; top: 24px; animation: sdSlashCut 0.3s infinite ease-out 0.12s; filter: drop-shadow(0 0 14px #0284c7); }
+.sd-hurr-impact { width: 62px; height: 62px; right: -10px; top: 19px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+.sd-default-shine { width: 52px; height: 52px; left: 60px; top: 24px; animation: sdShineGlow 0.35s infinite alternate; }
+.sd-default-impact { width: 66px; height: 66px; right: 0px; top: 17px; animation: sdImpactPop 0.3s infinite ease-out; }
+
+/* =========================================================================
    🔐 포켓농장 회원가입 & 로그인 & 비밀번호 인증 UI
    ========================================================================= */
 
