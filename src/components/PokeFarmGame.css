@@ -277,25 +277,176 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: transform 0.1s ease;
 }
 
+/* 💥 스킬 시전 시 화면 충격 진동 (Screen Shake) */
+.farm-pokemon-stage.skill-casting {
+  animation: stageSkillImpactShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes stageSkillImpactShake {
+  0% { transform: translate(0, 0); }
+  15% { transform: translate(-3px, 2px) rotate(-0.5deg); }
+  30% { transform: translate(4px, -3px) rotate(0.8deg); }
+  45% { transform: translate(-3px, -1px) rotate(-0.4deg); }
+  60% { transform: translate(2px, 2px) rotate(0.3deg); }
+  75% { transform: translate(-1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* 🌟 스킬 시전 배경 시네마틱 스포트라이트 플래시 */
+.pasture-cinematic-flash {
+  position: absolute;
+  top: -80px;
+  left: -100px;
+  right: -100px;
+  bottom: -80px;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 50%;
+  animation: cinematicFlashBurst 0.75s ease-out forwards;
+}
+
+@keyframes cinematicFlashBurst {
+  0% { opacity: 0; transform: scale(0.3); }
+  25% { opacity: 0.65; transform: scale(1.15); filter: blur(4px); }
+  100% { opacity: 0; transform: scale(1.5); filter: blur(12px); }
+}
+
+.pasture-cinematic-flash.flash-fire { background: radial-gradient(circle, rgba(249, 115, 22, 0.5) 0%, rgba(220, 38, 38, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-water { background: radial-gradient(circle, rgba(56, 189, 248, 0.5) 0%, rgba(2, 132, 199, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-grass { background: radial-gradient(circle, rgba(74, 222, 128, 0.5) 0%, rgba(22, 163, 74, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-electric { background: radial-gradient(circle, rgba(250, 204, 21, 0.6) 0%, rgba(202, 138, 4, 0.25) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-dragon { background: radial-gradient(circle, rgba(45, 212, 191, 0.5) 0%, rgba(15, 118, 110, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-psychic { background: radial-gradient(circle, rgba(192, 132, 252, 0.5) 0%, rgba(124, 58, 237, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-ghost, .pasture-cinematic-flash.flash-dark { background: radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(88, 28, 135, 0.22) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-ice { background: radial-gradient(circle, rgba(165, 243, 252, 0.6) 0%, rgba(6, 182, 212, 0.22) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-fairy { background: radial-gradient(circle, rgba(244, 114, 182, 0.55) 0%, rgba(219, 39, 119, 0.22) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-fighting, .pasture-cinematic-flash.flash-rock, .pasture-cinematic-flash.flash-steel { background: radial-gradient(circle, rgba(248, 113, 113, 0.5) 0%, rgba(185, 28, 28, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-flying { background: radial-gradient(circle, rgba(147, 197, 253, 0.5) 0%, rgba(37, 99, 235, 0.2) 55%, transparent 75%); }
+.pasture-cinematic-flash.flash-normal { background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(148, 163, 184, 0.2) 55%, transparent 75%); }
+
+/* 💥 확대 & 광속 뻗어나가는 고유스킬 스트림 */
 .pasture-live-skill-stream {
   position: absolute;
   left: 55%;
-  top: 10%;
+  top: 4%;
   pointer-events: none;
   z-index: 25;
-  transform: scale(0.95);
+  width: 280px;
+  height: 110px;
   transform-origin: left center;
-  animation: pastureStreamBurst 1.2s ease-out forwards;
+  animation: pastureStreamBurst 1.35s cubic-bezier(0.15, 0.85, 0.35, 1.1) forwards;
 }
 
 @keyframes pastureStreamBurst {
-  0% { opacity: 0; transform: scale(0.5); }
-  15% { opacity: 1; transform: scale(1.05); }
-  85% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.9); }
+  0% { opacity: 0; transform: scaleX(0.15) scaleY(0.4); filter: brightness(2.2); }
+  18% { opacity: 1; transform: scaleX(1.15) scaleY(1.22); filter: brightness(1.5); }
+  45% { opacity: 1; transform: scaleX(1.02) scaleY(1.05); filter: brightness(1.2); }
+  82% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  100% { opacity: 0; transform: scale(0.92) translateX(30px); filter: brightness(0.8); }
 }
+
+/* 💥 스트림 끝단(목표 지점) 폭발 충격파 버스트 (순수 CSS) */
+.stream-impact-burst {
+  position: absolute;
+  right: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 90px;
+  height: 90px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.impact-flash {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 30%, rgba(255,255,255,0.85) 60%, transparent 100%);
+  animation: impactFlashAnim 0.65s 0.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes impactFlashAnim {
+  0% { transform: scale(0.2); opacity: 0; }
+  30% { transform: scale(1.6); opacity: 1; filter: drop-shadow(0 0 16px currentColor); }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.impact-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+  opacity: 0;
+}
+
+.impact-ring.ring-1 {
+  width: 36px;
+  height: 36px;
+  animation: impactRingAnim 0.7s 0.25s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+.impact-ring.ring-2 {
+  width: 58px;
+  height: 58px;
+  animation: impactRingAnim 0.7s 0.35s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes impactRingAnim {
+  0% { transform: scale(0.3); opacity: 1; }
+  60% { opacity: 0.85; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+.impact-sparks span {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px currentColor;
+  opacity: 0;
+}
+
+.impact-sparks .isp-1 { animation: sparkFly1 0.6s 0.28s ease-out forwards; }
+.impact-sparks .isp-2 { animation: sparkFly2 0.6s 0.3s ease-out forwards; }
+.impact-sparks .isp-3 { animation: sparkFly3 0.6s 0.32s ease-out forwards; }
+.impact-sparks .isp-4 { animation: sparkFly4 0.6s 0.34s ease-out forwards; }
+
+@keyframes sparkFly1 {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(32px, -28px) scale(0.2); opacity: 0; }
+}
+@keyframes sparkFly2 {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(36px, 24px) scale(0.2); opacity: 0; }
+}
+@keyframes sparkFly3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-22px, -30px) scale(0.2); opacity: 0; }
+}
+@keyframes sparkFly4 {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(40px, 4px) scale(0.2); opacity: 0; }
+}
+
+.impact-fire { color: #f97316; }
+.impact-water { color: #38bdf8; }
+.impact-grass { color: #4ade80; }
+.impact-electric { color: #facc15; }
+.impact-dragon { color: #2dd4bf; }
+.impact-psychic { color: #c084fc; }
+.impact-ghost, .impact-dark { color: #a855f7; }
+.impact-ice { color: #67e8f9; }
+.impact-fairy { color: #f472b6; }
+.impact-fighting, .impact-rock, .impact-steel { color: #ef4444; }
+.impact-flying { color: #38bdf8; }
+.impact-normal { color: #fbbf24; }
 
 .shiny-sparkle-tag {
   position: absolute;
@@ -482,94 +633,219 @@
 
 /* 🌟 Farm Yard Pet Skill Motion Effects */
 .pet-skill-jump {
-  animation: petSkillJump 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  animation: petSkillJump 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 
 @keyframes petSkillJump {
   0% { transform: translateY(0) scale(1); }
-  35% { transform: translateY(-24px) scale(1.15) rotate(-3deg); }
-  65% { transform: translateY(-20px) scale(1.1) rotate(3deg); }
+  18% { transform: translateY(6px) scale(0.92, 1.08) rotate(-4deg); }
+  38% { transform: translateY(-30px) scale(1.24) rotate(6deg); }
+  60% { transform: translateY(-24px) scale(1.18) rotate(-3deg); }
+  80% { transform: translateY(-8px) scale(1.06) rotate(1deg); }
   100% { transform: translateY(0) scale(1); }
 }
 
-/* Skill Pop-up Banner */
+/* 💥 포켓몬 역동적 스킬 발사 시전 모션 & 속성별 눈부신 2중 네온 후광 */
+.pet-skill-cast-motion {
+  animation: petSkillCastMotion 0.88s cubic-bezier(0.2, 0.8, 0.25, 1) !important;
+}
+
+@keyframes petSkillCastMotion {
+  0% { transform: translateY(0) scale(1) rotate(0deg); }
+  14% { transform: translateY(8px) scale(0.88, 1.12) rotate(-8deg); }
+  32% { transform: translateY(-34px) scale(1.28, 0.95) rotate(7deg); }
+  48% { transform: translateY(-28px) scale(1.22) rotate(-4deg); }
+  64% { transform: translateY(-20px) scale(1.14) rotate(3deg); }
+  80% { transform: translateY(-8px) scale(1.06) rotate(-1deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+.pet-skill-cast-motion.motion-fire { filter: brightness(1.3) drop-shadow(0 0 16px #f97316) drop-shadow(0 0 32px #ea580c) !important; }
+.pet-skill-cast-motion.motion-water { filter: brightness(1.3) drop-shadow(0 0 16px #38bdf8) drop-shadow(0 0 32px #0284c7) !important; }
+.pet-skill-cast-motion.motion-grass { filter: brightness(1.3) drop-shadow(0 0 16px #4ade80) drop-shadow(0 0 32px #16a34a) !important; }
+.pet-skill-cast-motion.motion-electric { filter: brightness(1.35) drop-shadow(0 0 20px #facc15) drop-shadow(0 0 36px #eab308) !important; }
+.pet-skill-cast-motion.motion-dragon { filter: brightness(1.3) drop-shadow(0 0 18px #2dd4bf) drop-shadow(0 0 34px #0f766e) !important; }
+.pet-skill-cast-motion.motion-psychic { filter: brightness(1.3) drop-shadow(0 0 18px #c084fc) drop-shadow(0 0 34px #7c3aed) !important; }
+.pet-skill-cast-motion.motion-ghost, .pet-skill-cast-motion.motion-dark { filter: brightness(1.25) drop-shadow(0 0 18px #a855f7) drop-shadow(0 0 34px #581c87) !important; }
+.pet-skill-cast-motion.motion-ice { filter: brightness(1.35) drop-shadow(0 0 18px #a5f3fc) drop-shadow(0 0 34px #06b6d4) !important; }
+.pet-skill-cast-motion.motion-fairy { filter: brightness(1.3) drop-shadow(0 0 18px #f472b6) drop-shadow(0 0 34px #db2777) !important; }
+.pet-skill-cast-motion.motion-fighting, .pet-skill-cast-motion.motion-rock, .pet-skill-cast-motion.motion-steel { filter: brightness(1.25) drop-shadow(0 0 16px #ef4444) drop-shadow(0 0 32px #b91c1c) !important; }
+.pet-skill-cast-motion.motion-flying { filter: brightness(1.3) drop-shadow(0 0 16px #38bdf8) drop-shadow(0 0 32px #2563eb) !important; }
+.pet-skill-cast-motion.motion-normal { filter: brightness(1.25) drop-shadow(0 0 14px #fef08a) drop-shadow(0 0 28px #ca8a04) !important; }
+
+/* 🌟 바닥 지면 입체 충격파 링 (Ground Shockwave Rings) */
+.ground-shockwave-layer {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 44px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ground-shockwave {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  opacity: 0;
+  transform: scale(0.2) rotateX(65deg);
+}
+
+.ground-shockwave.sw-1 {
+  animation: shockwaveExpand 0.75s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+}
+
+.ground-shockwave.sw-2 {
+  animation: shockwaveExpand 0.75s 0.12s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+}
+
+.ground-shockwave.sw-3 {
+  animation: shockwaveExpand 0.75s 0.24s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes shockwaveExpand {
+  0% { transform: scale(0.2) rotateX(65deg); opacity: 1; border-width: 4px; }
+  60% { opacity: 0.8; }
+  100% { transform: scale(2.6) rotateX(65deg); opacity: 0; border-width: 1px; }
+}
+
+.shockwave-fire { color: #f97316; }
+.shockwave-water { color: #38bdf8; }
+.shockwave-grass { color: #4ade80; }
+.shockwave-electric { color: #facc15; }
+.shockwave-dragon { color: #2dd4bf; }
+.shockwave-psychic { color: #c084fc; }
+.shockwave-ghost, .shockwave-dark { color: #a855f7; }
+.shockwave-ice { color: #67e8f9; }
+.shockwave-fairy { color: #f472b6; }
+.shockwave-fighting, .shockwave-rock, .shockwave-steel { color: #ef4444; }
+.shockwave-flying { color: #38bdf8; }
+.shockwave-normal { color: #e2e8f0; }
+
+/* 🌟 네온 크리스탈 스킬 팝업 배너 */
 .pet-skill-banner {
   position: absolute;
-  top: -42px;
+  top: -46px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
+  gap: 7px;
+  padding: 5px 14px;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 900;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  animation: skillBannerPop 1.3s ease-out forwards;
-  z-index: 10;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  animation: skillBannerPop 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  z-index: 30;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 @keyframes skillBannerPop {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.7); }
-  20% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
-  75% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.8); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.5); filter: brightness(2); }
+  18% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.15); filter: brightness(1.2); }
+  35% { opacity: 1; transform: translateX(-50%) translateY(-2px) scale(1.05); filter: brightness(1); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(0.75); }
+}
+
+.pet-skill-banner .skill-icon-anim {
+  display: inline-block;
+  font-size: 1.15rem;
+  animation: skillIconBounce 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes skillIconBounce {
+  0% { transform: scale(0.9) rotate(-8deg); }
+  100% { transform: scale(1.25) rotate(8deg); }
 }
 
 .pet-skill-banner.skill-water {
   background: linear-gradient(135deg, #0284c7, #38bdf8);
   color: #ffffff;
   border: 1.5px solid #bae6fd;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-fire {
   background: linear-gradient(135deg, #ea580c, #f97316);
   color: #ffffff;
   border: 1.5px solid #fed7aa;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-grass {
   background: linear-gradient(135deg, #16a34a, #4ade80);
   color: #ffffff;
   border: 1.5px solid #bbf7d0;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-electric {
   background: linear-gradient(135deg, #ca8a04, #eab308);
   color: #0f172a;
   border: 1.5px solid #fef08a;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.4);
 }
 
 .pet-skill-banner.skill-fairy {
   background: linear-gradient(135deg, #db2777, #f472b6);
   color: #ffffff;
   border: 1.5px solid #fbcfe8;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-dragon {
   background: linear-gradient(135deg, #0f766e, #14b8a6);
   color: #ffffff;
   border: 1.5px solid #99f6e4;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-psychic {
   background: linear-gradient(135deg, #7c3aed, #a855f7);
   color: #ffffff;
   border: 1.5px solid #e9d5ff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.pet-skill-banner.skill-ghost, .pet-skill-banner.skill-dark {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  color: #ffffff;
+  border: 1.5px solid #c084fc;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.pet-skill-banner.skill-ice {
+  background: linear-gradient(135deg, #0891b2, #38bdf8);
+  color: #ffffff;
+  border: 1.5px solid #cffafe;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-fighting {
   background: linear-gradient(135deg, #b91c1c, #ef4444);
   color: #ffffff;
   border: 1.5px solid #fecaca;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.pet-skill-banner.skill-flying {
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .pet-skill-banner.skill-normal {
   background: linear-gradient(135deg, #475569, #64748b);
   color: #ffffff;
   border: 1.5px solid #cbd5e1;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 /* Burst Aura Ring & Swirling Particles */
@@ -577,8 +853,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 140px;
-  height: 140px;
+  width: 150px;
+  height: 150px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   pointer-events: none;
@@ -586,51 +862,122 @@
 }
 
 .pet-skill-aura-ring.aura-water {
-  box-shadow: 0 0 25px 8px rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 30px 10px rgba(56, 189, 248, 0.7);
   animation: auraPulse 1s ease-out;
 }
 
 .pet-skill-aura-ring.aura-fire {
-  box-shadow: 0 0 25px 8px rgba(249, 115, 22, 0.65);
+  box-shadow: 0 0 30px 10px rgba(249, 115, 22, 0.75);
   animation: auraPulse 1s ease-out;
 }
 
 .pet-skill-aura-ring.aura-electric {
-  box-shadow: 0 0 25px 8px rgba(250, 204, 21, 0.7);
+  box-shadow: 0 0 32px 12px rgba(250, 204, 21, 0.8);
   animation: auraPulse 1s ease-out;
 }
 
 .pet-skill-aura-ring.aura-grass {
-  box-shadow: 0 0 25px 8px rgba(74, 222, 128, 0.6);
+  box-shadow: 0 0 30px 10px rgba(74, 222, 128, 0.7);
   animation: auraPulse 1s ease-out;
 }
 
 .pet-skill-aura-ring.aura-fairy {
-  box-shadow: 0 0 25px 8px rgba(244, 114, 182, 0.65);
+  box-shadow: 0 0 30px 10px rgba(244, 114, 182, 0.75);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-dragon {
+  box-shadow: 0 0 30px 10px rgba(45, 212, 191, 0.75);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-psychic {
+  box-shadow: 0 0 30px 10px rgba(192, 132, 252, 0.75);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-ghost, .pet-skill-aura-ring.aura-dark {
+  box-shadow: 0 0 30px 10px rgba(168, 85, 247, 0.75);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-ice {
+  box-shadow: 0 0 30px 10px rgba(165, 243, 252, 0.8);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-fighting, .pet-skill-aura-ring.aura-rock, .pet-skill-aura-ring.aura-steel {
+  box-shadow: 0 0 30px 10px rgba(248, 113, 113, 0.75);
+  animation: auraPulse 1s ease-out;
+}
+
+.pet-skill-aura-ring.aura-normal {
+  box-shadow: 0 0 28px 8px rgba(226, 232, 240, 0.7);
   animation: auraPulse 1s ease-out;
 }
 
 @keyframes auraPulse {
-  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.75); opacity: 0; }
 }
 
+/* 💥 8방향 사방 확산 입체 파티클 시스템 */
 .skill-particle {
   position: absolute;
-  font-size: 1.4rem;
-  animation: particleScatter 1s ease-out forwards;
+  font-size: 1.45rem;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 }
 
-.skill-particle.pt-1 { top: 0%; left: 10%; animation-delay: 0.05s; }
-.skill-particle.pt-2 { top: 10%; right: 10%; animation-delay: 0.1s; }
-.skill-particle.pt-3 { bottom: 15%; left: 0%; animation-delay: 0.15s; }
-.skill-particle.pt-4 { bottom: 10%; right: 5%; animation-delay: 0.2s; }
-.skill-particle.pt-5 { top: -15%; left: 45%; animation-delay: 0.1s; }
+.skill-particle.pt-1 { top: 20%; left: 10%; animation: particleBurst1 0.9s 0.04s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-2 { top: 15%; right: 10%; animation: particleBurst2 0.9s 0.08s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-3 { bottom: 20%; left: 5%; animation: particleBurst3 0.9s 0.12s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-4 { bottom: 15%; right: 5%; animation: particleBurst4 0.9s 0.16s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-5 { top: -25%; left: 45%; animation: particleBurst5 0.9s 0.06s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-6 { top: 40%; left: -15%; animation: particleBurst6 0.9s 0.1s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-7 { top: 40%; right: -15%; animation: particleBurst7 0.9s 0.14s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
+.skill-particle.pt-8 { bottom: -20%; left: 45%; animation: particleBurst8 0.9s 0.18s cubic-bezier(0.12, 0.8, 0.32, 1.2) forwards; }
 
-@keyframes particleScatter {
-  0% { opacity: 1; transform: translateY(0) scale(0.8); }
-  60% { opacity: 1; transform: translateY(-16px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-30px) scale(0.6); }
+@keyframes particleBurst1 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(-20px, -24px) scale(1.3) rotate(-20deg); }
+  100% { opacity: 0; transform: translate(-45px, -55px) scale(0.5) rotate(-60deg); }
+}
+@keyframes particleBurst2 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(24px, -28px) scale(1.35) rotate(25deg); }
+  100% { opacity: 0; transform: translate(50px, -60px) scale(0.5) rotate(70deg); }
+}
+@keyframes particleBurst3 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(-30px, 15px) scale(1.2) rotate(-15deg); }
+  100% { opacity: 0; transform: translate(-60px, 35px) scale(0.4) rotate(-45deg); }
+}
+@keyframes particleBurst4 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(32px, 18px) scale(1.25) rotate(20deg); }
+  100% { opacity: 0; transform: translate(65px, 40px) scale(0.4) rotate(50deg); }
+}
+@keyframes particleBurst5 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(0, -35px) scale(1.4) rotate(15deg); }
+  100% { opacity: 0; transform: translate(0, -75px) scale(0.5) rotate(45deg); }
+}
+@keyframes particleBurst6 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(-38px, -5px) scale(1.2) rotate(-30deg); }
+  100% { opacity: 0; transform: translate(-75px, -10px) scale(0.4) rotate(-80deg); }
+}
+@keyframes particleBurst7 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(38px, -5px) scale(1.2) rotate(30deg); }
+  100% { opacity: 0; transform: translate(75px, -10px) scale(0.4) rotate(80deg); }
+}
+@keyframes particleBurst8 {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  25% { opacity: 1; transform: translate(0, 25px) scale(1.1) rotate(-10deg); }
+  100% { opacity: 0; transform: translate(0, 50px) scale(0.3) rotate(-30deg); }
 }
 
 @keyframes floatHeart {

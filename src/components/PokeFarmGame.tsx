@@ -3173,20 +3173,37 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const skillSet = getPokemonSkillSet(pmon);
     const targetSkill = overrideSkill || skillSet.find(s => s.slot === selectedSkillSlot) || skillSet[0];
 
-    const particles = targetSkill.icon === '🔥' || targetSkill.icon === '☄️'
-      ? ['🔥', '💥', '☄️', '♨️', '✨']
-      : targetSkill.icon === '💧' || targetSkill.icon === '🌊' || targetSkill.icon === '🫧'
-      ? ['🌊', '💦', '🫧', '💧', '✨']
-      : targetSkill.icon === '🍃' || targetSkill.icon === '🌿' || targetSkill.icon === '🌸'
-      ? ['🍃', '🌸', '🌿', '🌱', '✨']
-      : targetSkill.icon === '⚡' || targetSkill.icon === '🌩️'
-      ? ['⚡', '⚡', '🌟', '💛', '✨']
-      : ['⭐', '✨', '💫', targetSkill.icon, '🎉'];
+    const pType = pmon.types[0] || 'normal';
+    let particles: string[] = ['⭐', '✨', '💫', targetSkill.icon, '🌟', '💥', '⚡', '🎉'];
+
+    if (pType === 'fire' || targetSkill.icon === '🔥' || targetSkill.icon === '☄️') {
+      particles = ['🔥', '💥', '☄️', '♨️', '✨', '🔥', '🌟', '💥'];
+    } else if (pType === 'water' || targetSkill.icon === '💧' || targetSkill.icon === '🌊' || targetSkill.icon === '🫧') {
+      particles = ['🌊', '💦', '🫧', '💧', '✨', '🌀', '💎', '🌊'];
+    } else if (pType === 'grass' || targetSkill.icon === '🍃' || targetSkill.icon === '🌿' || targetSkill.icon === '🌸') {
+      particles = ['🍃', '🌸', '🌿', '🌱', '✨', '🌺', '🍀', '🍃'];
+    } else if (pType === 'electric' || targetSkill.icon === '⚡' || targetSkill.icon === '🌩️') {
+      particles = ['⚡', '⚡', '🌟', '💛', '✨', '⚡', '💫', '⚡'];
+    } else if (pType === 'dragon') {
+      particles = ['🐲', '☄️', '🔥', '💥', '✨', '🌌', '⚡', '🌀'];
+    } else if (pType === 'psychic') {
+      particles = ['🔮', '✨', '💫', '🌌', '💜', '👁️', '🌀', '✨'];
+    } else if (pType === 'ghost' || pType === 'dark') {
+      particles = ['👻', '💀', '🌑', '💜', '🔥', '✨', '🖤', '🌪️'];
+    } else if (pType === 'ice') {
+      particles = ['❄️', '🧊', '💎', '🌨️', '✨', '💠', '⭐', '❄️'];
+    } else if (pType === 'flying') {
+      particles = ['🌪️', '💨', '🪶', '⚡', '✨', '🌀', '💫', '💨'];
+    } else if (pType === 'fairy') {
+      particles = ['💖', '✨', '🎀', '🌸', '🪄', '⭐', '💫', '🌟'];
+    } else if (pType === 'fighting' || pType === 'rock' || pType === 'steel') {
+      particles = ['💥', '👊', '🪨', '⚡', '✨', '⚔️', '🛡️', '💢'];
+    }
 
     setPetSkillEffect({
       id: Date.now(),
       skillName: targetSkill.name,
-      type: pmon.types[0] || 'normal',
+      type: pType,
       fxClass: targetSkill.fxClass,
       icon: targetSkill.icon,
       particles
@@ -3197,11 +3214,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const clientY = e ? e.clientY : window.innerHeight / 2;
     setFloatingHeart({ id: Date.now(), x: clientX, y: clientY });
 
-    setTimeout(() => setIsPetJumping(false), 700);
+    setTimeout(() => setIsPetJumping(false), 900);
     setTimeout(() => {
       setFloatingHeart(null);
       setPetSkillEffect(null);
-    }, 1400);
+    }, 1500);
 
     setFarmState(prev => {
       if (!prev.activePokemon) return prev;
@@ -6211,7 +6228,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
                   <div className="pasture-ground">
                     {/* Pokémon Visual Sprite & Skill FX */}
-                    <div className="farm-pokemon-stage">
+                    <div className={`farm-pokemon-stage ${petSkillEffect ? `skill-casting skill-cast-${petSkillEffect.type}` : ''}`}>
+                      {/* 🌟 주변 시네마틱 스포트라이트 플래시 */}
+                      {petSkillEffect && (
+                        <div className={`pasture-cinematic-flash flash-${petSkillEffect.type}`} />
+                      )}
+
                       {pmon.isShiny && <span className="shiny-sparkle-tag">✨ SHINY</span>}
 
                       {/* 🌟 Pet Skill Pop Banner */}
@@ -6233,17 +6255,37 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                         </div>
                       )}
 
-                      {/* 💥 실시간 방출형 고유스킬 스트림 (sill-example.png 스타일) */}
+                      {/* 💥 바닥 지면 입체 충격파 링 */}
                       {petSkillEffect && (
-                        <div className="pasture-live-skill-stream">
+                        <div className={`ground-shockwave-layer shockwave-${petSkillEffect.type}`}>
+                          <div className="ground-shockwave sw-1" />
+                          <div className="ground-shockwave sw-2" />
+                          <div className="ground-shockwave sw-3" />
+                        </div>
+                      )}
+
+                      {/* 💥 실시간 방출형 고유스킬 스트림 (자체 벡터 SVG + 끝단 폭발 임팩트 버스트) */}
+                      {petSkillEffect && (
+                        <div className={`pasture-live-skill-stream stream-type-${petSkillEffect.type}`}>
                           {renderSkillStreamFx(petSkillEffect.fxClass || 'skill-fx-fireblast', petSkillEffect.icon)}
+                          <div className={`stream-impact-burst impact-${petSkillEffect.type}`}>
+                            <div className="impact-flash" />
+                            <div className="impact-ring ring-1" />
+                            <div className="impact-ring ring-2" />
+                            <div className="impact-sparks">
+                              <span className="isp-1" />
+                              <span className="isp-2" />
+                              <span className="isp-3" />
+                              <span className="isp-4" />
+                            </div>
+                          </div>
                         </div>
                       )}
 
                       <img
                         src={pmon.sprites.showdownFront || pmon.sprites.front}
                         alt={pmon.nickname}
-                        className={`farm-active-sprite ${isPetJumping ? 'pet-skill-jump' : ''}`}
+                        className={`farm-active-sprite ${isPetJumping ? `pet-skill-cast-motion motion-${petSkillEffect?.type || 'normal'}` : ''}`}
                       />
                       <div className="pet-shadow"></div>
                       <div className="pet-nametag">
