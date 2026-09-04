@@ -5221,7 +5221,19 @@
 }
 
 .miniroom-canvas-container.bg-center {
-  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 55%, #fee2e2 55%, #fca5a5 100%);
+  background-color: #f6eed6;
+  background-image: url('/images/bg_center.png');
+  background-size: 104% 104%;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.miniroom-canvas-container.bg-center .miniroom-wall,
+.miniroom-canvas-container.bg-center .miniroom-floor {
+  display: none !important;
 }
 
 .miniroom-canvas-container.bg-attic_cafe {

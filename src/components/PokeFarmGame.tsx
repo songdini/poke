@@ -504,6 +504,8 @@ export const DIVERSE_STICKERS = [
   { id: 'mysterious_egg_gold', icon: '🥚', label: '황금빛 전설의 알', category: 'pokemon' },
   { id: 'hero_courage_sword', icon: '⚔️', label: '용기의 성검', category: 'pokemon' },
   { id: 'guardian_shield_def', icon: '🛡️', label: '수호의 은빛 방패', category: 'pokemon' },
+  { id: 'nurse_joy_special', icon: '👩‍⚕️', label: '친절한 간호순 누나', category: 'pokemon' },
+  { id: 'pokemon_healing_station', icon: '🏥', label: '포켓몬 치료 센터 머신', category: 'pokemon' },
 
   // 💖 7. 두부월드 감성 & 파티 (Dubuworld Nostalgia & Party)
   { id: 'dubu_acorn_special', icon: '🌰', label: '두부월드 황금 둡토리', category: 'emotional' },
