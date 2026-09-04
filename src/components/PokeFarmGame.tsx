@@ -1952,439 +1952,681 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     }
   };
 
-  // 💥 Pokémon Showdown 공식 FX 에셋 CDN 기반 고유스킬 스트림 렌더러
-  const SHOWDOWN_FX = 'https://play.pokemonshowdown.com/fx/';
-
-  const renderSkillStreamFx = (fxClass: string, symbolIcon: string = '✨') => {
+  // 💥 포켓몬 지속 방출형 고유스킬 스트림 렌더러 (sill-example.png 스타일 연속 방출 모션)
+  const renderSkillStreamFx = (fxClass: string, symbolIcon: string) => {
     switch (fxClass) {
-      // 🔥 불꽃 계열
       case 'skill-fx-fireblast':
         return (
-          <div className="skill-blast-stream stream-fire showdown-stream">
+          <div className="skill-blast-stream stream-fire">
             <svg className="stream-svg fire-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="fireOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#f97316" /><stop offset="40%" stopColor="#ea580c" /><stop offset="100%" stopColor="#dc2626" />
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="40%" stopColor="#ea580c" />
+                  <stop offset="100%" stopColor="#dc2626" />
                 </linearGradient>
                 <linearGradient id="fireMidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#fef08a" /><stop offset="35%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#ea580c" />
+                  <stop offset="0%" stopColor="#fef08a" />
+                  <stop offset="35%" stopColor="#fbbf24" />
+                  <stop offset="85%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#ea580c" />
                 </linearGradient>
-                <filter id="fireGlow"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                <linearGradient id="fireCoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="30%" stopColor="#ffffff" />
+                  <stop offset="70%" stopColor="#fef08a" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+                <filter id="fireGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <path className="fire-wave wave-1" fill="url(#fireOuterGrad)" filter="url(#fireGlow)" d="M 0 45 C 35 32, 65 18, 105 12 C 145 6, 185 0, 215 8 C 235 15, 240 30, 240 46 C 238 62, 225 78, 200 86 C 160 98, 120 90, 85 74 C 50 60, 20 54, 0 53 Z" />
+              <path className="fire-wave wave-1" fill="url(#fireOuterGrad)" filter="url(#fireGlow)"
+                d="M 0 45 C 35 32, 65 18, 105 12 C 145 6, 185 0, 215 8 C 235 15, 240 30, 240 46 C 238 62, 225 78, 200 86 C 160 98, 120 90, 85 74 C 50 60, 20 54, 0 53 Z" />
+              <path className="fire-wave wave-2" fill="url(#fireMidGrad)"
+                d="M 0 46 C 30 36, 60 25, 95 22 C 130 16, 165 15, 190 25 C 210 34, 215 47, 210 56 C 198 68, 170 78, 140 74 C 105 70, 65 64, 0 52 Z" />
+              <path className="fire-wave wave-3" fill="url(#fireCoreGrad)"
+                d="M 0 47 C 25 41, 55 35, 85 34 C 115 32, 145 36, 168 45 C 178 50, 172 54, 155 57 C 128 60, 90 56, 0 51 Z" />
             </svg>
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-fireball-1" />
-              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-flare-core" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-fireball-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-fire-impact" />
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
+              <span className="ember eb-3" />
+              <span className="ember eb-4" />
+              <span className="ember eb-5" />
             </div>
           </div>
         );
 
-      case 'skill-fx-firekanji':
-        return (
-          <div className="skill-blast-stream stream-firekanji showdown-stream">
-            <svg className="stream-svg firekanji-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
-              <circle cx="150" cy="50" r="38" fill="url(#fireMidGrad)" filter="url(#fireGlow)" opacity="0.85" />
-              <line x1="80" y1="50" x2="220" y2="50" stroke="#f97316" strokeWidth="14" strokeLinecap="round" opacity="0.8" />
-              <line x1="80" y1="50" x2="220" y2="50" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
-            </svg>
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-kanji-core" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-kanji-top" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-kanji-bot" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-kanji-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-firespin':
-        return (
-          <div className="skill-blast-stream stream-firespin showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}bluefireball.png`} alt="bluefire" className="sd-fx sd-bluefire-1" />
-              <img src={`${SHOWDOWN_FX}bluefireball.png`} alt="bluefire" className="sd-fx sd-bluefire-2" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fireball" className="sd-fx sd-firespin-swirl" />
-              <img src={`${SHOWDOWN_FX}flareball.png`} alt="flareball" className="sd-fx sd-firespin-core" />
-            </div>
-          </div>
-        );
-
-      // 💧 물 계열
       case 'skill-fx-hydropump':
         return (
-          <div className="skill-blast-stream stream-water showdown-stream">
+          <div className="skill-blast-stream stream-water">
             <svg className="stream-svg water-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="waterOuterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#38bdf8" /><stop offset="50%" stopColor="#0284c7" /><stop offset="100%" stopColor="#0369a1" />
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="50%" stopColor="#0284c7" />
+                  <stop offset="100%" stopColor="#0369a1" />
                 </linearGradient>
-                <filter id="waterGlow"><feGaussianBlur stdDeviation="2.5" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+                <linearGradient id="waterCoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="40%" stopColor="#bae6fd" />
+                  <stop offset="100%" stopColor="#38bdf8" />
+                </linearGradient>
+                <filter id="waterGlow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
               </defs>
-              <path className="water-wave wave-1" fill="url(#waterOuterGrad)" filter="url(#waterGlow)" d="M 0 45 C 40 28, 80 14, 125 14 C 165 14, 205 20, 225 32 C 240 42, 240 54, 225 64 C 200 75, 160 80, 120 80 C 75 78, 35 62, 0 53 Z" />
+              <path className="water-wave wave-1" fill="url(#waterOuterGrad)" filter="url(#waterGlow)"
+                d="M 0 45 C 40 28, 80 14, 125 14 C 165 14, 205 20, 225 32 C 240 42, 240 54, 225 64 C 200 75, 160 80, 120 80 C 75 78, 35 62, 0 53 Z" />
+              <path className="water-wave wave-2" fill="url(#waterCoreGrad)"
+                d="M 0 46 C 35 36, 75 26, 115 26 C 155 26, 195 32, 210 42 C 220 48, 220 54, 210 58 C 190 64, 150 68, 115 68 C 70 65, 30 55, 0 50 Z" />
+              <path className="water-spiral" stroke="#ffffff" strokeWidth="3" fill="none" strokeDasharray="8 6"
+                d="M 0 48 Q 60 22, 120 48 T 240 48" />
             </svg>
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-waterwisp-1" />
-              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-waterwisp-2" />
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-mistball-1" />
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-mistball-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-water-impact" />
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-2" />
+              <span className="bubble bb-3" />
+              <span className="bubble bb-4" />
+              <span className="bubble bb-5" />
             </div>
           </div>
         );
 
-      case 'skill-fx-hydrocannon':
-        return (
-          <div className="skill-blast-stream stream-hydrocannon showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-cannon-huge" />
-              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-cannon-wave-1" />
-              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-cannon-wave-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-cannon-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-bubblebeam':
-      case 'skill-fx-watershuriken':
-        return (
-          <div className="skill-blast-stream stream-bubblebeam showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-1" />
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-2" />
-              <img src={`${SHOWDOWN_FX}mistball.png`} alt="mistball" className="sd-fx sd-bubble-3" />
-              <img src={`${SHOWDOWN_FX}waterwisp.png`} alt="waterwisp" className="sd-fx sd-bubble-wisp" />
-            </div>
-          </div>
-        );
-
-      // ⚡ 전기 계열
       case 'skill-fx-thunderbolt':
         return (
-          <div className="skill-blast-stream stream-thunder showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-lightning-main" />
-              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-electro-core" />
-              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-lightning-sub" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-thunder-impact" />
+          <div className="skill-blast-stream stream-thunder">
+            <svg className="stream-svg thunder-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <filter id="thunderGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <polyline className="thunder-bolt bolt-outer" stroke="#facc15" strokeWidth="12" fill="none" opacity="0.8"
+                points="0,48 30,30 60,62 95,20 130,68 165,24 200,64 240,46" />
+              <polyline className="thunder-bolt bolt-main" stroke="#ffffff" strokeWidth="6" fill="none" filter="url(#thunderGlow)"
+                points="0,48 30,30 60,62 95,20 130,68 165,24 200,64 240,46" />
+              <polyline className="thunder-branch br-1" stroke="#fef08a" strokeWidth="3" fill="none"
+                points="95,20 120,6 155,14" />
+              <polyline className="thunder-branch br-2" stroke="#fef08a" strokeWidth="3" fill="none"
+                points="130,68 158,86 188,78" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-2" />
+              <span className="spark sp-3" />
+              <span className="spark sp-4" />
+              <span className="spark sp-5" />
             </div>
           </div>
         );
 
-      case 'skill-fx-thunderstorm':
-        return (
-          <div className="skill-blast-stream stream-thunderstorm showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-storm-l1" />
-              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-storm-l2" />
-              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-storm-ball" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-storm-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-volttackle':
-        return (
-          <div className="skill-blast-stream stream-volttackle showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-volt-ball-1" />
-              <img src={`${SHOWDOWN_FX}electroball.png`} alt="electroball" className="sd-fx sd-volt-ball-2" />
-              <img src={`${SHOWDOWN_FX}lightning.png`} alt="lightning" className="sd-fx sd-volt-lightning" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-volt-impact" />
-            </div>
-          </div>
-        );
-
-      // 🌿 풀 계열
       case 'skill-fx-solarbeam':
         return (
-          <div className="skill-blast-stream stream-solar showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}energyball.png`} alt="energyball" className="sd-fx sd-energyball-core" />
-              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-solar-leaf-1" />
-              <img src={`${SHOWDOWN_FX}leaf2.png`} alt="leaf" className="sd-fx sd-solar-leaf-2" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-solar-shine" />
+          <div className="skill-blast-stream stream-solar">
+            <svg className="stream-svg solar-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="solarBeamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="25%" stopColor="#fef08a" />
+                  <stop offset="65%" stopColor="#4ade80" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
+                <filter id="solarGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect className="solar-beam-core" x="0" y="36" width="240" height="24" rx="12" fill="url(#solarBeamGrad)" filter="url(#solarGlow)" />
+              <rect className="solar-beam-center" x="0" y="42" width="240" height="12" rx="6" fill="#ffffff" />
+              <ellipse className="solar-ring ring-1" cx="65" cy="48" rx="16" ry="32" fill="none" stroke="#86efac" strokeWidth="3" />
+              <ellipse className="solar-ring ring-2" cx="140" cy="48" rx="18" ry="36" fill="none" stroke="#4ade80" strokeWidth="3" />
+              <ellipse className="solar-ring ring-3" cx="210" cy="48" rx="20" ry="40" fill="none" stroke="#22c55e" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles solar-leaves">
+              <span className="leaf-particle lf-1">🍃</span>
+              <span className="leaf-particle lf-2">🌿</span>
+              <span className="leaf-particle lf-3">🍃</span>
+              <span className="leaf-particle lf-4">✨</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-vinewhip':
-        return (
-          <div className="skill-blast-stream stream-vinewhip showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-vine-leaf-1" />
-              <img src={`${SHOWDOWN_FX}leaf2.png`} alt="leaf" className="sd-fx sd-vine-leaf-2" />
-              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-vine-slash" />
-              <img src={`${SHOWDOWN_FX}leaf1.png`} alt="leaf" className="sd-fx sd-vine-leaf-3" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-petaldance':
-        return (
-          <div className="skill-blast-stream stream-petaldance showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-1" />
-              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-2" />
-              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-3" />
-              <img src={`${SHOWDOWN_FX}petal.png`} alt="petal" className="sd-fx sd-petal-4" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-petal-shine" />
-            </div>
-          </div>
-        );
-
-      // 👻 고스트/독 계열
       case 'skill-fx-shadowball':
         return (
-          <div className="skill-blast-stream stream-shadow showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}shadowball.png`} alt="shadowball" className="sd-fx sd-shadowball-core" />
-              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="blackwisp" className="sd-fx sd-shadow-wisp-1" />
-              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="purplewisp" className="sd-fx sd-shadow-wisp-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-shadow-impact" />
+          <div className="skill-blast-stream stream-shadow">
+            <svg className="stream-svg shadow-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="shadowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#c084fc" />
+                  <stop offset="50%" stopColor="#7e22ce" />
+                  <stop offset="100%" stopColor="#3b0764" />
+                </linearGradient>
+                <filter id="shadowGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path className="shadow-smoke sm-1" fill="url(#shadowGrad)" filter="url(#shadowGlow)"
+                d="M 0 45 C 35 18, 70 12, 115 18 C 160 24, 195 8, 225 24 C 242 38, 238 68, 210 80 C 170 92, 130 75, 85 80 C 40 85, 20 62, 0 52 Z" />
+              <path className="shadow-smoke sm-2" fill="#581c87" opacity="0.85"
+                d="M 0 46 C 30 28, 65 22, 105 30 C 145 38, 180 26, 205 38 C 220 48, 215 65, 190 70 C 155 75, 120 62, 80 65 C 40 66, 18 56, 0 50 Z" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-1">👻</span>
+              <span className="wisp ws-2">🟣</span>
+              <span className="wisp ws-3">✨</span>
+              <span className="wisp ws-4">🟣</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-nightshade':
-        return (
-          <div className="skill-blast-stream stream-nightshade showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}leftclaw.png`} alt="claw" className="sd-fx sd-night-claw-1" />
-              <img src={`${SHOWDOWN_FX}rightclaw.png`} alt="claw" className="sd-fx sd-night-claw-2" />
-              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="wisp" className="sd-fx sd-night-wisp" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-night-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-sludgebomb':
-        return (
-          <div className="skill-blast-stream stream-sludge showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-1" />
-              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-2" />
-              <img src={`${SHOWDOWN_FX}blackwisp.png`} alt="wisp" className="sd-fx sd-sludge-wisp-3" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-sludge-impact" />
-            </div>
-          </div>
-        );
-
-      // 🔮 에스퍼/페어리 계열
       case 'skill-fx-psychic':
         return (
-          <div className="skill-blast-stream stream-psychic showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-psychic-shine" />
-              <img src={`${SHOWDOWN_FX}purplewisp.png`} alt="pulse" className="sd-fx sd-psychic-pulse" />
-              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-psychic-rainbow" />
+          <div className="skill-blast-stream stream-psychic">
+            <svg className="stream-svg psychic-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="psychicGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f472b6" />
+                  <stop offset="50%" stopColor="#db2777" />
+                  <stop offset="100%" stopColor="#9d174d" />
+                </linearGradient>
+                <filter id="psychicGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect className="psychic-core-beam" x="0" y="42" width="240" height="14" rx="7" fill="#fbcfe8" filter="url(#psychicGlow)" />
+              <ellipse className="psychic-wave-ring pw-1" cx="45" cy="49" rx="12" ry="24" fill="none" stroke="#f472b6" strokeWidth="2.5" />
+              <ellipse className="psychic-wave-ring pw-2" cx="105" cy="49" rx="18" ry="34" fill="none" stroke="#ec4899" strokeWidth="3" />
+              <ellipse className="psychic-wave-ring pw-3" cx="170" cy="49" rx="24" ry="44" fill="none" stroke="#db2777" strokeWidth="3.5" />
+              <ellipse className="psychic-wave-ring pw-4" cx="228" cy="49" rx="28" ry="50" fill="none" stroke="#be185d" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">🔮</span>
+              <span className="p-sparkle ps-2">✨</span>
+              <span className="p-sparkle ps-3">💖</span>
+              <span className="p-sparkle ps-4">✨</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-psystrike':
+      case 'skill-fx-hurricane':
         return (
-          <div className="skill-blast-stream stream-psystrike showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}moon.png`} alt="moon" className="sd-fx sd-psy-moon" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-psy-shine" />
-              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-psy-slash" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-psy-impact" />
+          <div className="skill-blast-stream stream-hurricane">
+            <svg className="stream-svg hurricane-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="hurricane-slash s-1" stroke="#38bdf8" strokeWidth="6" fill="none" opacity="0.9"
+                d="M 0 45 C 50 15, 120 10, 240 25" />
+              <path className="hurricane-slash s-2" stroke="#ffffff" strokeWidth="4" fill="none"
+                d="M 0 48 C 60 48, 140 46, 240 48" />
+              <path className="hurricane-slash s-3" stroke="#0284c7" strokeWidth="6" fill="none" opacity="0.9"
+                d="M 0 52 C 50 82, 120 86, 240 70" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🌪️</span>
+              <span className="gust g-2">💨</span>
+              <span className="gust g-3">✨</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-prismbarrier':
+      case 'skill-fx-dracometeor':
         return (
-          <div className="skill-blast-stream stream-prism showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}moon.png`} alt="moon" className="sd-fx sd-prism-moon" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-prism-shine-1" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-prism-shine-2" />
+          <div className="skill-blast-stream stream-draco">
+            <svg className="stream-svg draco-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="dracoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#2dd4bf" />
+                  <stop offset="50%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+              <path className="draco-breath d-1" fill="url(#dracoGrad)" opacity="0.85"
+                d="M 0 46 C 40 24, 85 15, 130 18 C 175 22, 210 10, 235 28 C 245 42, 238 65, 215 78 C 175 92, 130 82, 85 78 C 45 74, 20 60, 0 52 Z" />
+            </svg>
+            <div className="stream-particles draco-stars">
+              <span className="d-star ds-1">🐉</span>
+              <span className="d-star ds-2">🌠</span>
+              <span className="d-star ds-3">✨</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-magicalshine':
+      case 'skill-fx-gigaimpact':
         return (
-          <div className="skill-blast-stream stream-magicalshine showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-mshine-main" />
-              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-mshine-rainbow" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-mshine-sub" />
+          <div className="skill-blast-stream stream-giga">
+            <svg className="stream-svg giga-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <rect className="giga-laser" x="0" y="34" width="240" height="28" rx="14" fill="#fbbf24" opacity="0.9" />
+              <rect className="giga-core" x="0" y="40" width="240" height="16" rx="8" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles giga-shocks">
+              <span className="shock sk-1">💥</span>
+              <span className="shock sk-2">⭐</span>
+              <span className="shock sk-3">💥</span>
             </div>
           </div>
         );
 
-      case 'skill-fx-heartstorm':
-        return (
-          <div className="skill-blast-stream stream-heartstorm showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-1" />
-              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-2" />
-              <img src={`${SHOWDOWN_FX}heart.png`} alt="heart" className="sd-fx sd-heart-3" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-heart-shine" />
-            </div>
-          </div>
-        );
-
-      // ❄️ 얼음 계열
       case 'skill-fx-blizzard':
         return (
-          <div className="skill-blast-stream stream-blizzard showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-iceball-core" />
-              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-icicle-1" />
-              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-icicle-2" />
-              <img src={`${SHOWDOWN_FX}icicle-pink.png`} alt="icicle" className="sd-fx sd-icicle-pink" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-icebeam':
-        return (
-          <div className="skill-blast-stream stream-icebeam showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-beam-icicle-1" />
-              <img src={`${SHOWDOWN_FX}icicle.png`} alt="icicle" className="sd-fx sd-beam-icicle-2" />
-              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-beam-iceball" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-ice-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-auroraveil':
-        return (
-          <div className="skill-blast-stream stream-auroraveil showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}rainbow.png`} alt="rainbow" className="sd-fx sd-aurora-rainbow" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-aurora-shine" />
-              <img src={`${SHOWDOWN_FX}iceball.png`} alt="iceball" className="sd-fx sd-aurora-ice" />
-            </div>
-          </div>
-        );
-
-      // 🥊 격투 계열
-      case 'skill-fx-closecombat':
-      case 'skill-fx-gigaforce':
-        return (
-          <div className="skill-blast-stream stream-closecombat showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}fist.png`} alt="fist" className="sd-fx sd-fist-1" />
-              <img src={`${SHOWDOWN_FX}fist1.png`} alt="fist" className="sd-fx sd-fist-2" />
-              <img src={`${SHOWDOWN_FX}rightchop.png`} alt="chop" className="sd-fx sd-chop" />
-              <img src={`${SHOWDOWN_FX}hitmarker.png`} alt="hitmarker" className="sd-fx sd-hitmarker" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-combat-impact" />
+          <div className="skill-blast-stream stream-blizzard">
+            <svg className="stream-svg blizzard-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="blizzard-cone" fill="#38bdf8" opacity="0.75"
+                d="M 0 46 C 50 20, 120 15, 240 20 C 235 50, 240 80, 240 80 C 120 85, 50 78, 0 52 Z" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-1">❄️</span>
+              <span className="flake fk-2">💎</span>
+              <span className="flake fk-3">❄️</span>
+              <span className="flake fk-4">✨</span>
             </div>
           </div>
         );
 
       case 'skill-fx-aurasphere':
         return (
-          <div className="skill-blast-stream stream-aura showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}energyball.png`} alt="energyball" className="sd-fx sd-aura-ball" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-aura-shine" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-aura-impact" />
+          <div className="skill-blast-stream stream-aura">
+            <svg className="stream-svg aura-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="aura-blast" fill="#3b82f6" opacity="0.85"
+                d="M 0 46 C 45 28, 90 20, 140 22 C 185 24, 215 32, 235 46 C 215 62, 185 70, 140 72 C 90 74, 45 66, 0 52 Z" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">💥</span>
+              <span className="pulse pu-2">🔵</span>
+              <span className="pulse pu-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-watershuriken':
+        return (
+          <div className="skill-blast-stream stream-shuriken">
+            <svg className="stream-svg shuriken-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="water-blade" stroke="#0ea5e9" strokeWidth="6" fill="none"
+                d="M 0 46 C 60 25, 120 65, 240 46" />
+            </svg>
+            <div className="stream-particles shuriken-stars">
+              <span className="sh-star ss-1">🌊</span>
+              <span className="sh-star ss-2">🌀</span>
+              <span className="sh-star ss-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firekanji':
+        return (
+          <div className="skill-blast-stream stream-firekanji">
+            <svg className="stream-svg firekanji-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="150" cy="50" r="38" fill="url(#fireMidGrad)" filter="url(#fireGlow)" opacity="0.85" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#f97316" strokeWidth="14" strokeLinecap="round" opacity="0.8" />
+              <line x1="80" y1="50" x2="220" y2="50" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
+              <path d="M 150 18 Q 140 50, 100 88" stroke="#dc2626" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.8" />
+              <path d="M 150 18 Q 140 50, 100 88" stroke="#ffffff" strokeWidth="8" fill="none" strokeLinecap="round" />
+              <path d="M 150 48 Q 165 65, 205 88" stroke="#dc2626" strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.8" />
+              <path d="M 150 48 Q 165 65, 205 88" stroke="#ffffff" strokeWidth="8" fill="none" strokeLinecap="round" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
+              <span className="ember eb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-firespin':
+        return (
+          <div className="skill-blast-stream stream-firespin">
+            <svg className="stream-svg firespin-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="fire-spin-path sp-1" stroke="#f97316" strokeWidth="12" fill="none" strokeDasharray="12 8"
+                d="M 0 50 Q 60 15, 120 50 T 240 50" />
+              <path className="fire-spin-path sp-2" stroke="#fef08a" strokeWidth="7" fill="none"
+                d="M 0 50 Q 60 85, 120 50 T 240 50" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-hydrocannon':
+        return (
+          <div className="skill-blast-stream stream-hydrocannon">
+            <svg className="stream-svg hydrocannon-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="160" cy="50" r="36" fill="url(#waterOuterGrad)" filter="url(#waterGlow)" />
+              <circle cx="160" cy="50" r="22" fill="url(#waterCoreGrad)" />
+              <ellipse cx="90" cy="50" rx="20" ry="38" fill="none" stroke="#bae6fd" strokeWidth="4" />
+              <ellipse cx="40" cy="50" rx="14" ry="26" fill="none" stroke="#38bdf8" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-2" />
+              <span className="bubble bb-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bubblebeam':
+        return (
+          <div className="skill-blast-stream stream-bubblebeam">
+            <svg className="stream-svg bubblebeam-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="50" cy="45" r="14" fill="#38bdf8" opacity="0.6" stroke="#ffffff" strokeWidth="2" />
+              <circle cx="95" cy="30" r="20" fill="#bae6fd" opacity="0.7" stroke="#ffffff" strokeWidth="2.5" />
+              <circle cx="110" cy="65" r="16" fill="#38bdf8" opacity="0.6" stroke="#ffffff" strokeWidth="2" />
+              <circle cx="160" cy="42" r="24" fill="#7dd3fc" opacity="0.8" stroke="#ffffff" strokeWidth="3" />
+              <circle cx="210" cy="58" r="18" fill="#bae6fd" opacity="0.7" stroke="#ffffff" strokeWidth="2" />
+            </svg>
+            <div className="stream-particles water-bubbles">
+              <span className="bubble bb-1" />
+              <span className="bubble bb-3" />
+              <span className="bubble bb-4" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-vinewhip':
+        return (
+          <div className="skill-blast-stream stream-vinewhip">
+            <svg className="stream-svg vinewhip-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="vine-whip-path vw-1" stroke="#22c55e" strokeWidth="7" fill="none" strokeLinecap="round"
+                d="M 0 45 Q 70 10, 140 55 T 240 30" />
+              <path className="vine-whip-path vw-2" stroke="#16a34a" strokeWidth="7" fill="none" strokeLinecap="round"
+                d="M 0 55 Q 70 90, 140 45 T 240 70" />
+              <path className="vine-whip-leaf" stroke="#86efac" strokeWidth="3" fill="none"
+                d="M 120 48 Q 135 35, 150 48 T 180 48" />
+            </svg>
+            <div className="stream-particles solar-leaves">
+              <span className="leaf-particle lf-1">🌿</span>
+              <span className="leaf-particle lf-2">🍃</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-petaldance':
+        return (
+          <div className="skill-blast-stream stream-petaldance">
+            <svg className="stream-svg petaldance-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path className="petal-swirl" stroke="#f472b6" strokeWidth="8" fill="none" strokeDasharray="14 10"
+                d="M 0 50 Q 60 15, 120 50 T 240 50" />
+              <path className="petal-swirl" stroke="#fbcfe8" strokeWidth="4" fill="none"
+                d="M 0 50 Q 60 85, 120 50 T 240 50" />
+            </svg>
+            <div className="stream-particles petal-particles">
+              <span className="petal-particle pt-1">🌸</span>
+              <span className="petal-particle pt-2">🌺</span>
+              <span className="petal-particle pt-3">🌸</span>
+              <span className="petal-particle pt-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-thunderstorm':
+        return (
+          <div className="skill-blast-stream stream-thunderstorm">
+            <svg className="stream-svg thunderstorm-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="160" y1="0" x2="160" y2="100" stroke="#fef08a" strokeWidth="18" opacity="0.5" />
+              <polyline points="160,0 145,35 175,60 150,100" stroke="#ffffff" strokeWidth="8" fill="none" filter="url(#thunderGlow)" />
+              <ellipse cx="150" cy="90" rx="35" ry="10" fill="none" stroke="#facc15" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-2" />
+              <span className="spark sp-3" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-volttackle':
+        return (
+          <div className="skill-blast-stream stream-volttackle">
+            <svg className="stream-svg volttackle-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="45" ry="32" fill="url(#fireMidGrad)" opacity="0.6" />
+              <circle cx="140" cy="50" r="25" fill="#ffffff" filter="url(#thunderGlow)" />
+              <line x1="0" y1="50" x2="240" y2="50" stroke="#fef08a" strokeWidth="8" strokeDasharray="16 10" />
+            </svg>
+            <div className="stream-particles thunder-sparks">
+              <span className="spark sp-1" />
+              <span className="spark sp-4" />
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-nightshade':
+        return (
+          <div className="skill-blast-stream stream-nightshade">
+            <svg className="stream-svg nightshade-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="50" cy="42" r="7" fill="#ef4444" filter="url(#shadowGlow)" />
+              <circle cx="80" cy="42" r="7" fill="#ef4444" filter="url(#shadowGlow)" />
+              <path className="shadow-smoke" fill="#3b0764" opacity="0.9"
+                d="M 80 45 C 120 20, 160 15, 240 30 C 230 70, 170 85, 120 75 Z" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-1">😈</span>
+              <span className="wisp ws-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-sludgebomb':
+        return (
+          <div className="skill-blast-stream stream-sludge">
+            <svg className="stream-svg sludge-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="70" cy="50" r="16" fill="#7e22ce" />
+              <circle cx="130" cy="40" r="22" fill="#581c87" />
+              <circle cx="190" cy="55" r="28" fill="#3b0764" />
+            </svg>
+            <div className="stream-particles shadow-wisps">
+              <span className="wisp ws-2">💀</span>
+              <span className="wisp ws-4">🟣</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-psystrike':
+        return (
+          <div className="skill-blast-stream stream-psystrike">
+            <svg className="stream-svg psystrike-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="60,40 120,50 60,60" fill="#f472b6" filter="url(#psychicGlow)" />
+              <polygon points="120,32 200,50 120,68" fill="#ffffff" filter="url(#psychicGlow)" />
+              <line x1="0" y1="50" x2="240" y2="50" stroke="#db2777" strokeWidth="6" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">🌀</span>
+              <span className="p-sparkle ps-2">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-prismbarrier':
+        return (
+          <div className="skill-blast-stream stream-prism">
+            <svg className="stream-svg prism-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="120,15 160,15 180,50 160,85 120,85 100,50" fill="rgba(244,114,182,0.3)" stroke="#ec4899" strokeWidth="3" />
+              <polygon points="150,25 180,25 195,50 180,75 150,75 135,50" fill="rgba(192,132,252,0.3)" stroke="#a855f7" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-3">🛡️</span>
+              <span className="p-sparkle ps-4">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-meteorshower':
+        return (
+          <div className="skill-blast-stream stream-meteor">
+            <svg className="stream-svg meteor-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="80" y1="10" x2="160" y2="90" stroke="#f97316" strokeWidth="8" strokeLinecap="round" />
+              <circle cx="160" cy="90" r="14" fill="#fbbf24" filter="url(#fireGlow)" />
+              <line x1="120" y1="5" x2="210" y2="75" stroke="#ec4899" strokeWidth="6" strokeLinecap="round" />
+              <circle cx="210" cy="75" r="12" fill="#f472b6" />
+            </svg>
+            <div className="stream-particles draco-stars">
+              <span className="d-star ds-1">🌠</span>
+              <span className="d-star ds-2">☄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-outrage':
+        return (
+          <div className="skill-blast-stream stream-outrage">
+            <svg className="stream-svg outrage-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="130" cy="50" r="42" fill="url(#fireOuterGrad)" opacity="0.75" />
+              <circle cx="130" cy="50" r="28" fill="#991b1b" />
+            </svg>
+            <div className="stream-particles fire-embers">
+              <span className="ember eb-1" />
+              <span className="ember eb-2" />
             </div>
           </div>
         );
 
       case 'skill-fx-bonerush':
         return (
-          <div className="skill-blast-stream stream-bonerush showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}bone.png`} alt="bone" className="sd-fx sd-bone-1" />
-              <img src={`${SHOWDOWN_FX}bone.png`} alt="bone" className="sd-fx sd-bone-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-bone-impact" />
+          <div className="skill-blast-stream stream-bonerush">
+            <svg className="stream-svg bonerush-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <line x1="70" y1="20" x2="180" y2="80" stroke="#60a5fa" strokeWidth="8" strokeLinecap="round" />
+              <line x1="70" y1="80" x2="180" y2="20" stroke="#93c5fd" strokeWidth="8" strokeLinecap="round" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">⚔️</span>
+              <span className="pulse pu-2">💥</span>
             </div>
           </div>
         );
 
-      // 🐉 드래곤/비행 계열
-      case 'skill-fx-dracometeor':
-      case 'skill-fx-meteorshower':
-        return (
-          <div className="skill-blast-stream stream-draco showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}shadowball.png`} alt="meteor" className="sd-fx sd-draco-core" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fire" className="sd-fx sd-draco-fire-1" />
-              <img src={`${SHOWDOWN_FX}fireball.png`} alt="fire" className="sd-fx sd-draco-fire-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-draco-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-dragonclaw':
-      case 'skill-fx-outrage':
-        return (
-          <div className="skill-blast-stream stream-outrage showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}leftclaw.png`} alt="claw" className="sd-fx sd-dclaw-1" />
-              <img src={`${SHOWDOWN_FX}rightclaw.png`} alt="claw" className="sd-fx sd-dclaw-2" />
-              <img src={`${SHOWDOWN_FX}leftslash.png`} alt="slash" className="sd-fx sd-dslash" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-dclaw-impact" />
-            </div>
-          </div>
-        );
-
-      case 'skill-fx-hurricane':
-      case 'skill-fx-typhoon':
-      case 'skill-fx-bravebird':
-        return (
-          <div className="skill-blast-stream stream-hurricane showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}feather.png`} alt="feather" className="sd-fx sd-hurr-feather" />
-              <img src={`${SHOWDOWN_FX}leftslash.png`} alt="slash" className="sd-fx sd-hurr-slash-1" />
-              <img src={`${SHOWDOWN_FX}rightslash.png`} alt="slash" className="sd-fx sd-hurr-slash-2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-hurr-impact" />
-            </div>
-          </div>
-        );
-
-      // 🪨 바위/땅 계열
       case 'skill-fx-stoneedge':
         return (
-          <div className="skill-blast-stream stream-stoneedge showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}rocks.png`} alt="rocks" className="sd-fx sd-stone-rocks" />
-              <img src={`${SHOWDOWN_FX}rock1.png`} alt="rock" className="sd-fx sd-stone-r1" />
-              <img src={`${SHOWDOWN_FX}rock2.png`} alt="rock" className="sd-fx sd-stone-r2" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-stone-impact" />
+          <div className="skill-blast-stream stream-stoneedge">
+            <svg className="stream-svg stoneedge-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="50,85 70,30 90,85" fill="#78350f" stroke="#b45309" strokeWidth="3" />
+              <polygon points="110,90 140,15 170,90" fill="#92400e" stroke="#d97706" strokeWidth="3" />
+              <polygon points="180,88 205,35 230,88" fill="#78350f" stroke="#b45309" strokeWidth="3" />
+            </svg>
+            <div className="stream-particles aura-pulses">
+              <span className="pulse pu-1">🪨</span>
+              <span className="pulse pu-3">💥</span>
             </div>
           </div>
         );
 
-      // 💥 노말 계열
-      case 'skill-fx-gigaimpact':
+      case 'skill-fx-icebeam':
         return (
-          <div className="skill-blast-stream stream-giga showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}electroball.png`} alt="giga-ball" className="sd-fx sd-giga-ball" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-giga-impact-1" />
-              <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-giga-impact-2" />
+          <div className="skill-blast-stream stream-icebeam">
+            <svg className="stream-svg icebeam-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polyline points="0,50 30,35 60,65 100,30 140,70 180,35 240,50" stroke="#ffffff" strokeWidth="5" fill="none" filter="url(#waterGlow)" />
+              <polyline points="0,50 30,35 60,65 100,30 140,70 180,35 240,50" stroke="#38bdf8" strokeWidth="10" fill="none" opacity="0.75" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-1">🧊</span>
+              <span className="flake fk-2">❄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-auroraveil':
+        return (
+          <div className="skill-blast-stream stream-auroraveil">
+            <svg className="stream-svg auroraveil-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <path d="M 0 35 Q 60 70, 120 35 T 240 35" stroke="#2dd4bf" strokeWidth="12" fill="none" opacity="0.7" />
+              <path d="M 0 55 Q 60 20, 120 55 T 240 55" stroke="#c084fc" strokeWidth="10" fill="none" opacity="0.7" />
+            </svg>
+            <div className="stream-particles blizzard-flakes">
+              <span className="flake fk-3">✨</span>
+              <span className="flake fk-4">❄️</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-typhoon':
+        return (
+          <div className="skill-blast-stream stream-typhoon">
+            <svg className="stream-svg typhoon-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="35" ry="45" fill="none" stroke="#38bdf8" strokeWidth="6" strokeDasharray="14 8" />
+              <ellipse cx="140" cy="50" rx="18" ry="24" fill="none" stroke="#ffffff" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🌀</span>
+              <span className="gust g-2">💨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-bravebird':
+        return (
+          <div className="skill-blast-stream stream-bravebird">
+            <svg className="stream-svg bravebird-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <polygon points="60,20 180,50 60,80 90,50" fill="#0284c7" filter="url(#waterGlow)" />
+              <polygon points="80,30 190,50 80,70 105,50" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles hurricane-gust">
+              <span className="gust g-1">🪶</span>
+              <span className="gust g-3">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-magicalshine':
+        return (
+          <div className="skill-blast-stream stream-magicalshine">
+            <svg className="stream-svg magicalshine-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <circle cx="140" cy="50" r="32" fill="#ffffff" filter="url(#psychicGlow)" />
+              <line x1="80" y1="50" x2="200" y2="50" stroke="#f472b6" strokeWidth="6" />
+              <line x1="140" y1="10" x2="140" y2="90" stroke="#fbbf24" strokeWidth="6" />
+            </svg>
+            <div className="stream-particles psychic-sparkles">
+              <span className="p-sparkle ps-1">✨</span>
+              <span className="p-sparkle ps-2">💖</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-heartstorm':
+        return (
+          <div className="skill-blast-stream stream-heartstorm">
+            <div className="stream-particles heart-particles">
+              <span className="heart-p hp-1">💖</span>
+              <span className="heart-p hp-2">💕</span>
+              <span className="heart-p hp-3">💓</span>
+              <span className="heart-p hp-4">💖</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-gigaforce':
+        return (
+          <div className="skill-blast-stream stream-gigaforce">
+            <svg className="stream-svg gigaforce-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <ellipse cx="140" cy="50" rx="42" ry="42" fill="none" stroke="#eab308" strokeWidth="7" />
+              <ellipse cx="140" cy="50" rx="24" ry="24" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles giga-shocks">
+              <span className="shock sk-1">💥</span>
+              <span className="shock sk-2">⭐</span>
             </div>
           </div>
         );
 
       case 'skill-fx-splashrush':
         return (
-          <div className="skill-blast-stream stream-splashrush showdown-stream">
-            <div className="showdown-fx-layer">
-              <img src={`${SHOWDOWN_FX}sound.png`} alt="sound" className="sd-fx sd-sound-ring-1" />
-              <img src={`${SHOWDOWN_FX}sound.png`} alt="sound" className="sd-fx sd-sound-ring-2" />
-              <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-sound-shine" />
+          <div className="skill-blast-stream stream-splashrush">
+            <div className="stream-particles splash-particles">
+              <span className="splash-p sp-1">🐟</span>
+              <span className="splash-p sp-2">✨</span>
+              <span className="splash-p sp-3">🌟</span>
+              <span className="splash-p sp-4">🎉</span>
             </div>
           </div>
         );
 
       default:
         return (
-          <div className="skill-blast-stream stream-generic showdown-stream">
+          <div className="skill-blast-stream stream-generic">
             <span className="generic-icon">{symbolIcon}</span>
-            <img src={`${SHOWDOWN_FX}shine.png`} alt="shine" className="sd-fx sd-default-shine" />
-            <img src={`${SHOWDOWN_FX}impact.png`} alt="impact" className="sd-fx sd-default-impact" />
           </div>
         );
     }
