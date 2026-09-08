@@ -56,6 +56,9 @@ replay_pid*
 # Server uploads & persistent data
 server/uploads/*
 !server/uploads/.gitkeep
+server/data/**/*.json
+server/data/**/*.db*
 server/data/*.json
 server/data/*.db*
+server/data/backups/
 !server/data/.gitkeep
