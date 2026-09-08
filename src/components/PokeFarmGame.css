@@ -5199,33 +5199,145 @@
   cursor: grabbing !important;
 }
 
-/* Miniroom Background Themes */
+/* Miniroom Background Themes (Rich Aesthetic Interiors) */
+
+/* 🏠 1번방 거실: 클래식 우드룸 */
 .miniroom-canvas-container.bg-classic {
-  background: linear-gradient(180deg, #e6f3ff 0%, #e6f3ff 55%, #d9b38c 55%, #c4996c 100%);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(254, 243, 199, 0.45) 0%, rgba(254, 243, 199, 0) 65%),
+    linear-gradient(180deg, transparent 52%, rgba(0, 0, 0, 0.12) 54%, rgba(0, 0, 0, 0.22) 55%, transparent 55.5%),
+    repeating-linear-gradient(
+      90deg,
+      #fbf7ee 0px,
+      #fbf7ee 14px,
+      #f2ebdc 14px,
+      #f2ebdc 28px
+    );
+  background-color: #fbf7ee;
 }
 
-.miniroom-canvas-container.bg-pixel {
-  background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 55%, #4ade80 55%, #22c55e 100%);
+.miniroom-canvas-container.bg-classic .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.04) 0px,
+      rgba(0, 0, 0, 0.04) 55px,
+      rgba(0, 0, 0, 0.14) 55px,
+      rgba(0, 0, 0, 0.14) 57px
+    ),
+    linear-gradient(180deg, #c4945a 0%, #a8763f 50%, #8c5d2c 100%);
+  border-top: 4px solid #6b431b;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-.miniroom-canvas-container.bg-starry {
-  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 60%, #312e81 60%, #1e1b4b 100%);
-}
-
-.miniroom-canvas-container.bg-beach {
-  background: linear-gradient(180deg, #fdba74 0%, #f97316 45%, #0284c7 45%, #0369a1 60%, #fde047 60%, #eab308 100%);
-}
-
+/* 🌸 2번방 정원: 벚꽃 블라썸 & 힐링 가든 */
 .miniroom-canvas-container.bg-sakura {
-  background: linear-gradient(180deg, #fce7f3 0%, #fbcfe8 55%, #f472b6 55%, #db2777 100%);
+  background:
+    radial-gradient(circle at 15% 22%, rgba(244, 114, 182, 0.7) 1.5px, transparent 5px),
+    radial-gradient(circle at 75% 15%, rgba(244, 114, 182, 0.8) 2px, transparent 6px),
+    radial-gradient(circle at 35% 38%, rgba(251, 113, 133, 0.6) 1.5px, transparent 5px),
+    radial-gradient(circle at 88% 32%, rgba(244, 114, 182, 0.7) 1.5px, transparent 5px),
+    radial-gradient(circle at 55% 10%, rgba(251, 113, 133, 0.8) 2px, transparent 6px),
+    radial-gradient(circle at 80% 20%, rgba(254, 215, 170, 0.6) 0%, rgba(254, 215, 170, 0) 50%),
+    linear-gradient(180deg, #fdf2f8 0%, #fce7f3 35%, #fbcfe8 55%, #86efac 55%, #4ade80 75%, #22c55e 100%);
 }
 
+.miniroom-canvas-container.bg-sakura .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background:
+    radial-gradient(circle at 18% 30%, rgba(244, 114, 182, 0.6) 2.5px, transparent 7px),
+    radial-gradient(circle at 72% 55%, rgba(244, 114, 182, 0.7) 3px, transparent 8px),
+    radial-gradient(circle at 42% 75%, rgba(244, 114, 182, 0.5) 2px, transparent 6px),
+    repeating-linear-gradient(
+      90deg,
+      #34d399 0px,
+      #34d399 16px,
+      #10b981 16px,
+      #10b981 32px
+    );
+  border-top: 5px solid #059669;
+  box-shadow: inset 0 8px 16px rgba(5, 150, 105, 0.35);
+}
+
+/* 🌌 3번방 침실: 별빛 오로라 룸 */
+.miniroom-canvas-container.bg-starry {
+  background:
+    radial-gradient(1.5px 1.5px at 25px 35px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 80px 60px, #67e8f9, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 140px 90px, #fbcfe8, rgba(0,0,0,0)),
+    radial-gradient(2.5px 2.5px at 220px 40px, #fef08a, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 310px 110px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 450px 70px, #38bdf8, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 580px 30px, #c084fc, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 700px 95px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 850px 45px, #67e8f9, rgba(0,0,0,0)),
+    radial-gradient(ellipse at 50% 25%, rgba(45, 212, 191, 0.25) 0%, rgba(168, 85, 247, 0.2) 45%, transparent 75%),
+    linear-gradient(180deg, #020617 0%, #0f172a 35%, #1e1b4b 55%, #1e1b4b 100%);
+}
+
+.miniroom-canvas-container.bg-starry .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0.08) 0px,
+      rgba(99, 102, 241, 0.08) 40px,
+      rgba(0, 0, 0, 0.45) 40px,
+      rgba(0, 0, 0, 0.45) 42px
+    ),
+    linear-gradient(180deg, #1e1b4b 0%, #17153a 50%, #0f0e26 100%);
+  border-top: 3px solid #4338ca;
+  box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.6), 0 -2px 10px rgba(99, 102, 241, 0.3);
+}
+
+/* 🏥 포켓몬 센터: 왜곡 없는 정비율 1.5:1 센터링 & 연속 확장 타일 윙 */
 .miniroom-canvas-container.bg-center {
-  background-color: #f6eed6;
-  background-image: url('/images/bg_center.png');
-  background-size: 104% 104%;
-  background-position: center 30%;
-  background-repeat: no-repeat;
+  background-color: #fae6aa;
+  background-image:
+    url('/images/bg_center.png'),
+    repeating-linear-gradient(
+      0deg,
+      #eddba6 0px,
+      #eddba6 1px,
+      transparent 1px,
+      transparent 20px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #eddba6 0px,
+      #eddba6 1px,
+      transparent 1px,
+      transparent 20px
+    ),
+    linear-gradient(180deg, #d97736 0%, #d97736 17%, #fac693 17%, #fac693 23%, #fae6aa 23%, #fae6aa 100%);
+  background-size:
+    auto 100%,
+    20px 20px,
+    20px 20px,
+    100% 100%;
+  background-position:
+    center bottom,
+    center top,
+    center top,
+    center top;
+  background-repeat:
+    no-repeat,
+    repeat,
+    repeat,
+    no-repeat;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
@@ -5236,20 +5348,138 @@
   display: none !important;
 }
 
-.miniroom-canvas-container.bg-attic_cafe {
-  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 55%, #92400e 55%, #78350f 100%);
+/* 🌿 픽셀 팜 가든 */
+.miniroom-canvas-container.bg-pixel {
+  background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 35%, #bae6fd 54%, #15803d 54%, #15803d 100%);
 }
 
+.miniroom-canvas-container.bg-pixel .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 46%;
+  background: repeating-conic-gradient(#22c55e 0% 25%, #16a34a 0% 50%) 50% / 32px 32px;
+  border-top: 4px solid #166534;
+  box-shadow: inset 0 6px 14px rgba(0, 0, 0, 0.25);
+  image-rendering: pixelated;
+}
+
+/* 🏖️ 트로피컬 해변 */
+.miniroom-canvas-container.bg-beach {
+  background:
+    radial-gradient(circle at 50% 38%, #fde047 0%, rgba(249, 115, 22, 0.6) 35%, transparent 65%),
+    linear-gradient(180deg, #ea580c 0%, #f97316 28%, #fb923c 42%, #0284c7 42%, #0369a1 56%, #eab308 56%, #ca8a04 100%);
+}
+
+.miniroom-canvas-container.bg-beach .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 44%;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #fef08a 0px,
+      #fde047 12px,
+      #eab308 24px,
+      #ca8a04 36px
+    );
+  border-top: 4px solid #38bdf8;
+  box-shadow: inset 0 6px 16px rgba(180, 83, 9, 0.3);
+}
+
+/* 🎮 네온 게이밍룸 */
 .miniroom-canvas-container.bg-neon_arcade {
-  background: linear-gradient(180deg, #18181b 0%, #27272a 55%, #3b0764 55%, #581c87 100%);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(236, 72, 153, 0.2) 0%, transparent 60%),
+    linear-gradient(180deg, #09090b 0%, #18181b 35%, #27272a 55%, #18181b 55%, #09090b 100%);
 }
 
+.miniroom-canvas-container.bg-neon_arcade .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(6, 182, 212, 0.25) 0px,
+      rgba(6, 182, 212, 0.25) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(236, 72, 153, 0.25) 0px,
+      rgba(236, 72, 153, 0.25) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    linear-gradient(180deg, #18181b 0%, #09090b 100%);
+  border-top: 2px solid #06b6d4;
+  box-shadow: 0 -3px 12px rgba(6, 182, 212, 0.5), inset 0 4px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* ☕ 다락방 홈카페 */
+.miniroom-canvas-container.bg-attic_cafe {
+  background:
+    linear-gradient(335deg, rgba(0,0,0,0.08) 6px, transparent 6px) 0 6px,
+    linear-gradient(155deg, rgba(0,0,0,0.08) 6px, transparent 6px) 0 6px,
+    linear-gradient(335deg, rgba(0,0,0,0.08) 6px, transparent 6px) 12px 18px,
+    linear-gradient(155deg, rgba(0,0,0,0.08) 6px, transparent 6px) 12px 18px,
+    linear-gradient(180deg, #78350f 0%, #92400e 30%, #b45309 55%, #713f12 55%, #451a03 100%);
+  background-size: 24px 24px, 24px 24px, 24px 24px, 24px 24px, 100% 100%;
+}
+
+.miniroom-canvas-container.bg-attic_cafe .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #78350f 0px,
+      #78350f 50px,
+      #451a03 50px,
+      #451a03 52px
+    );
+  border-top: 4px solid #291003;
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* 🏰 로열 펜트하우스 */
 .miniroom-canvas-container.bg-luxury_penthouse {
-  background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 55%, #cbd5e1 55%, #94a3b8 100%);
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 40%, #cbd5e1 55%, #94a3b8 55%, #64748b 100%);
 }
 
+.miniroom-canvas-container.bg-luxury_penthouse .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: repeating-linear-gradient(45deg, #f8fafc 0px, #f8fafc 24px, #e2e8f0 24px, #e2e8f0 48px);
+  border-top: 3px solid #cbd5e1;
+}
+
+/* ⛺ 낭만 캠핑장 */
 .miniroom-canvas-container.bg-forest_camp {
-  background: linear-gradient(180deg, #064e3b 0%, #047857 55%, #713f12 55%, #451a03 100%);
+  background: linear-gradient(180deg, #022c22 0%, #064e3b 35%, #047857 55%, #713f12 55%, #451a03 100%);
+}
+
+.miniroom-canvas-container.bg-forest_camp .miniroom-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: repeating-linear-gradient(90deg, #5b3109 0px, #5b3109 30px, #3b1d03 30px, #3b1d03 32px);
+  border-top: 4px solid #2e1502;
 }
 
 .miniroom-wall {
@@ -5276,17 +5506,21 @@
 
 .window-sun { font-size: 1.2rem; }
 
-/* 🐾 Draggable Pokemons in Miniroom */
-.miniroom-pokemon.free-drag {
+/* 🐾 Pokemons in Miniroom (Draggable & Locked) */
+.miniroom-pokemon {
   position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: grab;
   touch-action: none;
   user-select: none;
-  transform-origin: center center;
+  transform-origin: bottom center;
   transition: transform 0.1s ease-out, filter 0.2s ease;
+  width: max-content;
+}
+
+.miniroom-pokemon.free-drag {
+  cursor: grab;
 }
 
 .miniroom-pokemon.free-drag:active,
@@ -5309,19 +5543,39 @@
   border-radius: 10px;
   font-size: 0.7rem;
   font-weight: 700;
-  display: flex;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
   margin-bottom: 2px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
+  width: fit-content;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .pokemon-name-tag.compact {
   font-size: 0.65rem;
   padding: 1px 6px;
+  max-width: 110px;
+  width: fit-content;
 }
 
-.tag-lvl { color: #fde047; }
+.pokemon-name-tag span,
+.pokemon-name-tag .tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.tag-lvl {
+  color: #fde047;
+  flex-shrink: 0;
+}
 
 .graduated-badge-tag {
   background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
@@ -5334,6 +5588,11 @@
   box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
   margin-bottom: 2px;
   white-space: nowrap;
+  width: fit-content;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .pokemon-name-tag.unflip-tag,
@@ -9665,8 +9924,10 @@
 .center-staff-stage {
   position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  max-width: 800px;
   height: 100%;
   pointer-events: none;
   z-index: 12;
@@ -10082,4 +10343,86 @@
   height: 20px;
   object-fit: contain;
   image-rendering: pixelated;
+}
+
+/* 🚪 방별 독립 테마 & 배경 제어 바 in 스티커 꾸미기 뷰 */
+.decor-room-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin: 10px 0 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.decor-room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.decor-room-badge {
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.decor-room-badge b {
+  color: #2563eb;
+}
+
+.decor-room-subtext {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.decor-room-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.decor-bg-quick-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.decor-picker-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.decor-theme-select {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #94a3b8;
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.preview-go-decor-btn {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-go-decor-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }

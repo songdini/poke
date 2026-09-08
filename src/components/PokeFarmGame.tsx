@@ -1192,7 +1192,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             lastActive: serverTime || Date.now(),
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
             totalCount: res.farm.totalCount !== undefined ? res.farm.totalCount : prev.totalCount,
-            guestbook: res.guestbook || prev.guestbook || []
+            guestbook: res.guestbook || prev.guestbook || [],
+            rooms: (res.farm.rooms && Object.keys(res.farm.rooms).length > 0) ? res.farm.rooms : prev.rooms,
+            currentRoomId: res.farm.currentRoomId || prev.currentRoomId || 'room_1',
+            trainerPlacement: res.farm.trainerPlacement || prev.trainerPlacement
           };
           saveFarmState(merged);
           return merged;
@@ -3479,7 +3482,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   zIndex: isDragging ? 60 : isSelected ? 45 : (stk.type === 'skill_fx' ? 22 : 25)
                 }}
                 onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
-                onClick={() => !dragState && !isDragDisabled && setSelectedDecorItem({ type: 'sticker', id: stk.id })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!dragState && !isDragDisabled) {
+                    setSelectedDecorItem({ type: 'sticker', id: stk.id });
+                  }
+                }}
               >
                 {stk.type === 'skill_fx' ? (() => {
                   const effectMeta = POKEMON_SKILL_EFFECTS.find(
@@ -3779,7 +3787,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           bgmSong: farmState.bgmSong,
           todayCount: farmState.todayCount,
           totalCount: farmState.totalCount,
-          lastActive: now
+          lastActive: now,
+          rooms: farmState.rooms,
+          currentRoomId: farmState.currentRoomId,
+          trainerPlacement: farmState.trainerPlacement
         }
       });
     }
@@ -6237,8 +6248,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       </div>
 
                       {/* 미니룸 프리뷰 (꾸미기 모드와 100% 동일한 1:1 크기 & 비율) */}
-                      <div className="miniroom-preview-box" onClick={() => setMinihompyTab('stickers')}>
-                        <div className="preview-label">🖼️ 클릭하여 스티커 & 방 꾸미기 ➔</div>
+                      <div className="miniroom-preview-box">
+                        <div className="preview-label">
+                          <span>🏡 미니룸 (캐릭터 클릭 시 대화 / 바닥 클릭 시 이동)</span>
+                          <button
+                            type="button"
+                            className="preview-go-decor-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMinihompyTab('stickers');
+                            }}
+                          >
+                            🎨 방 꾸미기 스튜디오 이동 ➔
+                          </button>
+                        </div>
                         {renderMiniroomCanvas({ compact: false })}
                       </div>
 
@@ -6396,6 +6419,54 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       {renderMiniroomCanvas({ compact: false })}
 
                       {/* 🌟 데코레이션 서브모드 탭 */}
+                      {/* 🚪 방별 독립 테마 & 배경 선택 바 (현재 방: ${MINIROOM_ROOMS.find(r => r.id === currentRoomId)?.name || '1번방'}) */}
+                      <div className="decor-room-control-bar">
+                        <div className="decor-room-info">
+                          <span className="decor-room-badge">
+                            🏠 현재 꾸미는 방: <b>{MINIROOM_ROOMS.find(r => r.id === currentRoomId)?.name || '1번방 (거실)'}</b>
+                          </span>
+                          <span className="decor-room-subtext">각 방은 배경 테마, 스티커, 포켓몬 위치가 100% 독립 저장됩니다.</span>
+                        </div>
+                        <div className="decor-room-actions">
+                          <div className="decor-bg-quick-picker">
+                            <span className="decor-picker-label">🎨 이 방 배경:</span>
+                            <select
+                              value={currentBgTheme}
+                              onChange={(e) => {
+                                const newTheme = e.target.value;
+                                updateCurrentRoom(() => ({ bgTheme: newTheme }));
+                                showAlert(`🎨 [${MINIROOM_ROOMS.find(r => r.id === currentRoomId)?.name}] 배경이 변경되었습니다!`, 'success');
+                              }}
+                              className="decor-theme-select"
+                            >
+                              <option value="classic">🏠 클래식 우드룸</option>
+                              <option value="sakura">🌸 벚꽃 블라썸 (정원)</option>
+                              <option value="starry">🌌 별빛 오로라 (침실)</option>
+                              <option value="center">🏥 포켓몬 센터</option>
+                              <option value="pixel">🌿 픽셀 팜 가든</option>
+                              <option value="beach">🏖️ 트로피컬 해변</option>
+                              <option value="attic_cafe">☕ 다락방 홈카페</option>
+                              <option value="neon_arcade">🎮 네온 게이밍룸</option>
+                              <option value="luxury_penthouse">🏰 로열 펜트하우스</option>
+                              <option value="forest_camp">⛺ 낭만 캠핑장</option>
+                            </select>
+                          </div>
+                          <button
+                            type="button"
+                            className="excel-btn danger mini"
+                            onClick={() => {
+                              if (window.confirm(`정말로 현재 [${MINIROOM_ROOMS.find(r => r.id === currentRoomId)?.name}]의 모든 스티커를 비우시겠습니까?`)) {
+                                updateCurrentRoom(() => ({ stickers: [] }));
+                                showAlert('🧹 현재 방의 스티커가 모두 비워졌습니다.', 'info');
+                              }
+                            }}
+                            title="현재 방의 스티커만 모두 삭제 (다른 방은 유지)"
+                          >
+                            🧹 이 방 스티커 비우기
+                          </button>
+                        </div>
+                      </div>
+
                       <div className="decor-submode-tabs">
                         <button
                           className={`decor-subtab ${decorSubtab === 'palette' ? 'active' : ''}`}
