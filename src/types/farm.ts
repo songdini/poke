@@ -168,6 +168,7 @@ export interface IncubatingEgg {
   name: string;
   icon: string;
   isGolden: boolean;
+  eggType?: 'normal' | 'golden' | 'gen1';
   progress: number; // 0 ~ 100
   acquiredAt: string;
 }
@@ -227,6 +228,9 @@ export interface FarmState {
   bgTheme?: string; // 🏠 두부월드 미니룸 배경 테마 ('classic' | 'pixel' | 'starry' | 'beach' | 'sakura' | 'center')
   stickers?: MinihompySticker[]; // 🎨 미니룸 배치 스티커 및 자유 텍스트 리스트
   pokemonPlacements?: Record<string, PokemonPlacement>; // 🐾 포켓몬별 자유 위치/크기/반전 저장
+  currentRoomId?: string; // 🚪 현재 선택된 미니룸 방 번호 ('room_1' | 'room_2' | 'room_3')
+  rooms?: Record<string, { bgTheme?: string; stickers?: MinihompySticker[]; pokemonPlacements?: Record<string, PokemonPlacement> }>; // 🏠 다중 룸 데이터
+  unlockedSpecies?: number[]; // 📖 도감에 등록된 포켓몬 종 ID 목록 (대표 등록, 획득 시 영구 도감 활성화)
   statusMsg?: string; // 💬 투데이 상태 메시지 ("오늘도 피카츄와 열렙 중! ⚡")
   bgmSong?: string; // 🎵 미니홈피 BGM 곡명
   todayCount?: number; // TODAY 수
@@ -249,6 +253,8 @@ export interface NeighborFarmData {
   bgTheme?: string;
   stickers?: MinihompySticker[];
   pokemonPlacements?: Record<string, PokemonPlacement>;
+  rooms?: Record<string, { bgTheme?: string; stickers?: MinihompySticker[]; pokemonPlacements?: Record<string, PokemonPlacement> }>;
+  unlockedSpecies?: number[];
   statusMsg?: string;
   bgmSong?: string;
   todayCount?: number;

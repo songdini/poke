@@ -18,6 +18,7 @@ import {
   getAllPokedexEntries,
   getAllStoredFarms,
   EEVEE_BRANCHES,
+  isGmaxPokemon,
   getRandomEeveeEvolution,
   getRandomStoryEvent,
   getMaxStatForStage,
@@ -894,8 +895,42 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // 📖 포켓몬 졸업 도감 상태
   const [pokedexSubView, setPokedexSubView] = useState<'pokedex' | 'diplomas'>('pokedex');
-  const [pokedexFilter, setPokedexFilter] = useState<'all' | 'unlocked' | 'locked' | 'shiny'>('all');
+  const [pokedexFilter, setPokedexFilter] = useState<'all' | 'gen1' | 'unlocked' | 'locked' | 'shiny' | 'gmax'>('all');
   const [pokedexHoverId, setPokedexHoverId] = useState<number | null>(null);
+
+  // 👑 최고 관리자 권한 확인 ('쏭디닝')
+  const isAdmin = (username === '쏭디닝') || (farmState.ownerName === '쏭디닝');
+
+  // 💾 최고 관리자('쏭디닝') 전용 데이터베이스 백업 다운로드
+  const handleDownloadDatabaseBackup = async () => {
+    if (!isAdmin) {
+      showAlert('⛔ 백업 다운로드 권한이 없습니다. 최고 관리자(쏭디닝)만 이용할 수 있습니다.', 'warn');
+      return;
+    }
+    try {
+      showAlert('📦 서버 데이터베이스 백업 파일을 다운로드하는 중입니다...', 'info');
+      const res = await fetch('/api/backup/download?adminUser=' + encodeURIComponent(farmState.ownerName || username), {
+        headers: { 'x-admin-user': farmState.ownerName || username }
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `서버 에러 (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `poke_backup_${new Date().toISOString().slice(0, 10)}.sqlite`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showAlert('🎉 데이터베이스 백업 파일이 성공적으로 다운로드되었습니다!', 'success');
+    } catch (err: any) {
+      console.error('Backup download error:', err);
+      showAlert(`❌ 백업 다운로드 실패: ${err.message}`, 'warn');
+    }
+  };
 
   // 이웃 탐방 상태
   const [neighborList, setNeighborList] = useState<NeighborFarmData[]>([]);
@@ -2691,7 +2726,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               >
                 <div className={`pokemon-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
                   <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
-                  <span className="tag-name">{displayActivePokemon.nickname || displayActivePokemon.name}</span>
+                  <span className="tag-name">{isGmaxPokemon(displayActivePokemon) && <span className="gmax-mini-badge">💥</span>}{displayActivePokemon.nickname || displayActivePokemon.name}</span>
                 </div>
                 <img
                   src={spriteSrc}
@@ -2742,7 +2777,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 title={`[${mon.nickname || mon.name}] Lv.${mon.level}`}
               >
                 <div className={`pokemon-name-tag compact ${place.flipped ? 'unflip-tag' : ''}`}>
-                  <span>{mon.nickname || mon.name}</span>
+                  <span>{isGmaxPokemon(mon) && <span className="gmax-mini-badge">💥</span>}{mon.nickname || mon.name}</span>
                 </div>
                 <img
                   src={spriteSrc}
@@ -4751,7 +4786,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const completionPct = totalSpeciesCount > 0 ? Math.round((unlockedCount / totalSpeciesCount) * 100) : 0;
 
     let filteredPokedex = pokedexList;
-    if (pokedexFilter === 'unlocked') {
+    if (pokedexFilter === 'gen1') {
+      filteredPokedex = filteredPokedex.filter(m => m.speciesId >= 1 && m.speciesId <= 151);
+    } else if (pokedexFilter === 'gmax') {
+      filteredPokedex = filteredPokedex.filter(m => isGmaxPokemon(m));
+    } else     if (pokedexFilter === 'unlocked') {
       filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
     } else if (pokedexFilter === 'locked') {
       filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
@@ -4842,12 +4881,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 const stat = gradStats.get(mon.speciesId);
                 const isUnlocked = !!stat;
                 const hasShiny = (stat?.shinyCount || 0) > 0;
+                const isGmax = isGmaxPokemon(mon);
                 const isHovered = pokedexHoverId === mon.speciesId;
 
                 return (
                   <div
                     key={mon.speciesId}
-                    className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''}`}
+                    className={`pokedex-card ${isUnlocked ? 'unlocked' : 'locked'} ${hasShiny ? 'has-shiny' : ''} ${isGmax ? 'is-gmax' : ''}`}
                     onMouseEnter={() => setPokedexHoverId(mon.speciesId)}
                     onMouseLeave={() => setPokedexHoverId(null)}
                   >
@@ -4868,6 +4908,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       />
                       {hasShiny && (
                         <span className="pokedex-shiny-ribbon">✨ SHINY</span>
+                      )}
+                      {isGmax && (
+                        <span className="pokedex-gmax-ribbon">💥 G-MAX</span>
                       )}
                     </div>
 
@@ -4892,7 +4935,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                         {isUnlocked ? (
                           <div className="pokedex-hover-body">
                             <div className="hover-mon-name">
-                              {mon.name} {hasShiny && '✨'}
+                              {mon.name} {hasShiny && '✨'} {isGmax && '💥'}
                             </div>
                             <div className="hover-row grad-highlight">
                               🎓 <b>졸업 횟수: {stat.count}회</b>
@@ -5203,6 +5246,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           <span className="kpi-chip coins">🪙 {farmState.coins.toLocaleString()} P</span>
           <span className="kpi-chip hearts">💖 {farmState.heartsCount} 하트</span>
           <span className="kpi-chip diplomas">🎓 {farmState.graduatedPokemon.length}마리 졸업</span>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={handleDownloadDatabaseBackup}
+              className="excel-btn farm-auth-btn backup"
+              title="최고 관리자(쏭디닝) 전용: SQLite DB 전체 백업 파일 다운로드"
+              style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: '#ffffff', fontWeight: 700 }}
+            >
+              💾 DB 백업 (관리자)
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -6237,6 +6291,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       )}
 
                       {pmon.isShiny && <span className="shiny-sparkle-tag">✨ SHINY</span>}
+                      {isGmaxPokemon(pmon) && <span className="gmax-sparkle-tag">💥 G-MAX</span>}
 
                       {/* 🌟 Pet Skill Pop Banner */}
                       {petSkillEffect && (
@@ -6291,7 +6346,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       />
                       <div className="pet-shadow"></div>
                       <div className="pet-nametag">
-                        <span>{pmon.nickname} (Lv.{pmon.level})</span>
+                        <span>{isGmaxPokemon(pmon) && <span style={{ color: '#ef4444', marginRight: '4px' }}>💥</span>}{pmon.nickname} (Lv.{pmon.level})</span>
                         <button className="cry-btn" onClick={(e) => { e.stopPropagation(); playPokemonCry(pmon.speciesId); }} title="울음소리 듣기">
                           <Volume2 size={13} />
                         </button>
@@ -7002,6 +7057,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     >
                       <option value="all">모든 속성</option>
                       <option value="shiny">✨ 이로치만</option>
+                      <option value="gmax">💥 거다이맥스만</option>
                       <option value="fire">🔥 불꽃</option>
                       <option value="water">💧 물</option>
                       <option value="grass">🍃 풀</option>
@@ -7036,6 +7092,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 // 2. 타입 및 이로치 필터
                 if (daycareFilter === 'shiny') {
                   list = list.filter(m => m.isShiny);
+                } else if (daycareFilter === 'gmax') {
+                  list = list.filter(m => isGmaxPokemon(m));
                 } else if (daycareFilter !== 'all') {
                   list = list.filter(m => (m.types as string[]).includes(daycareFilter));
                 }
@@ -7085,8 +7143,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
                 return (
                   <div className="reserve-pokemon-grid">
-                    {list.map(mon => (
-                      <div key={mon.uid} className={`reserve-mon-card ${mon.isShiny ? 'shiny-card' : ''}`}>
+                    {list.map(mon => {
+                      const isGmax = isGmaxPokemon(mon);
+                      return (
+                        <div key={mon.uid} className={`reserve-mon-card ${mon.isShiny ? 'shiny-card' : ''} ${isGmax ? 'is-gmax' : ''}`}>
                         <div className="reserve-sprite-wrapper">
                           <img
                             src={mon.sprites.showdownFront || mon.sprites.front}
@@ -7096,10 +7156,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                           {mon.isShiny && (
                             <span className="shiny-badge-ribbon">✨ SHINY</span>
                           )}
+                          {isGmax && (
+                            <span className="gmax-badge-ribbon">💥 G-MAX</span>
+                          )}
                         </div>
                         <div className="reserve-mon-info">
                           <h5>
                             {mon.nickname} {mon.isShiny && <span style={{ color: '#f59e0b' }}>✨</span>}
+                            {isGmax && <span style={{ color: '#ef4444', marginLeft: '4px' }}>💥</span>}
                           </h5>
                           <span className="reserve-level">
                             #{String(mon.speciesId).padStart(3, '0')} Lv.{mon.level} {mon.name}
@@ -7126,8 +7190,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
                 );
               })()}
             </div>
@@ -7820,6 +7885,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   />
                   {hatchingModal.babyPokemon.isShiny && (
                     <span className="shiny-badge-floating">✨ SHINY!</span>
+                  )}
+                  {isGmaxPokemon(hatchingModal.babyPokemon) && (
+                    <span className="gmax-badge-floating">💥 G-MAX!</span>
                   )}
                 </div>
 

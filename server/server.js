@@ -21,7 +21,7 @@ import { registerPokeBattleHandlers } from './src/socketHandlers/pokeBattleHandl
 import { registerFarmHandlers } from './src/socketHandlers/farmHandler.js';
 import { registerTetrisHandlers } from './src/socketHandlers/tetrisHandler.js';
 import { isGeminiConfigured, getGeminiModelName } from './src/aiService.js';
-import { getPopularFarms, getFarm, getAllFarms, getGuestbookEntries } from './src/db.js';
+import { getPopularFarms, getFarm, getAllFarms, getGuestbookEntries, createDatabaseBackup, exportAllDatabaseJson, restoreDatabaseFromJson } from './src/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -112,6 +112,55 @@ app.post('/api/upload', (req, res) => {
   } catch (err) {
     console.error('이미지 업로드 처리 실패:', err);
     return res.status(500).json({ error: '이미지 저장 중 오류가 발생했습니다.' });
+  }
+});
+
+// 🛡️ 최고 관리자('쏭디닝') 접근 검증 미들웨어
+const verifyAdminAccess = (req, res, next) => {
+  const adminUser = req.query.adminUser || req.headers['x-admin-user'];
+  if (adminUser !== '쏭디닝') {
+    return res.status(403).json({ error: '⛔ 백업 파일 접근은 최고 관리자(쏭디닝) 계정만 허용됩니다.' });
+  }
+  next();
+};
+
+// 💾 데이터베이스 백업 및 마이그레이션 REST API (최고 관리자 '쏭디닝' 전용)
+app.get('/api/backup/download', verifyAdminAccess, async (req, res) => {
+  try {
+    const backupRes = await createDatabaseBackup();
+    if (!backupRes.success || !backupRes.backupFile) {
+      return res.status(500).json({ error: 'DB 백업 생성 실패: ' + backupRes.error });
+    }
+    const filename = path.basename(backupRes.backupFile);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    return res.sendFile(backupRes.backupFile);
+  } catch (err) {
+    console.error('DB 백업 다운로드 실패:', err);
+    res.status(500).json({ error: 'DB 백업 파일 다운로드 중 오류가 발생했습니다.' });
+  }
+});
+
+app.get('/api/backup/export-json', verifyAdminAccess, (req, res) => {
+  try {
+    const data = exportAllDatabaseJson();
+    const filename = `pokefarm_backup_${Date.now()}.json`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.send(JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('DB JSON Export 실패:', err);
+    res.status(500).json({ error: 'JSON 백업 내보내기 실패' });
+  }
+});
+
+app.post('/api/backup/restore', verifyAdminAccess, (req, res) => {
+  try {
+    const result = restoreDatabaseFromJson(req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('DB 복원 실패:', err);
+    res.status(500).json({ error: err.message || '데이터베이스 복원 중 오류가 발생했습니다.' });
   }
 });
 

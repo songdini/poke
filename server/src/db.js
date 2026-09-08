@@ -748,3 +748,139 @@ function safeJsonParse(str, fallback) {
     return fallback;
   }
 }
+
+// 💾 데이터베이스 실시간 백업 유틸리티 (서버 이전 및 만료 대비)
+export async function createDatabaseBackup() {
+  const backupDir = path.join(DATA_DIR, 'backups');
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
+  }
+
+  try {
+    // WAL 체크포인트 수행하여 모든 트랜잭션을 메인 DB 파일에 완전 동기화
+    db.pragma('wal_checkpoint(TRUNCATE)');
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(backupDir, `pokefarm_backup_${timestamp}.db`);
+    const latestFile = path.join(backupDir, 'pokefarm_latest.db');
+
+    await db.backup(backupFile);
+    fs.copyFileSync(backupFile, latestFile);
+
+    console.log(`[DB Backup] Live SQLite backup created successfully: ${backupFile}`);
+    return { success: true, backupFile, latestFile, timestamp };
+  } catch (err) {
+    console.error('[DB Backup] Failed to create database backup:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// 📦 데이터베이스 전체 데이터 JSON Export 유틸리티
+export function exportAllDatabaseJson() {
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    const farms = db.prepare('SELECT * FROM farms').all();
+    const guestbooks = db.prepare('SELECT * FROM guestbooks').all();
+    const hearts = db.prepare('SELECT * FROM farm_hearts').all();
+    const visits = db.prepare('SELECT * FROM farm_visits').all();
+
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      counts: {
+        farms: farms.length,
+        guestbooks: guestbooks.length,
+        hearts: hearts.length,
+        visits: visits.length
+      },
+      data: {
+        farms,
+        guestbooks,
+        hearts,
+        visits
+      }
+    };
+  } catch (err) {
+    console.error('[DB Export] Failed to export database to JSON:', err);
+    throw err;
+  }
+}
+
+// 📥 JSON 데이터로부터 데이터베이스 복원 유틸리티
+export function restoreDatabaseFromJson(jsonData) {
+  if (!jsonData || !jsonData.data) {
+    throw new Error('올바른 백업 데이터 포맷이 아닙니다.');
+  }
+
+  const { farms = [], guestbooks = [], hearts = [], visits = [] } = jsonData.data;
+
+  const restoreTx = db.transaction(() => {
+    // 1. 기존 데이터 테이블 초기화
+    db.exec('DELETE FROM guestbooks');
+    db.exec('DELETE FROM farm_hearts');
+    db.exec('DELETE FROM farm_visits');
+    db.exec('DELETE FROM farms');
+
+    // 2. 농장 복원
+    const insertFarm = db.prepare(`
+      INSERT INTO farms (
+        username, farm_name, password_hash, password_salt, active_pokemon,
+        reserve_pokemon, graduated_pokemon, graduated_count, hearts_count, coins,
+        inventory, incubating_egg, lottery_state, bg_theme, stickers,
+        pokemon_placements, status_msg, bgm_song, today_count, total_count,
+        last_active, created_at, updated_at
+      ) VALUES (
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?
+      )
+    `);
+
+    for (const f of farms) {
+      insertFarm.run(
+        f.username, f.farm_name, f.password_hash, f.password_salt, f.active_pokemon,
+        f.reserve_pokemon, f.graduated_pokemon, f.graduated_count || 0, f.hearts_count || 0, f.coins || 1000,
+        f.inventory, f.incubating_egg, f.lottery_state, f.bg_theme || 'classic', f.stickers,
+        f.pokemon_placements, f.status_msg || '', f.bgm_song || '', f.today_count || 0, f.total_count || 0,
+        f.last_active, f.created_at, f.updated_at
+      );
+    }
+
+    // 3. 방명록 복원
+    const insertGb = db.prepare(`
+      INSERT INTO guestbooks (id, target_username, author, message, timestamp, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    for (const g of guestbooks) {
+      insertGb.run(g.id, g.target_username, g.author, g.message, g.timestamp, g.created_at);
+    }
+
+    // 4. 하트 복원
+    const insertHeart = db.prepare(`
+      INSERT INTO farm_hearts (target_username, sender_username, created_at)
+      VALUES (?, ?, ?)
+    `);
+    for (const h of hearts) {
+      insertHeart.run(h.target_username, h.sender_username, h.created_at);
+    }
+
+    // 5. 방문 기록 복원
+    const insertVisit = db.prepare(`
+      INSERT OR IGNORE INTO farm_visits (target_username, visitor_username, visit_date, created_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    for (const v of visits) {
+      insertVisit.run(v.target_username, v.visitor_username, v.visit_date, v.created_at);
+    }
+  });
+
+  restoreTx();
+  console.log('[DB Restore] Database restored successfully from JSON backup!');
+  return { success: true, counts: { farms: farms.length, guestbooks: guestbooks.length } };
+}
+
+// 서버 시작 시 자동 1회 안전 백업 생성
+createDatabaseBackup().catch(() => {});
+
