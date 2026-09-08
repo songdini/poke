@@ -208,6 +208,172 @@ export function registerFarmHandlers(io, socket) {
       });
     }
   });
+
+  // 🚪 7-1. 미니홈피 실시간 룸 입장 (내 농장 또는 이웃 농장)
+  socket.on('farm-presence-join', ({ farmOwner, username, skin, roomId, x, y, isHost }) => {
+    if (!farmOwner) return;
+    const cleanOwner = farmOwner.trim();
+    const cleanUser = (username || '익명').trim();
+
+    // 이전에 구독 중이던 다른 농장 룸이 있다면 정리
+    if (socketFarmSubscriptions.has(socket.id)) {
+      const existingFarms = Array.from(socketFarmSubscriptions.get(socket.id));
+      for (const oldOwner of existingFarms) {
+        if (oldOwner !== cleanOwner) {
+          removeSocketFromFarm(io, socket, oldOwner);
+        }
+      }
+    }
+
+    socket.join(`farm_room_${cleanOwner}`);
+    if (!socketFarmSubscriptions.has(socket.id)) {
+      socketFarmSubscriptions.set(socket.id, new Set());
+    }
+    socketFarmSubscriptions.get(socket.id).add(cleanOwner);
+
+    if (!farmPresences.has(cleanOwner)) {
+      farmPresences.set(cleanOwner, new Map());
+    }
+
+    const userData = {
+      socketId: socket.id,
+      username: cleanUser,
+      skin: skin || 'ash',
+      roomId: roomId || 'room_1',
+      x: typeof x === 'number' ? x : 50,
+      y: typeof y === 'number' ? y : 65,
+      flipped: false,
+      isHost: !!isHost,
+      bubble: null,
+      updatedAt: Date.now()
+    };
+
+    farmPresences.get(cleanOwner).set(socket.id, userData);
+
+    // 본인에게 현재 농장에 있는 모든 유저 목록 전송
+    socket.emit('farm-presence-current-users', {
+      farmOwner: cleanOwner,
+      users: getFarmPresenceList(cleanOwner)
+    });
+
+    // 다른 유저들에게 새로운 참가자 알림
+    socket.to(`farm_room_${cleanOwner}`).emit('farm-presence-user-joined', {
+      farmOwner: cleanOwner,
+      user: userData
+    });
+  });
+
+  // 🚪 7-2. 미니홈피 룸 퇴장
+  socket.on('farm-presence-leave', ({ farmOwner }) => {
+    if (!farmOwner) return;
+    removeSocketFromFarm(io, socket, farmOwner.trim());
+  });
+
+  // 🚶 7-3. 트레이너 이동 (바닥 클릭 시 실시간 좌표 전송)
+  socket.on('farm-presence-move', ({ farmOwner, x, y, roomId, flipped }) => {
+    if (!farmOwner) return;
+    const cleanOwner = farmOwner.trim();
+    if (!farmPresences.has(cleanOwner)) return;
+
+    const user = farmPresences.get(cleanOwner).get(socket.id);
+    if (user) {
+      user.x = x;
+      user.y = y;
+      if (roomId) user.roomId = roomId;
+      if (flipped !== undefined) user.flipped = flipped;
+      user.updatedAt = Date.now();
+
+      io.to(`farm_room_${cleanOwner}`).emit('farm-presence-user-moved', {
+        farmOwner: cleanOwner,
+        socketId: socket.id,
+        username: user.username,
+        x,
+        y,
+        roomId: user.roomId,
+        flipped: user.flipped
+      });
+    }
+  });
+
+  // 💬 7-4. 트레이너 말풍선 전송
+  socket.on('farm-presence-chat', ({ farmOwner, bubble }) => {
+    if (!farmOwner) return;
+    const cleanOwner = farmOwner.trim();
+    if (!farmPresences.has(cleanOwner)) return;
+
+    const user = farmPresences.get(cleanOwner).get(socket.id);
+    if (user) {
+      user.bubble = bubble;
+      io.to(`farm_room_${cleanOwner}`).emit('farm-presence-user-chatted', {
+        farmOwner: cleanOwner,
+        socketId: socket.id,
+        bubble
+      });
+    }
+  });
+
+  // 🎭 7-5. 트레이너 스킨 실시간 변경
+  socket.on('farm-presence-skin-update', ({ farmOwner, skin }) => {
+    if (!farmOwner) return;
+    const cleanOwner = farmOwner.trim();
+    if (!farmPresences.has(cleanOwner)) return;
+
+    const user = farmPresences.get(cleanOwner).get(socket.id);
+    if (user) {
+      user.skin = skin;
+      io.to(`farm_room_${cleanOwner}`).emit('farm-presence-user-skin-updated', {
+        farmOwner: cleanOwner,
+        socketId: socket.id,
+        skin
+      });
+    }
+  });
+
+  // 🔌 7-6. 소켓 연결 해제 시 모든 미니홈피 방에서 자동 퇴장
+  socket.on('disconnect', () => {
+    if (socketFarmSubscriptions.has(socket.id)) {
+      const farms = Array.from(socketFarmSubscriptions.get(socket.id));
+      for (const owner of farms) {
+        removeSocketFromFarm(io, socket, owner);
+      }
+    }
+  });
+}
+
+// 🌍 미니홈피 실시간 방문자 & 트레이너 위치 동기화 관리
+// farmOwner -> Map<socketId, { socketId, username, skin, roomId, x, y, flipped, isHost, bubble, updatedAt }>
+const farmPresences = new Map();
+// socketId -> Set<farmOwner>
+const socketFarmSubscriptions = new Map();
+
+function getFarmPresenceList(farmOwner) {
+  if (!farmPresences.has(farmOwner)) return [];
+  return Array.from(farmPresences.get(farmOwner).values());
+}
+
+function removeSocketFromFarm(io, socket, farmOwner) {
+  if (!farmPresences.has(farmOwner)) return;
+  const roomMap = farmPresences.get(farmOwner);
+  const existing = roomMap.get(socket.id);
+  if (existing) {
+    roomMap.delete(socket.id);
+    if (roomMap.size === 0) {
+      farmPresences.delete(farmOwner);
+    }
+    io.to(`farm_room_${farmOwner}`).emit('farm-presence-user-left', {
+      socketId: socket.id,
+      username: existing.username,
+      farmOwner
+    });
+  }
+  socket.leave(`farm_room_${farmOwner}`);
+
+  if (socketFarmSubscriptions.has(socket.id)) {
+    socketFarmSubscriptions.get(socket.id).delete(farmOwner);
+    if (socketFarmSubscriptions.get(socket.id).size === 0) {
+      socketFarmSubscriptions.delete(socket.id);
+    }
+  }
 }
 
 function broadcastFarmList(io) {

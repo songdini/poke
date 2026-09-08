@@ -117,7 +117,14 @@ app.post('/api/upload', (req, res) => {
 
 // 🛡️ 최고 관리자('쏭디닝') 접근 검증 미들웨어
 const verifyAdminAccess = (req, res, next) => {
-  const adminUser = req.query.adminUser || req.headers['x-admin-user'];
+  let adminUser = req.query.adminUser;
+  if (!adminUser && req.headers['x-admin-user']) {
+    try {
+      adminUser = decodeURIComponent(req.headers['x-admin-user']);
+    } catch (e) {
+      adminUser = req.headers['x-admin-user'];
+    }
+  }
   if (adminUser !== '쏭디닝') {
     return res.status(403).json({ error: '⛔ 백업 파일 접근은 최고 관리자(쏭디닝) 계정만 허용됩니다.' });
   }

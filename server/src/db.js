@@ -41,6 +41,10 @@ db.exec(`
     bg_theme TEXT DEFAULT 'classic',
     stickers TEXT,
     pokemon_placements TEXT,
+    trainer_placement TEXT,
+    rooms TEXT,
+    current_room_id TEXT DEFAULT 'room_1',
+    unlocked_species TEXT,
     status_msg TEXT DEFAULT '',
     bgm_song TEXT DEFAULT '프리스타일 - Y (Feat. 지선)',
     today_count INTEGER DEFAULT 0,
@@ -88,6 +92,10 @@ try { db.exec('ALTER TABLE farms ADD COLUMN coins INTEGER DEFAULT 1000'); } catc
 try { db.exec('ALTER TABLE farms ADD COLUMN inventory TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN incubating_egg TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN lottery_state TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN unlocked_species TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN trainer_placement TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN rooms TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN current_room_id TEXT'); } catch (e) {}
 
 // 🧹 더미 데이터 정화: 실제 1촌 하트 수(`farm_hearts`)로 동기화
 try {
@@ -230,17 +238,20 @@ export function registerFarmUser({ username, password, farmData = {} }) {
   const lotStr = farmData.lotteryState ? JSON.stringify(farmData.lotteryState) : null;
   const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : '[]';
   const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : '{}';
+  const trainerPlacementStr = farmData.trainerPlacement ? JSON.stringify(farmData.trainerPlacement) : null;
+  const roomsStr = farmData.rooms ? JSON.stringify(farmData.rooms) : null;
+  const currentRoomIdStr = farmData.currentRoomId || 'room_1';
 
   const stmt = db.prepare(`
     INSERT INTO farms (
       username, farm_name, password_hash, password_salt, active_pokemon, reserve_pokemon, graduated_pokemon,
       graduated_count, hearts_count, coins, inventory, incubating_egg, lottery_state,
-      bg_theme, stickers, pokemon_placements,
+      bg_theme, stickers, pokemon_placements, trainer_placement, rooms, current_room_id,
       status_msg, bgm_song, today_count, total_count, last_active, updated_at
     ) VALUES (
       @username, @farm_name, @password_hash, @password_salt, @active_pokemon, @reserve_pokemon, @graduated_pokemon,
       @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @lottery_state,
-      @bg_theme, @stickers, @pokemon_placements,
+      @bg_theme, @stickers, @pokemon_placements, @trainer_placement, @rooms, @current_room_id,
       @status_msg, @bgm_song, @today_count, @total_count, @last_active, CURRENT_TIMESTAMP
     )
   `);
@@ -262,6 +273,9 @@ export function registerFarmUser({ username, password, farmData = {} }) {
     bg_theme: farmData.bgTheme || 'classic',
     stickers: stickersStr,
     pokemon_placements: placementsStr,
+    trainer_placement: trainerPlacementStr,
+    rooms: roomsStr,
+    current_room_id: currentRoomIdStr,
     status_msg: farmData.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
     bgm_song: farmData.bgmSong || '프리스타일 - Y (Feat. 지선)',
     today_count: 1,
@@ -371,12 +385,12 @@ export function upsertFarm(username, farmData) {
     INSERT INTO farms (
       username, farm_name, active_pokemon, reserve_pokemon, graduated_pokemon,
       graduated_count, hearts_count, coins, inventory, incubating_egg, lottery_state,
-      bg_theme, stickers, pokemon_placements,
+      bg_theme, stickers, pokemon_placements, trainer_placement, rooms, current_room_id, unlocked_species,
       status_msg, bgm_song, today_count, total_count, last_active, updated_at
     ) VALUES (
       @username, @farm_name, @active_pokemon, @reserve_pokemon, @graduated_pokemon,
       @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @lottery_state,
-      @bg_theme, @stickers, @pokemon_placements,
+      @bg_theme, @stickers, @pokemon_placements, @trainer_placement, @rooms, @current_room_id, @unlocked_species,
       @status_msg, @bgm_song, @today_count, @total_count, @last_active, CURRENT_TIMESTAMP
     )
     ON CONFLICT(username) DO UPDATE SET
@@ -393,6 +407,10 @@ export function upsertFarm(username, farmData) {
       bg_theme = COALESCE(excluded.bg_theme, farms.bg_theme),
       stickers = COALESCE(excluded.stickers, farms.stickers),
       pokemon_placements = COALESCE(excluded.pokemon_placements, farms.pokemon_placements),
+      trainer_placement = COALESCE(excluded.trainer_placement, farms.trainer_placement),
+      rooms = COALESCE(excluded.rooms, farms.rooms),
+      current_room_id = COALESCE(excluded.current_room_id, farms.current_room_id),
+      unlocked_species = COALESCE(excluded.unlocked_species, farms.unlocked_species),
       status_msg = COALESCE(excluded.status_msg, farms.status_msg),
       bgm_song = COALESCE(excluded.bgm_song, farms.bgm_song),
       today_count = COALESCE(excluded.today_count, farms.today_count),
@@ -409,6 +427,10 @@ export function upsertFarm(username, farmData) {
   const lotStr = farmData.lotteryState ? JSON.stringify(farmData.lotteryState) : null;
   const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : null;
   const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : null;
+  const trainerPlacementStr = farmData.trainerPlacement ? JSON.stringify(farmData.trainerPlacement) : null;
+  const roomsStr = farmData.rooms ? JSON.stringify(farmData.rooms) : null;
+  const currentRoomIdStr = farmData.currentRoomId || 'room_1';
+  const unlockedStr = farmData.unlockedSpecies ? JSON.stringify(farmData.unlockedSpecies) : null;
 
   const currentCoins = farmData.coins !== undefined ? farmData.coins : (existingFarmRow?.coins !== undefined ? existingFarmRow.coins : 1000);
 
@@ -427,6 +449,10 @@ export function upsertFarm(username, farmData) {
     bg_theme: farmData.bgTheme || 'classic',
     stickers: stickersStr,
     pokemon_placements: placementsStr,
+    trainer_placement: trainerPlacementStr,
+    rooms: roomsStr,
+    current_room_id: currentRoomIdStr,
+    unlocked_species: unlockedStr,
     status_msg: farmData.statusMsg || '',
     bgm_song: farmData.bgmSong || '프리스타일 - Y (Feat. 지선)',
     today_count: farmData.todayCount !== undefined ? farmData.todayCount : 0,
@@ -712,17 +738,122 @@ export function deleteGuestbookEntry(id) {
   return res.changes > 0;
 }
 
+// 🛠️ 거다이맥스 팬텀 서버 데이터 정밀 보정 헬퍼
+function sanitizePokemonServer(p) {
+  if (!p) return p;
+  const isGmaxGengar = (
+    (p.name && p.name.includes('거다이맥스') && p.name.includes('팬텀')) ||
+    (p.speciesId === 10199 && p.name && p.name.includes('팬텀')) ||
+    (p.speciesId === 10202) ||
+    (p.speciesId === 10199 && Array.isArray(p.evolutionChain) && p.evolutionChain.some(st => st.name && st.name.includes('팬텀')))
+  );
+  if (isGmaxGengar) {
+    p.speciesId = 10202;
+    p.name = '거다이맥스 팬텀';
+    p.sprites = {
+      front: p.isShiny ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10202.png' : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png',
+      showdownFront: p.isShiny ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/10202.gif' : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif'
+    };
+  }
+  if (Array.isArray(p.evolutionChain)) {
+    p.evolutionChain.forEach(st => {
+      if (st && ((st.name && st.name.includes('거다이맥스') && st.name.includes('팬텀')) || (st.id === 10199 && st.name && st.name.includes('팬텀')) || (st.id === 10202))) {
+        st.id = 10202;
+        st.name = '거다이맥스 팬텀';
+        st.sprite = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png';
+        st.showdownSprite = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif';
+      }
+    });
+  }
+
+  // 🧬 뮤 ➔ 뮤츠 진화 체인 복원 및 보정 (기존 1단계 단독 뮤 보유자도 뮤츠 진화 가능)
+  const isMew = (p.speciesId === 151 || (p.name === '뮤' && p.speciesId !== 150));
+  if (isMew) {
+    const hasMewtwo = Array.isArray(p.evolutionChain) && p.evolutionChain.some(st => st && st.id === 150);
+    if (!hasMewtwo) {
+      p.evolutionChain = [
+        {
+          id: 151,
+          name: '뮤',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/151.gif',
+          genCategory: 'gen1'
+        },
+        {
+          id: 150,
+          name: '뮤츠',
+          minLevel: 36,
+          minHappiness: 60,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/150.gif',
+          genCategory: 'gen1'
+        }
+      ];
+      p.stageIndex = 0;
+    }
+  } else if (p.speciesId === 150) {
+    const hasMew = Array.isArray(p.evolutionChain) && p.evolutionChain.some(st => st && st.id === 151);
+    if (!hasMew) {
+      p.evolutionChain = [
+        {
+          id: 151,
+          name: '뮤',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/151.gif',
+          genCategory: 'gen1'
+        },
+        {
+          id: 150,
+          name: '뮤츠',
+          minLevel: 36,
+          minHappiness: 60,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/150.gif',
+          genCategory: 'gen1'
+        }
+      ];
+      p.stageIndex = 1;
+    }
+  }
+
+  return p;
+}
+
+function sanitizeDiplomaServer(dip) {
+  if (!dip) return dip;
+  if ((dip.name && dip.name.includes('거다이맥스') && dip.name.includes('팬텀')) ||
+      (dip.speciesId === 10199 && dip.name && dip.name.includes('팬텀')) ||
+      (dip.speciesId === 10202)) {
+    dip.speciesId = 10202;
+    dip.name = '거다이맥스 팬텀';
+    dip.sprite = dip.isShiny ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10202.png' : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png';
+  }
+  return dip;
+}
+
 // 📦 행 데이터 파싱 유틸리티
 function parseFarmRow(row) {
+  const activePokemon = row.active_pokemon ? sanitizePokemonServer(safeJsonParse(row.active_pokemon, null)) : null;
+  const reservePokemon = row.reserve_pokemon ? safeJsonParse(row.reserve_pokemon, []).map(sanitizePokemonServer) : [];
+  const graduatedPokemon = row.graduated_pokemon ? safeJsonParse(row.graduated_pokemon, []).map(sanitizeDiplomaServer) : [];
+
   return {
     username: row.username,
     ownerName: row.username,
     isInitialized: true,
     farmName: row.farm_name,
-    activePokemon: row.active_pokemon ? safeJsonParse(row.active_pokemon, null) : null,
-    reservePokemon: row.reserve_pokemon ? safeJsonParse(row.reserve_pokemon, []) : [],
-    graduatedPokemon: row.graduated_pokemon ? safeJsonParse(row.graduated_pokemon, []) : [],
-    graduatedCount: row.graduated_count || 0,
+    activePokemon,
+    reservePokemon,
+    graduatedPokemon,
+    graduatedCount: row.graduated_count || (graduatedPokemon ? graduatedPokemon.length : 0),
     heartsCount: row.hearts_count || 0,
     coins: row.coins !== undefined && row.coins !== null ? row.coins : 1000,
     inventory: row.inventory ? safeJsonParse(row.inventory, {}) : {},
@@ -731,6 +862,10 @@ function parseFarmRow(row) {
     bgTheme: row.bg_theme || 'classic',
     stickers: row.stickers ? safeJsonParse(row.stickers, []) : [],
     pokemonPlacements: row.pokemon_placements ? safeJsonParse(row.pokemon_placements, {}) : {},
+    trainerPlacement: row.trainer_placement ? safeJsonParse(row.trainer_placement, { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }) : { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' },
+    rooms: row.rooms ? safeJsonParse(row.rooms, null) : null,
+    currentRoomId: row.current_room_id || 'room_1',
+    unlockedSpecies: row.unlocked_species ? safeJsonParse(row.unlocked_species, []) : [],
     statusMsg: row.status_msg || '',
     bgmSong: row.bgm_song || '프리스타일 - Y (Feat. 지선)',
     todayCount: row.today_count || 0,
@@ -827,13 +962,15 @@ export function restoreDatabaseFromJson(jsonData) {
         username, farm_name, password_hash, password_salt, active_pokemon,
         reserve_pokemon, graduated_pokemon, graduated_count, hearts_count, coins,
         inventory, incubating_egg, lottery_state, bg_theme, stickers,
-        pokemon_placements, status_msg, bgm_song, today_count, total_count,
+        pokemon_placements, trainer_placement, rooms, current_room_id,
+        status_msg, bgm_song, today_count, total_count,
         last_active, created_at, updated_at
       ) VALUES (
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
         ?, ?, ?
       )
     `);
@@ -843,7 +980,8 @@ export function restoreDatabaseFromJson(jsonData) {
         f.username, f.farm_name, f.password_hash, f.password_salt, f.active_pokemon,
         f.reserve_pokemon, f.graduated_pokemon, f.graduated_count || 0, f.hearts_count || 0, f.coins || 1000,
         f.inventory, f.incubating_egg, f.lottery_state, f.bg_theme || 'classic', f.stickers,
-        f.pokemon_placements, f.status_msg || '', f.bgm_song || '', f.today_count || 0, f.total_count || 0,
+        f.pokemon_placements, f.trainer_placement || null, f.rooms || null, f.current_room_id || 'room_1',
+        f.status_msg || '', f.bgm_song || '', f.today_count || 0, f.total_count || 0,
         f.last_active, f.created_at, f.updated_at
       );
     }

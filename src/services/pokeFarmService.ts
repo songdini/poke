@@ -1,4 +1,4 @@
-import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea, NeighborFarmData, ExpeditionStoryEvent } from '../types/farm';
+import type { FarmPokemon, EvolutionStage, FarmItem, PartTimeJob, FarmState, ExpeditionArea, NeighborFarmData, ExpeditionStoryEvent, IncubatorSlot, GraduationDiploma } from '../types/farm';
 import type { PokemonType } from '../types/pokemon';
 
 export const FARM_STORAGE_KEY = 'pokefarm_save_data_v1';
@@ -3680,7 +3680,7 @@ export const FARM_ITEMS: FarmItem[] = [
   },
   {
     id: 'rare_candy_s',
-    name: '🍬 이상한사탕 (소) - EXP 30%',
+    name: '🍬 이상한사탕(소)',
     icon: '🍬',
     category: 'special',
     description: '현재 레벨에서 다음 레벨업에 필요한 최대 경험치의 30%를 즉시 획득합니다.',
@@ -3689,7 +3689,7 @@ export const FARM_ITEMS: FarmItem[] = [
   },
   {
     id: 'rare_candy_m',
-    name: '🍬 이상한사탕 (중) - EXP 50%',
+    name: '🍬 이상한사탕(중)',
     icon: '🍬',
     category: 'special',
     description: '현재 레벨에서 다음 레벨업에 필요한 최대 경험치의 50%를 즉시 획득합니다.',
@@ -3698,7 +3698,7 @@ export const FARM_ITEMS: FarmItem[] = [
   },
   {
     id: 'rare_candy',
-    name: '🌟 이상한사탕 (특대) - 즉시 1Lv',
+    name: '🌟 이상한사탕(특대) - 즉시 1Lv',
     icon: '🌟🍬',
     category: 'special',
     description: '신비한 에너지가 응축된 최고의 사탕. 포켓몬에게 먹이면 즉시 레벨이 1 오릅니다!',
@@ -3830,7 +3830,7 @@ export const FARM_ITEMS: FarmItem[] = [
     name: '🚀 슈퍼 고속 알 부화기',
     icon: '🚀',
     category: 'special',
-    description: '최첨단 마그마 보온 시스템이 적용된 유료형 고속 부화기! 보유 시 모든 온기 획득이 2배(200%)로 대폭 가속되어 초고속 부화합니다.',
+    description: '구매 시 알 부화소에 [🚀 슈퍼 고속 인큐베이터] 챔버가 추가 설치되어 동시에 여러 알을 품을 수 있습니다! 또한 2배(200%) 초고속 온기 가속이 적용됩니다.',
     price: 1500,
     effect: { happiness: 50 }
   },
@@ -3908,7 +3908,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
     id: 'exp_rooftop',
     name: '옥상 하늘정원',
     icon: '🌿',
-    desc: '초록빛 잔디와 화단이 만발한 옥상정원에서 희귀 열매와 장난감을 채집합니다.',
+    desc: '초록빛 잔디와 화단이 만발한 옥상정원에서 희귀 열매와 장난감, 이상한사탕(소)을 채집합니다.',
     durationSec: 30,
     minLevel: 8,
     energyCost: 25,
@@ -3923,14 +3923,15 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
       { itemId: 'toy_ball', chance: 0.48 },
       { itemId: 'mystery_egg', chance: 0.12 },
       { itemId: 'energy_drink', chance: 0.38 },
-      { itemId: 'shiny_stone', chance: 0.30 }
+      { itemId: 'shiny_stone', chance: 0.30 },
+      { itemId: 'rare_candy_s', chance: 0.25 }
     ]
   },
   {
     id: 'exp_server_room',
     name: '지하 전산 문서고',
     icon: '🗄️',
-    desc: '서버 랙과 먼지 쌓인 캐비닛 사이에서 고가치 보급품과 이상한사탕을 탐색합니다.',
+    desc: '서버 랙과 먼지 쌓인 캐비닛 사이에서 고가치 보급품과 이상한사탕(중)을 탐색합니다.',
     durationSec: 45,
     minLevel: 18,
     energyCost: 35,
@@ -3945,7 +3946,7 @@ export const EXPEDITION_AREAS: ExpeditionArea[] = [
       { itemId: 'mystery_egg', chance: 0.18 },
       { itemId: 'full_heal', chance: 0.42 },
       { itemId: 'shiny_stone', chance: 0.42 },
-      { itemId: 'rare_candy', chance: 0.30 }
+      { itemId: 'rare_candy_m', chance: 0.30 }
     ]
   },
   {
@@ -4143,7 +4144,7 @@ export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
           icon: '🕊️',
           reqDesc: '기본 성공률 75%',
           successRate: 0.75,
-          successDialogue: '푸드덕! 거대한 피죤투 무리가 강림하여 거센 바람으로 밀렵꾼을 옥상 밖으로 날려버렸습니다! 피죤투가 신비한 사탕을 선물했습니다.',
+          successDialogue: '푸드덕! 거대한 피죤투 무리가 강림하여 거센 바람으로 밀렵꾼을 옥상 밖으로 날려버렸습니다! 피죤투가 신비한 이상한사탕(소)을 선물했습니다.',
           failDialogue: '피죤투들이 낮잠을 자느라 날아오지 않았습니다. 조용히 풀숲 사이로 기어 나왔습니다.',
           successResult: {
             title: '🦅 하늘의 수호신 강림!',
@@ -4151,7 +4152,7 @@ export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
             coins: 240,
             exp: 140,
             items: [
-              { itemId: 'rare_candy', qty: 1 },
+              { itemId: 'rare_candy_s', qty: 1 },
               { itemId: 'sitrus_berry', qty: 1 }
             ]
           },
@@ -4175,7 +4176,7 @@ export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
       npcPortrait: '💻',
       npcBadge: '전산망 암흑 지배자',
       dialogue: [
-        '크크큭... 사내 서버를 모조리 다운시키고 금고의 이상한사탕과 연구 데이터를 전부 가로채겠다!',
+        '크크큭... 사내 서버를 모조리 다운시키고 금고의 이상한사탕(중)과 연구 데이터를 전부 가로채겠다!',
         '침입자 경보? 조무래기 포켓몬 따위가 내 기가바이트 바이러스 공격을 버틸 수 있을까?!'
       ],
       choices: [
@@ -4193,7 +4194,7 @@ export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
             coins: 390,
             exp: 250,
             items: [
-              { itemId: 'rare_candy', qty: 1 },
+              { itemId: 'rare_candy_m', qty: 1 },
               { itemId: 'shiny_stone', qty: 1 },
               { itemId: 'energy_drink', qty: 1 }
             ]
@@ -4222,7 +4223,7 @@ export const EXPEDITION_STORY_EVENTS: Record<string, ExpeditionStoryEvent[]> = {
             coins: 500,
             exp: 320,
             items: [
-              { itemId: 'rare_candy', qty: 2 },
+              { itemId: 'rare_candy_m', qty: 2 },
               { itemId: 'mystery_egg', qty: 1 },
               { itemId: 'full_heal', qty: 1 }
             ]
@@ -4810,6 +4811,254 @@ export function drawLotteryReels(): [LotterySymbol, LotterySymbol, LotterySymbol
   return [pickOne(), pickOne(), pickOne()];
 }
 
+// 🚀 알 부화소 다중 인큐베이터 슬롯 목록 계산 헬퍼
+// (기본 1호기 + 보유한 'super_incubator' 개수만큼 고속 인큐베이터 챔버 슬롯 동적 증설)
+export function getFarmIncubatorSlots(farmState: Partial<FarmState>): IncubatorSlot[] {
+  const superCount = Math.max(0, farmState?.inventory?.['super_incubator'] || 0);
+  const existingSlots = farmState?.incubatorSlots || [];
+  const result: IncubatorSlot[] = [];
+
+  // 1호기: 기본 인큐베이터 (표준 보온 1.0x)
+  const slot0 = existingSlots.find(s => s.id === 'inc_standard_0') || existingSlots[0];
+  const slot0Egg = slot0?.egg !== undefined ? slot0.egg : (farmState?.incubatingEgg || null);
+
+  result.push({
+    id: 'inc_standard_0',
+    name: '🌡️ 기본 인큐베이터 1호기',
+    type: 'standard',
+    speedMultiplier: 1.0,
+    egg: slot0Egg
+  });
+
+  // 2호기 ~ (1 + superCount)호기: 슈퍼 고속 인큐베이터 (초고속 보온 2.0x)
+  for (let i = 1; i <= superCount; i++) {
+    const slotId = `inc_super_${i}`;
+    const existing = existingSlots.find(s => s.id === slotId) || (existingSlots.length > i ? existingSlots[i] : undefined);
+    result.push({
+      id: slotId,
+      name: `🚀 슈퍼 고속 인큐베이터 ${i + 1}호기`,
+      type: 'super',
+      speedMultiplier: 2.0,
+      egg: existing?.egg || null
+    });
+  }
+
+  return result;
+}
+
+/**
+ * 🛠️ 거다이맥스 팬텀 등 비정상 ID/스프라이트 데이터 정밀 보정
+ */
+export function sanitizeFarmPokemon(mon: FarmPokemon): FarmPokemon {
+  if (!mon) return mon;
+
+  const isGmaxGengar = (
+    (mon.name && mon.name.includes('거다이맥스') && mon.name.includes('팬텀')) ||
+    (mon.speciesId === 10199 && mon.name && mon.name.includes('팬텀')) ||
+    (mon.speciesId === 10202) ||
+    (mon.speciesId === 10199 && Array.isArray(mon.evolutionChain) && mon.evolutionChain.some(st => st.name && st.name.includes('팬텀')))
+  );
+
+  if (isGmaxGengar) {
+    mon.speciesId = 10202;
+    mon.name = '거다이맥스 팬텀';
+    const isShiny = !!mon.isShiny;
+    mon.sprites = {
+      front: isShiny
+        ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10202.png'
+        : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png',
+      showdownFront: isShiny
+        ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/10202.gif'
+        : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif'
+    };
+  }
+
+  // 진화 체인 내부의 거다이맥스 팬텀 단계 교정
+  if (Array.isArray(mon.evolutionChain)) {
+    mon.evolutionChain = mon.evolutionChain.map(st => {
+      if (!st) return st;
+      if (
+        (st.name && st.name.includes('거다이맥스') && st.name.includes('팬텀')) ||
+        (st.id === 10199 && st.name && st.name.includes('팬텀')) ||
+        (st.id === 10202)
+      ) {
+        return {
+          ...st,
+          id: 10202,
+          name: '거다이맥스 팬텀',
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif'
+        };
+      }
+      return st;
+    });
+  }
+
+  // 🧬 뮤 ➔ 뮤츠 진화 체인 복원 및 보정 (기존 1단계 단독 뮤 보유자도 뮤츠 진화 가능)
+  const isMew = (mon.speciesId === 151 || (mon.name === '뮤' && mon.speciesId !== 150));
+  if (isMew) {
+    const hasMewtwo = Array.isArray(mon.evolutionChain) && mon.evolutionChain.some(st => st && st.id === 150);
+    if (!hasMewtwo) {
+      mon.evolutionChain = [
+        {
+          id: 151,
+          name: '뮤',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/151.gif',
+          genCategory: 'gen1'
+        },
+        {
+          id: 150,
+          name: '뮤츠',
+          minLevel: 36,
+          minHappiness: 60,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/150.gif',
+          genCategory: 'gen1'
+        }
+      ];
+      mon.stageIndex = 0;
+    }
+  } else if (mon.speciesId === 150) {
+    const hasMew = Array.isArray(mon.evolutionChain) && mon.evolutionChain.some(st => st && st.id === 151);
+    if (!hasMew) {
+      mon.evolutionChain = [
+        {
+          id: 151,
+          name: '뮤',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/151.gif',
+          genCategory: 'gen1'
+        },
+        {
+          id: 150,
+          name: '뮤츠',
+          minLevel: 36,
+          minHappiness: 60,
+          types: ['psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/150.gif',
+          genCategory: 'gen1'
+        }
+      ];
+      mon.stageIndex = 1;
+    }
+  }
+
+  return mon;
+}
+
+/**
+ * 🎓 졸업 증서 내 거다이맥스 팬텀 데이터 보정
+ */
+export function sanitizeDiploma(dip: GraduationDiploma): GraduationDiploma {
+  if (!dip) return dip;
+  if (
+    (dip.name && dip.name.includes('거다이맥스') && dip.name.includes('팬텀')) ||
+    (dip.speciesId === 10199 && dip.name && dip.name.includes('팬텀')) ||
+    (dip.speciesId === 10202)
+  ) {
+    dip.speciesId = 10202;
+    dip.name = '거다이맥스 팬텀';
+    dip.sprite = dip.isShiny
+      ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/10202.png'
+      : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png';
+  }
+  return dip;
+}
+
+/**
+ * 📖 모든 보유 포켓몬, 졸업생, 진화 전 단계 포켓몬을 수합하여 도감 등록 목록(unlockedSpecies) 자동 동기화
+ */
+export function syncUnlockedSpecies(state: Partial<FarmState>): number[] {
+  const set = new Set<number>();
+
+  // 1. 기존 unlockedSpecies가 있다면 복사 (단, 팬텀 데이터 오염으로 잘못 들어간 10199는 실제 피카츄 계열 확인 후 정리)
+  if (Array.isArray(state.unlockedSpecies)) {
+    state.unlockedSpecies.forEach(id => {
+      if (id === 10199) {
+        const hasRealPikachu = (
+          (state.activePokemon?.speciesId === 10199 && state.activePokemon?.name?.includes('피카츄')) ||
+          state.reservePokemon?.some(p => p.speciesId === 10199 && p.name?.includes('피카츄')) ||
+          state.graduatedPokemon?.some(d => d.speciesId === 10199 && d.name?.includes('피카츄'))
+        );
+        if (hasRealPikachu) set.add(10199);
+      } else {
+        set.add(id);
+      }
+    });
+  }
+
+  const addPokemonStages = (mon?: FarmPokemon | null) => {
+    if (!mon) return;
+    set.add(mon.speciesId);
+
+    // 해당 포켓몬의 진화 체인에서 현재 단계 이하의 모든 진화 전 포켓몬 도감 자동 등록
+    if (Array.isArray(mon.evolutionChain) && mon.evolutionChain.length > 0) {
+      const maxIdx = Math.max(0, mon.stageIndex ?? 0);
+      mon.evolutionChain.slice(0, maxIdx + 1).forEach(st => {
+        if (st && st.id) set.add(st.id);
+      });
+    } else {
+      // 체인이 비어있다면 STARTER_CHAINS에서 역추적
+      for (const chain of STARTER_CHAINS) {
+        const foundIdx = chain.findIndex(st => st.id === mon.speciesId);
+        if (foundIdx !== -1) {
+          chain.slice(0, foundIdx + 1).forEach(st => set.add(st.id));
+          break;
+        }
+      }
+      for (const branch of EEVEE_BRANCHES) {
+        if (branch.id === mon.speciesId) {
+          set.add(133); // 이브이
+          set.add(branch.id);
+          break;
+        }
+      }
+    }
+  };
+
+  // 2. 대표 파트너 포켓몬 및 진화 전 단계 등록
+  addPokemonStages(state.activePokemon);
+
+  // 3. 목장 보육소(reserve) 포켓몬 및 진화 전 단계 등록
+  if (Array.isArray(state.reservePokemon)) {
+    state.reservePokemon.forEach(addPokemonStages);
+  }
+
+  // 4. 졸업 포켓몬(graduated) 및 진화 전 단계 등록
+  if (Array.isArray(state.graduatedPokemon)) {
+    state.graduatedPokemon.forEach(dip => {
+      if (!dip) return;
+      set.add(dip.speciesId);
+      // STARTER_CHAINS에서 진화 전 단계 역추적
+      for (const chain of STARTER_CHAINS) {
+        const foundIdx = chain.findIndex(st => st.id === dip.speciesId);
+        if (foundIdx !== -1) {
+          chain.slice(0, foundIdx + 1).forEach(st => set.add(st.id));
+          break;
+        }
+      }
+      for (const branch of EEVEE_BRANCHES) {
+        if (branch.id === dip.speciesId) {
+          set.add(133); // 이브이
+          set.add(branch.id);
+          break;
+        }
+      }
+    });
+  }
+
+  return Array.from(set).sort((a, b) => a - b);
+}
+
 // 초기 농장 상태 생성 (온보딩 전)
 export function getInitialFarmState(ownerName: string): FarmState {
   return {
@@ -4819,7 +5068,16 @@ export function getInitialFarmState(ownerName: string): FarmState {
     coins: 500, // 웰컴 스타터 지원금
     activePokemon: null,
     reservePokemon: [], // 🌟 보육소 목장 보관 포켓몬 리스트
-    incubatingEgg: null, // 🌟 현재 인큐베이터에 품고 있는 알
+    incubatingEgg: null, // 🌟 현재 1호기 인큐베이터에 품고 있는 알 (구버전 호환)
+    incubatorSlots: [
+      {
+        id: 'inc_standard_0',
+        name: '🌡️ 기본 인큐베이터 1호기',
+        type: 'standard',
+        speedMultiplier: 1.0,
+        egg: null
+      }
+    ],
     bgTheme: 'classic', // 🏠 두부월드 미니룸 기본 배경
     stickers: [
       { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20, type: 'sticker', scale: 1 },
@@ -4895,6 +5153,7 @@ export function getInitialFarmState(ownerName: string): FarmState {
       }
     ],
     heartsCount: 0,
+    unlockedSpecies: [],
     lastEnergyRecoveryDate: getTodayDateString()
   };
 }
@@ -5040,7 +5299,22 @@ export function loadFarmState(ownerName?: string): FarmState {
         };
       }
       if (parsed.incubatingEgg === undefined) parsed.incubatingEgg = null;
+      parsed.incubatorSlots = getFarmIncubatorSlots(parsed);
       parsed.isInitialized = true;
+
+      // 1. 🛠️ 거다이맥스 팬텀 ID/스프라이트 오류 및 데이터 정밀 보정
+      if (parsed.activePokemon) {
+        parsed.activePokemon = sanitizeFarmPokemon(parsed.activePokemon);
+      }
+      if (parsed.reservePokemon) {
+        parsed.reservePokemon = parsed.reservePokemon.map(sanitizeFarmPokemon);
+      }
+      if (parsed.graduatedPokemon) {
+        parsed.graduatedPokemon = parsed.graduatedPokemon.map(sanitizeDiploma);
+      }
+
+      // 2. 📖 도감 등록 종 목록 자동 동기화 (기존 보유/졸업 포켓몬 및 진화 전 단계 전원 활성화)
+      parsed.unlockedSpecies = syncUnlockedSpecies(parsed);
 
       // ✨ 이로치 포켓몬의 스프라이트 URL이 일반 URL인 경우 최신 이로치 URL로 자동 보정
       const fixShinySprites = (mon: FarmPokemon) => {
@@ -5131,6 +5405,17 @@ export function saveFarmState(state: FarmState): void {
     if (!state || !isValidFarmSave(state)) {
       return;
     }
+    if (state.activePokemon) {
+      state.activePokemon = sanitizeFarmPokemon(state.activePokemon);
+    }
+    if (state.reservePokemon) {
+      state.reservePokemon = state.reservePokemon.map(sanitizeFarmPokemon);
+    }
+    if (state.graduatedPokemon) {
+      state.graduatedPokemon = state.graduatedPokemon.map(sanitizeDiploma);
+    }
+    state.unlockedSpecies = syncUnlockedSpecies(state);
+
     if (!state.lastActive) {
       state.lastActive = Date.now();
     }
@@ -5178,6 +5463,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
               rooms: state.rooms,
               hiddenPokemon: state.hiddenPokemon || [],
               trainerPlacement: state.trainerPlacement,
+              unlockedSpecies: syncUnlockedSpecies(state),
               statusMsg: state.statusMsg || '',
               todayCount: state.todayCount || 0,
               totalCount: state.totalCount || 0,
@@ -5212,6 +5498,7 @@ export function getAllStoredFarms(): NeighborFarmData[] {
             rooms: state.rooms,
             hiddenPokemon: state.hiddenPokemon || [],
             trainerPlacement: state.trainerPlacement,
+            unlockedSpecies: syncUnlockedSpecies(state),
             statusMsg: state.statusMsg || '',
             todayCount: state.todayCount || 0,
             totalCount: state.totalCount || 0,

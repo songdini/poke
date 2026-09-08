@@ -1055,6 +1055,26 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  transition: all 0.2s ease;
+}
+
+.gauge-item.zero-danger {
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 4px 6px;
+  background: rgba(254, 242, 242, 0.7);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.2);
+}
+
+.zero-stat-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #dc2626;
+  background: #fee2e2;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
 }
 
 /* 🍎 Quick Care Actions */
@@ -3606,6 +3626,157 @@
   color: #ffffff !important;
 }
 
+.gen1-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+/* 🚀 Multi-Incubator Grid & Super Incubator Chambers */
+.incubator-overview-banner {
+  margin-bottom: 14px;
+}
+
+.incubator-total-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.incubator-chambers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.chamber-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.speed-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.speed-pill.normal-speed {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.speed-pill.super-speed {
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+  animation: superSpeedPulse 2s infinite ease-in-out;
+}
+
+@keyframes superSpeedPulse {
+  0%, 100% { opacity: 0.95; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+}
+
+.chamber-badge.active-badge {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.chamber-badge.empty-badge {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.incubator-chamber-card.super-incubator {
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+  border: 2px solid #f97316;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.15);
+  position: relative;
+}
+
+.incubator-chamber-card.super-incubator .chamber-header {
+  border-bottom: 1px solid #fed7aa;
+}
+
+.egg-display-pod.super-pod {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1.5px solid #fdba74;
+  box-shadow: inset 0 0 16px rgba(249, 115, 22, 0.12);
+}
+
+.super-boost-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #fca5a5;
+  animation: boostBlink 1.4s infinite alternate;
+}
+
+@keyframes boostBlink {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; transform: scale(1.02); }
+}
+
+.locked-chamber-card {
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 180px;
+}
+
+.locked-slot-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+}
+
+.locked-slot-icon {
+  font-size: 2.2rem;
+  filter: grayscale(0.2);
+}
+
+.locked-slot-info h4 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.locked-slot-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.super-expand-btn {
+  margin-top: 4px;
+  background: linear-gradient(135deg, #ea580c 0%, #f97316 100%) !important;
+  border-color: #c2410c !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
 /* Daycare Controls Bar */
 .daycare-controls-bar {
   display: flex;
@@ -4479,6 +4650,36 @@
   border-radius: 10px;
 }
 
+.pokedex-active-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.pokedex-reserve-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #047857;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.pokedex-unlocked-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
 .pokedex-locked-label {
   font-size: 0.68rem;
   font-weight: 700;
@@ -5303,41 +5504,13 @@
   box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.6), 0 -2px 10px rgba(99, 102, 241, 0.3);
 }
 
-/* 🏥 포켓몬 센터: 왜곡 없는 정비율 1.5:1 센터링 & 연속 확장 타일 윙 */
+/* 🏥 포켓몬 센터: 미니룸 전체 크기에 맞춰 배경 이미지 확대 (타일링 제거) */
 .miniroom-canvas-container.bg-center {
-  background-color: #fae6aa;
-  background-image:
-    url('/images/bg_center.png'),
-    repeating-linear-gradient(
-      0deg,
-      #eddba6 0px,
-      #eddba6 1px,
-      transparent 1px,
-      transparent 20px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      #eddba6 0px,
-      #eddba6 1px,
-      transparent 1px,
-      transparent 20px
-    ),
-    linear-gradient(180deg, #d97736 0%, #d97736 17%, #fac693 17%, #fac693 23%, #fae6aa 23%, #fae6aa 100%);
-  background-size:
-    auto 100%,
-    20px 20px,
-    20px 20px,
-    100% 100%;
-  background-position:
-    center bottom,
-    center top,
-    center top,
-    center top;
-  background-repeat:
-    no-repeat,
-    repeat,
-    repeat,
-    no-repeat;
+  background-color: #000000;
+  background-image: url('/images/bg_center.png');
+  background-size: 100% 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
@@ -9749,6 +9922,17 @@
   color: #065f46;
 }
 
+/* 🧑🌾 트레이너 말풍선 및 네임태그 반전 보정 */
+.trainer-name-tag.unflip-tag,
+.trainer-speech-bubble.unflip-tag {
+  transform: scaleX(-1);
+}
+
+/* 🎒 실시간 방문자 아바타 부드러운 이동 애니메이션 */
+.miniroom-trainer.visitor-avatar {
+  transition: left 0.35s cubic-bezier(0.2, 0.8, 0.25, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
 /* ==========================================================================
    🔴 Gen 1 Egg, Super Incubator & Backup Styles
    ========================================================================== */
@@ -9924,10 +10108,8 @@
 .center-staff-stage {
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   width: 100%;
-  max-width: 800px;
   height: 100%;
   pointer-events: none;
   z-index: 12;
@@ -9949,7 +10131,7 @@
 
 .center-staff-char.joy {
   top: 14%;
-  left: 49%;
+  left: 50%;
   transform: translateX(-50%);
 }
 
@@ -9968,8 +10150,13 @@
 }
 
 .center-staff-char.blissey {
-  top: 18%;
-  left: 58.5%;
+  top: 17%;
+  left: 60%;
+  transform: translateX(-50%);
+}
+
+.center-staff-char.blissey:hover {
+  transform: translateX(-50%) scale(1.08) translateY(-2px);
 }
 
 .center-blissey-sprite {
@@ -10426,3 +10613,191 @@
   background: rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
 }
+
+/* =========================================================================
+   🌌 프리미엄 1. 창조의 빛 & 오리진 슈퍼노바 (Genesis Supernova Beam)
+   ========================================================================= */
+.stream-genesissupernova .genesis-outer-beam {
+  animation: genesisBeamPulse 0.15s infinite alternate ease-in-out;
+}
+.stream-genesissupernova .genesis-core-beam {
+  animation: genesisCoreFlash 0.08s infinite alternate ease-in-out;
+}
+.stream-genesissupernova .gr-1 {
+  animation: genesisRingSpin 0.6s infinite linear;
+  transform-origin: 60px 50px;
+}
+.stream-genesissupernova .gr-2 {
+  animation: genesisRingSpin 0.45s infinite linear reverse;
+  transform-origin: 130px 50px;
+}
+.stream-genesissupernova .gr-3 {
+  animation: genesisRingSpin 0.5s infinite linear;
+  transform-origin: 200px 50px;
+}
+@keyframes genesisBeamPulse {
+  0% { transform: scaleY(0.92); opacity: 0.85; filter: drop-shadow(0 0 10px #d946ef); }
+  100% { transform: scaleY(1.15); opacity: 1; filter: drop-shadow(0 0 20px #38bdf8); }
+}
+@keyframes genesisCoreFlash {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; filter: drop-shadow(0 0 8px #ffffff); }
+}
+@keyframes genesisRingSpin {
+  0% { transform: rotate(0deg) scale(0.95); }
+  50% { transform: rotate(180deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(0.95); }
+}
+.genesis-particles span {
+  position: absolute;
+  font-size: 1.1rem;
+  animation: genesisParticleFly 0.8s infinite ease-out;
+}
+.genesis-particles .gp-1 { top: 20%; left: 15%; animation-delay: 0s; }
+.genesis-particles .gp-2 { top: 45%; left: 35%; animation-delay: 0.15s; }
+.genesis-particles .gp-3 { top: 65%; left: 20%; animation-delay: 0.3s; }
+.genesis-particles .gp-4 { top: 30%; left: 55%; animation-delay: 0.45s; }
+.genesis-particles .gp-5 { top: 50%; left: 70%; animation-delay: 0.6s; }
+@keyframes genesisParticleFly {
+  0% { transform: translate(0, 0) scale(0.6) rotate(0deg); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate(120px, -20px) scale(1.2) rotate(180deg); opacity: 0; }
+}
+
+/* =========================================================================
+   ⚡ 프리미엄 2. 1,000만볼트 (10,000,000 Volt Thunderbolt Z)
+   ========================================================================= */
+.stream-gigavolt .gigavolt-outer {
+  animation: gigavoltZap 0.08s infinite alternate ease-in-out;
+}
+.stream-gigavolt .gigavolt-core {
+  animation: gigavoltCoreFlash 0.04s infinite alternate;
+}
+@keyframes gigavoltZap {
+  0% { transform: scaleY(0.9) skewX(-2deg); filter: drop-shadow(0 0 12px #facc15); opacity: 0.9; }
+  100% { transform: scaleY(1.18) skewX(3deg); filter: drop-shadow(0 0 24px #ef4444); opacity: 1; }
+}
+@keyframes gigavoltCoreFlash {
+  0% { opacity: 0.85; stroke-width: 6; }
+  100% { opacity: 1; stroke-width: 10; filter: drop-shadow(0 0 8px #ffffff); }
+}
+.gigavolt-sparks span {
+  position: absolute;
+  font-size: 1.15rem;
+  animation: gigavoltSparkFly 0.5s infinite linear;
+}
+.gigavolt-sparks .gvs-1 { top: 15%; left: 20%; animation-delay: 0s; }
+.gigavolt-sparks .gvs-2 { top: 40%; left: 40%; animation-delay: 0.1s; }
+.gigavolt-sparks .gvs-3 { top: 60%; left: 25%; animation-delay: 0.2s; }
+.gigavolt-sparks .gvs-4 { top: 25%; left: 60%; animation-delay: 0.3s; }
+.gigavolt-sparks .gvs-5 { top: 55%; left: 75%; animation-delay: 0.4s; }
+@keyframes gigavoltSparkFly {
+  0% { transform: translate(0, 0) scale(0.8); opacity: 1; }
+  100% { transform: translate(100px, 15px) scale(1.3); opacity: 0; }
+}
+
+/* =========================================================================
+   🌋 프리미엄 3. 블러스트번 & 거다이옥염 (Blast Burn & G-Max Wildfire)
+   ========================================================================= */
+.stream-blastburn .blastburn-magma-outer {
+  animation: magmaBurst 0.1s infinite alternate ease-in-out;
+}
+.stream-blastburn .blastburn-magma-core {
+  animation: magmaCoreWave 0.06s infinite alternate;
+}
+@keyframes magmaBurst {
+  0% { transform: scaleY(0.92) scaleX(0.98); filter: drop-shadow(0 0 16px #dc2626); }
+  100% { transform: scaleY(1.15) scaleX(1.02); filter: drop-shadow(0 0 28px #ea580c); }
+}
+@keyframes magmaCoreWave {
+  0% { transform: scaleY(0.88); opacity: 0.88; }
+  100% { transform: scaleY(1.12); opacity: 1; }
+}
+.blastburn-particles span {
+  position: absolute;
+  font-size: 1.2rem;
+  animation: magmaParticleFly 0.7s infinite ease-out;
+}
+.blastburn-particles .bbp-1 { top: 20%; left: 15%; animation-delay: 0s; }
+.blastburn-particles .bbp-2 { top: 45%; left: 35%; animation-delay: 0.12s; }
+.blastburn-particles .bbp-3 { top: 65%; left: 20%; animation-delay: 0.24s; }
+.blastburn-particles .bbp-4 { top: 25%; left: 55%; animation-delay: 0.36s; }
+.blastburn-particles .bbp-5 { top: 50%; left: 75%; animation-delay: 0.48s; }
+@keyframes magmaParticleFly {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  100% { transform: translate(110px, -25px) scale(1.2); opacity: 0; }
+}
+
+/* =========================================================================
+   🔮 프리미엄 4. 거다이환영 & 고스트다이브 (G-Max Terror Nether Void)
+   ========================================================================= */
+.stream-gmaxterror .terror-tentacle {
+  animation: tentacleWave 0.3s infinite alternate ease-in-out;
+}
+.stream-gmaxterror .terror-tentacle-2 {
+  animation: tentacleWave 0.25s infinite alternate-reverse ease-in-out;
+}
+@keyframes tentacleWave {
+  0% { transform: scaleY(0.85) skewY(-4deg); }
+  100% { transform: scaleY(1.15) skewY(4deg); }
+}
+.gmaxterror-ghosts span {
+  position: absolute;
+  font-size: 1.15rem;
+  animation: terrorGhostFly 0.85s infinite ease-in-out;
+}
+.gmaxterror-ghosts .gtg-1 { top: 18%; left: 25%; animation-delay: 0s; }
+.gmaxterror-ghosts .gtg-2 { top: 50%; left: 40%; animation-delay: 0.15s; }
+.gmaxterror-ghosts .gtg-3 { top: 70%; left: 30%; animation-delay: 0.3s; }
+.gmaxterror-ghosts .gtg-4 { top: 28%; left: 60%; animation-delay: 0.45s; }
+.gmaxterror-ghosts .gtg-5 { top: 55%; left: 75%; animation-delay: 0.6s; }
+@keyframes terrorGhostFly {
+  0% { transform: translate(0, 0) scale(0.6) rotate(-10deg); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(120px, -15px) scale(1.15) rotate(15deg); opacity: 0; }
+}
+
+/* =========================================================================
+   🌸 프리미엄 5. 페어리스킨 하이퍼보이스 (Fairy Skin Hyper Voice)
+   ========================================================================= */
+.stream-fairyhyper .fairy-soundwave {
+  animation: fairyWaveDance 0.2s infinite alternate ease-in-out;
+}
+.stream-fairyhyper .fpr-1 {
+  animation: fairyRingExpand 0.5s infinite ease-out;
+  transform-origin: 60px 50px;
+}
+.stream-fairyhyper .fpr-2 {
+  animation: fairyRingExpand 0.5s infinite ease-out;
+  animation-delay: 0.15s;
+  transform-origin: 125px 50px;
+}
+.stream-fairyhyper .fpr-3 {
+  animation: fairyRingExpand 0.5s infinite ease-out;
+  animation-delay: 0.3s;
+  transform-origin: 195px 50px;
+}
+@keyframes fairyWaveDance {
+  0% { transform: scaleY(0.9); filter: drop-shadow(0 0 10px #f472b6); }
+  100% { transform: scaleY(1.18); filter: drop-shadow(0 0 20px #c084fc); }
+}
+@keyframes fairyRingExpand {
+  0% { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 0.2; }
+}
+.fairyhyper-hearts span {
+  position: absolute;
+  font-size: 1.1rem;
+  animation: fairyHeartFloat 0.75s infinite ease-out;
+}
+.fairyhyper-hearts .fhh-1 { top: 22%; left: 20%; animation-delay: 0s; }
+.fairyhyper-hearts .fhh-2 { top: 48%; left: 40%; animation-delay: 0.15s; }
+.fairyhyper-hearts .fhh-3 { top: 68%; left: 25%; animation-delay: 0.3s; }
+.fairyhyper-hearts .fhh-4 { top: 30%; left: 60%; animation-delay: 0.45s; }
+.fairyhyper-hearts .fhh-5 { top: 58%; left: 75%; animation-delay: 0.6s; }
+@keyframes fairyHeartFloat {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { transform: translate(115px, -18px) scale(1.2) rotate(20deg); opacity: 0; }
+}
+

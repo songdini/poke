@@ -13,6 +13,7 @@ import {
   saveFarmState, 
   createNewFarmPokemon, 
   hatchBabyPokemon,
+  getFarmIncubatorSlots,
   playPokemonCry,
   getMaxExpForLevel,
   getAllPokedexEntries,
@@ -24,7 +25,10 @@ import {
   getMaxStatForStage,
   getInitialFarmState,
   clearFarmLocalSession,
-  getTodayDateString
+  getTodayDateString,
+  sanitizeFarmPokemon,
+  sanitizeDiploma,
+  syncUnlockedSpecies
 } from '../services/pokeFarmService';
 import { 
   Sparkles, Trophy, Volume2, VolumeX, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight
@@ -445,6 +449,57 @@ export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
     description: '푸른 에너지 본 블레이드로 연속 교차 난타하는 잔상',
     fxClass: 'skill-fx-bonerush',
     previewColor: '#3b82f6'
+  },
+  // 💎 프리미엄 유료 스킬 이펙트 (최고급 지속 방출 비주얼)
+  {
+    id: 'fx_mew_genesis',
+    name: '창조의 빛 & 오리진 슈퍼노바 (Genesis Supernova Beam)',
+    pokemonName: '뮤 / 뮤츠 / 환상·전설 포켓몬 (전용 프리미엄 스킬)',
+    icon: '🌌',
+    price: 100,
+    description: '모든 생명의 유전자가 공명하며 전방을 가르는 영롱한 무지갯빛 우주 성운 오로라와 슈퍼노바 폭발 광선!',
+    fxClass: 'skill-fx-genesissupernova',
+    previewColor: '#d946ef'
+  },
+  {
+    id: 'fx_pikachu_gigavolt',
+    name: '1,000만볼트 & 기가볼트 하복 (10,000,000 Volt Thunderbolt Z)',
+    pokemonName: '피카츄 / 라이츄 / 쥬피썬더 (전기 전용 프리미엄 Z기술)',
+    icon: '⚡',
+    price: 95,
+    description: '7빛깔 무지개 무늬의 초대형 초고압 번개 기둥과 지면을 뒤흔드는 궁극의 Z파워 전기 광선!',
+    fxClass: 'skill-fx-gigavolt',
+    previewColor: '#facc15'
+  },
+  {
+    id: 'fx_charizard_blastburn',
+    name: '블러스트번 & 거다이옥염 (Blast Burn & G-Max Wildfire)',
+    pokemonName: '리자몽 / 부스터 / 윈디 / 불꽃 포켓몬 (전용 프리미엄 스킬)',
+    icon: '🌋',
+    price: 95,
+    description: '용암처럼 솟구치는 거대한 불새 피닉스와 전방을 완전히 불태우는 심홍의 거다이옥염 불기둥!',
+    fxClass: 'skill-fx-blastburn',
+    previewColor: '#ef4444'
+  },
+  {
+    id: 'fx_gengar_gmaxterror',
+    name: '거다이환영 & 고스트다이브 (G-Max Terror Nether Void)',
+    pokemonName: '거다이맥스 팬텀 / 팬텀 / 블래키 (고스트/악 프리미엄 스킬)',
+    icon: '🔮',
+    price: 95,
+    description: '이계의 거대한 심연 입구에서 쏟아져 나오는 혼령들과 차원을 붕괴시키는 보랏빛 보이드 기둥!',
+    fxClass: 'skill-fx-gmaxterror',
+    previewColor: '#7c3aed'
+  },
+  {
+    id: 'fx_sylveon_fairyhyper',
+    name: '페어리스킨 하이퍼보이스 (Fairy Skin Hyper Voice & Rainbow Beam)',
+    pokemonName: '님피아 / 토게키스 / 가디안 / 에브이 (페어리 프리미엄 스킬)',
+    icon: '🌸',
+    price: 85,
+    description: '천상의 핑크빛 리본 파동과 하트 별빛 펄스가 화려하게 울려 퍼지는 궁극의 페어리 음파 광선!',
+    fxClass: 'skill-fx-fairyhyper',
+    previewColor: '#f472b6'
   }
 ];
 
@@ -861,6 +916,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       exp: number;
       levelUp: boolean;
       newLevel: number;
+      zeroPenalty?: number;
+      zeroGauges?: string[];
     } | null;
   } | null>(null);
 
@@ -885,6 +942,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       levelUp: boolean;
       newLevel: number;
       foundItems: { item: FarmItem; qty: number }[];
+      happinessChange?: number;
+      zeroGauges?: string[];
+      diceFailed?: boolean;
     } | null;
   } | null>(null);
 
@@ -892,8 +952,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const [hatchingModal, setHatchingModal] = useState<{
     active: boolean;
     stage: 'wobble' | 'crack' | 'hatched';
+    slotId: string;
     eggName: string;
     isGolden: boolean;
+    eggType?: 'normal' | 'golden' | 'gen1';
     babyPokemon: FarmPokemon | null;
     nicknameInput: string;
   } | null>(null);
@@ -943,7 +1005,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     try {
       showAlert('📦 서버 데이터베이스 백업 파일을 다운로드하는 중입니다...', 'info');
       const res = await fetch('/api/backup/download?adminUser=' + encodeURIComponent(farmState.ownerName || username), {
-        headers: { 'x-admin-user': farmState.ownerName || username }
+        headers: { 'x-admin-user': encodeURIComponent(farmState.ownerName || username) }
       });
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
@@ -976,6 +1038,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const [currentRoomId, setCurrentRoomId] = useState<'room_1' | 'room_2' | 'room_3'>('room_1');
   const [trainerBubble, setTrainerBubble] = useState<{ id: string; text: string } | null>(null);
   const [visitorWalkPos, setVisitorWalkPos] = useState<{ x: number; y: number } | null>(null);
+  // 🌍 미니홈피 실시간 방문자 및 트레이너 접속 상태 목록
+  const [roomPresences, setRoomPresences] = useState<Array<{
+    socketId: string;
+    username: string;
+    skin: string;
+    roomId: string;
+    x: number;
+    y: number;
+    flipped?: boolean;
+    isHost?: boolean;
+    bubble?: string | null;
+  }>>([]);
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
@@ -1188,6 +1262,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             isInitialized: true,
             heartsCount: updatedHearts,
             incubatingEgg: res.farm.incubatingEgg !== undefined ? res.farm.incubatingEgg : prev.incubatingEgg,
+            incubatorSlots: res.farm.incubatorSlots !== undefined ? res.farm.incubatorSlots : (prev.incubatorSlots || getFarmIncubatorSlots(prev)),
             lotteryState: res.farm.lotteryState || prev.lotteryState,
             lastActive: serverTime || Date.now(),
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
@@ -1299,6 +1374,62 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
     socket.emit('farm-get-daily-hearts', { username: farmState.ownerName });
 
+    // 🌍 실시간 미니홈피 방문자 & 트레이너 동기화 이벤트 리스너
+    const handlePresenceCurrentUsers = (data: { farmOwner: string; users: any[] }) => {
+      setRoomPresences(data.users || []);
+    };
+
+    const handlePresenceUserJoined = (data: { farmOwner: string; user: any }) => {
+      if (!data.user) return;
+      setRoomPresences(prev => {
+        const filtered = prev.filter(u => u.socketId !== data.user.socketId);
+        return [...filtered, data.user];
+      });
+      if (data.user.username !== (farmState.ownerName || username)) {
+        showAlert(`🚪 [${data.user.username}]님이 미니룸에 놀러왔습니다! ✨`, 'info');
+      }
+    };
+
+    const handlePresenceUserLeft = (data: { socketId: string; username?: string }) => {
+      setRoomPresences(prev => prev.filter(u => u.socketId !== data.socketId));
+      if (data.username && data.username !== (farmState.ownerName || username)) {
+        showAlert(`👋 [${data.username}]님이 미니룸을 떠났습니다.`, 'info');
+      }
+    };
+
+    const handlePresenceUserMoved = (data: { socketId: string; username: string; x: number; y: number; roomId?: string; flipped?: boolean }) => {
+      setRoomPresences(prev => prev.map(u => {
+        if (u.socketId === data.socketId) {
+          return {
+            ...u,
+            x: data.x,
+            y: data.y,
+            roomId: data.roomId || u.roomId,
+            flipped: data.flipped !== undefined ? data.flipped : u.flipped
+          };
+        }
+        return u;
+      }));
+    };
+
+    const handlePresenceUserChatted = (data: { socketId: string; bubble: string }) => {
+      setRoomPresences(prev => prev.map(u => u.socketId === data.socketId ? { ...u, bubble: data.bubble } : u));
+      setTimeout(() => {
+        setRoomPresences(prev => prev.map(u => u.socketId === data.socketId ? { ...u, bubble: null } : u));
+      }, 4500);
+    };
+
+    const handlePresenceUserSkinUpdated = (data: { socketId: string; skin: string }) => {
+      setRoomPresences(prev => prev.map(u => u.socketId === data.socketId ? { ...u, skin: data.skin } : u));
+    };
+
+    socket.on('farm-presence-current-users', handlePresenceCurrentUsers);
+    socket.on('farm-presence-user-joined', handlePresenceUserJoined);
+    socket.on('farm-presence-user-left', handlePresenceUserLeft);
+    socket.on('farm-presence-user-moved', handlePresenceUserMoved);
+    socket.on('farm-presence-user-chatted', handlePresenceUserChatted);
+    socket.on('farm-presence-user-skin-updated', handlePresenceUserSkinUpdated);
+
     socket.on('farm-list-update', handleListUpdate);
     socket.on('farm-visit-data', handleVisitData);
     socket.on('farm-visit-updated', handleVisitUpdated);
@@ -1313,6 +1444,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     socket.on('farm-change-password-result', handleChangePasswordResult);
 
     return () => {
+      socket.off('farm-presence-current-users', handlePresenceCurrentUsers);
+      socket.off('farm-presence-user-joined', handlePresenceUserJoined);
+      socket.off('farm-presence-user-left', handlePresenceUserLeft);
+      socket.off('farm-presence-user-moved', handlePresenceUserMoved);
+      socket.off('farm-presence-user-chatted', handlePresenceUserChatted);
+      socket.off('farm-presence-user-skin-updated', handlePresenceUserSkinUpdated);
+
       socket.off('farm-list-update', handleListUpdate);
       socket.off('farm-visit-data', handleVisitData);
       socket.off('farm-visit-updated', handleVisitUpdated);
@@ -1353,7 +1491,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const getActiveRoomData = useCallback((roomId: 'room_1' | 'room_2' | 'room_3' = currentRoomId): RoomData => {
     const targetFarm = visitingFarm ? visitingFarm.farm : farmState;
     const room = targetFarm.rooms?.[roomId];
-    if (room) return room;
+    const defaultSkin = getValidTrainerSkin(targetFarm.trainerPlacement?.skin || 'ash');
+
+    if (room) {
+      return {
+        ...room,
+        trainerPlacement: {
+          ...(room.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+          skin: getValidTrainerSkin(room.trainerPlacement?.skin || defaultSkin)
+        }
+      };
+    }
 
     if (roomId === 'room_1') {
       return {
@@ -1363,7 +1511,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         stickers: targetFarm.stickers || [],
         pokemonPlacements: targetFarm.pokemonPlacements || {},
         hiddenPokemon: targetFarm.hiddenPokemon || [],
-        trainerPlacement: targetFarm.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+        trainerPlacement: targetFarm.trainerPlacement
+          ? { ...targetFarm.trainerPlacement, skin: getValidTrainerSkin(targetFarm.trainerPlacement.skin || defaultSkin) }
+          : { x: 50, y: 65, scale: 1, flipped: false, skin: defaultSkin }
       };
     } else if (roomId === 'room_2') {
       return {
@@ -1376,7 +1526,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         ],
         pokemonPlacements: {},
         hiddenPokemon: [],
-        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: defaultSkin }
       };
     } else {
       return {
@@ -1389,7 +1539,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         ],
         pokemonPlacements: {},
         hiddenPokemon: [],
-        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: defaultSkin }
       };
     }
   }, [visitingFarm, farmState, currentRoomId]);
@@ -1399,6 +1549,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const currentStickers = activeRoomData.stickers || [];
   const currentHiddenPokemon = activeRoomData.hiddenPokemon || [];
   const currentTrainerPlacement: TrainerPlacement = activeRoomData.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+
+  // 🌍 미니홈피 실시간 방문자 & 동시 접속 트레이너 소켓 룸 구독 관리
+  const currentViewingOwner = visitingFarm ? visitingFarm.owner : farmState.ownerName;
+  const myCurrentSkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
+
+  useEffect(() => {
+    if (!socket || !socket.connected || !currentViewingOwner || !farmState.ownerName) return;
+
+    const isHost = !visitingFarm;
+    const initialPos = isHost
+      ? { x: currentTrainerPlacement?.x || 50, y: currentTrainerPlacement?.y || 65 }
+      : { x: visitorWalkPos?.x || 72, y: visitorWalkPos?.y || 65 };
+
+    socket.emit('farm-presence-join', {
+      farmOwner: currentViewingOwner,
+      username: farmState.ownerName || username,
+      skin: myCurrentSkin,
+      roomId: currentRoomId,
+      isHost,
+      x: initialPos.x,
+      y: initialPos.y
+    });
+
+    return () => {
+      socket.emit('farm-presence-leave', { farmOwner: currentViewingOwner });
+    };
+  }, [socket, currentViewingOwner, farmState.ownerName, currentRoomId, myCurrentSkin, visitingFarm]);
 
   // 🚪 방 전환 핸들러
   const handleChangeRoom = (roomId: 'room_1' | 'room_2' | 'room_3') => {
@@ -1982,26 +2159,79 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleFlipTrainer = () => {
     if (visitingFarm) return;
     updateCurrentRoom(r => {
-      const cur = r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+      const cur = r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: farmState.trainerPlacement?.skin || 'ash' };
+      const nextFlipped = !cur.flipped;
+      if (socket && socket.connected && farmState.ownerName) {
+        socket.emit('farm-presence-move', {
+          farmOwner: farmState.ownerName,
+          x: cur.x,
+          y: cur.y,
+          roomId: currentRoomId,
+          flipped: nextFlipped
+        });
+      }
       return {
-        trainerPlacement: { ...cur, flipped: !cur.flipped }
+        trainerPlacement: { ...cur, flipped: nextFlipped }
       };
     });
   };
 
   const handleResetTrainerPlacement = () => {
     if (visitingFarm) return;
+    const defaultSkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
     updateCurrentRoom(r => ({
-      trainerPlacement: { ...(r.trainerPlacement || {}), x: 50, y: 65, scale: 1, flipped: false }
+      trainerPlacement: { ...(r.trainerPlacement || {}), x: 50, y: 65, scale: 1, flipped: false, skin: defaultSkin }
     }));
+    if (socket && socket.connected && farmState.ownerName) {
+      socket.emit('farm-presence-move', {
+        farmOwner: farmState.ownerName,
+        x: 50,
+        y: 65,
+        roomId: currentRoomId,
+        flipped: false
+      });
+    }
     showAlert('📍 내 캐릭터 위치를 기본 자리로 초기화했습니다.', 'info');
   };
 
   const handleChangeTrainerSkin = (skinId: string) => {
     if (visitingFarm) return;
-    updateCurrentRoom(r => ({
-      trainerPlacement: { ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }), skin: skinId }
-    }));
+    const validSkin = getValidTrainerSkin(skinId);
+    setFarmState(prev => {
+      const curRooms: Record<string, RoomData> = { ...(prev.rooms || {}) };
+      for (const rid of ['room_1', 'room_2', 'room_3']) {
+        const r = curRooms[rid] || getActiveRoomData(rid as any);
+        curRooms[rid] = {
+          ...r,
+          trainerPlacement: {
+            ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+            skin: validSkin
+          }
+        };
+      }
+      const nextTrainerPlacement = {
+        ...(prev.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+        skin: validSkin
+      };
+      const nextState: FarmState = {
+        ...prev,
+        rooms: curRooms,
+        trainerPlacement: nextTrainerPlacement,
+        lastActive: Date.now()
+      };
+      saveFarmState(nextState);
+      if (socket && socket.connected && prev.ownerName) {
+        socket.emit('farm-sync', {
+          username: prev.ownerName,
+          farmData: nextState
+        });
+        socket.emit('farm-presence-skin-update', {
+          farmOwner: prev.ownerName,
+          skin: validSkin
+        });
+      }
+      return nextState;
+    });
     showAlert(`🎭 트레이너 외형이 변경되었습니다!`, 'success');
   };
 
@@ -2036,9 +2266,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       } else if (skin === 'brock') {
         quotes = [
           "포켓몬 음식 조리 완료! 모두 맛있게 먹으렴~ 🍲",
-          "바위처럼 굳건한 트레이너의 믿음이 가장 중요하지! 🪨",
-          "간호순 누나... 포켓몬 센터에 계신가요?! 제 마음을 받아주세요! 💕",
-          "포켓몬 브리더로서 최선을 다해 돌보고 있어! 🌿"
+          "롱스톤이랑 함께 단단한 바위처럼 훈련 중! 🪨",
+          "회색체육관 관장의 든든한 요리를 맛보아라! 🍳",
+          "사랑과 정성으로 키운 포켓몬이 가장 강하지! ✨"
         ];
       } else if (skin === 'ash') {
         quotes = [
@@ -2049,17 +2279,17 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         ];
       } else if (skin === 'rocket') {
         quotes = [
-          "우리가 누구냐고 물으신다면, 대답해 드리는 게 인지상정! 🚀",
-          "두부랜드의 희귀 포켓몬은 우리 로켓단이 접수한다! 😈",
-          "아름다운 악당 로사, 귀엽게 미니룸 점령 완료! ✨",
-          "냐옹이다옹! 오늘은 왠지 느낌이 좋다옹~ 🐾"
+          "우주를 누비는 우리 로켓단에게는 아름다운 미래가 기다리고 있다! 🚀",
+          "희귀한 포켓몬은 모두 우리 로켓단 손에 들어올 것이다! 😈",
+          "흥, 내 미모와 실력에 감탄했나 보군? 💅",
+          "로켓단 대작전 개시! 방심하지 마라! 💥"
         ];
       } else if (skin === 'oak') {
         quotes = [
-          "오호라! 포켓몬 도감이 아주 착실하게 채워지고 있구나! 📜",
-          "포켓몬을 진심으로 아끼고 사랑하는 마음이 제일이란다! 🎓",
-          "세상에는 아직 발견되지 않은 포켓몬이 무궁무진하단다! 🔬",
-          "연구소에 언제든 들러서 새로운 발견을 들려주렴! 🌟"
+          "자네, 도감 완성을 향해 열심히 달리고 있구먼! 🔬",
+          "포켓몬과 인간은 서로 도우며 살아가는 소중한 친구란다! 📖",
+          "연구소에 언제든 놀러오게나! 새로운 발견이 기다린다네~ ⚡",
+          "모든 포켓몬에는 저마다의 놀라운 신비가 깃들어 있지! 🌟"
         ];
       } else if (skin === 'james') {
         quotes = [
@@ -2114,6 +2344,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
       const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
       setTrainerBubble({ id: 'my_trainer', text: randomQuote });
+      if (socket && socket.connected && farmState.ownerName) {
+        socket.emit('farm-presence-chat', {
+          farmOwner: farmState.ownerName,
+          bubble: randomQuote
+        });
+      }
     } else if (type === 'host') {
       const quotes = [
         "어서오세요! 제 미니홈피에 놀러와주셔서 환영해요~ 💖",
@@ -2124,6 +2360,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       ];
       const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
       setTrainerBubble({ id: 'host_trainer', text: randomQuote });
+      if (socket && socket.connected && visitingFarm?.owner) {
+        socket.emit('farm-presence-chat', {
+          farmOwner: visitingFarm.owner,
+          bubble: randomQuote
+        });
+      }
     } else {
       const quotes = [
         "와! 방을 정말 멋지게 꾸며놓으셨네요~ 감탄하고 갑니다! 👏",
@@ -2329,6 +2571,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 🎯 드래그 종료 핸들러
   const handleCanvasPointerUp = (e: React.PointerEvent) => {
     if (dragState) {
+      if (dragState.type === 'trainer' && socket && socket.connected && farmState.ownerName) {
+        socket.emit('farm-presence-move', {
+          farmOwner: farmState.ownerName,
+          x: currentTrainerPlacement?.x || 50,
+          y: currentTrainerPlacement?.y || 65,
+          roomId: currentRoomId,
+          flipped: currentTrainerPlacement?.flipped
+        });
+      }
       try {
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       } catch (err) {}
@@ -3007,6 +3258,167 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           </div>
         );
 
+      case 'skill-fx-genesissupernova':
+        return (
+          <div className="skill-blast-stream stream-genesissupernova">
+            <svg className="stream-svg genesissupernova-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="genesisGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ec4899" />
+                  <stop offset="30%" stopColor="#d946ef" />
+                  <stop offset="60%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#facc15" />
+                </linearGradient>
+                <filter id="genesisGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <rect className="genesis-outer-beam" x="0" y="32" width="240" height="36" rx="18" fill="url(#genesisGrad)" filter="url(#genesisGlow)" opacity="0.85" />
+              <rect className="genesis-core-beam" x="0" y="42" width="240" height="16" rx="8" fill="#ffffff" />
+              <ellipse className="genesis-ring gr-1" cx="60" cy="50" rx="16" ry="34" fill="none" stroke="#fbcfe8" strokeWidth="3" />
+              <ellipse className="genesis-ring gr-2" cx="130" cy="50" rx="20" ry="42" fill="none" stroke="#bae6fd" strokeWidth="3.5" />
+              <ellipse className="genesis-ring gr-3" cx="200" cy="50" rx="24" ry="48" fill="none" stroke="#fef08a" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles genesis-particles">
+              <span className="gn-p gp-1">🌌</span>
+              <span className="gn-p gp-2">✨</span>
+              <span className="gn-p gp-3">⭐</span>
+              <span className="gn-p gp-4">💫</span>
+              <span className="gn-p gp-5">💎</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-gigavolt':
+        return (
+          <div className="skill-blast-stream stream-gigavolt">
+            <svg className="stream-svg gigavolt-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="rainbowThunderGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ef4444" />
+                  <stop offset="20%" stopColor="#f97316" />
+                  <stop offset="40%" stopColor="#facc15" />
+                  <stop offset="60%" stopColor="#22c55e" />
+                  <stop offset="80%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#a855f7" />
+                </linearGradient>
+                <filter id="gigavoltGlow">
+                  <feGaussianBlur stdDeviation="4.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <polyline className="gigavolt-outer" stroke="url(#rainbowThunderGrad)" strokeWidth="18" fill="none" filter="url(#gigavoltGlow)"
+                points="0,50 35,22 70,72 110,18 150,78 190,26 240,50" />
+              <polyline className="gigavolt-core" stroke="#ffffff" strokeWidth="8" fill="none"
+                points="0,50 35,22 70,72 110,18 150,78 190,26 240,50" />
+              <circle cx="110" cy="18" r="14" fill="#ffffff" filter="url(#gigavoltGlow)" />
+              <circle cx="150" cy="78" r="14" fill="#ffffff" filter="url(#gigavoltGlow)" />
+            </svg>
+            <div className="stream-particles gigavolt-sparks">
+              <span className="gv-spark gvs-1">⚡</span>
+              <span className="gv-spark gvs-2">🌈</span>
+              <span className="gv-spark gvs-3">💥</span>
+              <span className="gv-spark gvs-4">🌟</span>
+              <span className="gv-spark gvs-5">⚡</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-blastburn':
+        return (
+          <div className="skill-blast-stream stream-blastburn">
+            <svg className="stream-svg blastburn-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="blastBurnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#7f1d1d" />
+                  <stop offset="25%" stopColor="#dc2626" />
+                  <stop offset="60%" stopColor="#ea580c" />
+                  <stop offset="90%" stopColor="#facc15" />
+                  <stop offset="100%" stopColor="#ffffff" />
+                </linearGradient>
+              </defs>
+              <path className="blastburn-magma-outer" fill="url(#blastBurnGrad)" filter="url(#fireGlow)" opacity="0.9"
+                d="M 0 46 C 40 10, 80 5, 130 10 C 180 15, 215 5, 240 25 C 240 50, 240 75, 240 75 C 215 95, 175 88, 125 92 C 75 96, 35 85, 0 54 Z" />
+              <path className="blastburn-magma-core" fill="#fef08a"
+                d="M 0 48 C 35 25, 75 22, 115 24 C 160 26, 195 20, 220 35 C 215 62, 185 70, 135 68 C 85 66, 35 60, 0 52 Z" />
+              <polygon points="120,48 180,20 160,48 230,48 160,52 180,80" fill="#ffffff" />
+            </svg>
+            <div className="stream-particles blastburn-particles">
+              <span className="bb-p bbp-1">🌋</span>
+              <span className="bb-p bbp-2">🔥</span>
+              <span className="bb-p bbp-3">💥</span>
+              <span className="bb-p bbp-4">☄️</span>
+              <span className="bb-p bbp-5">🔥</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-gmaxterror':
+        return (
+          <div className="skill-blast-stream stream-gmaxterror">
+            <svg className="stream-svg gmaxterror-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="terrorVoidGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#1e1b4b" />
+                  <stop offset="40%" stopColor="#581c87" />
+                  <stop offset="70%" stopColor="#7c3aed" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+                <filter id="terrorGlow">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <ellipse cx="60" cy="50" rx="35" ry="46" fill="#0f172a" stroke="#7c3aed" strokeWidth="6" filter="url(#terrorGlow)" />
+              <ellipse cx="60" cy="50" rx="20" ry="30" fill="#020617" />
+              <path className="terror-tentacle" stroke="url(#terrorVoidGrad)" strokeWidth="12" fill="none" opacity="0.85"
+                d="M 60 50 C 110 15, 150 85, 240 45" />
+              <path className="terror-tentacle-2" stroke="#a855f7" strokeWidth="7" fill="none"
+                d="M 60 50 C 120 75, 160 25, 240 55" />
+            </svg>
+            <div className="stream-particles gmaxterror-ghosts">
+              <span className="gt-ghost gtg-1">👻</span>
+              <span className="gt-ghost gtg-2">💀</span>
+              <span className="gt-ghost gtg-3">🔮</span>
+              <span className="gt-ghost gtg-4">👁️</span>
+              <span className="gt-ghost gtg-5">✨</span>
+            </div>
+          </div>
+        );
+
+      case 'skill-fx-fairyhyper':
+        return (
+          <div className="skill-blast-stream stream-fairyhyper">
+            <svg className="stream-svg fairyhyper-svg" viewBox="0 0 240 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="fairyHyperGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#f472b6" />
+                  <stop offset="50%" stopColor="#ec4899" />
+                  <stop offset="80%" stopColor="#c084fc" />
+                  <stop offset="100%" stopColor="#67e8f9" />
+                </linearGradient>
+                <filter id="fairyHyperGlow">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path className="fairy-soundwave fsw-1" stroke="url(#fairyHyperGrad)" strokeWidth="6" fill="none"
+                d="M 0 50 C 50 15, 90 85, 140 50 C 180 20, 210 75, 240 50" />
+              <ellipse className="fairy-pulse-ring fpr-1" cx="60" cy="50" rx="14" ry="30" fill="none" stroke="#fbcfe8" strokeWidth="3" />
+              <ellipse className="fairy-pulse-ring fpr-2" cx="125" cy="50" rx="18" ry="38" fill="none" stroke="#f472b6" strokeWidth="3.5" />
+              <ellipse className="fairy-pulse-ring fpr-3" cx="195" cy="50" rx="24" ry="46" fill="none" stroke="#e879f9" strokeWidth="4" />
+            </svg>
+            <div className="stream-particles fairyhyper-hearts">
+              <span className="fh-heart fhh-1">💖</span>
+              <span className="fh-heart fhh-2">🌸</span>
+              <span className="fh-heart fhh-3">🎀</span>
+              <span className="fh-heart fhh-4">✨</span>
+              <span className="fh-heart fhh-5">💕</span>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="skill-blast-stream stream-generic">
@@ -3077,18 +3489,38 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 if (!visitingFarm) {
                   if (minihompyTab === 'home') {
                     // 홈 화면에서는 클릭한 바닥 위치로 내 캐릭터가 이동
+                    const isFlipped = xPercent < (currentTrainerPlacement?.x || 50);
                     updateCurrentRoom(r => ({
                       trainerPlacement: {
-                        ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }),
+                        ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: farmState.trainerPlacement?.skin || 'ash' }),
                         x: xPercent,
                         y: yPercent,
-                        flipped: xPercent < (r.trainerPlacement?.x || 50)
+                        flipped: isFlipped
                       }
                     }));
+                    if (socket && socket.connected && farmState.ownerName) {
+                      socket.emit('farm-presence-move', {
+                        farmOwner: farmState.ownerName,
+                        x: xPercent,
+                        y: yPercent,
+                        roomId: currentRoomId,
+                        flipped: isFlipped
+                      });
+                    }
                   }
                 } else {
                   // 이웃 집 방문 시 클릭한 바닥으로 방문자 캐릭터 이동
+                  const isFlipped = xPercent < (visitorWalkPos?.x || 72);
                   setVisitorWalkPos({ x: xPercent, y: yPercent });
+                  if (socket && socket.connected && visitingFarm?.owner) {
+                    socket.emit('farm-presence-move', {
+                      farmOwner: visitingFarm.owner,
+                      x: xPercent,
+                      y: yPercent,
+                      roomId: currentRoomId,
+                      flipped: isFlipped
+                    });
+                  }
                 }
               }
             }
@@ -3149,60 +3581,124 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             const place = currentTrainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
             const isSelected = selectedDecorItem?.type === 'trainer' && selectedDecorItem.id === id;
             const isDragging = dragState?.type === 'trainer' && dragState.id === id;
-            const skinId = place.skin || 'ash';
+            const skinId = getValidTrainerSkin(place.skin || farmState.trainerPlacement?.skin || 'ash');
             const skinSrc = `/images/trainer_${skinId}.png`;
 
             return (
-              <div
-                key="trainer_me"
-                className={`miniroom-trainer ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-                style={{
-                  left: `${place.x}%`,
-                  top: `${place.y}%`,
-                  transform: `scale(${place.scale || 1}) ${place.flipped ? 'scaleX(-1)' : ''}`,
-                  transformOrigin: 'bottom center',
-                  zIndex: isDragging ? 55 : isSelected ? 42 : 25
-                }}
-                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'trainer', id, place.x, place.y)}
-                onClick={(e) => {
-                  if (dragState) return;
-                  handleTrainerClick(e, 'owner');
-                  if (!isDragDisabled) {
-                    setSelectedDecorItem({ type: 'trainer', id });
-                  }
-                }}
-                title={`🧑🌾 나 [${farmState.ownerName || '트레이너'}] (클릭: 대화 / 꾸미기 탭: 드래그 이동)`}
-              >
-                {/* 💬 말풍선 */}
-                {trainerBubble?.id === id && (
-                  <div className={`trainer-speech-bubble ${place.flipped ? 'unflip-tag' : ''}`}>
-                    {trainerBubble.text}
+              <>
+                <div
+                  key="trainer_me"
+                  className={`miniroom-trainer ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                  style={{
+                    left: `${place.x}%`,
+                    top: `${place.y}%`,
+                    transform: `scale(${place.scale || 1}) ${place.flipped ? 'scaleX(-1)' : ''}`,
+                    transformOrigin: 'bottom center',
+                    zIndex: isDragging ? 55 : isSelected ? 42 : 25
+                  }}
+                  onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'trainer', id, place.x, place.y)}
+                  onClick={(e) => {
+                    if (dragState) return;
+                    handleTrainerClick(e, 'owner');
+                    if (!isDragDisabled) {
+                      setSelectedDecorItem({ type: 'trainer', id });
+                    }
+                  }}
+                  title={`🧑🌾 나 [${farmState.ownerName || '트레이너'}] (클릭: 대화 / 꾸미기 탭: 드래그 이동)`}
+                >
+                  {/* 💬 말풍선 */}
+                  {trainerBubble?.id === id && (
+                    <div className={`trainer-speech-bubble ${place.flipped ? 'unflip-tag' : ''}`}>
+                      {trainerBubble.text}
+                    </div>
+                  )}
+                  <div className={`trainer-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
+                    <span>{skinId === 'dubu' ? '🐶 마스코트 두부' : `${TRAINER_SKINS.find(s => s.id === skinId)?.name || '🧑🌾 나'} [${farmState.ownerName || '트레이너'}]`}</span>
                   </div>
-                )}
-                <div className={`trainer-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
-                  <span>{skinId === 'dubu' ? '🐶 마스코트 두부' : `${TRAINER_SKINS.find(s => s.id === skinId)?.name || '🧑🌾 나'} [${farmState.ownerName || '트레이너'}]`}</span>
+                  <img
+                    src={skinSrc}
+                    onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
+                    alt="내 트레이너"
+                    className="trainer-sprite"
+                    draggable={false}
+                  />
                 </div>
-                <img
-                  src={skinSrc}
-                  onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
-                  alt="내 트레이너"
-                  className="trainer-sprite"
-                  draggable={false}
-                />
-              </div>
+
+                {/* 👥 내 미니룸에 실시간으로 놀러온 다른 농장주(방문자) 트레이너 아바타들 */}
+                {roomPresences
+                  .filter(u => u.username !== farmState.ownerName && u.roomId === currentRoomId && !u.isHost)
+                  .map(visitor => {
+                    const vSkin = getValidTrainerSkin(visitor.skin);
+                    const vSkinSrc = `/images/trainer_${vSkin}.png`;
+                    const isDubu = vSkin === 'dubu';
+                    const vFlipped = !!visitor.flipped;
+                    const skinObj = TRAINER_SKINS.find(s => s.id === vSkin);
+
+                    return (
+                      <div
+                        key={`realtime_visitor_${visitor.socketId}`}
+                        className="miniroom-trainer locked-pos visitor-avatar"
+                        style={{
+                          left: `${visitor.x}%`,
+                          top: `${visitor.y}%`,
+                          transform: `scale(1) ${vFlipped ? 'scaleX(-1)' : ''}`,
+                          transformOrigin: 'bottom center',
+                          zIndex: 26
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showAlert(`🎒 [${visitor.username}]님이 지금 내 미니룸에 놀러와 있습니다! ✨`, 'info');
+                        }}
+                        title={`🎒 실시간 방문자 [${visitor.username}] (클릭하여 인사)`}
+                      >
+                        {/* 실시간 말풍선 */}
+                        {visitor.bubble && (
+                          <div className={`trainer-speech-bubble visitor-bubble ${vFlipped ? 'unflip-tag' : ''}`}>
+                            {visitor.bubble}
+                          </div>
+                        )}
+                        <div className={`trainer-name-tag visitor-tag ${vFlipped ? 'unflip-tag' : ''}`}>
+                          <span>🎒 {isDubu ? '🐶 두부' : (skinObj?.name?.split(' ')[0] || '🧑🌾')} [{visitor.username}]</span>
+                        </div>
+                        <img
+                          src={vSkinSrc}
+                          onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
+                          alt={`방문자 ${visitor.username}`}
+                          className="trainer-sprite"
+                          draggable={false}
+                        />
+                      </div>
+                    );
+                  })}
+              </>
             );
           })() : (() => {
-            const hostPlace = activeRoomData.trainerPlacement || { x: 38, y: 65, scale: 1, flipped: false, skin: 'ash' };
+            const onlineHost = roomPresences.find(u => u.isHost && u.roomId === currentRoomId);
+            const hostSkin = getValidTrainerSkin(
+              onlineHost?.skin ||
+              activeRoomData.trainerPlacement?.skin ||
+              visitingFarm.farm.trainerPlacement?.skin ||
+              'ash'
+            );
+            const hostPlace = {
+              x: onlineHost ? onlineHost.x : (activeRoomData.trainerPlacement?.x ?? 38),
+              y: onlineHost ? onlineHost.y : (activeRoomData.trainerPlacement?.y ?? 65),
+              scale: activeRoomData.trainerPlacement?.scale || 1,
+              flipped: onlineHost ? !!onlineHost.flipped : !!activeRoomData.trainerPlacement?.flipped,
+              skin: hostSkin
+            };
             const visitorX = visitorWalkPos ? visitorWalkPos.x : (hostPlace.x > 50 ? hostPlace.x - 22 : hostPlace.x + 22);
             const visitorY = visitorWalkPos ? visitorWalkPos.y : hostPlace.y;
-            const mySkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'dubu');
+            const mySkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
+            const hostSkinObj = TRAINER_SKINS.find(s => s.id === hostSkin);
+            const mySkinObj = TRAINER_SKINS.find(s => s.id === mySkin);
 
             return (
               <>
                 {/* 👑 방 주인 트레이너 */}
                 <div
                   key="trainer_host"
-                  className="miniroom-trainer locked-pos"
+                  className="miniroom-trainer locked-pos visitor-avatar"
                   style={{
                     left: `${hostPlace.x}%`,
                     top: `${hostPlace.y}%`,
@@ -3219,10 +3715,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     </div>
                   )}
                   <div className={`trainer-name-tag host-tag ${hostPlace.flipped ? 'unflip-tag' : ''}`}>
-                    <span>👑 방주인 [{visitingFarm.owner}]</span>
+                    <span>👑 {hostSkin === 'dubu' ? '🐶 두부' : (hostSkinObj?.name?.split(' ')[0] || '🧑🌾')} [{visitingFarm.owner}]</span>
                   </div>
                   <img
-                    src={`/images/trainer_${hostPlace.skin || 'ash'}.png`}
+                    src={`/images/trainer_${hostSkin}.png`}
                     onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
                     alt="방주인 트레이너"
                     className="trainer-sprite"
@@ -3233,7 +3729,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 {/* 🎒 내 방문자 트레이너 */}
                 <div
                   key="trainer_visitor"
-                  className="miniroom-trainer locked-pos"
+                  className="miniroom-trainer locked-pos visitor-avatar"
                   style={{
                     left: `${visitorX}%`,
                     top: `${visitorY}%`,
@@ -3250,16 +3746,62 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     </div>
                   )}
                   <div className="trainer-name-tag visitor-tag">
-                    <span>🎒 나 [{farmState.ownerName || '나'}]</span>
+                    <span>🎒 {mySkin === 'dubu' ? '🐶 두부' : (mySkinObj?.name?.split(' ')[0] || '🧑🌾')} [{farmState.ownerName || '나'}]</span>
                   </div>
                   <img
                     src={`/images/trainer_${mySkin}.png`}
-                    onError={(e) => { e.currentTarget.src = '/images/trainer_dubu.png'; }}
+                    onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
                     alt="방문자 트레이너"
                     className="trainer-sprite"
                     draggable={false}
                   />
                 </div>
+
+                {/* 👥 같은 방에 함께 놀러온 다른 이웃 방문자들 */}
+                {roomPresences
+                  .filter(u => u.username !== (farmState.ownerName || username) && u.username !== visitingFarm.owner && !u.isHost && u.roomId === currentRoomId)
+                  .map(otherVisitor => {
+                    const ovSkin = getValidTrainerSkin(otherVisitor.skin);
+                    const ovSkinSrc = `/images/trainer_${ovSkin}.png`;
+                    const isDubu = ovSkin === 'dubu';
+                    const ovFlipped = !!otherVisitor.flipped;
+                    const skinObj = TRAINER_SKINS.find(s => s.id === ovSkin);
+
+                    return (
+                      <div
+                        key={`co_visitor_${otherVisitor.socketId}`}
+                        className="miniroom-trainer locked-pos visitor-avatar"
+                        style={{
+                          left: `${otherVisitor.x}%`,
+                          top: `${otherVisitor.y}%`,
+                          transform: `scale(1) ${ovFlipped ? 'scaleX(-1)' : ''}`,
+                          transformOrigin: 'bottom center',
+                          zIndex: 26
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showAlert(`🎒 [${otherVisitor.username}]님도 함께 놀러와 있습니다! ✨`, 'info');
+                        }}
+                        title={`🎒 함께 방문 중인 [${otherVisitor.username}]`}
+                      >
+                        {otherVisitor.bubble && (
+                          <div className={`trainer-speech-bubble visitor-bubble ${ovFlipped ? 'unflip-tag' : ''}`}>
+                            {otherVisitor.bubble}
+                          </div>
+                        )}
+                        <div className={`trainer-name-tag visitor-tag ${ovFlipped ? 'unflip-tag' : ''}`}>
+                          <span>🎒 {isDubu ? '🐶 두부' : (skinObj?.name?.split(' ')[0] || '🧑🌾')} [{otherVisitor.username}]</span>
+                        </div>
+                        <img
+                          src={ovSkinSrc}
+                          onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
+                          alt={`방문자 ${otherVisitor.username}`}
+                          className="trainer-sprite"
+                          draggable={false}
+                        />
+                      </div>
+                    );
+                  })}
               </>
             );
           })()}
@@ -3778,6 +4320,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           coins: farmState.coins,
           inventory: farmState.inventory,
           incubatingEgg: farmState.incubatingEgg,
+          incubatorSlots: farmState.incubatorSlots || getFarmIncubatorSlots(farmState),
           lotteryState: farmState.lotteryState,
           guestbook: farmState.guestbook,
           bgTheme: farmState.bgTheme,
@@ -3841,24 +4384,76 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   useEffect(() => {
     checkDailyEnergyRecovery();
-    const timer = setInterval(checkDailyEnergyRecovery, 30000);
-    return () => clearInterval(timer);
-  }, [checkDailyEnergyRecovery]);
+    const timer = setInterval(() => {
+      checkDailyEnergyRecovery();
 
-  // 🥚 알 부화기 온기 증가 헬퍼
-  const addEggWarmth = (amount: number, reason: string) => {
+      // 💔 게이지 0(탈진/공복/오염) 지속 시 친밀도 지속 감소 체크 (30초 주기)
+      setFarmState(prev => {
+        if (!prev.activePokemon || visitingFarm) return prev;
+        const mon = prev.activePokemon;
+        if (mon.energy > 0 && mon.hunger > 0 && mon.cleanliness > 0) return prev;
+
+        let penalty = 0;
+        const zeroReasons: string[] = [];
+        if (mon.energy === 0) { penalty += 2; zeroReasons.push('에너지(탈진)'); }
+        if (mon.hunger === 0) { penalty += 2; zeroReasons.push('배고픔(공복)'); }
+        if (mon.cleanliness === 0) { penalty += 2; zeroReasons.push('청결도(오염)'); }
+
+        if (mon.happiness <= 0) return prev;
+        const newHappiness = Math.max(0, mon.happiness - penalty);
+
+        showAlert(`💔 [${mon.nickname || mon.name}] 상태 이상 경고: ${zeroReasons.join(', ')} 0 상태 지속으로 친밀도가 -${penalty} 감소했습니다!`, 'warn');
+
+        return {
+          ...prev,
+          activePokemon: {
+            ...mon,
+            happiness: newHappiness
+          }
+        };
+      });
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [checkDailyEnergyRecovery, visitingFarm]);
+
+  // 🥚 알 부화기 온기 증가 헬퍼 (모든 가동 중인 챔버에 동시 적용, 슈퍼 인큐베이터는 2배 초고속 가속!)
+  const addEggWarmth = (baseAmount: number, reason: string) => {
     setFarmState(prev => {
-      if (!prev.incubatingEgg || prev.incubatingEgg.progress >= 100) return prev;
-      const nextProgress = Math.min(100, prev.incubatingEgg.progress + amount);
-      if (nextProgress >= 100) {
-        showAlert(`🐣 인큐베이터의 [${prev.incubatingEgg.name}]이(가) 온기를 가득 머금고 부화할 준비가 되었습니다! (${reason})`, 'success');
+      const currentSlots = getFarmIncubatorSlots(prev);
+      let anyChanged = false;
+      const readyEggs: string[] = [];
+
+      const updatedSlots = currentSlots.map(slot => {
+        if (!slot.egg || slot.egg.progress >= 100) return slot;
+
+        // 슈퍼 부화기는 2배(200%) 고속 온기 가속 적용
+        const warmthGain = baseAmount * (slot.speedMultiplier || 1.0);
+        const nextProgress = Math.min(100, slot.egg.progress + warmthGain);
+        anyChanged = true;
+
+        if (nextProgress >= 100 && slot.egg.progress < 100) {
+          readyEggs.push(`[${slot.name}]의 ${slot.egg.name}`);
+        }
+
+        return {
+          ...slot,
+          egg: {
+            ...slot.egg,
+            progress: nextProgress
+          }
+        };
+      });
+
+      if (!anyChanged) return prev;
+
+      if (readyEggs.length > 0) {
+        showAlert(`🐣 ${readyEggs.join(', ')}이(가) 온기를 가득 머금고 부화할 준비가 되었습니다! (${reason})`, 'success');
       }
+
       return {
         ...prev,
-        incubatingEgg: {
-          ...prev.incubatingEgg,
-          progress: nextProgress
-        }
+        incubatorSlots: updatedSlots,
+        incubatingEgg: updatedSlots[0]?.egg || null
       };
     });
   };
@@ -3990,6 +4585,382 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pmon]);
 
+  // 💎 진화의 돌 ➔ 진화 대상 포켓몬 매핑 정보
+  const getStoneEvolutionTarget = (stoneId: string, activeMon: FarmPokemon): EvolutionStage | null => {
+    if (!activeMon) return null;
+    const sid = activeMon.speciesId;
+
+    // 🦊 1. 이브이 (speciesId 133) 진화 매핑 (샤미드, 쥬피썬더, 부스터, 에브이, 블래키, 리피아, 글레이시아, 님피아)
+    if (sid === 133) {
+      switch (stoneId) {
+        case 'water_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 134) || null; // 샤미드
+        case 'thunder_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 135) || null; // 쥬피썬더
+        case 'fire_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 136) || null; // 부스터
+        case 'sun_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 196) || null; // 에브이
+        case 'moon_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 197) || null; // 블래키
+        case 'leaf_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 470) || null; // 리피아
+        case 'ice_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 471) || null; // 글레이시아
+        case 'fairy_stone':
+          return EEVEE_BRANCHES.find(b => b.id === 700) || null; // 님피아
+        default:
+          return null;
+      }
+    }
+
+    // ⚡ 2. 천둥의 돌 (thunder_stone)
+    if (stoneId === 'thunder_stone') {
+      if (sid === 25) { // 피카츄 ➔ 라이츄
+        return {
+          id: 26,
+          name: '라이츄',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['electric'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/26.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // 🔥 3. 불꽃의 돌 (fire_stone)
+    if (stoneId === 'fire_stone') {
+      if (sid === 37) { // 식스테일 ➔ 나인테일
+        return {
+          id: 38,
+          name: '나인테일',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['fire'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/38.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/38.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 58) { // 가디 ➔ 윈디
+        return {
+          id: 59,
+          name: '윈디',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['fire'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/59.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // 💧 4. 물의 돌 (water_stone)
+    if (stoneId === 'water_stone') {
+      if (sid === 61) { // 수륙챙이 ➔ 강챙이
+        return {
+          id: 62,
+          name: '강챙이',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['water', 'fighting'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/62.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/62.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 90) { // 셀러 ➔ 파르셀
+        return {
+          id: 91,
+          name: '파르셀',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['water', 'ice'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/91.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/91.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 120) { // 별가사리 ➔ 아쿠스타
+        return {
+          id: 121,
+          name: '아쿠스타',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['water', 'psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/121.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // 🍃 5. 리프의 돌 (leaf_stone)
+    if (stoneId === 'leaf_stone') {
+      if (sid === 44) { // 냄새꼬 ➔ 라플레시아
+        return {
+          id: 45,
+          name: '라플레시아',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['grass', 'poison'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/45.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/45.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 70) { // 우츠동 ➔ 우츠보트
+        return {
+          id: 71,
+          name: '우츠보트',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['grass', 'poison'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/71.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/71.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 102) { // 아라리 ➔ 나시
+        return {
+          id: 103,
+          name: '나시',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['grass', 'psychic'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/103.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/103.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // 🌙 6. 달의 돌 (moon_stone)
+    if (stoneId === 'moon_stone') {
+      if (sid === 30) { // 니드리나 ➔ 니드퀸
+        return {
+          id: 31,
+          name: '니드퀸',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['poison', 'ground'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/31.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/31.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 33) { // 니드리노 ➔ 니드킹
+        return {
+          id: 34,
+          name: '니드킹',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['poison', 'ground'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/34.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/34.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 35) { // 삐삐 ➔ 픽시
+        return {
+          id: 36,
+          name: '픽시',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['fairy'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/36.gif',
+          genCategory: 'gen1'
+        };
+      }
+      if (sid === 39) { // 푸린 ➔ 푸크린
+        return {
+          id: 40,
+          name: '푸크린',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['normal', 'fairy'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/40.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // ☀️ 7. 햇살의 돌 (sun_stone)
+    if (stoneId === 'sun_stone') {
+      if (sid === 44) { // 냄새꼬 ➔ 아르코
+        return {
+          id: 182,
+          name: '아르코',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['grass'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/182.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/182.gif',
+          genCategory: 'gen1'
+        };
+      }
+    }
+
+    // 🌸 8. 요정의 돌 (fairy_stone)
+    if (stoneId === 'fairy_stone') {
+      if (sid === 670) { // 플라베베 ➔ 플라제스
+        return {
+          id: 671,
+          name: '플라제스',
+          minLevel: 1,
+          minHappiness: 0,
+          types: ['fairy'],
+          sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/671.png',
+          showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/671.gif',
+          genCategory: 'gen1-2'
+        };
+      }
+    }
+
+    return null;
+  };
+
+  // 🌟 공통 포켓몬 진화 실행기 (진화의 방 및 진화의 돌 공통 지원)
+  const executePokemonEvolution = (
+    nextStage: EvolutionStage,
+    options?: {
+      consumeStoneId?: string;
+      stoneName?: string;
+      customSuccessMsg?: string;
+      targetStageIndex?: number;
+    }
+  ) => {
+    if (!pmon) return;
+
+    // 🛠️ 거다이맥스 팬텀 등 비정상 ID/스프라이트 정밀 교정
+    let targetStage = { ...nextStage };
+    if (
+      (targetStage.name && targetStage.name.includes('거다이맥스') && targetStage.name.includes('팬텀')) ||
+      (targetStage.id === 10199 && targetStage.name && targetStage.name.includes('팬텀')) ||
+      (targetStage.id === 10202)
+    ) {
+      targetStage = {
+        ...targetStage,
+        id: 10202,
+        name: '거다이맥스 팬텀',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png',
+        showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif'
+      };
+    }
+
+    const isEeveeBranch = pmon.speciesId === 133 ||
+      pmon.evolutionChain[pmon.stageIndex]?.isEeveeBranch ||
+      targetStage.name.includes('이브이즈') ||
+      EEVEE_BRANCHES.some(b => b.id === targetStage.id);
+
+    const nextIndex = options?.targetStageIndex !== undefined
+      ? options.targetStageIndex
+      : (isEeveeBranch ? 1 : Math.min(pmon.stageIndex + 1, pmon.evolutionChain.length - 1));
+
+    const isTargetShiny = pmon.isShiny;
+    const evolvedFront = isTargetShiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${targetStage.id}.png`
+      : targetStage.sprite;
+    const evolvedShowdown = isTargetShiny
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${targetStage.id}.gif`
+      : targetStage.showdownSprite;
+
+    // 진화 애니메이션 모달 시작
+    setEvolvingModal({
+      active: true,
+      stage: 'flashing',
+      oldName: pmon.nickname || pmon.name,
+      newName: targetStage.name,
+      sprite: evolvedShowdown
+    });
+
+    setTimeout(() => {
+      setEvolvingModal(prev => prev ? { ...prev, stage: 'done' } : null);
+      playPokemonCry(targetStage.id);
+
+      const isNewDex = !farmState.unlockedSpecies?.includes(targetStage.id);
+
+      setFarmState(prev => {
+        if (!prev.activePokemon) return prev;
+        const target = prev.activePokemon;
+
+        // 진화의 돌 소모 처리
+        const nextInventory = { ...prev.inventory };
+        if (options?.consumeStoneId) {
+          const currentStoneQty = nextInventory[options.consumeStoneId] || 0;
+          if (currentStoneQty > 0) {
+            nextInventory[options.consumeStoneId] = currentStoneQty - 1;
+          }
+        }
+
+        const updatedChain = isEeveeBranch
+          ? [target.evolutionChain[0] || { id: 133, name: '이브이' }, targetStage]
+          : target.evolutionChain.map(st => {
+              if (
+                st &&
+                ((st.name && st.name.includes('거다이맥스') && st.name.includes('팬텀')) ||
+                 (st.id === 10199 && st.name && st.name.includes('팬텀')) ||
+                 (st.id === 10202))
+              ) {
+                return {
+                  ...st,
+                  id: 10202,
+                  name: '거다이맥스 팬텀',
+                  sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10202.png',
+                  showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/10202.gif'
+                };
+              }
+              return st;
+            });
+
+        const newMaxStat = getMaxStatForStage(nextIndex);
+
+        const updatedMon = sanitizeFarmPokemon({
+          ...target,
+          speciesId: targetStage.id,
+          name: targetStage.name,
+          nickname: target.nickname === target.name ? targetStage.name : target.nickname,
+          stageIndex: nextIndex,
+          types: targetStage.types,
+          energy: newMaxStat,
+          cleanliness: newMaxStat,
+          hunger: newMaxStat,
+          happiness: 100,
+          evolutionChain: updatedChain,
+          sprites: {
+            front: evolvedFront,
+            showdownFront: evolvedShowdown
+          }
+        });
+
+        const nextState: FarmState = {
+          ...prev,
+          inventory: nextInventory,
+          activePokemon: updatedMon
+        };
+        nextState.unlockedSpecies = syncUnlockedSpecies(nextState);
+        return nextState;
+      });
+
+      if (options?.customSuccessMsg) {
+        showAlert(options.customSuccessMsg, 'success');
+      } else {
+        showAlert(`🎉 [${pmon.nickname || pmon.name}]이(가) [${targetStage.name}](으)로 멋지게 진화했습니다!`, 'success');
+      }
+
+      if (isNewDex) {
+        setTimeout(() => {
+          showAlert(`📖 [${targetStage.name}]이(가) 포켓몬 공식 도감에 새롭게 등록되었습니다!`, 'success');
+        }, 1200);
+      }
+    }, 2500);
+  };
+
   // 2. 아이템 사용 (밥주기 / 목욕 / 장난감 / 치료)
   const handleUseItem = (item: FarmItem) => {
     if (!pmon) return;
@@ -3999,7 +4970,93 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return;
     }
 
-    // 🍬 1. 이상한사탕 특수 효과 (즉시 1레벨업!)
+    // 🍬 1-1. 이상한사탕(소) - EXP 30% 증가
+    if (item.id === 'rare_candy_s') {
+      let didLevelUp = false;
+      let newLvl = pmon.level;
+      let expGain = 0;
+      setFarmState(prev => {
+        if (!prev.activePokemon) return prev;
+        const target = prev.activePokemon;
+        expGain = Math.max(10, Math.floor(target.maxExp * 0.3));
+        let newExp = target.exp + expGain;
+        let curLevel = target.level;
+        let maxExp = target.maxExp;
+        while (newExp >= maxExp) {
+          newExp -= maxExp;
+          curLevel += 1;
+          maxExp = getMaxExpForLevel(curLevel);
+          didLevelUp = true;
+        }
+        newLvl = curLevel;
+        return {
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            [item.id]: currentQty - 1
+          },
+          activePokemon: {
+            ...target,
+            level: curLevel,
+            exp: newExp,
+            maxExp,
+            happiness: Math.min(100, target.happiness + 20)
+          }
+        };
+      });
+      playPokemonCry(pmon.speciesId);
+      if (didLevelUp) {
+        showAlert(`🎉 [이상한사탕(소)]를 먹고 EXP +${expGain}을 획득하여 Lv.${newLvl}로 레벨업했습니다! (친밀도 +20)`, 'success');
+      } else {
+        showAlert(`🎉 [이상한사탕(소)]를 먹고 EXP +${expGain}을 획득했습니다! (친밀도 +20)`, 'success');
+      }
+      return;
+    }
+
+    // 🍬 1-2. 이상한사탕(중) - EXP 50% 증가
+    if (item.id === 'rare_candy_m') {
+      let didLevelUp = false;
+      let newLvl = pmon.level;
+      let expGain = 0;
+      setFarmState(prev => {
+        if (!prev.activePokemon) return prev;
+        const target = prev.activePokemon;
+        expGain = Math.max(15, Math.floor(target.maxExp * 0.5));
+        let newExp = target.exp + expGain;
+        let curLevel = target.level;
+        let maxExp = target.maxExp;
+        while (newExp >= maxExp) {
+          newExp -= maxExp;
+          curLevel += 1;
+          maxExp = getMaxExpForLevel(curLevel);
+          didLevelUp = true;
+        }
+        newLvl = curLevel;
+        return {
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            [item.id]: currentQty - 1
+          },
+          activePokemon: {
+            ...target,
+            level: curLevel,
+            exp: newExp,
+            maxExp,
+            happiness: Math.min(100, target.happiness + 35)
+          }
+        };
+      });
+      playPokemonCry(pmon.speciesId);
+      if (didLevelUp) {
+        showAlert(`🎉 [이상한사탕(중)]을 먹고 EXP +${expGain}을 획득하여 Lv.${newLvl}로 레벨업했습니다! (친밀도 +35)`, 'success');
+      } else {
+        showAlert(`🎉 [이상한사탕(중)]을 먹고 EXP +${expGain}을 획득했습니다! (친밀도 +35)`, 'success');
+      }
+      return;
+    }
+
+    // 🍬 1-3. 이상한사탕(특대) 특수 효과 (즉시 1레벨업!)
     if (item.id === 'rare_candy') {
       setFarmState(prev => {
         if (!prev.activePokemon) return prev;
@@ -4022,7 +5079,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         };
       });
       playPokemonCry(pmon.speciesId);
-      showAlert(`🎉 [이상한사탕]의 신비한 힘으로 [${pmon.nickname}]이(가) 즉시 Lv.${pmon.level + 1}이 되었습니다!`, 'success');
+      showAlert(`🎉 [이상한사탕(특대)]의 신비한 힘으로 [${pmon.nickname}]이(가) 즉시 Lv.${pmon.level + 1}이 되었습니다!`, 'success');
       return;
     }
 
@@ -4060,9 +5117,34 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return;
     }
 
-    // 🥚 4. 의문의 알 / 황금알 인큐베이터 입고
-    if (item.id === 'mystery_egg' || item.id === 'golden_egg') {
+    // 🥚 4. 의문의 알 / 황금알 / 1기 전용알 인큐베이터 입고
+    if (item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'gen1_egg') {
       handlePlaceEggInIncubator(item);
+      return;
+    }
+
+    // 💎 5. 진화의 돌 (8대 이브이즈 및 돌 진화 포켓몬 즉시 확정 진화)
+    const isEvolutionStone = [
+      'fire_stone', 'water_stone', 'thunder_stone', 'leaf_stone',
+      'moon_stone', 'sun_stone', 'ice_stone', 'fairy_stone'
+    ].includes(item.id);
+
+    if (isEvolutionStone) {
+      const targetStage = getStoneEvolutionTarget(item.id, pmon);
+      if (!targetStage) {
+        showAlert(`⚠️ [${item.name}]은(는) 현재 파트너 포켓몬 [${pmon.nickname || pmon.name}]에게 반응하지 않습니다!\n(진화에 해당 돌이 필요한 포켓몬에게 사용해 주세요)`, 'warn');
+        return;
+      }
+
+      if (!window.confirm(`✨ [${item.name}]의 신비한 에너지를 사용하여 [${pmon.nickname || pmon.name}]을(를) [${targetStage.name}](으)로 진화시키시겠습니까?`)) {
+        return;
+      }
+
+      executePokemonEvolution(targetStage, {
+        consumeStoneId: item.id,
+        stoneName: item.name,
+        customSuccessMsg: `🎉 [${item.name}]의 신비한 힘으로 [${pmon.nickname || pmon.name}]이(가) [${targetStage.name}](으)로 아름답게 진화했습니다!`
+      });
       return;
     }
 
@@ -4205,17 +5287,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               didLevelUp = true;
             }
 
+            let zeroPenalty = 0;
+            const zeroGauges: string[] = [];
+
             setFarmState(fPrev => {
               if (!fPrev.activePokemon) return fPrev;
               const target = fPrev.activePokemon;
+              const nextEnergy = Math.max(0, target.energy - prev.job.energyCost);
+              const nextHunger = Math.max(0, target.hunger - prev.job.hungerCost);
+              const nextClean = Math.max(0, target.cleanliness - prev.job.cleanlinessCost);
+
+              if (nextEnergy === 0) { zeroPenalty += 8; zeroGauges.push('에너지(탈진)'); }
+              if (nextHunger === 0) { zeroPenalty += 8; zeroGauges.push('배고픔(공복)'); }
+              if (nextClean === 0) { zeroPenalty += 8; zeroGauges.push('청결도(오염)'); }
+
+              const nextHappiness = zeroPenalty > 0
+                ? Math.max(0, target.happiness - zeroPenalty)
+                : target.happiness;
+
               return {
                 ...fPrev,
                 coins: fPrev.coins + prev.job.rewardCoins,
                 activePokemon: {
                   ...target,
-                  energy: Math.max(0, target.energy - prev.job.energyCost),
-                  hunger: Math.max(0, target.hunger - prev.job.hungerCost),
-                  cleanliness: Math.max(0, target.cleanliness - prev.job.cleanlinessCost),
+                  energy: nextEnergy,
+                  hunger: nextHunger,
+                  cleanliness: nextClean,
+                  happiness: nextHappiness,
                   level: newLevel,
                   exp: newExp,
                   maxExp,
@@ -4226,6 +5324,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
             addEggWarmth(5, '아르바이트 완수');
 
+            if (zeroPenalty > 0) {
+              showAlert(`⚠️ 알바 완료 후 게이지 바닥(${zeroGauges.join(', ')})으로 포켓몬이 힘들어합니다! (친밀도 -${zeroPenalty})`, 'warn');
+            }
+
             return {
               ...prev,
               progress: 100,
@@ -4235,7 +5337,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 coins: prev.job.rewardCoins,
                 exp: prev.job.expReward,
                 levelUp: didLevelUp,
-                newLevel
+                newLevel,
+                zeroPenalty,
+                zeroGauges
               }
             };
           }
@@ -4383,6 +5487,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       const energyDmg = (!isSuccess && 'energyDamage' in choice.failResult ? choice.failResult.energyDamage : 0) || 0;
       const cleanDmg = (!isSuccess && 'cleanlinessDamage' in choice.failResult ? choice.failResult.cleanlinessDamage : 0) || 0;
 
+      let zeroGaugePenalty = 0;
+      const zeroGauges: string[] = [];
+      const diceFailPenalty = !isSuccess ? 10 : 0;
+      let happinessChange = 0;
+
       setFarmState(fPrev => {
         if (!fPrev.activePokemon) return fPrev;
         const target = fPrev.activePokemon;
@@ -4391,15 +5500,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           nextInv[k] = (nextInv[k] || 0) + v;
         });
 
+        const nextEnergy = Math.max(0, target.energy - expeditionModal.area.energyCost - energyDmg);
+        const nextHunger = Math.max(0, target.hunger - expeditionModal.area.hungerCost);
+        const nextClean = Math.max(0, target.cleanliness - expeditionModal.area.cleanlinessCost - cleanDmg);
+
+        if (nextEnergy === 0) { zeroGaugePenalty += 8; zeroGauges.push('에너지(탈진)'); }
+        if (nextHunger === 0) { zeroGaugePenalty += 8; zeroGauges.push('배고픔(공복)'); }
+        if (nextClean === 0) { zeroGaugePenalty += 8; zeroGauges.push('청결도(오염)'); }
+
+        const totalPenalty = diceFailPenalty + zeroGaugePenalty;
+        happinessChange = isSuccess && zeroGaugePenalty === 0 ? 5 : -totalPenalty;
+        const nextHappiness = happinessChange >= 0
+          ? Math.min(100, target.happiness + happinessChange)
+          : Math.max(0, target.happiness + happinessChange);
+
         return {
           ...fPrev,
           coins: fPrev.coins + gainedCoins,
           inventory: nextInv,
           activePokemon: {
             ...target,
-            energy: Math.max(0, target.energy - expeditionModal.area.energyCost - energyDmg),
-            hunger: Math.max(0, target.hunger - expeditionModal.area.hungerCost),
-            cleanliness: Math.max(0, target.cleanliness - expeditionModal.area.cleanlinessCost - cleanDmg),
+            energy: nextEnergy,
+            hunger: nextHunger,
+            cleanliness: nextClean,
+            happiness: nextHappiness,
             level: newLevel,
             exp: newExp,
             maxExp
@@ -4408,6 +5532,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       });
 
       addEggWarmth(15, '스토리 탐험 완수');
+
+      if (!isSuccess && zeroGauges.length > 0) {
+        showAlert(`⚠️ 주사위 실패 및 게이지 바닥(${zeroGauges.join(', ')})으로 친밀도가 -${diceFailPenalty + zeroGaugePenalty} 감소했습니다!`, 'warn');
+      } else if (!isSuccess) {
+        showAlert('💔 주사위 판정 실패로 포켓몬이 의기소침해져 친밀도가 -10 감소했습니다!', 'warn');
+      } else if (zeroGaugePenalty > 0) {
+        showAlert(`⚠️ 게이지 바닥(${zeroGauges.join(', ')})으로 인해 친밀도가 -${zeroGaugePenalty} 감소했습니다!`, 'warn');
+      }
 
       setExpeditionModal(prev => prev ? {
         ...prev,
@@ -4421,18 +5553,34 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           exp: gainedExp,
           levelUp: didLevelUp,
           newLevel,
-          foundItems
+          foundItems,
+          happinessChange,
+          zeroGauges,
+          diceFailed: !isSuccess
         }
       } : null);
     }, 1400);
   };
 
-  // 🥚 3-3. 인큐베이터에 알 넣기
-  const handlePlaceEggInIncubator = (eggItem: FarmItem) => {
-    if (farmState.incubatingEgg) {
-      showAlert('인큐베이터에 이미 품고 있는 알이 있습니다! 먼저 부화시켜 주세요.', 'warn');
+  // 🥚 3-3. 인큐베이터에 알 넣기 (특정 슬롯 지정 또는 첫 번째 빈 슬롯)
+  const handlePlaceEggInIncubator = (eggItem: FarmItem, targetSlotId?: string) => {
+    const currentSlots = getFarmIncubatorSlots(farmState);
+
+    // 대상 슬롯 찾기: targetSlotId가 지정되어 있으면 해당 슬롯, 아니면 비어있는 첫 슬롯
+    const targetSlot = targetSlotId 
+      ? currentSlots.find(s => s.id === targetSlotId)
+      : currentSlots.find(s => !s.egg);
+
+    if (!targetSlot) {
+      showAlert('모든 인큐베이터 챔버가 가동 중입니다! 상점에서 [🚀 슈퍼 고속 알 부화기]를 구매하여 슬롯을 확장해보세요.', 'warn');
       return;
     }
+
+    if (targetSlot.egg) {
+      showAlert(`[${targetSlot.name}]에 이미 품고 있는 알이 있습니다! 먼저 부화시켜 주세요.`, 'warn');
+      return;
+    }
+
     const currentQty = farmState.inventory[eggItem.id] || 0;
     if (currentQty <= 0) {
       showAlert(`보유 중인 [${eggItem.name}]이 없습니다. 상점이나 탐험에서 획득해 보세요!`, 'warn');
@@ -4440,14 +5588,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     }
 
     const isGolden = eggItem.id === 'golden_egg';
+    const eggType: 'normal' | 'golden' | 'gen1' = eggItem.id === 'golden_egg' ? 'golden' : eggItem.id === 'gen1_egg' ? 'gen1' : 'normal';
+
     const newEgg: IncubatingEgg = {
-      id: `egg_${Date.now()}`,
+      id: `egg_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       name: eggItem.name,
       icon: eggItem.icon,
       isGolden,
+      eggType,
       progress: 0,
       acquiredAt: new Date().toISOString()
     };
+
+    const updatedSlots = currentSlots.map(slot => {
+      if (slot.id === targetSlot.id) {
+        return {
+          ...slot,
+          egg: newEgg
+        };
+      }
+      return slot;
+    });
 
     setFarmState(prev => ({
       ...prev,
@@ -4455,28 +5616,37 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         ...prev.inventory,
         [eggItem.id]: currentQty - 1
       },
-      incubatingEgg: newEgg
+      incubatorSlots: updatedSlots,
+      incubatingEgg: updatedSlots[0]?.egg || null
     }));
 
-    showAlert(`🥚 [${eggItem.name}]을(를) 인큐베이터에 넣었습니다! 쓰다듬기, 목욕, 알바, 탐험으로 온기를 모아주세요!`, 'success');
+    showAlert(`🥚 [${targetSlot.name}]에 [${eggItem.name}]을(를) 넣었습니다! ${targetSlot.type === 'super' ? '⚡ 2.0x 초고속 온기 가속 가동!' : '정성으로 온기를 모아주세요!'}`, 'success');
   };
 
-  // 🐣 3-4. 알 부화 시작 (모달 오픈 & 3단계 연출)
-  const handleStartHatching = () => {
-    if (!farmState.incubatingEgg || farmState.incubatingEgg.progress < 100) {
-      showAlert('알의 온기가 아직 부족합니다! (100% 도달 필요)', 'warn');
+  // 🐣 3-4. 알 부화 시작 (슬롯별 부화)
+  const handleStartHatching = (slotId?: string) => {
+    const currentSlots = getFarmIncubatorSlots(farmState);
+    const targetSlot = slotId 
+      ? currentSlots.find(s => s.id === slotId)
+      : currentSlots.find(s => s.egg && s.egg.progress >= 100);
+
+    if (!targetSlot || !targetSlot.egg || targetSlot.egg.progress < 100) {
+      showAlert('해당 알의 온기가 아직 부족합니다! (100% 도달 필요)', 'warn');
       return;
     }
 
-    const egg = farmState.incubatingEgg;
-    const { chainIdx, isShiny } = hatchBabyPokemon(egg.isGolden);
+    const egg = targetSlot.egg;
+    const eggType = egg.eggType || (egg.isGolden ? 'golden' : 'normal');
+    const { chainIdx, isShiny } = hatchBabyPokemon(eggType);
     const newBaby = createNewFarmPokemon(chainIdx, undefined, isShiny);
 
     setHatchingModal({
       active: true,
       stage: 'wobble',
+      slotId: targetSlot.id,
       eggName: egg.name,
       isGolden: egg.isGolden,
+      eggType: egg.eggType,
       babyPokemon: newBaby,
       nicknameInput: newBaby.name
     });
@@ -4497,10 +5667,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleConfirmHatch = (choice: 'setActive' | 'sendToReserve') => {
     if (!hatchingModal || !hatchingModal.babyPokemon) return;
 
-    const baby = {
-      ...hatchingModal.babyPokemon,
-      nickname: hatchingModal.nicknameInput.trim() || hatchingModal.babyPokemon.name
-    };
+    const rawBaby = hatchingModal.babyPokemon;
+    const baby = sanitizeFarmPokemon({
+      ...rawBaby,
+      nickname: hatchingModal.nicknameInput.trim() || rawBaby.name
+    });
+
+    const isNewDex = !farmState.unlockedSpecies?.includes(baby.speciesId);
 
     setFarmState(prev => {
       let nextActive = prev.activePokemon;
@@ -4515,19 +5688,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         nextReserve.unshift(baby);
       }
 
-      return {
+      // 부화한 해당 슬롯의 알만 제거!
+      const currentSlots = getFarmIncubatorSlots(prev);
+      const updatedSlots = currentSlots.map(s => {
+        if (s.id === hatchingModal.slotId) {
+          return { ...s, egg: null };
+        }
+        return s;
+      });
+
+      const nextState: FarmState = {
         ...prev,
         activePokemon: nextActive,
         reservePokemon: nextReserve,
-        incubatingEgg: null
+        incubatorSlots: updatedSlots,
+        incubatingEgg: updatedSlots[0]?.egg || null
       };
+      nextState.unlockedSpecies = syncUnlockedSpecies(nextState);
+      return nextState;
     });
 
     setHatchingModal(null);
     showAlert(
       choice === 'setActive'
-        ? `🌟 갓 태어난 [${baby.nickname}]이(가) 내 새로운 대표 파트너가 되었습니다!`
-        : `🏡 [${baby.nickname}]이(가) 보육소 목장에 안전하게 등록되었습니다!`,
+        ? `🌟 갓 태어난 [${baby.nickname}]이(가) 내 새로운 대표 파트너가 되었습니다!${isNewDex ? ' 📖 [도감 등록 완료!]' : ''}`
+        : `🏡 [${baby.nickname}]이(가) 보육소 목장에 안전하게 등록되었습니다!${isNewDex ? ' 📖 [도감 등록 완료!]' : ''}`,
       'success'
     );
   };
@@ -4805,33 +5990,44 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return;
     }
 
-    setFarmState(prev => ({
-      ...prev,
-      coins: prev.coins - item.price,
-      inventory: {
+    setFarmState(prev => {
+      const nextInventory = {
         ...prev.inventory,
         [item.id]: (prev.inventory[item.id] || 0) + 1
-      }
-    }));
+      };
+      const updatedState = {
+        ...prev,
+        coins: prev.coins - item.price,
+        inventory: nextInventory
+      };
+      return {
+        ...updatedState,
+        incubatorSlots: getFarmIncubatorSlots(updatedState)
+      };
+    });
 
-    showAlert(`🛍️ [${item.name}] 구매 완료!`, 'success');
+    if (item.id === 'super_incubator') {
+      showAlert('🚀 [슈퍼 고속 알 부화기] 구매 완료! 알 부화소에 새로운 고속 인큐베이터 챔버가 추가 설치되었습니다! (동시 부화 가능 & 온기 2배 초고속 가속)', 'success');
+    } else {
+      showAlert(`🛍️ [${item.name}] 구매 완료!`, 'success');
+    }
   };
 
   // 5. 포켓몬 진화 (Evolution)
-  const handleEvolve = () => {
+  const handleEvolve = (chosenStage?: EvolutionStage) => {
     if (!pmon) return;
     const currentChain = pmon.evolutionChain;
     const nextIndex = pmon.stageIndex + 1;
-    if (nextIndex >= currentChain.length) {
+    if (nextIndex >= currentChain.length && !chosenStage) {
       showAlert('이미 최종 진화 단계에 도달했습니다!', 'info');
       return;
     }
 
-    let nextStage = currentChain[nextIndex];
+    let nextStage = chosenStage || currentChain[nextIndex];
 
     // 🦊 이브이 8대 진화체 확률 분기 처리 (샤미드, 쥬피썬더, 부스터, 에브이, 블래키, 리피아, 글레이시아, 님피아)
     const isEeveeBranch = pmon.speciesId === 133 || currentChain[pmon.stageIndex]?.isEeveeBranch || nextStage.name.includes('이브이즈');
-    if (isEeveeBranch) {
+    if (isEeveeBranch && !chosenStage) {
       nextStage = getRandomEeveeEvolution();
     }
 
@@ -4840,58 +6036,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return;
     }
 
-    const isTargetShiny = pmon.isShiny;
-    const evolvedFront = isTargetShiny
-      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${nextStage.id}.png`
-      : nextStage.sprite;
-    const evolvedShowdown = isTargetShiny
-      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/shiny/${nextStage.id}.gif`
-      : nextStage.showdownSprite;
-
-    // 진화 애니메이션 모달 시작
-    setEvolvingModal({
-      active: true,
-      stage: 'flashing',
-      oldName: pmon.name,
-      newName: nextStage.name,
-      sprite: evolvedShowdown
-    });
-
-    setTimeout(() => {
-      setEvolvingModal(prev => prev ? { ...prev, stage: 'done' } : null);
-      playPokemonCry(nextStage.id);
-
-      setFarmState(prev => {
-        if (!prev.activePokemon) return prev;
-        const target = prev.activePokemon;
-        const updatedChain = isEeveeBranch
-          ? [target.evolutionChain[0], nextStage]
-          : target.evolutionChain;
-
-        const newMaxStat = getMaxStatForStage(nextIndex);
-
-        return {
-          ...prev,
-          activePokemon: {
-            ...target,
-            speciesId: nextStage.id,
-            name: nextStage.name,
-            nickname: target.nickname === target.name ? nextStage.name : target.nickname,
-            stageIndex: nextIndex,
-            types: nextStage.types,
-            energy: newMaxStat,
-            cleanliness: newMaxStat,
-            hunger: newMaxStat,
-            happiness: 100,
-            evolutionChain: updatedChain,
-            sprites: {
-              front: evolvedFront,
-              showdownFront: evolvedShowdown
-            }
-          }
-        };
-      });
-    }, 2500);
+    executePokemonEvolution(nextStage);
   };
 
   // 6. 감동의 포켓몬 졸업식 (Graduation)
@@ -4903,7 +6048,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return;
     }
 
-    const diploma: GraduationDiploma = {
+    const diploma: GraduationDiploma = sanitizeDiploma({
       id: `diploma_${Date.now()}`,
       pokemonUid: pmon.uid,
       speciesId: pmon.speciesId,
@@ -4921,17 +6066,21 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       selectedFormIndex: pmon.evolutionChain.length - 1,
       displaySprite: pmon.sprites.showdownFront || pmon.sprites.front,
       displayName: pmon.name
-    };
+    });
 
     setGraduatingModal(diploma);
     playPokemonCry(pmon.speciesId);
 
-    setFarmState(prev => ({
-      ...prev,
-      coins: prev.coins + 1000, // 졸업 장학금 +1,000 코인
-      graduatedPokemon: [diploma, ...prev.graduatedPokemon],
-      activePokemon: null // 새 포켓몬 분양받을 수 있게 비움
-    }));
+    setFarmState(prev => {
+      const nextState: FarmState = {
+        ...prev,
+        coins: prev.coins + 1000, // 졸업 장학금 +1,000 코인
+        graduatedPokemon: [diploma, ...prev.graduatedPokemon],
+        activePokemon: null // 새 포켓몬 분양받을 수 있게 비움
+      };
+      nextState.unlockedSpecies = syncUnlockedSpecies(nextState);
+      return nextState;
+    });
   };
 
   // 7. 새로운 포켓몬 분양받기 (몬스터볼 흔들림 -> 화려한 빛 폭발 -> 짜잔! 등장 모달)
@@ -4970,20 +6119,22 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     if (!adoptRevealModal) return;
     const { chainIndex } = adoptRevealModal;
     const isShinyChance = Math.random() < 0.05; // 5% 확률
-    const newMon = createNewFarmPokemon(chainIndex, nickname?.trim() || undefined, isShinyChance);
+    const newMon = sanitizeFarmPokemon(createNewFarmPokemon(chainIndex, nickname?.trim() || undefined, isShinyChance));
 
-    setFarmState(prev => ({
-      ...prev,
-      activePokemon: newMon
-    }));
+    setFarmState(prev => {
+      const nextState: FarmState = {
+        ...prev,
+        activePokemon: newMon
+      };
+      nextState.unlockedSpecies = syncUnlockedSpecies(nextState);
+      return nextState;
+    });
 
     setAdoptRevealModal(null);
     setActiveTab('yard');
     playPokemonCry(newMon.speciesId);
-    showAlert(`🎉 [${newMon.nickname || newMon.name}]을(를) 우리 농장에 입양했습니다! ${isShinyChance ? '✨ [샤이니 이로치] 당첨!' : ''}`, 'success');
+    showAlert(`🎉 [${newMon.nickname || newMon.name}]을(를) 우리 농장에 입양했습니다! ${isShinyChance ? '✨ [샤이니 이로치] 당첨!' : ''} 📖 [도감 등록 완료!]`, 'success');
   };
-
-
 
   // 🔐 1. 기존 농장 로그인 제출
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -5034,7 +6185,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 🔐 3. 신규 농장 개설 최종 완료 처리 (회원가입 & 첫 파트너 포켓몬 분양)
   const handleCompleteRegistration = () => {
     const isShinyChance = Math.random() < 0.05; // 5% 전설의 포켓몬 확률
-    const newMon = createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance);
+    const newMon = sanitizeFarmPokemon(createNewFarmPokemon(selectedStarterIdx, starterNickname.trim() || undefined, isShinyChance));
     const cleanOwner = registerUsername.trim();
     const cleanFarm = registerFarmName.trim() || `${cleanOwner}님의 포켓농장`;
 
@@ -5052,6 +6203,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         activePokemon: newMon,
         reservePokemon: [],
         graduatedPokemon: [],
+        unlockedSpecies: [newMon.speciesId],
         graduatedCount: 0,
         heartsCount: 0,
         coins: 1500,
@@ -5431,37 +6583,80 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     );
   }
 
-  // 📖 포켓몬 졸업 도감 렌더링 헬퍼 (내 도감 & 이웃 도감 공용)
+  // 📖 포켓몬 종합 도감 렌더링 헬퍼 (내 도감 & 이웃 도감 공용 - 부화, 진화, 보유, 졸업 전원 해금)
   const renderPokedexContent = (graduatedList: GraduationDiploma[], ownerTitle: string, isNeighbor: boolean = false) => {
     const pokedexList = getAllPokedexEntries();
-    const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
+    const targetFarm = isNeighbor ? visitingFarm?.farm : farmState;
+    const currentActive = isNeighbor ? visitingFarm?.farm?.activePokemon : farmState.activePokemon;
+    const currentReserves = isNeighbor ? (visitingFarm?.farm?.reservePokemon || []) : (farmState.reservePokemon || []);
 
+    // 1. 졸업 통계 집계
+    const gradStats = new Map<number, { count: number; shinyCount: number; firstDate: string; maxLevel: number; nicknames: string[] }>();
     (graduatedList || []).forEach(dip => {
+      if (!dip) return;
       const existing = gradStats.get(dip.speciesId) || { count: 0, shinyCount: 0, firstDate: dip.graduatedAt, maxLevel: dip.finalLevel, nicknames: [] };
       existing.count += 1;
       if (dip.isShiny) existing.shinyCount += 1;
       if (dip.finalLevel > existing.maxLevel) existing.maxLevel = dip.finalLevel;
-      if (!existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
+      if (dip.nickname && !existing.nicknames.includes(dip.nickname)) existing.nicknames.push(dip.nickname);
       gradStats.set(dip.speciesId, existing);
     });
 
-    const unlockedCount = pokedexList.filter(m => gradStats.has(m.speciesId)).length;
+    // 2. 도감 등록 종 집계 (unlockedSpecies + active + reserve + graduated 및 모든 진화 전 단계)
+    const unlockedSet = new Set<number>(targetFarm?.unlockedSpecies || []);
+    if (currentActive) {
+      unlockedSet.add(currentActive.speciesId);
+      if (Array.isArray(currentActive.evolutionChain)) {
+        currentActive.evolutionChain.slice(0, (currentActive.stageIndex ?? 0) + 1).forEach(st => {
+          if (st && st.id) unlockedSet.add(st.id);
+        });
+      }
+    }
+    currentReserves.forEach(mon => {
+      if (mon) {
+        unlockedSet.add(mon.speciesId);
+        if (Array.isArray(mon.evolutionChain)) {
+          mon.evolutionChain.slice(0, (mon.stageIndex ?? 0) + 1).forEach(st => {
+            if (st && st.id) unlockedSet.add(st.id);
+          });
+        }
+      }
+    });
+    (graduatedList || []).forEach(dip => {
+      if (dip) unlockedSet.add(dip.speciesId);
+    });
+
+    // 3. 샤이니(이로치) 집계
+    const shinySpeciesSet = new Set<number>();
+    if (currentActive?.isShiny) shinySpeciesSet.add(currentActive.speciesId);
+    currentReserves.forEach(mon => {
+      if (mon?.isShiny) shinySpeciesSet.add(mon.speciesId);
+    });
+    (graduatedList || []).forEach(dip => {
+      if (dip?.isShiny) shinySpeciesSet.add(dip.speciesId);
+    });
+
+    const unlockedCount = pokedexList.filter(m => unlockedSet.has(m.speciesId)).length;
     const totalSpeciesCount = pokedexList.length;
     const totalGradCount = graduatedList?.length || 0;
-    const shinyGradCount = graduatedList?.filter(d => d.isShiny).length || 0;
+    const shinyTotalCount = pokedexList.filter(m => shinySpeciesSet.has(m.speciesId) || (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length;
     const completionPct = totalSpeciesCount > 0 ? Math.round((unlockedCount / totalSpeciesCount) * 100) : 0;
+    const gen1Total = pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151).length;
+    const gen1Unlocked = pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151 && unlockedSet.has(m.speciesId)).length;
+    const gmaxTotal = pokedexList.filter(m => isGmaxPokemon(m)).length;
+    const gmaxUnlocked = pokedexList.filter(m => isGmaxPokemon(m) && unlockedSet.has(m.speciesId)).length;
 
     let filteredPokedex = pokedexList;
     if (pokedexFilter === 'gen1') {
       filteredPokedex = filteredPokedex.filter(m => m.speciesId >= 1 && m.speciesId <= 151);
     } else if (pokedexFilter === 'gmax') {
       filteredPokedex = filteredPokedex.filter(m => isGmaxPokemon(m));
-    } else     if (pokedexFilter === 'unlocked') {
-      filteredPokedex = filteredPokedex.filter(m => gradStats.has(m.speciesId));
+    } else if (pokedexFilter === 'unlocked') {
+      filteredPokedex = filteredPokedex.filter(m => unlockedSet.has(m.speciesId));
     } else if (pokedexFilter === 'locked') {
-      filteredPokedex = filteredPokedex.filter(m => !gradStats.has(m.speciesId));
+      filteredPokedex = filteredPokedex.filter(m => !unlockedSet.has(m.speciesId));
     } else if (pokedexFilter === 'shiny') {
-      filteredPokedex = filteredPokedex.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
+      filteredPokedex = filteredPokedex.filter(m => shinySpeciesSet.has(m.speciesId) || (gradStats.get(m.speciesId)?.shinyCount || 0) > 0);
     }
 
     return (
@@ -5471,11 +6666,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           <div className="pokedex-banner-title">
             <div className="pokedex-book-icon">📖</div>
             <div>
-              <h3>{isNeighbor ? `[${ownerTitle}]님의 포켓몬 졸업 도감` : '포켓농장 공식 졸업 도감 (Official Pokedex)'}</h3>
+              <h3>{isNeighbor ? `[${ownerTitle}]님의 포켓몬 종합 도감` : '포켓농장 공식 포켓몬 도감 (Official Pokédex)'}</h3>
               <p>
                 {isNeighbor
-                  ? `[${ownerTitle}]님이 정성으로 키워 졸업시킨 포켓몬 컬렉션과 명예의 전당입니다.`
-                  : '정성으로 키워 졸업시킨 포켓몬만 컬러풀하게 활성화되는 명예의 도감입니다.'}
+                  ? `[${ownerTitle}]님이 알 부화, 진화, 목장 육성 및 졸업을 통해 수집한 공식 도감 컬렉션입니다.`
+                  : '알 부화, 진화, 목장 보육 및 졸업을 거친 모든 포켓몬이 컬러풀하게 기록되는 공식 도감입니다.'}
               </p>
             </div>
           </div>
@@ -5510,9 +6705,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               <div className="pokedex-kpi-tags">
                 <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
                 <span className="kpi-tag gen1" style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' }}>
-                  🔴 1기 관동: {pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151 && gradStats.has(m.speciesId)).length} / {pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151).length}종
+                  🔴 1기 관동: {gen1Unlocked} / {gen1Total}종
                 </span>
-                <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
+                <span className="kpi-tag gmax" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#f87171' }}>
+                  💥 거다이맥스: {gmaxUnlocked} / {gmaxTotal}종
+                </span>
+                <span className="kpi-tag shiny">✨ 이로치 등록: {shinyTotalCount}마리</span>
               </div>
             </div>
 
@@ -5529,14 +6727,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 onClick={() => setPokedexFilter('gen1')}
                 style={pokedexFilter === 'gen1' ? { background: '#ef4444', borderColor: '#dc2626', color: '#ffffff', fontWeight: 800 } : {}}
               >
-                🔴 1기 관동 ({pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151).length})
+                🔴 1기 관동 ({gen1Total})
               </button>
               <button
                 className={`pokedex-filter-chip ${pokedexFilter === 'gmax' ? 'active' : ''}`}
                 onClick={() => setPokedexFilter('gmax')}
                 style={pokedexFilter === 'gmax' ? { background: '#dc2626', borderColor: '#991b1b', color: '#ffffff', fontWeight: 800 } : {}}
               >
-                💥 거다이맥스 ({pokedexList.filter(m => isGmaxPokemon(m)).length})
+                💥 거다이맥스 ({gmaxTotal})
               </button>
               <button
                 className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
@@ -5555,16 +6753,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 onClick={() => setPokedexFilter('shiny')}
                 style={pokedexFilter === 'shiny' ? { background: '#d97706', borderColor: '#b45309', color: '#ffffff', fontWeight: 800 } : {}}
               >
-                ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
+                ✨ 이로치 ({shinyTotalCount})
               </button>
             </div>
 
-            {/* 33종 도감 카드 그리드 */}
+            {/* 도감 카드 그리드 */}
             <div className="pokedex-grid">
               {filteredPokedex.map(mon => {
+                const isUnlocked = unlockedSet.has(mon.speciesId);
                 const stat = gradStats.get(mon.speciesId);
-                const isUnlocked = !!stat;
-                const hasShiny = (stat?.shinyCount || 0) > 0;
+                const isGraduated = !!stat && stat.count > 0;
+                const isActive = currentActive?.speciesId === mon.speciesId;
+                const isReserve = currentReserves.some(r => r.speciesId === mon.speciesId);
+                const hasShiny = shinySpeciesSet.has(mon.speciesId) || (stat?.shinyCount || 0) > 0;
                 const isGmax = isGmaxPokemon(mon);
                 const isHovered = pokedexHoverId === mon.speciesId;
 
@@ -5577,8 +6778,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   >
                     <div className="pokedex-card-header">
                       <span className="pokedex-id-no">#{String(mon.speciesId).padStart(3, '0')}</span>
-                      {isUnlocked ? (
+                      {isGraduated ? (
                         <span className="pokedex-grad-count-badge">🎓 {stat.count}회 졸업</span>
+                      ) : isActive ? (
+                        <span className="pokedex-active-badge">👑 대표 파트너</span>
+                      ) : isReserve ? (
+                        <span className="pokedex-reserve-badge">🏡 목장 보육 중</span>
+                      ) : isUnlocked ? (
+                        <span className="pokedex-unlocked-badge">📖 도감 등록</span>
                       ) : (
                         <span className="pokedex-locked-label">🔒 미등록</span>
                       )}
@@ -5621,21 +6828,42 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                             <div className="hover-mon-name">
                               {mon.name} {hasShiny && '✨'} {isGmax && '💥'}
                             </div>
-                            <div className="hover-row grad-highlight">
-                              🎓 <b>졸업 횟수: {stat.count}회</b>
-                            </div>
-                            {stat.shinyCount > 0 && (
-                              <div className="hover-row shiny-highlight">
-                                ✨ 이로치 졸업: <b>{stat.shinyCount}회</b>
+                            {isGraduated && (
+                              <div className="hover-row grad-highlight">
+                                🎓 <b>졸업 횟수: {stat.count}회</b>
                               </div>
                             )}
-                            <div className="hover-row">
-                              ⭐ 최고 레벨: <b>Lv.{stat.maxLevel}</b>
-                            </div>
-                            <div className="hover-row date">
-                              📅 최초 졸업: {stat.firstDate}
-                            </div>
-                            {stat.nicknames.length > 0 && (
+                            {isActive && (
+                              <div className="hover-row" style={{ color: '#d97706', fontWeight: 'bold' }}>
+                                👑 현재 내 대표 파트너로 활약 중!
+                              </div>
+                            )}
+                            {isReserve && !isActive && (
+                              <div className="hover-row" style={{ color: '#059669', fontWeight: 'bold' }}>
+                                🏡 현재 보육소 목장에서 생활 중!
+                              </div>
+                            )}
+                            {!isGraduated && !isActive && !isReserve && (
+                              <div className="hover-row" style={{ color: '#2563eb', fontWeight: 'bold' }}>
+                                📖 알 부화 및 진화로 도감 등록 완료!
+                              </div>
+                            )}
+                            {hasShiny && (
+                              <div className="hover-row shiny-highlight">
+                                ✨ 샤이니(이로치) 컬렉션 달성!
+                              </div>
+                            )}
+                            {stat && stat.maxLevel > 0 && (
+                              <div className="hover-row">
+                                ⭐ 최고 졸업 레벨: <b>Lv.{stat.maxLevel}</b>
+                              </div>
+                            )}
+                            {stat && stat.firstDate && (
+                              <div className="hover-row date">
+                                📅 최초 졸업일: {stat.firstDate}
+                              </div>
+                            )}
+                            {stat && stat.nicknames && stat.nicknames.length > 0 && (
                               <div className="hover-row nicknames">
                                 애칭: {stat.nicknames.slice(0, 2).join(', ')}
                               </div>
@@ -5643,11 +6871,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                           </div>
                         ) : (
                           <div className="pokedex-hover-body locked">
-                            <div className="hover-locked-title">🔒 미해금 포켓몬</div>
+                            <div className="hover-locked-title">🔒 미등록 포켓몬</div>
                             <p>
                               {isNeighbor
-                                ? `[${ownerTitle}]님이 아직 졸업시키지 않은 포켓몬입니다.`
-                                : '아직 졸업한 기록이 없습니다. Lv.36 달성 후 졸업식을 치르면 도감에 사진이 활성화됩니다!'}
+                                ? `[${ownerTitle}]님이 아직 발견하거나 등록하지 않은 포켓몬입니다.`
+                                : '아직 획득하거나 진화시킨 기록이 없습니다. 알 부화소에서 부화시키거나 진화시키면 공식 도감에 컬러풀하게 등록됩니다!'}
                             </p>
                           </div>
                         )}
@@ -7207,64 +8435,73 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   {(() => {
                     const maxStat = getMaxStatForStage(pmon.stageIndex);
                     return (
-                      <div className="gauges-grid">
-                        <div className="gauge-item">
-                          <div className="gauge-label">
-                            <span>🍎 배고픔</span>
-                            <span>{pmon.hunger} / {maxStat}</span>
+                      <div className="gauges-grid-wrapper">
+                        <div className="gauges-grid">
+                          <div className={`gauge-item ${pmon.hunger === 0 ? 'zero-danger' : ''}`}>
+                            <div className="gauge-label">
+                              <span>🍎 배고픔 {pmon.hunger === 0 && <span className="zero-stat-badge">🚨 공복 위험!</span>}</span>
+                              <span>{pmon.hunger} / {maxStat}</span>
+                            </div>
+                            <div className="gauge-track">
+                              <div
+                                className="gauge-fill hunger"
+                                style={{
+                                  width: `${Math.min(100, Math.round((pmon.hunger / maxStat) * 100))}%`,
+                                  backgroundColor: pmon.hunger > (maxStat * 0.3) ? '#10b981' : '#ef4444'
+                                }}
+                              />
+                            </div>
                           </div>
-                          <div className="gauge-track">
-                            <div
-                              className="gauge-fill hunger"
-                              style={{
-                                width: `${Math.min(100, Math.round((pmon.hunger / maxStat) * 100))}%`,
-                                backgroundColor: pmon.hunger > (maxStat * 0.3) ? '#10b981' : '#ef4444'
-                              }}
-                            />
+
+                          <div className={`gauge-item ${pmon.cleanliness === 0 ? 'zero-danger' : ''}`}>
+                            <div className="gauge-label">
+                              <span>🧼 청결도 {pmon.cleanliness === 0 && <span className="zero-stat-badge">🚨 오염 위험!</span>}</span>
+                              <span>{pmon.cleanliness} / {maxStat}</span>
+                            </div>
+                            <div className="gauge-track">
+                              <div
+                                className="gauge-fill cleanliness"
+                                style={{
+                                  width: `${Math.min(100, Math.round((pmon.cleanliness / maxStat) * 100))}%`,
+                                  backgroundColor: pmon.cleanliness > (maxStat * 0.3) ? '#06b6d4' : '#f59e0b'
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="gauge-item">
+                            <div className="gauge-label">
+                              <span>💖 친밀도</span>
+                              <span>{pmon.happiness} / 100</span>
+                            </div>
+                            <div className="gauge-track">
+                              <div className="gauge-fill happiness" style={{ width: `${Math.min(100, pmon.happiness)}%`, backgroundColor: '#ec4899' }} />
+                            </div>
+                          </div>
+
+                          <div className={`gauge-item ${pmon.energy === 0 ? 'zero-danger' : ''}`}>
+                            <div className="gauge-label">
+                              <span>⚡ 에너지 {pmon.energy === 0 && <span className="zero-stat-badge">🚨 탈진 위험!</span>}</span>
+                              <span>{pmon.energy} / {maxStat}</span>
+                            </div>
+                            <div className="gauge-track">
+                              <div
+                                className="gauge-fill energy"
+                                style={{
+                                  width: `${Math.min(100, Math.round((pmon.energy / maxStat) * 100))}%`,
+                                  backgroundColor: '#eab308'
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div className="gauge-item">
-                          <div className="gauge-label">
-                            <span>🧼 청결도</span>
-                            <span>{pmon.cleanliness} / {maxStat}</span>
+                        {(pmon.energy === 0 || pmon.hunger === 0 || pmon.cleanliness === 0) && (
+                          <div className="zero-gauge-warning-banner" style={{ marginTop: 8, padding: '6px 10px', background: '#fef2f2', border: '1px dashed #fca5a5', borderRadius: 8, fontSize: '0.78rem', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>⚠️</span>
+                            <span><strong>상태 이상 경고:</strong> 게이지가 0인 항목이 있으면 30초마다 친밀도가 지속 하락합니다! 아이템으로 빠르게 회복시켜 주세요!</span>
                           </div>
-                          <div className="gauge-track">
-                            <div
-                              className="gauge-fill cleanliness"
-                              style={{
-                                width: `${Math.min(100, Math.round((pmon.cleanliness / maxStat) * 100))}%`,
-                                backgroundColor: pmon.cleanliness > (maxStat * 0.3) ? '#06b6d4' : '#f59e0b'
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="gauge-item">
-                          <div className="gauge-label">
-                            <span>💖 친밀도</span>
-                            <span>{pmon.happiness} / 100</span>
-                          </div>
-                          <div className="gauge-track">
-                            <div className="gauge-fill happiness" style={{ width: `${Math.min(100, pmon.happiness)}%`, backgroundColor: '#ec4899' }} />
-                          </div>
-                        </div>
-
-                        <div className="gauge-item">
-                          <div className="gauge-label">
-                            <span>⚡ 에너지</span>
-                            <span>{pmon.energy} / {maxStat}</span>
-                          </div>
-                          <div className="gauge-track">
-                            <div
-                              className="gauge-fill energy"
-                              style={{
-                                width: `${Math.min(100, Math.round((pmon.energy / maxStat) * 100))}%`,
-                                backgroundColor: '#eab308'
-                              }}
-                            />
-                          </div>
-                        </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -7466,45 +8703,142 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       <div className="evolve-action-card">
                         <h4>
                           {isEeveeBranch
-                            ? '다음 진화: 🎲 8대 이브이즈 (샤미드·쥬피썬더·부스터·에브이·블래키·리피아·글레이시아·님피아 중 확률 진화)'
+                            ? '다음 진화: 🦊 8대 이브이즈 선택 및 돌 진화'
                             : `다음 진화: [${nextStage.name}] 조건 달성표`}
                         </h4>
 
-                        {isEeveeBranch && (
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0', justifyContent: 'center' }}>
-                            {EEVEE_BRANCHES.map(br => (
-                              <div key={br.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 6px' }}>
-                                <img src={br.sprite} alt={br.name} style={{ width: '32px', height: '32px', imageRendering: 'pixelated' }} />
-                                <span style={{ fontSize: '0.68rem', fontWeight: 600 }}>{br.name}</span>
+                        {isEeveeBranch ? (
+                          <div className="eevee-evolve-grid-container" style={{ margin: '12px 0', width: '100%' }}>
+                            <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '8px', textAlign: 'center' }}>
+                              원하는 이브이즈를 선택하여 확정 진화시키거나, 진화의 돌을 사용해 보세요!
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                              {EEVEE_BRANCHES.map(br => {
+                                const stoneMap: Record<number, { id: string; name: string; icon: string }> = {
+                                  134: { id: 'water_stone', name: '물의 돌', icon: '💧' },
+                                  135: { id: 'thunder_stone', name: '천둥의 돌', icon: '⚡' },
+                                  136: { id: 'fire_stone', name: '불꽃의 돌', icon: '🔥' },
+                                  196: { id: 'sun_stone', name: '햇살의 돌', icon: '☀️' },
+                                  197: { id: 'moon_stone', name: '달의 돌', icon: '🌙' },
+                                  470: { id: 'leaf_stone', name: '리프의 돌', icon: '🍃' },
+                                  471: { id: 'ice_stone', name: '얼음의 돌', icon: '❄️' },
+                                  700: { id: 'fairy_stone', name: '요정의 돌', icon: '🌸' }
+                                };
+                                const stone = stoneMap[br.id];
+                                const hasStone = stone ? ((farmState.inventory[stone.id] || 0) > 0) : false;
+                                const stoneCount = stone ? (farmState.inventory[stone.id] || 0) : 0;
+                                const canEvolveThis = hasStone || canEvolve;
+
+                                return (
+                                  <div
+                                    key={br.id}
+                                    style={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      background: hasStone ? '#eff6ff' : '#f8fafc',
+                                      border: hasStone ? '2px solid #3b82f6' : '1px solid #cbd5e1',
+                                      borderRadius: '8px',
+                                      padding: '8px 4px',
+                                      boxShadow: hasStone ? '0 2px 8px rgba(59,130,246,0.2)' : 'none',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    <img src={br.sprite} alt={br.name} style={{ width: '40px', height: '40px', imageRendering: 'pixelated' }} />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>{br.name}</span>
+                                    {stone && (
+                                      <span style={{ fontSize: '0.68rem', color: hasStone ? '#1d4ed8' : '#64748b', fontWeight: hasStone ? 700 : 500, margin: '2px 0' }}>
+                                        {stone.icon} {stone.name} {hasStone ? `(${stoneCount}개)` : '(미보유)'}
+                                      </span>
+                                    )}
+                                    <button
+                                      className="excel-btn"
+                                      disabled={!canEvolveThis}
+                                      onClick={() => {
+                                        if (hasStone && stone) {
+                                          if (window.confirm(`✨ [${stone.name}]을(를) 사용하여 [${pmon.nickname || pmon.name}]을(를) [${br.name}](으)로 진화시키시겠습니까?`)) {
+                                            executePokemonEvolution(br, {
+                                              consumeStoneId: stone.id,
+                                              stoneName: stone.name,
+                                              customSuccessMsg: `🎉 [${stone.name}]의 신비한 힘으로 [${pmon.nickname || pmon.name}]이(가) [${br.name}](으)로 진화했습니다!`
+                                            });
+                                          }
+                                        } else if (canEvolve) {
+                                          if (window.confirm(`✨ 레벨과 친밀도 조건을 달성했습니다! [${pmon.nickname || pmon.name}]을(를) [${br.name}](으)로 진화시키시겠습니까?`)) {
+                                            executePokemonEvolution(br);
+                                          }
+                                        }
+                                      }}
+                                      style={{
+                                        marginTop: '4px',
+                                        fontSize: '0.72rem',
+                                        padding: '4px 6px',
+                                        width: '90%',
+                                        background: hasStone ? '#3b82f6' : (canEvolve ? '#10b981' : '#94a3b8'),
+                                        color: '#ffffff',
+                                        fontWeight: 700,
+                                        cursor: canEvolveThis ? 'pointer' : 'not-allowed'
+                                      }}
+                                    >
+                                      {hasStone ? '🔥 돌로 진화' : (canEvolve ? '✨ 선택 진화' : '🔒 조건 미달')}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="req-checklist" style={{ marginTop: '12px' }}>
+                              <div className={`check-item ${levelMet ? 'checked' : ''}`}>
+                                {levelMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                                <span>선택 진화 레벨 조건: Lv.{nextStage.minLevel} (현재: Lv.{pmon.level})</span>
                               </div>
-                            ))}
+                              <div className={`check-item ${happyMet ? 'checked' : ''}`}>
+                                {happyMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                                <span>선택 진화 친밀도 조건: {nextStage.minHappiness}+ (현재: {pmon.happiness})</span>
+                              </div>
+                              <div className="check-item checked" style={{ color: '#059669', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+                                <Sparkles size={16} />
+                                <span>💡 상점에서 해당 [진화의 돌]을 구매하여 보유 중이면 레벨 조건 없이 즉시 진화 가능합니다!</span>
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                              <button
+                                className="excel-btn secondary"
+                                disabled={!canEvolve}
+                                onClick={() => handleEvolve()}
+                                style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+                              >
+                                {canEvolve ? '🎲 운명의 확률 진화 (8종 중 무작위)' : '⏳ 레벨/친밀도 달성 시 확률 진화 가능'}
+                              </button>
+                            </div>
                           </div>
+                        ) : (
+                          <>
+                            <div className="req-checklist">
+                              <div className={`check-item ${levelMet ? 'checked' : ''}`}>
+                                {levelMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                                <span>레벨 조건: 필요 Lv.{nextStage.minLevel} (현재: Lv.{pmon.level})</span>
+                              </div>
+                              <div className={`check-item ${happyMet ? 'checked' : ''}`}>
+                                {happyMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                                <span>친밀도 조건: 필요 {nextStage.minHappiness}+ (현재: {pmon.happiness})</span>
+                              </div>
+                              <div className="check-item checked" style={{ color: '#059669', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+                                <Sparkles size={16} />
+                                <span>진화 혜택: 에너지·청결도·포만도 최대치 확장 ({getMaxStatForStage(pmon.stageIndex)} ➔ {getMaxStatForStage(pmon.stageIndex + 1)})</span>
+                              </div>
+                            </div>
+
+                            <button
+                              className="excel-btn primary evolve-btn"
+                              disabled={!canEvolve}
+                              onClick={() => handleEvolve()}
+                            >
+                              {canEvolve ? '✨ 지금 바로 진화시키기!' : '⏳ 조건을 먼저 달성해 주세요'}
+                            </button>
+                          </>
                         )}
-
-                        <div className="req-checklist">
-                          <div className={`check-item ${levelMet ? 'checked' : ''}`}>
-                            {levelMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                            <span>레벨 조건: 필요 Lv.{nextStage.minLevel} (현재: Lv.{pmon.level})</span>
-                          </div>
-                          <div className={`check-item ${happyMet ? 'checked' : ''}`}>
-                            {happyMet ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                            <span>친밀도 조건: 필요 {nextStage.minHappiness}+ (현재: {pmon.happiness})</span>
-                          </div>
-                          <div className="check-item checked" style={{ color: '#059669', background: '#ecfdf5', borderColor: '#a7f3d0' }}>
-                            <Sparkles size={16} />
-                            <span>진화 혜택: 에너지·청결도·포만도 최대치 확장 ({getMaxStatForStage(pmon.stageIndex)} ➔ {getMaxStatForStage(pmon.stageIndex + 1)})</span>
-                          </div>
-                        </div>
-
-                        <button
-                          className="excel-btn primary evolve-btn"
-                          disabled={!canEvolve}
-                          onClick={handleEvolve}
-                        >
-                          {canEvolve 
-                            ? (isEeveeBranch ? '🎲 지금 바로 8대 이브이즈로 진화시키기!' : '✨ 지금 바로 진화시키기!')
-                            : '⏳ 조건을 먼저 달성해 주세요'}
-                        </button>
                       </div>
                     );
                   })()
@@ -7654,113 +8988,182 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         {activeTab === 'daycare' && !visitingFarm && (
           <div className="farm-daycare-layout">
             {/* Banner */}
-            <div className="daycare-banner">
-              <div className="daycare-banner-icon">🥚</div>
-              <div>
-                <h3>🥚 포켓 데이케어 & 알 인큐베이터 (Egg Incubator)</h3>
+            <div className="daycare-banner incubator-overview-banner">
+              <div className="daycare-banner-icon">🌡️</div>
+              <div className="daycare-banner-content">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3>🥚 포켓 데이케어 & 다중 인큐베이터 챔버 (Egg Hatchery)</h3>
+                  <span className="incubator-total-badge">
+                    ⚡ 가동 중: {getFarmIncubatorSlots(farmState).filter(s => s.egg).length} / {getFarmIncubatorSlots(farmState).length}대 가동
+                  </span>
+                </div>
                 <p>
-                  상점이나 탐험에서 발견한 <strong>일반 포켓몬 알</strong> 또는 <strong>전설 & 특수 포켓몬 알</strong>을 품어 귀여운 아기 포켓몬으로 부화시키세요!
-                  쓰다듬기(+1%), 목욕(+3%), 알바(+5%), 탐험(+10%)을 통해 온기를 100% 모으면 알이 깨어납니다!
+                  상점이나 탐험에서 발견한 알을 챔버에 넣으면 <strong>모든 챔버가 동시에 온기를 공급받아 부화</strong>합니다!
+                  <br />
+                  • <strong>기본 1호기</strong>: 표준 보온 (1.0x) | • <strong>🚀 슈퍼 고속 챔버</strong>: 최첨단 마그마 보온 (<strong>2.0x 2배 초고속 가속!</strong>)
+                  <br />
+                  💡 상점에서 [🚀 슈퍼 고속 알 부화기]를 구매하면 챔버 슬롯이 무제한으로 확장됩니다!
                 </p>
               </div>
             </div>
 
-            {/* Top Section: Incubator Chamber */}
-            <div className="incubator-chamber-card">
-              <div className="chamber-header">
-                <h4>🌡️ 첨단 보온 인큐베이터 (Current Incubator)</h4>
-                <span className="chamber-badge">
-                  {farmState.incubatingEgg ? '가동 중 (Active)' : '비어 있음 (Empty)'}
-                </span>
-              </div>
+            {/* Incubator Chambers Grid */}
+            <div className="incubator-chambers-grid">
+              {getFarmIncubatorSlots(farmState).map((slot) => {
+                const isSuper = slot.type === 'super';
+                const egg = slot.egg;
+                const isReady = !!(egg && egg.progress >= 100);
+                const eggAvatarClass = egg 
+                  ? (egg.eggType === 'gen1' ? 'gen1-egg' : egg.isGolden ? 'golden-egg' : 'normal-egg')
+                  : '';
 
-              {farmState.incubatingEgg ? (
-                <div className="incubator-active-view">
-                  <div className="egg-display-pod">
-                    <div className={`incubator-egg-avatar ${farmState.incubatingEgg.isGolden ? 'golden-egg' : 'normal-egg'} ${farmState.incubatingEgg.progress >= 100 ? 'ready-shake' : 'incubating-float'}`}>
-                      <span className="egg-symbol">{farmState.incubatingEgg.icon}</span>
-                      <div className="warmth-heat-waves">
-                        <span>♨️</span>
-                        <span>♨️</span>
+                return (
+                  <div key={slot.id} className={`incubator-chamber-card ${isSuper ? 'super-incubator' : 'standard-incubator'}`}>
+                    <div className="chamber-header">
+                      <div className="chamber-title-group">
+                        <h4>{slot.name}</h4>
+                        <span className={`speed-pill ${isSuper ? 'super-speed' : 'normal-speed'}`}>
+                          {isSuper ? '⚡ 2.0x 초고속 온기' : '🌡️ 1.0x 표준 온기'}
+                        </span>
                       </div>
-                    </div>
-
-                    <div className="incubator-egg-info">
-                      <h3>{farmState.incubatingEgg.name}</h3>
-                      <span className="egg-rarity-tag">
-                        {farmState.incubatingEgg.isGolden ? '🌟 전설 & 특수 포켓몬 알 (100% 이로치/특수폼)' : '🥚 일반 포켓몬 알 (전 세대 포켓몬)'}
+                      <span className={`chamber-badge ${egg ? 'active-badge' : 'empty-badge'}`}>
+                        {egg ? '가동 중 (Active)' : '비어 있음 (Empty)'}
                       </span>
-                      <p className="egg-warmth-status">
-                        {farmState.incubatingEgg.progress >= 100
-                          ? '🎉 온기가 가득 찼습니다! 알이 기우뚱거리며 깨어날 준비를 마쳤습니다!'
-                          : `🔥 부화 온기 충전 중... (${Math.round(farmState.incubatingEgg.progress)}% 달성)`}
-                      </p>
-
-                      {/* Warmth Progress Bar */}
-                      <div className="warmth-bar-track">
-                        <div
-                          className={`warmth-bar-fill ${farmState.incubatingEgg.isGolden ? 'golden' : ''}`}
-                          style={{ width: `${farmState.incubatingEgg.progress}%` }}
-                        />
-                      </div>
-
-                      <div className="warmth-tips-row">
-                        <span>💡 온기 획득법: 쓰다듬기(+1%) | 거품목욕(+3%) | 알바완수(+5%) | 탐험완수(+10%) | 복권(+2%)</span>
-                      </div>
-
-                      {farmState.incubatingEgg.progress >= 100 && (
-                        <button
-                          className="excel-btn primary hatch-action-btn"
-                          onClick={handleStartHatching}
-                        >
-                          🐣 지금 바로 알 부화시키기!
-                        </button>
-                      )}
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="incubator-empty-view">
-                  <div className="empty-pod-icon">🪹</div>
-                  <div className="empty-pod-info">
-                    <h5>현재 인큐베이터가 비어 있습니다</h5>
-                    <p>보유 중인 일반 포켓몬 알이나 전설 & 특수 포켓몬 알을 넣어 정성껏 품어보세요!</p>
 
-                    <div className="place-egg-actions">
-                      {(farmState.inventory['mystery_egg'] || 0) > 0 && (
-                        <button
-                          className="excel-btn primary"
-                          onClick={() => {
-                            const item = FARM_ITEMS.find(i => i.id === 'mystery_egg');
-                            if (item) handlePlaceEggInIncubator(item);
-                          }}
-                        >
-                          🥚 일반 포켓몬 알 넣기 (보유: {farmState.inventory['mystery_egg']}개)
-                        </button>
-                      )}
-                      {(farmState.inventory['golden_egg'] || 0) > 0 && (
-                        <button
-                          className="excel-btn primary golden-btn"
-                          onClick={() => {
-                            const item = FARM_ITEMS.find(i => i.id === 'golden_egg');
-                            if (item) handlePlaceEggInIncubator(item);
-                          }}
-                        >
-                          🌟 전설 & 특수 포켓몬 알 넣기 (보유: {farmState.inventory['golden_egg']}개)
-                        </button>
-                      )}
-                      {(farmState.inventory['mystery_egg'] || 0) <= 0 && (farmState.inventory['golden_egg'] || 0) <= 0 && (
-                        <button
-                          className="excel-btn"
-                          onClick={() => setActiveTab('shop')}
-                        >
-                          🛍️ 상점에서 알 구하러 가기
-                        </button>
-                      )}
-                    </div>
+                    {egg ? (
+                      <div className="incubator-active-view">
+                        <div className={`egg-display-pod ${isSuper ? 'super-pod' : ''}`}>
+                          <div className={`incubator-egg-avatar ${eggAvatarClass} ${isReady ? 'ready-shake' : 'incubating-float'}`}>
+                            <span className="egg-symbol">{egg.icon}</span>
+                            <div className="warmth-heat-waves">
+                              <span>♨️</span>
+                              <span>{isSuper ? '🔥' : '♨️'}</span>
+                            </div>
+                          </div>
+
+                          <div className="incubator-egg-info">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <h3>{egg.name}</h3>
+                              {isSuper && <span className="super-boost-tag">⚡ 2배 가속 가동 중!</span>}
+                            </div>
+                            <span className="egg-rarity-tag">
+                              {egg.eggType === 'gen1'
+                                ? '🔴 1기 포켓몬 전용 알 (관동도감 1~151번 전종)'
+                                : egg.isGolden
+                                ? '🌟 전설 & 특수 포켓몬 알 (100% 이로치/특수폼)'
+                                : '🥚 일반 포켓몬 알 (전 세대 포켓몬)'}
+                            </span>
+                            <p className="egg-warmth-status">
+                              {isReady
+                                ? '🎉 온기가 가득 찼습니다! 알이 기우뚱거리며 깨어날 준비를 마쳤습니다!'
+                                : `🔥 부화 온기 충전 중... (${Math.round(egg.progress)}% 달성)`}
+                            </p>
+
+                            {/* Warmth Progress Bar */}
+                            <div className="warmth-bar-track">
+                              <div
+                                className={`warmth-bar-fill ${egg.eggType === 'gen1' ? 'gen1' : egg.isGolden ? 'golden' : ''}`}
+                                style={{ width: `${egg.progress}%` }}
+                              />
+                            </div>
+
+                            <div className="warmth-tips-row">
+                              <span>💡 쓰다듬기(+1%) | 거품목욕(+3%) | 알바(+5%) | 탐험(+10%) {isSuper ? ' (⚡ 슈퍼 2배 적용!)' : ''}</span>
+                            </div>
+
+                            {isReady && (
+                              <button
+                                className="excel-btn primary hatch-action-btn"
+                                onClick={() => handleStartHatching(slot.id)}
+                              >
+                                🐣 지금 바로 [{egg.name}] 부화시키기!
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="incubator-empty-view">
+                        <div className="empty-pod-icon">{isSuper ? '🚀' : '🪹'}</div>
+                        <div className="empty-pod-info">
+                          <h5>{slot.name} 대기 중</h5>
+                          <p>
+                            보유 중인 알을 넣어보세요! {isSuper ? '⚡ 2배의 온기 속도로 초고속 부화합니다.' : '다양한 일상 활동으로 온기를 모아보세요.'}
+                          </p>
+
+                          <div className="place-egg-actions">
+                            {(farmState.inventory['mystery_egg'] || 0) > 0 && (
+                              <button
+                                className="excel-btn primary"
+                                onClick={() => {
+                                  const item = FARM_ITEMS.find(i => i.id === 'mystery_egg');
+                                  if (item) handlePlaceEggInIncubator(item, slot.id);
+                                }}
+                              >
+                                🥚 일반 알 넣기 ({farmState.inventory['mystery_egg']}개)
+                              </button>
+                            )}
+                            {(farmState.inventory['gen1_egg'] || 0) > 0 && (
+                              <button
+                                className="excel-btn primary gen1-btn"
+                                onClick={() => {
+                                  const item = FARM_ITEMS.find(i => i.id === 'gen1_egg');
+                                  if (item) handlePlaceEggInIncubator(item, slot.id);
+                                }}
+                              >
+                                🔴 1기 전용알 넣기 ({farmState.inventory['gen1_egg']}개)
+                              </button>
+                            )}
+                            {(farmState.inventory['golden_egg'] || 0) > 0 && (
+                              <button
+                                className="excel-btn primary golden-btn"
+                                onClick={() => {
+                                  const item = FARM_ITEMS.find(i => i.id === 'golden_egg');
+                                  if (item) handlePlaceEggInIncubator(item, slot.id);
+                                }}
+                              >
+                                🌟 전설&특수알 넣기 ({farmState.inventory['golden_egg']}개)
+                              </button>
+                            )}
+                            {(farmState.inventory['mystery_egg'] || 0) <= 0 &&
+                             (farmState.inventory['gen1_egg'] || 0) <= 0 &&
+                             (farmState.inventory['golden_egg'] || 0) <= 0 && (
+                              <button
+                                className="excel-btn"
+                                onClick={() => setActiveTab('shop')}
+                              >
+                                🛍️ 상점에서 알 구하러 가기
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+
+              {/* Locked Chamber Expansion Preview Card */}
+              <div className="incubator-chamber-card locked-chamber-card">
+                <div className="locked-slot-content">
+                  <div className="locked-slot-icon">🚀</div>
+                  <div className="locked-slot-info">
+                    <h4>➕ [슈퍼 고속 인큐베이터 슬롯 추가 증설]</h4>
+                    <p>
+                      상점에서 <strong>[🚀 슈퍼 고속 알 부화기]</strong>를 구매하면 추가 챔버가 즉시 설치되어
+                      <br />
+                      <strong>동시에 여러 알을 2배 빠른 속도</strong>로 부화시킬 수 있습니다!
+                    </p>
+                  </div>
+                  <button
+                    className="excel-btn primary super-expand-btn"
+                    onClick={() => setActiveTab('shop')}
+                  >
+                    🛍️ 상점에서 고속 부화기 구매하기 (1,500 코인)
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Bottom Section: Reserve Daycare Pasture */}
@@ -8145,16 +9548,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               {FARM_ITEMS.filter(item => {
                 if (item.id === 'shiny_stone' || item.id === 'gold_crown') return false; // 탐험 전용 환금 보물은 제외
                 if (shopCategory === 'all') return true;
-                if (shopCategory === 'egg') return item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'rare_candy';
+                if (shopCategory === 'egg') return item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id.includes('rare_candy') || item.category === 'special';
                 return item.category === shopCategory;
               }).map(item => {
-                const isSpecialItem = item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'rare_candy';
+                const isSpecialItem = item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id.includes('rare_candy') || item.category === 'special';
                 const isGolden = item.id === 'golden_egg';
                 return (
                   <div key={item.id} className={`shop-item-card ${isGolden ? 'golden-egg-card' : isSpecialItem ? 'special-item-card' : ''}`}>
                     {isGolden && <span className="item-special-badge">🌟 전설&특수</span>}
                     {item.id === 'mystery_egg' && <span className="item-special-badge normal">🥚 일반부화</span>}
                     {item.id === 'rare_candy' && <span className="item-special-badge candy">🍬 즉시+1Lv</span>}
+                    {item.id === 'rare_candy_s' && <span className="item-special-badge candy">🍬 EXP+30%</span>}
+                    {item.id === 'rare_candy_m' && <span className="item-special-badge candy">🍬 EXP+50%</span>}
                     <div className="item-icon-box">{item.icon}</div>
                     <h4>{item.name}</h4>
                     <p className="item-desc">{item.description}</p>
@@ -8376,6 +9781,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     <span>🍎 배고픔 소모:</span>
                     <span>-{jobShiftModal.job.hungerCost}</span>
                   </div>
+                  {jobShiftModal.rewardGained?.zeroPenalty && jobShiftModal.rewardGained.zeroPenalty > 0 ? (
+                    <div style={{ gridColumn: '1 / -1', background: '#fef2f2', border: '1px dashed #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', color: '#b91c1c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>💔 탈진/공복 바닥 페널티 ({jobShiftModal.rewardGained.zeroGauges?.join(', ')})</span>
+                      <strong>친밀도 -{jobShiftModal.rewardGained.zeroPenalty}</strong>
+                    </div>
+                  ) : null}
                 </div>
                 {jobShiftModal.rewardGained?.levelUp && (
                   <div className="job-levelup-badge">
@@ -8576,10 +9987,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     <span>✨ 탐험 경험치:</span>
                     <strong>+{expeditionModal.rewardGained.exp} EXP</strong>
                   </div>
+                  {expeditionModal.rewardGained.happinessChange !== undefined && (
+                    <div className={`receipt-row ${expeditionModal.rewardGained.happinessChange >= 0 ? 'gain' : 'cost'}`}>
+                      <span>{expeditionModal.rewardGained.happinessChange >= 0 ? '💖 친밀도 상승:' : '💔 친밀도 하락:'}</span>
+                      <strong style={{ color: expeditionModal.rewardGained.happinessChange >= 0 ? '#047857' : '#dc2626' }}>
+                        {expeditionModal.rewardGained.happinessChange >= 0 ? `+${expeditionModal.rewardGained.happinessChange}` : expeditionModal.rewardGained.happinessChange}
+                      </strong>
+                    </div>
+                  )}
                   {expeditionModal.rewardGained.levelUp && (
                     <div className="receipt-row levelup-alert">
                       <span>🎉 레벨업 달성!</span>
                       <strong>Lv.{expeditionModal.rewardGained.newLevel}</strong>
+                    </div>
+                  )}
+                  {expeditionModal.rewardGained.diceFailed && (
+                    <div style={{ gridColumn: '1 / -1', background: '#fef2f2', border: '1px dashed #fca5a5', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', color: '#b91c1c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>🎲 주사위 판정 실패 페널티:</span>
+                      <strong>의기소침 (친밀도 -10)</strong>
+                    </div>
+                  )}
+                  {expeditionModal.rewardGained.zeroGauges && expeditionModal.rewardGained.zeroGauges.length > 0 && (
+                    <div style={{ gridColumn: '1 / -1', background: '#fffbeb', border: '1px dashed #fcd34d', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', color: '#b45309', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>⚠️ 게이지 바닥 페널티 ({expeditionModal.rewardGained.zeroGauges.join(', ')})</span>
+                      <strong>친밀도 -{expeditionModal.rewardGained.zeroGauges.length * 8}</strong>
                     </div>
                   )}
                 </div>
@@ -8624,7 +10055,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               <div className="hatch-phase-view">
                 <h2>어라...?! 알의 상태가...!</h2>
                 <div className="hatch-egg-pod wobble">
-                  <span className="pod-egg-graphic">{hatchingModal.isGolden ? '🌟' : '🥚'}</span>
+                  <span className="pod-egg-graphic">
+                    {hatchingModal.eggType === 'gen1' ? '🔴' : hatchingModal.isGolden ? '🌟' : '🥚'}
+                  </span>
                 </div>
                 <p>알이 따스한 온기를 뿜으며 기우뚱기우뚱 흔들리고 있습니다...!</p>
               </div>
@@ -8634,7 +10067,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               <div className="hatch-phase-view">
                 <h2>금이 가기 시작했다...!!</h2>
                 <div className="hatch-egg-pod crack">
-                  <span className="pod-egg-graphic">{hatchingModal.isGolden ? '🌟' : '🥚'}</span>
+                  <span className="pod-egg-graphic">
+                    {hatchingModal.eggType === 'gen1' ? '🔴' : hatchingModal.isGolden ? '🌟' : '🥚'}
+                  </span>
                   <div className="crack-burst-lines">💥✨⚡</div>
                 </div>
                 <p>알 껍질 사이로 눈부신 빛이 새어 나옵니다...!</p>

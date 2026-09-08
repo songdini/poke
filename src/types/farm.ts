@@ -173,6 +173,14 @@ export interface IncubatingEgg {
   acquiredAt: string;
 }
 
+export interface IncubatorSlot {
+  id: string; // 'inc_standard_0', 'inc_super_1', 'inc_super_2', ...
+  name: string; // '🌡️ 기본 인큐베이터 1호기', '🚀 슈퍼 고속 인큐베이터 2호기'
+  type: 'standard' | 'super';
+  speedMultiplier: number; // 1.0 (기본 1호기), 2.0 (슈퍼 부화기 2배 초고속 온기 가속)
+  egg: IncubatingEgg | null;
+}
+
 export interface DailyLotteryState {
   lastDate: string; // YYYY-MM-DD
   freeSpinsLeft: number; // 일일 잔여 무료 스핀
@@ -238,7 +246,8 @@ export interface FarmState {
   coins: number;
   activePokemon: FarmPokemon | null;
   reservePokemon: FarmPokemon[]; // 🌟 보육소 목장에 보관된 다른 파트너 포켓몬들
-  incubatingEgg?: IncubatingEgg | null; // 🌟 현재 부화기에 품고 있는 알
+  incubatingEgg?: IncubatingEgg | null; // 🌟 1호기 인큐베이터에 품고 있는 알 (구버전 호환용)
+  incubatorSlots?: IncubatorSlot[]; // 🚀 알 부화소 다중 인큐베이터 챔버 슬롯 목록 (슈퍼 부화기 보유 시 확장)
   graduatedPokemon: GraduationDiploma[];
   inventory: Record<string, number>; // itemId -> count
   guestbook: GuestbookEntry[];
