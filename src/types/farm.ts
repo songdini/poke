@@ -213,6 +213,24 @@ export interface PokemonPlacement {
   zIndex?: number;
 }
 
+export interface TrainerPlacement {
+  x: number;
+  y: number;
+  scale?: number;
+  flipped?: boolean;
+  skin?: string; // 'red' | 'leaf' | 'ash' | 'ethan' | 'dawn' | 'brendan' | 'may'
+}
+
+export interface RoomData {
+  id: string; // 'room_1' | 'room_2' | 'room_3'
+  name?: string;
+  bgTheme?: string;
+  stickers?: MinihompySticker[];
+  pokemonPlacements?: Record<string, PokemonPlacement>;
+  hiddenPokemon?: string[]; // 🐾 이 방에서 배치 해제(숨김)된 포켓몬 ID 목록 (실제 삭제 X)
+  trainerPlacement?: TrainerPlacement; // 🧑🌾 이 방에서의 내 캐릭터 위치/외형
+}
+
 export interface FarmState {
   ownerName: string;
   farmName: string;
@@ -229,7 +247,9 @@ export interface FarmState {
   stickers?: MinihompySticker[]; // 🎨 미니룸 배치 스티커 및 자유 텍스트 리스트
   pokemonPlacements?: Record<string, PokemonPlacement>; // 🐾 포켓몬별 자유 위치/크기/반전 저장
   currentRoomId?: string; // 🚪 현재 선택된 미니룸 방 번호 ('room_1' | 'room_2' | 'room_3')
-  rooms?: Record<string, { bgTheme?: string; stickers?: MinihompySticker[]; pokemonPlacements?: Record<string, PokemonPlacement> }>; // 🏠 다중 룸 데이터
+  rooms?: Record<string, RoomData>; // 🏠 다중 룸 데이터
+  hiddenPokemon?: string[]; // 🐾 미니룸에서 배치 숨김 처리된 포켓몬 ID 목록 (실제 삭제 X)
+  trainerPlacement?: TrainerPlacement; // 🧑🌾 내 트레이너 캐릭터 위치/외형
   unlockedSpecies?: number[]; // 📖 도감에 등록된 포켓몬 종 ID 목록 (대표 등록, 획득 시 영구 도감 활성화)
   statusMsg?: string; // 💬 투데이 상태 메시지 ("오늘도 피카츄와 열렙 중! ⚡")
   bgmSong?: string; // 🎵 미니홈피 BGM 곡명
@@ -253,7 +273,10 @@ export interface NeighborFarmData {
   bgTheme?: string;
   stickers?: MinihompySticker[];
   pokemonPlacements?: Record<string, PokemonPlacement>;
-  rooms?: Record<string, { bgTheme?: string; stickers?: MinihompySticker[]; pokemonPlacements?: Record<string, PokemonPlacement> }>;
+  currentRoomId?: string;
+  rooms?: Record<string, RoomData>;
+  hiddenPokemon?: string[];
+  trainerPlacement?: TrainerPlacement;
   unlockedSpecies?: number[];
   statusMsg?: string;
   bgmSong?: string;

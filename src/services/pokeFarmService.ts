@@ -4828,6 +4828,49 @@ export function getInitialFarmState(ownerName: string): FarmState {
       { id: 'stk_init_4', stickerId: 'txt_welcome', text: '두부월드에 오신 것을 환영해요! ✨', label: '환영 말풍선', x: 28, y: 18, type: 'bubble', styleType: 'classic_bubble', scale: 1 }
     ],
     pokemonPlacements: {},
+    currentRoomId: 'room_1',
+    rooms: {
+      room_1: {
+        id: 'room_1',
+        name: '1번방 (거실)',
+        bgTheme: 'classic',
+        stickers: [
+          { id: 'stk_init_1', stickerId: 'heart', icon: '💖', label: '하트', x: 15, y: 20, type: 'sticker', scale: 1 },
+          { id: 'stk_init_2', stickerId: 'star', icon: '⭐', label: '별', x: 80, y: 15, type: 'sticker', scale: 1 },
+          { id: 'stk_init_3', stickerId: 'acorn', icon: '🌰', label: '둡토리', x: 45, y: 75, type: 'sticker', scale: 1 },
+          { id: 'stk_init_4', stickerId: 'txt_welcome', text: '두부월드에 오신 것을 환영해요! ✨', label: '환영 말풍선', x: 28, y: 18, type: 'bubble', styleType: 'classic_bubble', scale: 1 }
+        ],
+        pokemonPlacements: {},
+        hiddenPokemon: [],
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      },
+      room_2: {
+        id: 'room_2',
+        name: '2번방 (정원)',
+        bgTheme: 'sakura',
+        stickers: [
+          { id: 'stk_r2_1', stickerId: 'flower', icon: '🌸', label: '벚꽃', x: 20, y: 25, type: 'sticker', scale: 1.2 },
+          { id: 'stk_r2_2', stickerId: 'tree', icon: '🌳', label: '나무', x: 80, y: 35, type: 'sticker', scale: 1.3 }
+        ],
+        pokemonPlacements: {},
+        hiddenPokemon: [],
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      },
+      room_3: {
+        id: 'room_3',
+        name: '3번방 (침실)',
+        bgTheme: 'starry',
+        stickers: [
+          { id: 'stk_r3_1', stickerId: 'moon', icon: '🌙', label: '달', x: 15, y: 20, type: 'sticker', scale: 1.2 },
+          { id: 'stk_r3_2', stickerId: 'star', icon: '✨', label: '별', x: 82, y: 22, type: 'sticker', scale: 1.1 }
+        ],
+        pokemonPlacements: {},
+        hiddenPokemon: [],
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      }
+    },
+    hiddenPokemon: [],
+    trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' },
     statusMsg: '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!',
     bgmSong: '프리스타일 - Y (Feat. 지선)',
     todayCount: 0,
@@ -4956,6 +4999,46 @@ export function loadFarmState(ownerName?: string): FarmState {
       parsed.graduatedPokemon = parsed.graduatedPokemon || [];
       parsed.stickers = parsed.stickers || [];
       parsed.pokemonPlacements = parsed.pokemonPlacements || {};
+      parsed.hiddenPokemon = parsed.hiddenPokemon || [];
+      parsed.trainerPlacement = parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+      parsed.currentRoomId = (parsed.currentRoomId as any) || 'room_1';
+      if (!parsed.rooms || Object.keys(parsed.rooms).length === 0) {
+        parsed.rooms = {
+          room_1: {
+            id: 'room_1',
+            name: '1번방 (거실)',
+            bgTheme: parsed.bgTheme || 'classic',
+            stickers: parsed.stickers || [],
+            pokemonPlacements: parsed.pokemonPlacements || {},
+            hiddenPokemon: parsed.hiddenPokemon || [],
+            trainerPlacement: parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+          },
+          room_2: {
+            id: 'room_2',
+            name: '2번방 (정원)',
+            bgTheme: 'sakura',
+            stickers: [
+              { id: 'stk_r2_1', stickerId: 'flower', icon: '🌸', label: '벚꽃', x: 20, y: 25, type: 'sticker', scale: 1.2 },
+              { id: 'stk_r2_2', stickerId: 'tree', icon: '🌳', label: '나무', x: 80, y: 35, type: 'sticker', scale: 1.3 }
+            ],
+            pokemonPlacements: {},
+            hiddenPokemon: [],
+            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+          },
+          room_3: {
+            id: 'room_3',
+            name: '3번방 (침실)',
+            bgTheme: 'starry',
+            stickers: [
+              { id: 'stk_r3_1', stickerId: 'moon', icon: '🌙', label: '달', x: 15, y: 20, type: 'sticker', scale: 1.2 },
+              { id: 'stk_r3_2', stickerId: 'star', icon: '✨', label: '별', x: 82, y: 22, type: 'sticker', scale: 1.1 }
+            ],
+            pokemonPlacements: {},
+            hiddenPokemon: [],
+            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+          }
+        };
+      }
       if (parsed.incubatingEgg === undefined) parsed.incubatingEgg = null;
       parsed.isInitialized = true;
 
@@ -5091,6 +5174,10 @@ export function getAllStoredFarms(): NeighborFarmData[] {
               bgTheme: state.bgTheme || 'classic',
               stickers: state.stickers || [],
               pokemonPlacements: state.pokemonPlacements || {},
+              currentRoomId: state.currentRoomId || 'room_1',
+              rooms: state.rooms,
+              hiddenPokemon: state.hiddenPokemon || [],
+              trainerPlacement: state.trainerPlacement,
               statusMsg: state.statusMsg || '',
               todayCount: state.todayCount || 0,
               totalCount: state.totalCount || 0,

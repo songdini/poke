@@ -9657,3 +9657,429 @@
   text-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
 }
 
+
+
+/* ==========================================================================
+   🏥 포켓몬 센터 배경 상주 캐릭터 (간호순 누나 & 해피니스)
+   ========================================================================== */
+.center-staff-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.center-staff-char {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.center-staff-char:hover {
+  transform: scale(1.08) translateY(-2px);
+}
+
+.center-staff-char.joy {
+  top: 14%;
+  left: 49%;
+  transform: translateX(-50%);
+}
+
+.center-staff-char.joy:hover {
+  transform: translateX(-50%) scale(1.08) translateY(-2px);
+}
+
+.center-joy-sprite {
+  height: 64px;
+  width: auto;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+  animation: joyBounce 3s ease-in-out infinite;
+}
+
+.center-staff-char.blissey {
+  top: 18%;
+  left: 58.5%;
+}
+
+.center-blissey-sprite {
+  height: 46px;
+  width: auto;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+  animation: blisseyWiggle 2.5s ease-in-out infinite;
+}
+
+.staff-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #be185d;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  margin-top: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid rgba(244, 114, 182, 0.5);
+}
+
+@keyframes joyBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes blisseyWiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-3deg); }
+  75% { transform: translateY(-2px) rotate(3deg); }
+}
+
+/* 🔒 홈 화면(홈 탭) 및 읽기 전용 모드 잠금 커서 */
+.miniroom-pokemon.locked-pos,
+.miniroom-placed-item.locked-pos,
+.miniroom-sticker.locked-pos {
+  cursor: default !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+.miniroom-pokemon.locked-pos img,
+.miniroom-placed-item.locked-pos img {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+
+/* ==========================================================================
+   🛋️ 미니홈피 멀티룸 (방 이동), 트레이너/방문자 캐릭터 & 포켓몬 배치 관리 스타일
+   ========================================================================== */
+
+/* 🚪 멀티룸 방 전환 상단 네비게이션 바 */
+.miniroom-room-switcher-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #94a3b8;
+  border-radius: 14px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.room-switcher-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+
+.room-buttons-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.room-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.room-nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.room-nav-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-color: #1e40af;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.room-active-dot {
+  font-size: 0.7rem;
+  color: #fde047;
+  margin-left: 2px;
+}
+
+.room-current-info .room-info-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 🧑🌾 내 트레이너 캐릭터 & 방문자 캐릭터 */
+.miniroom-trainer {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  touch-action: none;
+  user-select: none;
+  transform-origin: bottom center;
+  transition: filter 0.2s ease;
+}
+
+.miniroom-trainer.free-drag {
+  cursor: grab;
+}
+
+.miniroom-trainer.free-drag:active,
+.miniroom-trainer.free-drag.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+  z-index: 55 !important;
+}
+
+.miniroom-trainer.free-drag.selected {
+  outline: 2.5px dashed #10b981;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.miniroom-trainer.locked-pos {
+  cursor: pointer;
+}
+
+.trainer-name-tag {
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.trainer-name-tag.visitor-tag {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border-color: #c4b5fd;
+  color: #ffffff;
+}
+
+.trainer-name-tag.host-tag {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  border-color: #fde68a;
+  color: #ffffff;
+}
+
+.trainer-sprite {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+/* 💬 트레이너 클릭 시 팝업 말풍선 */
+.trainer-speech-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  color: #0f172a;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  border: 2px solid #3b82f6;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: auto;
+  animation: popInBubble 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.trainer-speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 7px;
+  border-style: solid;
+  border-color: #3b82f6 transparent transparent transparent;
+}
+
+.trainer-speech-bubble.visitor-bubble {
+  border-color: #8b5cf6;
+}
+
+.trainer-speech-bubble.visitor-bubble::after {
+  border-color: #8b5cf6 transparent transparent transparent;
+}
+
+.trainer-speech-bubble.host-bubble {
+  border-color: #f59e0b;
+}
+
+.trainer-speech-bubble.host-bubble::after {
+  border-color: #f59e0b transparent transparent transparent;
+}
+
+@keyframes popInBubble {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+/* ❌ 포켓몬 미니룸 개별 배치 해제(삭제) 버튼 */
+.poke-del-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 0.8rem !important;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+  z-index: 60 !important;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.poke-del-btn:hover {
+  transform: scale(1.2);
+  background: #dc2626 !important;
+}
+
+/* 🐾 포켓몬 배치 관리 패널 스타일 */
+.placements-quick-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.placement-status-badge {
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.placement-status-badge.active {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.placement-status-badge.hidden {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.poke-placement-card.is-hidden-mon {
+  opacity: 0.6;
+  background: #f8fafc;
+  border-left: 4px solid #f87171;
+}
+
+.poke-placement-card.is-hidden-mon:hover {
+  opacity: 0.92;
+}
+
+/* 🎭 트레이너 스킨 선택기 */
+.trainer-skin-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.skin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.skin-btn:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.skin-btn.active {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.25);
+}
+
+.skin-btn img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice, RoomData, TrainerPlacement } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -171,6 +171,39 @@ export interface PokemonSkillEffect {
   fxClass: string;
   previewColor: string;
 }
+
+// 🛋️ 미니홈피 멀티룸 (다중 방) 정보 정의
+export const MINIROOM_ROOMS = [
+  { id: 'room_1' as const, name: '1번방 (거실)', desc: '메인 거실 & 휴식 공간', icon: '🛋️', defaultTheme: 'classic' },
+  { id: 'room_2' as const, name: '2번방 (정원)', desc: '자연 & 힐링 가든', icon: '🌿', defaultTheme: 'sakura' },
+  { id: 'room_3' as const, name: '3번방 (침실)', desc: '아늑한 침실 & 개인공간', icon: '🌙', defaultTheme: 'starry' },
+] as const;
+
+// 🎭 트레이너 캐릭터 외형(스킨) 정의
+export const TRAINER_SKINS = [
+  { id: 'dubu', name: '🐶 마스코트 두부', src: '/images/trainer_dubu.png' },
+  { id: 'ash', name: '🧢 지우', src: '/images/trainer_ash.png' },
+  { id: 'misty', name: '💧 이슬이', src: '/images/trainer_misty.png' },
+  { id: 'brock', name: '🪨 웅이', src: '/images/trainer_brock.png' },
+  { id: 'rocket', name: '🚀 로켓단(로사)', src: '/images/trainer_rocket.png' },
+  { id: 'james', name: '🌹 로켓단(로이)', src: '/images/trainer_james.png' },
+  { id: 'meowth', name: '💰 로켓단(나옹)', src: '/images/trainer_meowth.png' },
+  { id: 'wobbuffet', name: '🙋 로켓단(마자용)', src: '/images/trainer_wobbuffet.png' },
+  { id: 'oak', name: '🔬 오박사', src: '/images/trainer_oak.png' },
+  { id: 'pikachu', name: '⚡ 피카츄', src: '/images/trainer_pikachu.png' },
+  { id: 'squirtle', name: '🐢 꼬부기', src: '/images/trainer_squirtle.png' },
+  { id: 'charmander', name: '🔥 파이리', src: '/images/trainer_charmander.png' },
+  { id: 'bulbasaur', name: '🍃 이상해씨', src: '/images/trainer_bulbasaur.png' },
+];
+
+export const getValidTrainerSkin = (skin?: string): string => {
+  const validIds = [
+    'dubu', 'ash', 'misty', 'brock', 'rocket', 'james', 'meowth', 'wobbuffet', 'oak',
+    'pikachu', 'squirtle', 'charmander', 'bulbasaur'
+  ];
+  if (skin && validIds.includes(skin)) return skin;
+  return 'ash';
+};
 
 export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
   {
@@ -940,11 +973,14 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // ⛺ 두부월드 미니홈피 상태
   const [minihompyTab, setMinihompyTab] = useState<'home' | 'miniroom' | 'pokedex' | 'guestbook' | 'stickers' | 'neighbors'>('home');
+  const [currentRoomId, setCurrentRoomId] = useState<'room_1' | 'room_2' | 'room_3'>('room_1');
+  const [trainerBubble, setTrainerBubble] = useState<{ id: string; text: string } | null>(null);
+  const [visitorWalkPos, setVisitorWalkPos] = useState<{ x: number; y: number } | null>(null);
 
   // 🎨 미니룸 인터랙티브 드래그 & 데코레이션 상태
   const miniroomCanvasRef = React.useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<{
-    type: 'sticker' | 'pokemon';
+    type: 'sticker' | 'pokemon' | 'trainer';
     id: string;
     startX: number;
     startY: number;
@@ -952,7 +988,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     origY: number;
   } | null>(null);
   const [selectedDecorItem, setSelectedDecorItem] = useState<{
-    type: 'sticker' | 'pokemon';
+    type: 'sticker' | 'pokemon' | 'trainer';
     id: string;
   } | null>(null);
 
@@ -1310,8 +1346,93 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const displayGraduatedCount = visitingFarm ? (visitingFarm.farm.graduatedPokemon ? visitingFarm.farm.graduatedPokemon.length : (visitingFarm.farm.graduatedCount || 0)) : farmState.graduatedPokemon.length;
   const displayHeartsCount = visitingFarm ? (visitingFarm.farm.heartsCount ?? 0) : (farmState.heartsCount ?? 0);
   const displayGuestbook = visitingFarm ? visitingFarm.guestbook : farmState.guestbook;
-  const currentBgTheme = visitingFarm ? (visitingFarm.farm.bgTheme || 'classic') : (farmState.bgTheme || 'classic');
-  const currentStickers = visitingFarm ? (visitingFarm.farm.stickers || []) : (farmState.stickers || []);
+  // 🛋️ 현재 보고 있는 방 데이터 안전 추출 헬퍼 (내 방 / 이웃 방 공통)
+  const getActiveRoomData = useCallback((roomId: 'room_1' | 'room_2' | 'room_3' = currentRoomId): RoomData => {
+    const targetFarm = visitingFarm ? visitingFarm.farm : farmState;
+    const room = targetFarm.rooms?.[roomId];
+    if (room) return room;
+
+    if (roomId === 'room_1') {
+      return {
+        id: 'room_1',
+        name: '1번방 (거실)',
+        bgTheme: targetFarm.bgTheme || 'classic',
+        stickers: targetFarm.stickers || [],
+        pokemonPlacements: targetFarm.pokemonPlacements || {},
+        hiddenPokemon: targetFarm.hiddenPokemon || [],
+        trainerPlacement: targetFarm.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      };
+    } else if (roomId === 'room_2') {
+      return {
+        id: 'room_2',
+        name: '2번방 (정원)',
+        bgTheme: 'sakura',
+        stickers: [
+          { id: 'stk_r2_1', stickerId: 'flower', icon: '🌸', label: '벚꽃', x: 20, y: 25, type: 'sticker', scale: 1.2 },
+          { id: 'stk_r2_2', stickerId: 'tree', icon: '🌳', label: '나무', x: 80, y: 35, type: 'sticker', scale: 1.3 }
+        ],
+        pokemonPlacements: {},
+        hiddenPokemon: [],
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      };
+    } else {
+      return {
+        id: 'room_3',
+        name: '3번방 (침실)',
+        bgTheme: 'starry',
+        stickers: [
+          { id: 'stk_r3_1', stickerId: 'moon', icon: '🌙', label: '달', x: 15, y: 20, type: 'sticker', scale: 1.2 },
+          { id: 'stk_r3_2', stickerId: 'star', icon: '✨', label: '별', x: 82, y: 22, type: 'sticker', scale: 1.1 }
+        ],
+        pokemonPlacements: {},
+        hiddenPokemon: [],
+        trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+      };
+    }
+  }, [visitingFarm, farmState, currentRoomId]);
+
+  const activeRoomData = getActiveRoomData(currentRoomId);
+  const currentBgTheme = activeRoomData.bgTheme || 'classic';
+  const currentStickers = activeRoomData.stickers || [];
+  const currentHiddenPokemon = activeRoomData.hiddenPokemon || [];
+  const currentTrainerPlacement: TrainerPlacement = activeRoomData.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+
+  // 🚪 방 전환 핸들러
+  const handleChangeRoom = (roomId: 'room_1' | 'room_2' | 'room_3') => {
+    setCurrentRoomId(roomId);
+    setSelectedDecorItem(null);
+    setTrainerBubble(null);
+    setVisitorWalkPos(null);
+  };
+
+  // 🛋️ 현재 방 상태 일괄 업데이트 헬퍼
+  const updateCurrentRoom = useCallback((updater: (prevRoom: RoomData) => Partial<RoomData>) => {
+    if (visitingFarm) return;
+    setFarmState(prev => {
+      const curRooms: Record<string, RoomData> = { ...(prev.rooms || {}) };
+      const curRoom: RoomData = curRooms[currentRoomId] || getActiveRoomData(currentRoomId);
+      const changes = updater(curRoom);
+      const updatedRoom: RoomData = { ...curRoom, ...changes };
+      curRooms[currentRoomId] = updatedRoom;
+
+      const nextState: FarmState = {
+        ...prev,
+        rooms: curRooms,
+        currentRoomId
+      };
+
+      if (currentRoomId === 'room_1') {
+        if (updatedRoom.bgTheme !== undefined) nextState.bgTheme = updatedRoom.bgTheme;
+        if (updatedRoom.stickers !== undefined) nextState.stickers = updatedRoom.stickers;
+        if (updatedRoom.pokemonPlacements !== undefined) nextState.pokemonPlacements = updatedRoom.pokemonPlacements;
+        if (updatedRoom.hiddenPokemon !== undefined) nextState.hiddenPokemon = updatedRoom.hiddenPokemon;
+        if (updatedRoom.trainerPlacement !== undefined) nextState.trainerPlacement = updatedRoom.trainerPlacement;
+      }
+
+      return nextState;
+    });
+  }, [visitingFarm, currentRoomId, getActiveRoomData]);
+
   const currentStatusMsg = visitingFarm ? (visitingFarm.farm.statusMsg || '이웃의 농장에 놀러왔습니다 🎵') : (farmState.statusMsg || '오늘도 포켓몬과 함께 즐거운 파밍 🎵 1촌 환영!');
 
   // 👥 이웃 농장 목록 새로고침 헬퍼
@@ -1334,6 +1455,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       setVisitingFarm(null);
       setActiveTab('minihome');
       setMinihompyTab('home');
+      setCurrentRoomId('room_1');
+      setVisitorWalkPos(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       showAlert('내 포켓 미니홈피로 돌아왔습니다! 🏠', 'info');
       return;
@@ -1359,6 +1482,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           bgTheme: targetSaved.bgTheme || 'classic',
           stickers: targetSaved.stickers || [],
           pokemonPlacements: targetSaved.pokemonPlacements || {},
+          rooms: targetSaved.rooms,
+          trainerPlacement: targetSaved.trainerPlacement,
+          hiddenPokemon: targetSaved.hiddenPokemon || [],
           statusMsg: targetSaved.statusMsg || '',
           todayCount: targetSaved.todayCount ?? 0,
           totalCount: targetSaved.totalCount ?? 0,
@@ -1489,9 +1615,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       scale: 1,
       flipped: false
     };
-    setFarmState(prev => ({
-      ...prev,
-      stickers: [...(prev.stickers || []), newSticker]
+    updateCurrentRoom(r => ({
+      stickers: [...(r.stickers || []), newSticker]
     }));
     showAlert(`🎨 [${label}] 스티커를 미니룸에 붙였습니다! 드래그하여 배치해보세요.`, 'success');
     setSelectedDecorItem({ type: 'sticker', id: newSticker.id });
@@ -1520,9 +1645,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       flipped: false
     };
 
-    setFarmState(prev => ({
-      ...prev,
-      stickers: [...(prev.stickers || []), newTextSticker]
+    updateCurrentRoom(r => ({
+      stickers: [...(r.stickers || []), newTextSticker]
     }));
     setCustomTextContent('');
     showAlert('✍️ 자유 텍스트/말풍선이 미니룸에 추가되었습니다! 드래그하여 원하는 위치에 놓아보세요.', 'success');
@@ -1559,8 +1683,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
     setFarmState(prev => ({
       ...prev,
-      coins: prev.coins - effect.price,
-      stickers: [...(prev.stickers || []), newEffectSticker]
+      coins: prev.coins - effect.price
+    }));
+    updateCurrentRoom(r => ({
+      stickers: [...(r.stickers || []), newEffectSticker]
     }));
 
     showAlert(`✨ [${effect.name}] 스킬 이펙트를 구매하여 미니룸에 배치했습니다! (-${effect.price}P) 포켓몬 위에 씌워보세요!`, 'success');
@@ -1570,9 +1696,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 스티커 크기 조절
   const handleScaleSticker = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => {
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => {
         if (s.id !== id) return s;
         const curScale = s.scale || 1;
         const nextScale = Math.max(0.5, Math.min(2.2, Math.round((curScale + delta) * 10) / 10));
@@ -1585,17 +1710,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleSetStickerRotation = (id: string, angle: number) => {
     if (visitingFarm) return;
     const normalized = Math.round(((angle % 360) + 360) % 360);
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => s.id === id ? { ...s, rotation: normalized } : s)
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => s.id === id ? { ...s, rotation: normalized } : s)
     }));
   };
 
   const handleRotateSticker = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => {
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => {
         if (s.id !== id) return s;
         const cur = s.rotation || 0;
         const next = Math.round(((cur + delta) % 360 + 360) % 360);
@@ -1608,17 +1731,15 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleSetStickerTiltX = (id: string, tilt: number) => {
     if (visitingFarm) return;
     const clamped = Math.max(-60, Math.min(60, Math.round(tilt)));
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => s.id === id ? { ...s, tiltX: clamped } : s)
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => s.id === id ? { ...s, tiltX: clamped } : s)
     }));
   };
 
   const handleTiltStickerX = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => {
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => {
         if (s.id !== id) return s;
         const cur = s.tiltX || 0;
         const next = Math.max(-60, Math.min(60, cur + delta));
@@ -1630,9 +1751,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 스티커 좌우 반전
   const handleFlipSticker = (id: string) => {
     if (visitingFarm) return;
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).map(s => {
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).map(s => {
         if (s.id !== id) return s;
         return { ...s, flipped: !s.flipped };
       })
@@ -1642,9 +1762,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 스티커 제거
   const handleRemoveSticker = (id: string) => {
     if (visitingFarm) return;
-    setFarmState(prev => ({
-      ...prev,
-      stickers: (prev.stickers || []).filter(s => s.id !== id)
+    updateCurrentRoom(r => ({
+      stickers: (r.stickers || []).filter(s => s.id !== id)
     }));
     if (selectedDecorItem?.id === id) {
       setSelectedDecorItem(null);
@@ -1655,7 +1774,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleClearAllStickers = () => {
     if (visitingFarm) return;
     if (window.confirm('미니룸의 모든 스티커와 텍스트를 제거하시겠습니까?')) {
-      setFarmState(prev => ({ ...prev, stickers: [] }));
+      updateCurrentRoom(() => ({ stickers: [] }));
       setSelectedDecorItem(null);
       showAlert('🧹 미니룸 스티커를 모두 지웠습니다.', 'info');
     }
@@ -1664,14 +1783,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 포켓몬 크기 조절
   const handleScalePokemon = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
       const curScale = existing.scale || 1;
       const nextScale = Math.max(0.6, Math.min(1.8, Math.round((curScale + delta) * 10) / 10));
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, scale: nextScale }
         }
       };
@@ -1682,12 +1800,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleSetPokemonRotation = (id: string, angle: number) => {
     if (visitingFarm) return;
     const normalized = Math.round(((angle % 360) + 360) % 360);
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, rotation: normalized }
         }
       };
@@ -1696,14 +1813,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   const handleRotatePokemon = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
       const cur = existing.rotation || 0;
       const next = Math.round(((cur + delta) % 360 + 360) % 360);
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, rotation: next }
         }
       };
@@ -1714,12 +1830,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleSetPokemonTiltX = (id: string, tilt: number) => {
     if (visitingFarm) return;
     const clamped = Math.max(-60, Math.min(60, Math.round(tilt)));
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, tiltX: clamped }
         }
       };
@@ -1728,14 +1843,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   const handleTiltPokemonX = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0 };
       const cur = existing.tiltX || 0;
       const next = Math.max(-60, Math.min(60, cur + delta));
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, tiltX: next }
         }
       };
@@ -1745,12 +1859,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 포켓몬 좌우 반전 (바라보는 방향 전환)
   const handleFlipPokemon = (id: string) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, isBackView: false };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, isBackView: false };
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, flipped: !existing.flipped }
         }
       };
@@ -1761,12 +1874,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleSetPokemonTiltY = (id: string, angle: number) => {
     if (visitingFarm) return;
     const normalized = Math.round(((angle % 360) + 360) % 360);
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, tiltY: normalized, isBackView: normalized > 90 && normalized < 270 }
         }
       };
@@ -1775,14 +1887,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   const handleTurnPokemonY = (id: string, delta: number) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const existing = prev.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
+    updateCurrentRoom(r => {
+      const existing = r.pokemonPlacements?.[id] || { uid: id, x: 45, y: 52, scale: 1, flipped: false, rotation: 0, tiltX: 0, tiltY: 0 };
       const cur = existing.tiltY !== undefined ? existing.tiltY : (existing.isBackView ? 180 : 0);
       const next = Math.round(((cur + delta) % 360 + 360) % 360);
       return {
-        ...prev,
         pokemonPlacements: {
-          ...(prev.pokemonPlacements || {}),
+          ...(r.pokemonPlacements || {}),
           [id]: { ...existing, tiltY: next, isBackView: next > 90 && next < 270 }
         }
       };
@@ -1792,15 +1903,238 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 포켓몬 위치 초기화
   const handleResetPokemonPlacement = (id: string) => {
     if (visitingFarm) return;
-    setFarmState(prev => {
-      const next = { ...(prev.pokemonPlacements || {}) };
+    updateCurrentRoom(r => {
+      const next = { ...(r.pokemonPlacements || {}) };
       delete next[id];
       return {
-        ...prev,
         pokemonPlacements: next
       };
     });
     showAlert('📍 포켓몬 위치 및 회전 각도를 초기화했습니다.', 'info');
+  };
+
+  // 🐾 포켓몬 미니룸에서 숨기기 (배치 해제 - 실제 포켓몬은 완전 보존)
+  const handleHidePokemonFromMiniroom = (id: string, name?: string) => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => {
+      const curHidden = r.hiddenPokemon || [];
+      return {
+        hiddenPokemon: Array.from(new Set([...curHidden, id]))
+      };
+    });
+    if (selectedDecorItem?.id === id) {
+      setSelectedDecorItem(null);
+    }
+    showAlert(`🐾 ${name ? `[${name}] ` : ''}포켓몬의 미니룸 배치를 해제했습니다. (실제 포켓몬은 목장/보육소에 안전하게 보관 중입니다.)`, 'info');
+  };
+
+  // 🐾 포켓몬 미니룸에 다시 배치하기 (숨김 해제)
+  const handleShowPokemonInMiniroom = (id: string, name?: string) => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => {
+      const curHidden = r.hiddenPokemon || [];
+      return {
+        hiddenPokemon: curHidden.filter(h => h !== id)
+      };
+    });
+    showAlert(`✨ ${name ? `[${name}] ` : ''}포켓몬을 미니룸에 다시 배치했습니다!`, 'success');
+  };
+
+  // 🐾 모든 포켓몬 미니룸에 배치
+  const handleShowAllPokemonInMiniroom = () => {
+    if (visitingFarm) return;
+    updateCurrentRoom(() => ({
+      hiddenPokemon: []
+    }));
+    showAlert('✨ 모든 포켓몬을 미니룸에 배치했습니다!', 'success');
+  };
+
+  // 🐾 모든 포켓몬 미니룸에서 숨기기
+  const handleHideAllPokemonInMiniroom = () => {
+    if (visitingFarm) return;
+    const allIds = [
+      ...(displayActivePokemon ? ['active'] : []),
+      ...displayReservePokemons.map((m, i) => `res_${m.uid || i}`),
+      ...displayGraduatedPokemons.map((d, i) => `grad_${d.id || i}`)
+    ];
+    updateCurrentRoom(() => ({
+      hiddenPokemon: allIds
+    }));
+    setSelectedDecorItem(null);
+    showAlert('🙈 모든 포켓몬을 미니룸에서 숨김 처리했습니다. (포켓몬은 보육소에 안전하게 보관 중)', 'info');
+  };
+
+  // 🧑🌾 트레이너 캐릭터 조작 핸들러
+  const handleScaleTrainer = (delta: number) => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => {
+      const cur = r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+      const nextScale = Math.max(0.6, Math.min(1.8, Math.round(((cur.scale || 1) + delta) * 10) / 10));
+      return {
+        trainerPlacement: { ...cur, scale: nextScale }
+      };
+    });
+  };
+
+  const handleFlipTrainer = () => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => {
+      const cur = r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+      return {
+        trainerPlacement: { ...cur, flipped: !cur.flipped }
+      };
+    });
+  };
+
+  const handleResetTrainerPlacement = () => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => ({
+      trainerPlacement: { ...(r.trainerPlacement || {}), x: 50, y: 65, scale: 1, flipped: false }
+    }));
+    showAlert('📍 내 캐릭터 위치를 기본 자리로 초기화했습니다.', 'info');
+  };
+
+  const handleChangeTrainerSkin = (skinId: string) => {
+    if (visitingFarm) return;
+    updateCurrentRoom(r => ({
+      trainerPlacement: { ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }), skin: skinId }
+    }));
+    showAlert(`🎭 트레이너 외형이 변경되었습니다!`, 'success');
+  };
+
+  // 💬 트레이너 클릭 시 대사 말풍선 띄우기
+  const handleTrainerClick = (e: React.MouseEvent, type: 'owner' | 'host' | 'visitor') => {
+    e.stopPropagation();
+    if (type === 'owner') {
+      const skin = currentTrainerPlacement?.skin || 'ash';
+      let quotes = [
+        "오늘도 우리 포켓몬들 힘차게 키워보자! ⚡",
+        "방 인테리어가 정말 마음에 쏙 드네~ 🛋️",
+        "배고픈 포켓몬은 없나 살펴봐야겠어! 🍎",
+        "친구들이 놀러오면 방명록 남겨주겠지? 📝",
+        "최고의 포켓몬 마스터를 향해 파이팅! 🏆",
+        "여기서 포켓몬들과 쉬는 시간이 제일 좋아~ ☕"
+      ];
+
+      if (skin === 'dubu') {
+        quotes = [
+          "멍멍! 두부랜드에 오신 것을 환영해요 둡둡! 🐾",
+          "꼬리 살랑살랑~ 포켓몬 친구들이 너무 좋아! 🐶",
+          "두부랜드 마스코트 강아지 두부 출동! 맛있는 간식은 어디 있지? 🍖",
+          "멍! 오늘도 신나게 뛰어놀아 보자 둡둡! ✨"
+        ];
+      } else if (skin === 'misty') {
+        quotes = [
+          "수륙챙이랑 별가사리 수영 훈련시켜야겠어! 🌊",
+          "세계 최고의 물 포켓몬 마스터가 될 거야! 💧",
+          "토게피야~ 어디 있니? 포켓몬들 사이좋게 놀아야 해! 🐣",
+          "물 포켓몬은 정말 아름답고 강하단다! ✨"
+        ];
+      } else if (skin === 'brock') {
+        quotes = [
+          "포켓몬 음식 조리 완료! 모두 맛있게 먹으렴~ 🍲",
+          "바위처럼 굳건한 트레이너의 믿음이 가장 중요하지! 🪨",
+          "간호순 누나... 포켓몬 센터에 계신가요?! 제 마음을 받아주세요! 💕",
+          "포켓몬 브리더로서 최선을 다해 돌보고 있어! 🌿"
+        ];
+      } else if (skin === 'ash') {
+        quotes = [
+          "피카츄, 백만볼트다! ⚡",
+          "포켓몬 마스터가 되는 그날까지 절대로 멈추지 않아! 🔥",
+          "가자, 친구들! 새로운 모험이 우리를 기다리고 있어! 🧢",
+          "넌 내 최고의 파트너야! 힘차게 가보자구! 🌟"
+        ];
+      } else if (skin === 'rocket') {
+        quotes = [
+          "우리가 누구냐고 물으신다면, 대답해 드리는 게 인지상정! 🚀",
+          "두부랜드의 희귀 포켓몬은 우리 로켓단이 접수한다! 😈",
+          "아름다운 악당 로사, 귀엽게 미니룸 점령 완료! ✨",
+          "냐옹이다옹! 오늘은 왠지 느낌이 좋다옹~ 🐾"
+        ];
+      } else if (skin === 'oak') {
+        quotes = [
+          "오호라! 포켓몬 도감이 아주 착실하게 채워지고 있구나! 📜",
+          "포켓몬을 진심으로 아끼고 사랑하는 마음이 제일이란다! 🎓",
+          "세상에는 아직 발견되지 않은 포켓몬이 무궁무진하단다! 🔬",
+          "연구소에 언제든 들러서 새로운 발견을 들려주렴! 🌟"
+        ];
+      } else if (skin === 'james') {
+        quotes = [
+          "이 세계의 평화를 지키기 위해! 로켓단 로이 등장! 🌹",
+          "장미처럼 화려하게~ 이번 작전은 반드시 성공한다! ✨",
+          "로사, 나옹, 마자용! 우리 로켓단 영원하자! 🚀",
+          "아름다운 희귀 포켓몬을 찾아 전 세계를 누비는 로맨티스트! 💫"
+        ];
+      } else if (skin === 'meowth') {
+        quotes = [
+          "냐옹이다옹! 오늘은 기분이 아주 째진다옹~ 💰",
+          "동전 던지기 한판 할텨? 내가 로켓단의 브레인 나옹이다옹! 🐾",
+          "두부랜드 포켓몬들 다 내 꺼다옹! 크큭~ 😈",
+          "나옹이도 말할 줄 아는 대단한 포켓몬이라구옹! ✨"
+        ];
+      } else if (skin === 'wobbuffet') {
+        quotes = [
+          "마~~~~자용! 🙋",
+          "마자! 마자용~ (이마에 손을 올리며 씩씩하게 경례!) ✋",
+          "마~자자자자용! (비밀스러운 검은 꼬리를 흔들흔들) 💙",
+          "마자용~! (로켓단의 마스코트답게 환하게 웃는다) ✨"
+        ];
+      } else if (skin === 'pikachu') {
+        quotes = [
+          "피카! 피카츄~! ⚡",
+          "피카피카~ 피카아아앗! (빨간 볼에서 번개가 찌릿찌릿!) ⚡✨",
+          "피카츄우우~ (귀를 쫑긋거리며 반갑게 웃는다) 💛",
+          "피~카? (번개 꼬리를 살랑살랑 흔든다) 🐾"
+        ];
+      } else if (skin === 'squirtle') {
+        quotes = [
+          "꼬북꼬북! 물대포 발사 준비 완료 꼬북! 💧",
+          "꼬부기단 선글라스 어디 뒀더라? 멋쟁이 꼬부기 등장! 🕶️",
+          "등껍질 속에 쏙 들어갔다 나오면 기분 최고 꼬북! 🐢",
+          "꼬북! 오늘도 친구들과 함께 시원하게 수영하자! 🌊"
+        ];
+      } else if (skin === 'charmander') {
+        quotes = [
+          "파이리 파이! 꼬리의 불꽃이 활활 타오르고 있어! 🔥",
+          "따뜻한 불꽃으로 모두의 마음을 훈훈하게 해줄게 파이! 🧡",
+          "파이~ (작은 불꽃을 퐁퐁 뿜으며 방긋 웃는다) 🌟",
+          "언젠가는 하늘을 나는 멋진 리자몽이 될 거야 파이! 🐲"
+        ];
+      } else if (skin === 'bulbasaur') {
+        quotes = [
+          "이상해~ 씨씨! 등에 있는 씨앗이 무럭무럭 자라고 있어! 🍃",
+          "달콤한 햇살 아래서 낮잠 자는 게 제일 좋아 씨! ☀️",
+          "덩굴채찍 슉슉! 언제든 든든하게 도와줄게 씨~ 🌿",
+          "이상해씨의 싱그러운 풀내음 가득! 오늘도 힐링하자 씨! 🌸"
+        ];
+      }
+
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setTrainerBubble({ id: 'my_trainer', text: randomQuote });
+    } else if (type === 'host') {
+      const quotes = [
+        "어서오세요! 제 미니홈피에 놀러와주셔서 환영해요~ 💖",
+        "포켓몬들 구경 잘 하셨나요? 귀엽죠! ✨",
+        "방명록에 따뜻한 발자국 한 줄 남겨주세요! 🐾",
+        "하트 꾹 눌러주시면 큰 힘이 됩니다! 💕",
+        "1촌 맺고 자주 소통해요~ 🏡"
+      ];
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setTrainerBubble({ id: 'host_trainer', text: randomQuote });
+    } else {
+      const quotes = [
+        "와! 방을 정말 멋지게 꾸며놓으셨네요~ 감탄하고 갑니다! 👏",
+        "여기 포켓몬들은 정말 사랑을 많이 받는 것 같아요! 💖",
+        "우리 농장에도 꼭 한번 놀러오세요~ 🏡",
+        "멋진 방 구경 잘 하고 갑니다! ✨",
+        "응원의 하트 보내고 가요~ 💕"
+      ];
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setTrainerBubble({ id: 'visitor_trainer', text: randomQuote });
+    }
+    setTimeout(() => {
+      setTrainerBubble(prev => prev?.id === (type === 'owner' ? 'my_trainer' : type === 'host' ? 'host_trainer' : 'visitor_trainer') ? null : prev);
+    }, 3500);
   };
 
   // 🎓 졸업생 포켓몬 진화 전/후 외형 모습 변경 핸들러
@@ -1891,7 +2225,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     defaultTiltX = 0,
     defaultTiltY = 0
   ) => {
-    const placements = visitingFarm ? visitingFarm.farm.pokemonPlacements : farmState.pokemonPlacements;
+    const placements = activeRoomData.pokemonPlacements;
     const custom = placements?.[id];
     if (custom) {
       const turnY = custom.tiltY !== undefined ? custom.tiltY : (custom.isBackView ? 180 : defaultTiltY);
@@ -1922,12 +2256,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 🎯 인터랙티브 드래그 시작 핸들러
   const handleStartDrag = (
     e: React.PointerEvent,
-    type: 'sticker' | 'pokemon',
+    type: 'sticker' | 'pokemon' | 'trainer',
     id: string,
     currentX: number,
     currentY: number
   ) => {
-    if (visitingFarm) return; // 이웃 방문 시 읽기 전용
+    if (visitingFarm || minihompyTab === 'home') return; // 홈 탭 및 이웃 방문 시 드래그 불가
     e.stopPropagation();
     try {
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -1946,6 +2280,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // 🎯 캔버스 위에서 드래그 이동 핸들러
   const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (visitingFarm || minihompyTab === 'home') return;
     if (!dragState || !miniroomCanvasRef.current) return;
     const rect = miniroomCanvasRef.current.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
@@ -1957,22 +2292,31 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     const newY = Math.max(2, Math.min(88, Math.round((dragState.origY + deltaYPercent) * 10) / 10));
 
     if (dragState.type === 'sticker') {
-      setFarmState(prev => ({
-        ...prev,
-        stickers: (prev.stickers || []).map(s => s.id === dragState.id ? { ...s, x: newX, y: newY } : s)
+      updateCurrentRoom(r => ({
+        stickers: (r.stickers || []).map(s => s.id === dragState.id ? { ...s, x: newX, y: newY } : s)
       }));
     } else if (dragState.type === 'pokemon') {
-      setFarmState(prev => {
-        const existing = prev.pokemonPlacements?.[dragState.id] || { uid: dragState.id, x: dragState.origX, y: dragState.origY, scale: 1, flipped: false };
+      updateCurrentRoom(r => {
+        const existing = r.pokemonPlacements?.[dragState.id] || { uid: dragState.id, x: dragState.origX, y: dragState.origY, scale: 1, flipped: false };
         return {
-          ...prev,
           pokemonPlacements: {
-            ...(prev.pokemonPlacements || {}),
+            ...(r.pokemonPlacements || {}),
             [dragState.id]: {
               ...existing,
               x: newX,
               y: newY
             }
+          }
+        };
+      });
+    } else if (dragState.type === 'trainer') {
+      updateCurrentRoom(r => {
+        const existing = r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+        return {
+          trainerPlacement: {
+            ...existing,
+            x: newX,
+            y: newY
           }
         };
       });
@@ -2673,17 +3017,77 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const renderMiniroomCanvas = ({ compact = false }: { compact?: boolean }) => {
     const bgTheme = currentBgTheme || 'classic';
     const stickers = currentStickers || [];
+    const isDragDisabled = !!visitingFarm || minihompyTab === 'home';
 
     return (
       <div className="miniroom-viewport-wrapper">
+        {/* 🚪 멀티룸 방 전환 상단 바 (1번방 거실 / 2번방 정원 / 3번방 침실) */}
+        <div className="miniroom-room-switcher-bar">
+          <div className="room-switcher-label">
+            <span className="room-icon">🚪</span>
+            <span className="room-title">방 이동:</span>
+          </div>
+          <div className="room-buttons-list">
+            {MINIROOM_ROOMS.map(room => {
+              const isActive = currentRoomId === room.id;
+              return (
+                <button
+                  key={room.id}
+                  type="button"
+                  className={`room-nav-btn ${isActive ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleChangeRoom(room.id);
+                  }}
+                  title={room.desc}
+                >
+                  <span className="room-nav-icon">{room.icon}</span>
+                  <span className="room-nav-name">{room.name}</span>
+                  {isActive && <span className="room-active-dot">●</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="room-current-info">
+            <span className="room-info-badge">
+              {visitingFarm ? `👑 ${visitingFarm.owner}님의 ` : '🏡 '}
+              {MINIROOM_ROOMS.find(r => r.id === currentRoomId)?.name || '1번방 (거실)'}
+            </span>
+          </div>
+        </div>
+
         <div
           ref={miniroomCanvasRef}
           className={`miniroom-canvas-container bg-${bgTheme} ${compact ? 'compact' : ''} ${dragState ? 'is-dragging' : ''}`}
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
           onClick={(e) => {
-            if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('miniroom-floor') || (e.target as HTMLElement).classList.contains('miniroom-wall')) {
+            const target = e.target as HTMLElement;
+            const isFloorOrWall = target === e.currentTarget || target.classList.contains('miniroom-floor') || target.classList.contains('miniroom-wall');
+            if (isFloorOrWall) {
               setSelectedDecorItem(null);
+              if (miniroomCanvasRef.current) {
+                const rect = miniroomCanvasRef.current.getBoundingClientRect();
+                const xPercent = Math.max(5, Math.min(92, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+                const yPercent = Math.max(35, Math.min(85, Math.round(((e.clientY - rect.top) / rect.height) * 100)));
+
+                if (!visitingFarm) {
+                  if (minihompyTab === 'home') {
+                    // 홈 화면에서는 클릭한 바닥 위치로 내 캐릭터가 이동
+                    updateCurrentRoom(r => ({
+                      trainerPlacement: {
+                        ...(r.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }),
+                        x: xPercent,
+                        y: yPercent,
+                        flipped: xPercent < (r.trainerPlacement?.x || 50)
+                      }
+                    }));
+                  }
+                } else {
+                  // 이웃 집 방문 시 클릭한 바닥으로 방문자 캐릭터 이동
+                  setVisitorWalkPos({ x: xPercent, y: yPercent });
+                }
+              }
             }
           }}
         >
@@ -2697,8 +3101,168 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           </div>
           <div className="miniroom-floor"></div>
 
-          {/* 🐾 키우는 중인 메인 포켓몬 */}
-          {displayActivePokemon && (() => {
+          {/* 🏥 포켓몬 센터 배경 전용: 간호순 누나 & 해피니스 안내 데스크 */}
+          {bgTheme === 'center' && (
+            <div className="center-staff-stage">
+              <div
+                className="center-staff-char joy"
+                title="👩‍⚕️ 간호순 누나: '어서오세요! 포켓몬 센터입니다. 포켓몬들을 모두 건강하게 돌봐드릴게요!'"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showAlert('👩‍⚕️ 간호순: "어서오세요! 포켓몬 센터입니다. 포켓몬들의 상처와 피로를 말끔히 치료해 드릴게요! 💖"', 'info');
+                }}
+              >
+                <img
+                  src="/images/nurse_joy.png"
+                  alt="간호순 누나"
+                  className="center-joy-sprite"
+                />
+                <span className="staff-badge">👩‍⚕️ 간호순</span>
+              </div>
+
+              <div
+                className="center-staff-char blissey"
+                title="🌸 해피니스: '해피~ 해피~! (포켓몬들에게 행복과 치유의 알을 건넵니다)'"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playPokemonCry(242);
+                  showAlert('🌸 해피니스: "해피~ 해피~! (환하게 웃으며 행복의 알을 건넵니다! 💖)"', 'success');
+                }}
+              >
+                <img
+                  src="/images/blissey.gif"
+                  onError={(e) => { e.currentTarget.src = '/images/blissey.png'; }}
+                  alt="해피니스"
+                  className="center-blissey-sprite"
+                />
+                <span className="staff-badge">🌸 해피니스</span>
+              </div>
+            </div>
+          )}
+
+          {/* 🧑🌾 내 트레이너 캐릭터 / 방문자 캐릭터 렌더링 */}
+          {!visitingFarm ? (() => {
+            const id = 'my_trainer';
+            const place = currentTrainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+            const isSelected = selectedDecorItem?.type === 'trainer' && selectedDecorItem.id === id;
+            const isDragging = dragState?.type === 'trainer' && dragState.id === id;
+            const skinId = place.skin || 'ash';
+            const skinSrc = `/images/trainer_${skinId}.png`;
+
+            return (
+              <div
+                key="trainer_me"
+                className={`miniroom-trainer ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{
+                  left: `${place.x}%`,
+                  top: `${place.y}%`,
+                  transform: `scale(${place.scale || 1}) ${place.flipped ? 'scaleX(-1)' : ''}`,
+                  transformOrigin: 'bottom center',
+                  zIndex: isDragging ? 55 : isSelected ? 42 : 25
+                }}
+                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'trainer', id, place.x, place.y)}
+                onClick={(e) => {
+                  if (dragState) return;
+                  handleTrainerClick(e, 'owner');
+                  if (!isDragDisabled) {
+                    setSelectedDecorItem({ type: 'trainer', id });
+                  }
+                }}
+                title={`🧑🌾 나 [${farmState.ownerName || '트레이너'}] (클릭: 대화 / 꾸미기 탭: 드래그 이동)`}
+              >
+                {/* 💬 말풍선 */}
+                {trainerBubble?.id === id && (
+                  <div className={`trainer-speech-bubble ${place.flipped ? 'unflip-tag' : ''}`}>
+                    {trainerBubble.text}
+                  </div>
+                )}
+                <div className={`trainer-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
+                  <span>{skinId === 'dubu' ? '🐶 마스코트 두부' : `${TRAINER_SKINS.find(s => s.id === skinId)?.name || '🧑🌾 나'} [${farmState.ownerName || '트레이너'}]`}</span>
+                </div>
+                <img
+                  src={skinSrc}
+                  onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
+                  alt="내 트레이너"
+                  className="trainer-sprite"
+                  draggable={false}
+                />
+              </div>
+            );
+          })() : (() => {
+            const hostPlace = activeRoomData.trainerPlacement || { x: 38, y: 65, scale: 1, flipped: false, skin: 'ash' };
+            const visitorX = visitorWalkPos ? visitorWalkPos.x : (hostPlace.x > 50 ? hostPlace.x - 22 : hostPlace.x + 22);
+            const visitorY = visitorWalkPos ? visitorWalkPos.y : hostPlace.y;
+            const mySkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'dubu');
+
+            return (
+              <>
+                {/* 👑 방 주인 트레이너 */}
+                <div
+                  key="trainer_host"
+                  className="miniroom-trainer locked-pos"
+                  style={{
+                    left: `${hostPlace.x}%`,
+                    top: `${hostPlace.y}%`,
+                    transform: `scale(${hostPlace.scale || 1}) ${hostPlace.flipped ? 'scaleX(-1)' : ''}`,
+                    transformOrigin: 'bottom center',
+                    zIndex: 25
+                  }}
+                  onClick={(e) => handleTrainerClick(e, 'host')}
+                  title={`👑 방주인 [${visitingFarm.owner}] (클릭하여 대화)`}
+                >
+                  {trainerBubble?.id === 'host_trainer' && (
+                    <div className={`trainer-speech-bubble host-bubble ${hostPlace.flipped ? 'unflip-tag' : ''}`}>
+                      {trainerBubble.text}
+                    </div>
+                  )}
+                  <div className={`trainer-name-tag host-tag ${hostPlace.flipped ? 'unflip-tag' : ''}`}>
+                    <span>👑 방주인 [{visitingFarm.owner}]</span>
+                  </div>
+                  <img
+                    src={`/images/trainer_${hostPlace.skin || 'ash'}.png`}
+                    onError={(e) => { e.currentTarget.src = '/images/trainer_ash.png'; }}
+                    alt="방주인 트레이너"
+                    className="trainer-sprite"
+                    draggable={false}
+                  />
+                </div>
+
+                {/* 🎒 내 방문자 트레이너 */}
+                <div
+                  key="trainer_visitor"
+                  className="miniroom-trainer locked-pos"
+                  style={{
+                    left: `${visitorX}%`,
+                    top: `${visitorY}%`,
+                    transform: `scale(1) ${visitorX < hostPlace.x ? 'scaleX(1)' : 'scaleX(-1)'}`,
+                    transformOrigin: 'bottom center',
+                    zIndex: 26
+                  }}
+                  onClick={(e) => handleTrainerClick(e, 'visitor')}
+                  title={`🎒 방문자 나 [${farmState.ownerName || '나'}] (바닥 클릭 시 이동)`}
+                >
+                  {trainerBubble?.id === 'visitor_trainer' && (
+                    <div className="trainer-speech-bubble visitor-bubble">
+                      {trainerBubble.text}
+                    </div>
+                  )}
+                  <div className="trainer-name-tag visitor-tag">
+                    <span>🎒 나 [{farmState.ownerName || '나'}]</span>
+                  </div>
+                  <img
+                    src={`/images/trainer_${mySkin}.png`}
+                    onError={(e) => { e.currentTarget.src = '/images/trainer_dubu.png'; }}
+                    alt="방문자 트레이너"
+                    className="trainer-sprite"
+                    draggable={false}
+                  />
+                </div>
+              </>
+            );
+          })()}
+
+          {/* 🐾 키우는 중인 메인 포켓몬 (숨김 목록에 없을 때만 표시) */}
+          {displayActivePokemon && !currentHiddenPokemon.includes('active') && (() => {
             const id = 'active';
             const place = getPokemonPlacement(id, 45, 52, 1, false, 0, 0, 0);
             const isSelected = selectedDecorItem?.type === 'pokemon' && selectedDecorItem.id === id;
@@ -2713,7 +3277,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             return (
               <div
                 key="mon_active"
-                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`miniroom-pokemon ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
@@ -2721,9 +3285,23 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 20
                 }}
-                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onClick={() => !dragState && !isDragDisabled && setSelectedDecorItem({ type: 'pokemon', id })}
                 title={`[${displayActivePokemon.nickname || displayActivePokemon.name}] Lv.${displayActivePokemon.level}`}
               >
+                {/* ❌ 미니룸 배치 해제 버튼 */}
+                {!visitingFarm && minihompyTab !== 'home' && isSelected && (
+                  <button
+                    className="poke-del-btn stk-del-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleHidePokemonFromMiniroom(id, displayActivePokemon.nickname || displayActivePokemon.name);
+                    }}
+                    title="미니룸에서 배치 해제 (포켓몬은 보존됩니다)"
+                  >
+                    ✕
+                  </button>
+                )}
                 <div className={`pokemon-name-tag ${place.flipped ? 'unflip-tag' : ''}`}>
                   <span className="tag-lvl">Lv.{displayActivePokemon.level}</span>
                   <span className="tag-name">{isGmaxPokemon(displayActivePokemon) && <span className="gmax-mini-badge">💥</span>}{displayActivePokemon.nickname || displayActivePokemon.name}</span>
@@ -2749,6 +3327,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           {/* 🏡 키우는 중인 보육소 서브 포켓몬들 */}
           {displayReservePokemons.map((mon, idx) => {
             const id = `res_${mon.uid || idx}`;
+            if (currentHiddenPokemon.includes(id)) return null;
+
             const defX = idx === 0 ? 20 : idx === 1 ? 70 : 82;
             const defY = idx === 0 ? 58 : idx === 1 ? 58 : 48;
             const defFlip = idx !== 0;
@@ -2765,7 +3345,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             return (
               <div
                 key={mon.uid || idx}
-                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`miniroom-pokemon ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
@@ -2773,9 +3353,23 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 18
                 }}
-                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onClick={() => !dragState && !isDragDisabled && setSelectedDecorItem({ type: 'pokemon', id })}
                 title={`[${mon.nickname || mon.name}] Lv.${mon.level}`}
               >
+                {/* ❌ 미니룸 배치 해제 버튼 */}
+                {!visitingFarm && minihompyTab !== 'home' && isSelected && (
+                  <button
+                    className="poke-del-btn stk-del-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleHidePokemonFromMiniroom(id, mon.nickname || mon.name);
+                    }}
+                    title="미니룸에서 배치 해제 (포켓몬은 보존됩니다)"
+                  >
+                    ✕
+                  </button>
+                )}
                 <div className={`pokemon-name-tag compact ${place.flipped ? 'unflip-tag' : ''}`}>
                   <span>{isGmaxPokemon(mon) && <span className="gmax-mini-badge">💥</span>}{mon.nickname || mon.name}</span>
                 </div>
@@ -2797,9 +3391,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             );
           })}
 
-          {/* 🎓 졸업시킨 포켓몬들 (졸업 학사모 뱃지 🎓 & 진화 전/후 모습 커스텀 지원) */}
+          {/* 🎓 졸업시킨 포켓몬들 */}
           {displayGraduatedPokemons.map((dip, idx) => {
             const id = `grad_${dip.id || idx}`;
+            if (currentHiddenPokemon.includes(id)) return null;
+
             const defX = idx === 0 ? 12 : idx === 1 ? 26 : idx === 2 ? 72 : 86;
             const defY = idx === 0 ? 32 : idx === 1 ? 22 : idx === 2 ? 22 : 32;
             const defFlip = idx >= 2;
@@ -2812,7 +3408,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             return (
               <div
                 key={dip.id || idx}
-                className={`miniroom-pokemon free-drag ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`miniroom-pokemon ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
                 style={{
                   left: `${place.x}%`,
                   top: `${place.y}%`,
@@ -2820,10 +3416,27 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   transformOrigin: 'bottom center',
                   zIndex: isDragging ? 50 : isSelected ? 40 : 16
                 }}
-                onPointerDown={(e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
-                onClick={() => !dragState && setSelectedDiploma(dip)}
+                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'pokemon', id, place.x, place.y)}
+                onClick={() => {
+                  if (dragState || isDragDisabled) return;
+                  setSelectedDecorItem({ type: 'pokemon', id });
+                  setSelectedDiploma(dip);
+                }}
                 title={`🎓 명예 졸업생 [${dip.nickname || dip.name}] - ${activeForm.name}`}
               >
+                {/* ❌ 미니룸 배치 해제 버튼 */}
+                {!visitingFarm && minihompyTab !== 'home' && isSelected && (
+                  <button
+                    className="poke-del-btn stk-del-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleHidePokemonFromMiniroom(id, dip.nickname || dip.name);
+                    }}
+                    title="미니룸에서 배치 해제 (포켓몬은 보존됩니다)"
+                  >
+                    ✕
+                  </button>
+                )}
                 <div className={`graduated-badge-tag ${place.flipped ? 'unflip-tag' : ''}`}>
                   🎓 {dip.nickname || dip.name} {activeForm.name !== (dip.nickname || dip.name) ? `(${activeForm.name})` : ''}
                 </div>
@@ -2857,7 +3470,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             return (
               <div
                 key={stk.id}
-                className={`miniroom-placed-item ${stk.type === 'skill_fx' ? 'skill-fx-item' : stk.text ? 'text-item' : 'sticker-item'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`miniroom-placed-item ${isDragDisabled ? 'locked-pos' : 'free-drag'} ${stk.type === 'skill_fx' ? 'skill-fx-item' : stk.text ? 'text-item' : 'sticker-item'} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
                 style={{
                   left: `${stk.x}%`,
                   top: `${stk.y}%`,
@@ -2865,9 +3478,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   transformOrigin: 'center center',
                   zIndex: isDragging ? 60 : isSelected ? 45 : (stk.type === 'skill_fx' ? 22 : 25)
                 }}
-                onPointerDown={(e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
+                onPointerDown={isDragDisabled ? undefined : (e) => handleStartDrag(e, 'sticker', stk.id, stk.x, stk.y)}
+                onClick={() => !dragState && !isDragDisabled && setSelectedDecorItem({ type: 'sticker', id: stk.id })}
               >
-                {/* 1. 고유스킬 이펙트 (💥 이펙트 클래스 매핑 및 파티클 렌더링) */}
                 {stk.type === 'skill_fx' ? (() => {
                   const effectMeta = POKEMON_SKILL_EFFECTS.find(
                     e => e.id === stk.skillFxId || e.fxClass === stk.skillFxId || e.id === stk.stickerId
@@ -2891,11 +3504,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                     <span className={flipped ? 'unflip-text' : ''}>{stk.text}</span>
                   </div>
                 ) : (
-                  /* 3. 이모지/아이콘 스티커 */
                   <span className="stk-icon">{stk.icon}</span>
                 )}
 
-                {/* 개별 삭제 버튼: 홈 화면(minihompyTab === 'home')에서는 절대 미노출, 오직 꾸미기 모드에서 선택되었을 때만 노출 */}
                 {!visitingFarm && minihompyTab !== 'home' && isSelected && (
                   <button
                     className="stk-del-btn"
@@ -2913,13 +3524,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           })}
         </div>
 
-        {/* 🎛️ 선택된 아이템 (스티커/포켓몬) 정밀 360도 회전 & 3D 틸트 조작 툴바 */}
-        {!compact && selectedDecorItem && !visitingFarm && (() => {
+        {/* 🎛️ 선택된 아이템 (스티커/포켓몬/내 캐릭터) 정밀 조작 툴바 */}
+        {!compact && selectedDecorItem && !visitingFarm && minihompyTab !== 'home' && (() => {
+          const isTrainer = selectedDecorItem.type === 'trainer';
           const isPokemon = selectedDecorItem.type === 'pokemon';
           const id = selectedDecorItem.id;
-          const curPlacement = isPokemon
+          const curPlacement = isTrainer
+            ? currentTrainerPlacement
+            : isPokemon
             ? getPokemonPlacement(id, 45, 52, 1, false, 0, 0, 0)
-            : (farmState.stickers || []).find(s => s.id === id);
+            : (currentStickers || []).find(s => s.id === id);
           const curRot = (isPokemon ? (curPlacement as PokemonPlacement)?.rotation : (curPlacement as MinihompySticker)?.rotation) || 0;
           const curTilt = (isPokemon ? (curPlacement as PokemonPlacement)?.tiltX : (curPlacement as MinihompySticker)?.tiltX) || 0;
           const curTurnY = isPokemon ? ((curPlacement as PokemonPlacement)?.tiltY || 0) : 0;
@@ -2928,7 +3542,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             <div className="miniroom-item-editor-bar">
               <div className="editor-top-line">
                 <span className="editor-target-name">
-                  {isPokemon ? '🐾 포켓몬 각도 및 방향 설정' : '🎨 스티커/텍스트 회전 & 연출'}
+                  {isTrainer ? '🧑🌾 내 트레이너 캐릭터 연출 및 외형' : isPokemon ? '🐾 포켓몬 각도 및 방향 설정' : '🎨 스티커/텍스트 회전 & 연출'}
                 </span>
                 <button
                   className="editor-btn close"
@@ -2945,33 +3559,50 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   <span className="control-title">📐 크기/반전:</span>
                   <button
                     className="editor-btn"
-                    onClick={() => isPokemon ? handleScalePokemon(id, -0.15) : handleScaleSticker(id, -0.15)}
+                    onClick={() => isTrainer ? handleScaleTrainer(-0.15) : isPokemon ? handleScalePokemon(id, -0.15) : handleScaleSticker(id, -0.15)}
                     title="축소"
                   >
                     ➖ 작게
                   </button>
                   <button
                     className="editor-btn"
-                    onClick={() => isPokemon ? handleScalePokemon(id, 0.15) : handleScaleSticker(id, 0.15)}
+                    onClick={() => isTrainer ? handleScaleTrainer(0.15) : isPokemon ? handleScalePokemon(id, 0.15) : handleScaleSticker(id, 0.15)}
                     title="확대"
                   >
                     ➕ 크게
                   </button>
                   <button
                     className="editor-btn"
-                    onClick={() => isPokemon ? handleFlipPokemon(id) : handleFlipSticker(id)}
+                    onClick={() => isTrainer ? handleFlipTrainer() : isPokemon ? handleFlipPokemon(id) : handleFlipSticker(id)}
                     title="좌우 반전"
                   >
                     🔄 좌우반전
                   </button>
-                  {isPokemon ? (
+                  {isTrainer ? (
                     <button
                       className="editor-btn"
-                      onClick={() => handleResetPokemonPlacement(id)}
-                      title="위치 및 각도 초기화"
+                      onClick={() => handleResetTrainerPlacement()}
+                      title="위치 초기화"
                     >
-                      📍 위치/각도 초기화
+                      📍 위치 초기화
                     </button>
+                  ) : isPokemon ? (
+                    <>
+                      <button
+                        className="editor-btn"
+                        onClick={() => handleResetPokemonPlacement(id)}
+                        title="위치 및 각도 초기화"
+                      >
+                        📍 위치/각도 초기화
+                      </button>
+                      <button
+                        className="editor-btn danger"
+                        onClick={() => handleHidePokemonFromMiniroom(id)}
+                        title="미니룸에서 배치 해제 (포켓몬은 보존됩니다)"
+                      >
+                        🗑️ 배치 해제 (숨기기)
+                      </button>
+                    </>
                   ) : (
                     <button
                       className="editor-btn danger"
@@ -2985,7 +3616,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   )}
                 </div>
 
-                {/* 2. 🔄 3D 방향 / 시선 회전 (0° ~ 360° 미세 턴) - 포켓몬 전용 */}
+                {/* 🧑🌾 트레이너 캐릭터 외형(스킨) 선택 버튼 목록 */}
+                {isTrainer && (
+                  <div className="control-row">
+                    <span className="control-title">🎭 캐릭터 스킨:</span>
+                    <div className="trainer-skin-selector">
+                      {TRAINER_SKINS.map(skin => (
+                        <button
+                          key={skin.id}
+                          className={`skin-btn ${(currentTrainerPlacement.skin || 'ash') === skin.id ? 'active' : ''}`}
+                          onClick={() => handleChangeTrainerSkin(skin.id)}
+                        >
+                          <img src={skin.src} alt={skin.name} />
+                          <span>{skin.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. 🔄 3D 방향 / 시선 회전 - 포켓몬 전용 */}
                 {isPokemon && (
                   <div className="control-row">
                     <span className="control-title">🔄 시선/방향 (3D 턴):</span>
@@ -3013,47 +3663,52 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                   </div>
                 )}
 
-                {/* 3. 🔄 2D 평면 회전 (Z축) */}
-                <div className="control-row">
-                  <span className="control-title">📐 평면 기울기:</span>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -15) : handleRotateSticker(id, -15)}>↶ -15°</button>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -5) : handleRotateSticker(id, -5)}>↶ -5°</button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    step="1"
-                    value={curRot}
-                    onChange={e => isPokemon ? handleSetPokemonRotation(id, Number(e.target.value)) : handleSetStickerRotation(id, Number(e.target.value))}
-                    className="angle-range-slider"
-                    title="2D 평면 회전"
-                  />
-                  <span className="angle-badge">{curRot}°</span>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 5) : handleRotateSticker(id, 5)}>↷ +5°</button>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 15) : handleRotateSticker(id, 15)}>↷ +15°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 0) : handleSetStickerRotation(id, 0)}>0°</button>
-                </div>
+                {/* 3. 🔄 2D 평면 회전 (Z축) - 스티커 및 포켓몬 */}
+                {!isTrainer && (
+                  <div className="control-row">
+                    <span className="control-title">📐 평면 기울기:</span>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -15) : handleRotateSticker(id, -15)}>↶ -15°</button>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, -5) : handleRotateSticker(id, -5)}>↶ -5°</button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      step="1"
+                      value={curRot}
+                      onChange={e => isPokemon ? handleSetPokemonRotation(id, Number(e.target.value)) : handleSetStickerRotation(id, Number(e.target.value))}
+                      className="angle-range-slider"
+                      title="2D 평면 회전"
+                    />
+                    <span className="angle-badge">{curRot}°</span>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 5) : handleRotateSticker(id, 5)}>↷ +5°</button>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleRotatePokemon(id, 15) : handleRotateSticker(id, 15)}>↷ +15°</button>
+                    <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonRotation(id, 0) : handleSetStickerRotation(id, 0)}>0°</button>
+                  </div>
+                )}
 
-                {/* 4. 📐 앞뒤 3D 상하 눕힘 (X축 Tilt) */}
-                <div className="control-row">
-                  <span className="control-title">📐 상하 눕힘:</span>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, -10) : handleTiltStickerX(id, -10)}>⬆️ 앞 -10°</button>
-                  <input
-                    type="range"
-                    min="-60"
-                    max="60"
-                    step="2"
-                    value={curTilt}
-                    onChange={e => isPokemon ? handleSetPokemonTiltX(id, Number(e.target.value)) : handleSetStickerTiltX(id, Number(e.target.value))}
-                    className="angle-range-slider"
-                    title="상하 3D 눕힘 (-60도 ~ +60도)"
-                  />
-                  <span className="angle-badge">{curTilt > 0 ? `+${curTilt}°` : `${curTilt}°`}</span>
-                  <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, 10) : handleTiltStickerX(id, 10)}>⬇️ 뒤 +10°</button>
-                  <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 0) : handleSetStickerTiltX(id, 0)}>수평 0°</button>
-                </div>
+                {/* 4. 📐 앞뒤 3D 상하 눕힘 (X축 Tilt) - 스티커 및 포켓몬 */}
+                {!isTrainer && (
+                  <div className="control-row">
+                    <span className="control-title">📐 상하 눕힘:</span>
+                    <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, -25) : handleSetStickerTiltX(id, -25)}>앞 -25°</button>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, -10) : handleTiltStickerX(id, -10)}>⬆️ 앞 -10°</button>
+                    <input
+                      type="range"
+                      min="-60"
+                      max="60"
+                      step="2"
+                      value={curTilt}
+                      onChange={e => isPokemon ? handleSetPokemonTiltX(id, Number(e.target.value)) : handleSetStickerTiltX(id, Number(e.target.value))}
+                      className="angle-range-slider"
+                      title="상하 3D 눕힘 (-60도 ~ +60도)"
+                    />
+                    <span className="angle-badge">{curTilt > 0 ? `+${curTilt}°` : `${curTilt}°`}</span>
+                    <button className="editor-btn nudge-btn" onClick={() => isPokemon ? handleTiltPokemonX(id, 10) : handleTiltStickerX(id, 10)}>⬇️ 뒤 +10°</button>
+                    <button className="editor-btn mini" onClick={() => isPokemon ? handleSetPokemonTiltX(id, 0) : handleSetStickerTiltX(id, 0)}>수평 0°</button>
+                  </div>
+                )}
 
-                {/* 4. 🌱 졸업생 외형 변신 (진화 전/후 폼 선택) */}
+                {/* 5. 🌱 졸업생 외형 변신 (진화 전/후 폼 선택) */}
                 {isPokemon && id.startsWith('grad_') && (() => {
                   const dipId = id.replace('grad_', '');
                   const diploma = farmState.graduatedPokemon.find(d => d.id === dipId || `grad_${d.id}` === id);
@@ -3092,7 +3747,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
     );
   };
 
-  // 상태 자동 저장 및 소켓 동기화
+    // 상태 자동 저장 및 소켓 동기화
   useEffect(() => {
     if (!farmState.isInitialized || !farmState.ownerName || farmState.ownerName === '지우') {
       return;
@@ -4843,6 +5498,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               </div>
               <div className="pokedex-kpi-tags">
                 <span className="kpi-tag grad">🎓 총 졸업: {totalGradCount}마리</span>
+                <span className="kpi-tag gen1" style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' }}>
+                  🔴 1기 관동: {pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151 && gradStats.has(m.speciesId)).length} / {pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151).length}종
+                </span>
                 <span className="kpi-tag shiny">✨ 이로치 등록: {shinyGradCount}마리</span>
               </div>
             </div>
@@ -4854,6 +5512,20 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 onClick={() => setPokedexFilter('all')}
               >
                 전체 ({totalSpeciesCount})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'gen1' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('gen1')}
+                style={pokedexFilter === 'gen1' ? { background: '#ef4444', borderColor: '#dc2626', color: '#ffffff', fontWeight: 800 } : {}}
+              >
+                🔴 1기 관동 ({pokedexList.filter(m => m.speciesId >= 1 && m.speciesId <= 151).length})
+              </button>
+              <button
+                className={`pokedex-filter-chip ${pokedexFilter === 'gmax' ? 'active' : ''}`}
+                onClick={() => setPokedexFilter('gmax')}
+                style={pokedexFilter === 'gmax' ? { background: '#dc2626', borderColor: '#991b1b', color: '#ffffff', fontWeight: 800 } : {}}
+              >
+                💥 거다이맥스 ({pokedexList.filter(m => isGmaxPokemon(m)).length})
               </button>
               <button
                 className={`pokedex-filter-chip ${pokedexFilter === 'unlocked' ? 'active' : ''}`}
@@ -4870,6 +5542,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               <button
                 className={`pokedex-filter-chip ${pokedexFilter === 'shiny' ? 'active' : ''}`}
                 onClick={() => setPokedexFilter('shiny')}
+                style={pokedexFilter === 'shiny' ? { background: '#d97706', borderColor: '#b45309', color: '#ffffff', fontWeight: 800 } : {}}
               >
                 ✨ 이로치 ({pokedexList.filter(m => (gradStats.get(m.speciesId)?.shinyCount || 0) > 0).length})
               </button>
@@ -5627,7 +6300,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                               className={`bg-tab-btn ${currentBgTheme === bg.key ? 'active' : ''}`}
                               onClick={() => {
                                 if (!visitingFarm) {
-                                  setFarmState(prev => ({ ...prev, bgTheme: bg.key }));
+                                  updateCurrentRoom(() => ({ bgTheme: bg.key }));
                                 }
                               }}
                             >
@@ -5966,8 +6639,16 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       {decorSubtab === 'pokeplacements' && (
                         <div className="poke-placements-panel">
                           <div className="placements-header">
-                            <h4>🐾 미니룸 포켓몬 연출 및 위치 관리</h4>
-                            <p>포켓몬을 미니룸 캔버스에서 마우스/터치로 직접 드래그하여 자유롭게 배치할 수 있습니다!</p>
+                            <h4>🐾 미니룸 포켓몬 연출 및 배치 관리</h4>
+                            <p>포켓몬을 미니룸 캔버스에서 마우스/터치로 직접 드래그하여 자유롭게 배치하고 숨길 수 있습니다!</p>
+                            <div className="placements-quick-actions">
+                              <button className="excel-btn success" onClick={handleShowAllPokemonInMiniroom}>
+                                👁️ 모든 포켓몬 미니룸에 배치
+                              </button>
+                              <button className="excel-btn danger" onClick={handleHideAllPokemonInMiniroom}>
+                                🙈 모든 포켓몬 미니룸에서 숨기기
+                              </button>
+                            </div>
                           </div>
 
                           <div className="poke-placements-list">
@@ -6003,6 +6684,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                                       <button className="excel-btn" onClick={() => handleScalePokemon('active', 0.1)}>➕ 확대</button>
                                       <button className="excel-btn" onClick={() => handleScalePokemon('active', -0.1)}>➖ 축소</button>
                                       <button className="excel-btn" onClick={() => handleResetPokemonPlacement('active')}>📍 초기화</button>
+                                      {currentHiddenPokemon.includes('active') ? (
+                                        <button className="excel-btn success" onClick={() => handleShowPokemonInMiniroom('active', displayActivePokemon.nickname || displayActivePokemon.name)}>➕ 미니룸에 배치</button>
+                                      ) : (
+                                        <button className="excel-btn danger" onClick={() => handleHidePokemonFromMiniroom('active', displayActivePokemon.nickname || displayActivePokemon.name)}>❌ 배치 해제</button>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="poke-angles-row">
@@ -6082,6 +6768,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                                       <button className="excel-btn" onClick={() => handleScalePokemon(id, 0.1)}>➕ 확대</button>
                                       <button className="excel-btn" onClick={() => handleScalePokemon(id, -0.1)}>➖ 축소</button>
                                       <button className="excel-btn" onClick={() => handleResetPokemonPlacement(id)}>📍 초기화</button>
+                                      {currentHiddenPokemon.includes(id) ? (
+                                        <button className="excel-btn success" onClick={() => handleShowPokemonInMiniroom(id, mon.nickname || mon.name)}>➕ 미니룸에 배치</button>
+                                      ) : (
+                                        <button className="excel-btn danger" onClick={() => handleHidePokemonFromMiniroom(id, mon.nickname || mon.name)}>❌ 배치 해제</button>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="poke-angles-row">
@@ -6158,6 +6849,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                                       <button className="excel-btn" onClick={() => handleScalePokemon(id, 0.1)}>➕ 확대</button>
                                       <button className="excel-btn" onClick={() => handleScalePokemon(id, -0.1)}>➖ 축소</button>
                                       <button className="excel-btn" onClick={() => handleResetPokemonPlacement(id)}>📍 초기화</button>
+                                      {currentHiddenPokemon.includes(id) ? (
+                                        <button className="excel-btn success" onClick={() => handleShowPokemonInMiniroom(id, dip.nickname || dip.name)}>➕ 미니룸에 배치</button>
+                                      ) : (
+                                        <button className="excel-btn danger" onClick={() => handleHidePokemonFromMiniroom(id, dip.nickname || dip.name)}>❌ 배치 해제</button>
+                                      )}
                                     </div>
                                   </div>
 
