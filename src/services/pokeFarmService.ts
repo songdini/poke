@@ -3830,9 +3830,9 @@ export const FARM_ITEMS: FarmItem[] = [
     name: '🚀 슈퍼 고속 알 부화기',
     icon: '🚀',
     category: 'special',
-    description: '구매 시 알 부화소에 [🚀 슈퍼 고속 인큐베이터] 챔버가 추가 설치되어 동시에 여러 알을 품을 수 있습니다! 또한 2배(200%) 초고속 온기 가속이 적용됩니다.',
+    description: '구매 시 알 부화소에 [🚀 슈퍼 고속 인큐베이터] 챔버가 추가 설치되어 동시에 여러 알을 품을 수 있습니다! 또한 2배(200%) 초고속 온기 가속이 적용됩니다. (소모되지 않는 영구 시설 장치)',
     price: 1500,
-    effect: { happiness: 50 }
+    effect: {}
   },
   {
     id: 'shiny_stone',
@@ -4814,8 +4814,21 @@ export function drawLotteryReels(): [LotterySymbol, LotterySymbol, LotterySymbol
 // 🚀 알 부화소 다중 인큐베이터 슬롯 목록 계산 헬퍼
 // (기본 1호기 + 보유한 'super_incubator' 개수만큼 고속 인큐베이터 챔버 슬롯 동적 증설)
 export function getFarmIncubatorSlots(farmState: Partial<FarmState>): IncubatorSlot[] {
-  const superCount = Math.max(0, farmState?.inventory?.['super_incubator'] || 0);
+  let superCount = Math.max(0, farmState?.inventory?.['super_incubator'] || 0);
   const existingSlots = farmState?.incubatorSlots || [];
+
+  // 🛡️ 기존 슬롯 중 알을 품고 있는 슈퍼 슬롯이나 기존 슈퍼 슬롯 수가 inventory보다 많을 경우 (과거 버그 등으로 인한 부화기 소모 및 알 유실 방지)
+  const existingSuperSlots = existingSlots.filter(s => s.type === 'super' || s.id.startsWith('inc_super_'));
+  const superSlotsWithEgg = existingSuperSlots.filter(s => !!s.egg);
+
+  const safeSuperCount = Math.max(superCount, superSlotsWithEgg.length, existingSuperSlots.length);
+  if (safeSuperCount > superCount) {
+    superCount = safeSuperCount;
+    if (farmState?.inventory) {
+      farmState.inventory['super_incubator'] = safeSuperCount;
+    }
+  }
+
   const result: IncubatorSlot[] = [];
 
   // 1호기: 기본 인큐베이터 (표준 보온 1.0x)
@@ -4841,6 +4854,13 @@ export function getFarmIncubatorSlots(farmState: Partial<FarmState>): IncubatorS
       speedMultiplier: 2.0,
       egg: existing?.egg || null
     });
+  }
+
+  // 🛡️ 혹시 다른 ID 패턴으로 알을 품고 있는 슬롯이 있다면 유실 방지
+  for (const ex of existingSlots) {
+    if (ex.egg && !result.some(r => r.id === ex.id)) {
+      result.push(ex);
+    }
   }
 
   return result;
@@ -5259,7 +5279,27 @@ export function loadFarmState(ownerName?: string): FarmState {
       parsed.stickers = parsed.stickers || [];
       parsed.pokemonPlacements = parsed.pokemonPlacements || {};
       parsed.hiddenPokemon = parsed.hiddenPokemon || [];
-      parsed.trainerPlacement = parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' };
+      
+      // 🧑🌾 트레이너 스킨 안전 복구 & 전 영역 동기화 (최상위, 룸별, 로컬스토리지 백업)
+      const localCachedSkin = typeof window !== 'undefined' ? localStorage.getItem('pokefarm_user_skin') : null;
+      const resolvedSkin = (parsed.trainerPlacement?.skin && parsed.trainerPlacement.skin !== 'ash')
+        ? parsed.trainerPlacement.skin
+        : (parsed.rooms?.room_1?.trainerPlacement?.skin && parsed.rooms.room_1.trainerPlacement.skin !== 'ash'
+            ? parsed.rooms.room_1.trainerPlacement.skin
+            : (parsed.rooms?.room_2?.trainerPlacement?.skin && parsed.rooms.room_2.trainerPlacement.skin !== 'ash'
+                ? parsed.rooms.room_2.trainerPlacement.skin
+                : (parsed.rooms?.room_3?.trainerPlacement?.skin && parsed.rooms.room_3.trainerPlacement.skin !== 'ash'
+                    ? parsed.rooms.room_3.trainerPlacement.skin
+                    : (localCachedSkin || parsed.trainerPlacement?.skin || 'ash'))));
+
+      parsed.trainerPlacement = {
+        ...(parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+        skin: resolvedSkin
+      };
+      if (typeof window !== 'undefined' && resolvedSkin && resolvedSkin !== 'ash') {
+        try { localStorage.setItem('pokefarm_user_skin', resolvedSkin); } catch (e) {}
+      }
+
       parsed.currentRoomId = (parsed.currentRoomId as any) || 'room_1';
       if (!parsed.rooms || Object.keys(parsed.rooms).length === 0) {
         parsed.rooms = {
@@ -5270,7 +5310,7 @@ export function loadFarmState(ownerName?: string): FarmState {
             stickers: parsed.stickers || [],
             pokemonPlacements: parsed.pokemonPlacements || {},
             hiddenPokemon: parsed.hiddenPokemon || [],
-            trainerPlacement: parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+            trainerPlacement: { ...(parsed.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }), skin: resolvedSkin }
           },
           room_2: {
             id: 'room_2',
@@ -5282,7 +5322,7 @@ export function loadFarmState(ownerName?: string): FarmState {
             ],
             pokemonPlacements: {},
             hiddenPokemon: [],
-            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: resolvedSkin }
           },
           room_3: {
             id: 'room_3',
@@ -5294,7 +5334,7 @@ export function loadFarmState(ownerName?: string): FarmState {
             ],
             pokemonPlacements: {},
             hiddenPokemon: [],
-            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: 'ash' }
+            trainerPlacement: { x: 50, y: 65, scale: 1, flipped: false, skin: resolvedSkin }
           }
         };
       }

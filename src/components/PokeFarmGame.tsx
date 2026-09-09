@@ -209,6 +209,52 @@ export const getValidTrainerSkin = (skin?: string): string => {
   return 'ash';
 };
 
+/**
+ * 🧑🌾 내 트레이너 스킨 안전 추출 헬퍼 (다른 농장 방문, 소켓 전송, 미니룸 등 전 영역 공통)
+ * - 룸별 데이터, 최상위 데이터, 로컬스토리지 백업까지 종합 검사하여 사용자가 설정한 고유 스킨을 정확하게 보존
+ */
+export const getMyTrainerSkin = (farm?: Partial<FarmState> | null): string => {
+  if (!farm) {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pokefarm_user_skin');
+      if (saved) return getValidTrainerSkin(saved);
+    }
+    return 'ash';
+  }
+
+  // 1. 최상위 trainerPlacement의 명시적 스킨 (ash가 아니면 최우선)
+  if (farm.trainerPlacement?.skin && farm.trainerPlacement.skin !== 'ash') {
+    return getValidTrainerSkin(farm.trainerPlacement.skin);
+  }
+
+  // 2. 현재 방 또는 room_1, room_2, room_3 중 ash가 아닌 스킨 검색
+  const targetRoomId = farm.currentRoomId || 'room_1';
+  const targetRoomSkin = farm.rooms?.[targetRoomId]?.trainerPlacement?.skin;
+  if (targetRoomSkin && targetRoomSkin !== 'ash') {
+    return getValidTrainerSkin(targetRoomSkin);
+  }
+
+  for (const rid of ['room_1', 'room_2', 'room_3'] as const) {
+    const s = farm.rooms?.[rid]?.trainerPlacement?.skin;
+    if (s && s !== 'ash') {
+      return getValidTrainerSkin(s);
+    }
+  }
+
+  // 3. 최상위 trainerPlacement.skin (ash 포함)
+  if (farm.trainerPlacement?.skin) {
+    return getValidTrainerSkin(farm.trainerPlacement.skin);
+  }
+
+  // 4. 로컬 스토리지에 백업된 내 스킨
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('pokefarm_user_skin');
+    if (saved) return getValidTrainerSkin(saved);
+  }
+
+  return 'ash';
+};
+
 export const POKEMON_SKILL_EFFECTS: PokemonSkillEffect[] = [
   {
     id: 'fx_charmander_fire',
@@ -1270,7 +1316,12 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             guestbook: res.guestbook || prev.guestbook || [],
             rooms: (res.farm.rooms && Object.keys(res.farm.rooms).length > 0) ? res.farm.rooms : prev.rooms,
             currentRoomId: res.farm.currentRoomId || prev.currentRoomId || 'room_1',
-            trainerPlacement: res.farm.trainerPlacement || prev.trainerPlacement
+            trainerPlacement: {
+              ...(res.farm.trainerPlacement || prev.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+              skin: (res.farm?.trainerPlacement?.skin && res.farm.trainerPlacement.skin !== 'ash')
+                ? res.farm.trainerPlacement.skin
+                : getMyTrainerSkin(prev)
+            }
           };
           saveFarmState(merged);
           return merged;
@@ -1298,6 +1349,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           });
         }
 
+        const resolvedLoginSkin = (loadedFarm.trainerPlacement?.skin && loadedFarm.trainerPlacement.skin !== 'ash')
+          ? loadedFarm.trainerPlacement.skin
+          : getMyTrainerSkin(localSaved);
+
         const newState: FarmState = {
           ...getInitialFarmState(cleanUser),
           ...loadedFarm,
@@ -1305,7 +1360,11 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           inventory: safeInventory,
           ownerName: cleanUser,
           isInitialized: true,
-          guestbook: res.guestbook || []
+          guestbook: res.guestbook || [],
+          trainerPlacement: {
+            ...(loadedFarm.trainerPlacement || { x: 50, y: 65, scale: 1, flipped: false }),
+            skin: resolvedLoginSkin
+          }
         };
         setFarmState(newState);
         saveFarmState(newState);
@@ -1491,7 +1550,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const getActiveRoomData = useCallback((roomId: 'room_1' | 'room_2' | 'room_3' = currentRoomId): RoomData => {
     const targetFarm = visitingFarm ? visitingFarm.farm : farmState;
     const room = targetFarm.rooms?.[roomId];
-    const defaultSkin = getValidTrainerSkin(targetFarm.trainerPlacement?.skin || 'ash');
+    const defaultSkin = getMyTrainerSkin(targetFarm);
 
     if (room) {
       return {
@@ -1552,7 +1611,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // 🌍 미니홈피 실시간 방문자 & 동시 접속 트레이너 소켓 룸 구독 관리
   const currentViewingOwner = visitingFarm ? visitingFarm.owner : farmState.ownerName;
-  const myCurrentSkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
+  const myCurrentSkin = getMyTrainerSkin(farmState);
 
   useEffect(() => {
     if (!socket || !socket.connected || !currentViewingOwner || !farmState.ownerName) return;
@@ -1601,12 +1660,18 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         currentRoomId
       };
 
+      if (updatedRoom.trainerPlacement !== undefined) {
+        nextState.trainerPlacement = {
+          ...(nextState.trainerPlacement || updatedRoom.trainerPlacement),
+          ...(currentRoomId === 'room_1' ? updatedRoom.trainerPlacement : {}),
+          skin: updatedRoom.trainerPlacement.skin || nextState.trainerPlacement?.skin
+        };
+      }
       if (currentRoomId === 'room_1') {
         if (updatedRoom.bgTheme !== undefined) nextState.bgTheme = updatedRoom.bgTheme;
         if (updatedRoom.stickers !== undefined) nextState.stickers = updatedRoom.stickers;
         if (updatedRoom.pokemonPlacements !== undefined) nextState.pokemonPlacements = updatedRoom.pokemonPlacements;
         if (updatedRoom.hiddenPokemon !== undefined) nextState.hiddenPokemon = updatedRoom.hiddenPokemon;
-        if (updatedRoom.trainerPlacement !== undefined) nextState.trainerPlacement = updatedRoom.trainerPlacement;
       }
 
       return nextState;
@@ -2178,7 +2243,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   const handleResetTrainerPlacement = () => {
     if (visitingFarm) return;
-    const defaultSkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
+    const defaultSkin = getMyTrainerSkin(farmState);
     updateCurrentRoom(r => ({
       trainerPlacement: { ...(r.trainerPlacement || {}), x: 50, y: 65, scale: 1, flipped: false, skin: defaultSkin }
     }));
@@ -2197,6 +2262,9 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   const handleChangeTrainerSkin = (skinId: string) => {
     if (visitingFarm) return;
     const validSkin = getValidTrainerSkin(skinId);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('pokefarm_user_skin', validSkin); } catch (e) {}
+    }
     setFarmState(prev => {
       const curRooms: Record<string, RoomData> = { ...(prev.rooms || {}) };
       for (const rid of ['room_1', 'room_2', 'room_3']) {
@@ -3677,8 +3745,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             const hostSkin = getValidTrainerSkin(
               onlineHost?.skin ||
               activeRoomData.trainerPlacement?.skin ||
-              visitingFarm.farm.trainerPlacement?.skin ||
-              'ash'
+              getMyTrainerSkin(visitingFarm.farm)
             );
             const hostPlace = {
               x: onlineHost ? onlineHost.x : (activeRoomData.trainerPlacement?.x ?? 38),
@@ -3689,7 +3756,7 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             };
             const visitorX = visitorWalkPos ? visitorWalkPos.x : (hostPlace.x > 50 ? hostPlace.x - 22 : hostPlace.x + 22);
             const visitorY = visitorWalkPos ? visitorWalkPos.y : hostPlace.y;
-            const mySkin = getValidTrainerSkin(farmState.trainerPlacement?.skin || 'ash');
+            const mySkin = getMyTrainerSkin(farmState);
             const hostSkinObj = TRAINER_SKINS.find(s => s.id === hostSkin);
             const mySkinObj = TRAINER_SKINS.find(s => s.id === mySkin);
 
@@ -4964,6 +5031,13 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
   // 2. 아이템 사용 (밥주기 / 목욕 / 장난감 / 치료)
   const handleUseItem = (item: FarmItem) => {
     if (!pmon) return;
+
+    // 🚀 알 부화기는 알 부화소 전용 영구 시설 장비이므로 포켓몬에게 소모 불가
+    if (item.id === 'super_incubator') {
+      showAlert('🚀 [슈퍼 고속 알 부화기]는 알 부화소의 전용 슬롯 확장 시설 장치입니다. 포켓몬에게 소모되지 않습니다!', 'warn');
+      return;
+    }
+
     const currentQty = farmState.inventory[item.id] || 0;
     if (currentQty <= 0) {
       showAlert(`아이템 [${item.name}]이 부족합니다. 상점에서 구매해 주세요!`, 'warn');
@@ -5715,6 +5789,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         : `🏡 [${baby.nickname}]이(가) 보육소 목장에 안전하게 등록되었습니다!${isNewDex ? ' 📖 [도감 등록 완료!]' : ''}`,
       'success'
     );
+  };
+
+  // 🛠️ 알 부화기 및 알 긴급 복구 헬퍼 (마당 오사용으로 부화기/알 유실 피해를 입은 유저 긴급 구제)
+  const handleRestoreLostIncubator = () => {
+    if (!window.confirm('🛠️ [알 부화기 & 알 복구 지원]\n마당에서 오사용되어 사라졌던 [🚀 슈퍼 고속 알 부화기] 1대와 보상 알 2개(🌟 황금알 1개 + 🥚 신비의 알 1개)를 복원하시겠습니까?')) {
+      return;
+    }
+
+    setFarmState(prev => {
+      const currentSuper = prev.inventory?.['super_incubator'] || 0;
+      const nextSuper = currentSuper + 1;
+      const nextInv = {
+        ...(prev.inventory || {}),
+        super_incubator: nextSuper,
+        golden_egg: (prev.inventory?.['golden_egg'] || 0) + 1,
+        mystery_egg: (prev.inventory?.['mystery_egg'] || 0) + 1
+      };
+      const updated: FarmState = {
+        ...prev,
+        inventory: nextInv
+      };
+      updated.incubatorSlots = getFarmIncubatorSlots(updated);
+      saveFarmState(updated);
+      return updated;
+    });
+
+    showAlert('🎉 [알 부화기 & 알 복구 완료!]\n🚀 슈퍼 고속 알 부화기 1대와 보상 알(🌟 황금알 1개 + 🥚 신비의 알 1개)이 안전하게 지급되었습니다!', 'success');
   };
 
   // 🔄 3-6. 보육소 목장의 포켓몬으로 대표 파트너 교체하기
@@ -8512,10 +8613,10 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                       🎒 보유 아이템으로 즉시 돌보기:
                     </div>
                     <div className="inventory-chips-row">
-                      {FARM_ITEMS.map(item => {
+                      {FARM_ITEMS.filter(item => item.id !== 'super_incubator').map(item => {
                         const qty = farmState.inventory[item.id] || 0;
                         const isTreasure = item.id === 'shiny_stone' || item.id === 'gold_crown';
-                        const isEgg = item.id === 'mystery_egg' || item.id === 'golden_egg';
+                        const isEgg = item.id === 'mystery_egg' || item.id === 'golden_egg' || item.id === 'gen1_egg';
                         return (
                           <button
                             key={item.id}
@@ -8993,9 +9094,29 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
               <div className="daycare-banner-content">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <h3>🥚 포켓 데이케어 & 다중 인큐베이터 챔버 (Egg Hatchery)</h3>
-                  <span className="incubator-total-badge">
-                    ⚡ 가동 중: {getFarmIncubatorSlots(farmState).filter(s => s.egg).length} / {getFarmIncubatorSlots(farmState).length}대 가동
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      className="excel-btn"
+                      onClick={handleRestoreLostIncubator}
+                      title="과거 마당에서 알부화기를 오사용하여 사라졌던 부화기 1대와 알을 즉시 복원합니다."
+                      style={{
+                        fontSize: '0.74rem',
+                        padding: '4px 10px',
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        color: '#fff',
+                        border: '1px solid #b45309',
+                        borderRadius: 6,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      🛠️ 유실 부화기/알 복원
+                    </button>
+                    <span className="incubator-total-badge">
+                      ⚡ 가동 중: {getFarmIncubatorSlots(farmState).filter(s => s.egg).length} / {getFarmIncubatorSlots(farmState).length}대 가동
+                    </span>
+                  </div>
                 </div>
                 <p>
                   상점이나 탐험에서 발견한 알을 챔버에 넣으면 <strong>모든 챔버가 동시에 온기를 공급받아 부화</strong>합니다!
