@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSocket } from '../context/SocketContext';
-import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice, RoomData, TrainerPlacement } from '../types/farm';
+import type { FarmState, FarmPokemon, FarmItem, PartTimeJob, GraduationDiploma, EvolutionStage, GuestbookEntry, ExpeditionArea, IncubatingEgg, IncubatorSlot, MinihompySticker, NeighborFarmData, PokemonPlacement, ExpeditionStoryEvent, StoryChoice, RoomData, TrainerPlacement } from '../types/farm';
 import { 
   STARTER_CHAINS, 
   FARM_ITEMS, 
@@ -802,6 +802,22 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
 
   // 농장 전체 로컬 상태
   const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(username));
+  const farmStateRef = useRef<FarmState>(farmState);
+  farmStateRef.current = farmState;
+
+  // 🛡️ 브라우저 창/탭을 급하게 닫을 때 최신 농장 상태를 로컬스토리지에 즉시 강제 플러시
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (farmStateRef.current) {
+        saveFarmState(farmStateRef.current);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<FarmTab>('minihome');
   const isServerSyncReadyRef = useRef(false); // 🛡️ 서버 최신 데이터 로드 확인 전까지 구버전 덮어쓰기 방지
 
@@ -1299,6 +1315,26 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             });
           }
 
+          // 🛡️ 인큐베이터 슬롯 및 알 안전 병합: 로컬에 보관/부화 중인 알이 서버의 빈 슬롯/구버전 null로 덮여 유실되지 않도록 철저히 보호
+          const prevSlots = prev.incubatorSlots || getFarmIncubatorSlots(prev);
+          const rawServerSlots = res.farm.incubatorSlots || (res.farm.incubatingEgg ? getFarmIncubatorSlots(res.farm) : null);
+          let mergedSlots = rawServerSlots ? [...rawServerSlots] : [...prevSlots];
+          if (prevSlots && rawServerSlots) {
+            mergedSlots = rawServerSlots.map((s: IncubatorSlot) => {
+              const localSlot = prevSlots.find(p => p.id === s.id);
+              if (localSlot?.egg && !s.egg) {
+                return { ...s, egg: localSlot.egg };
+              }
+              return s;
+            });
+            for (const p of prevSlots) {
+              if (p.egg && !mergedSlots.some(m => m.id === p.id)) {
+                mergedSlots.push(p);
+              }
+            }
+          }
+          const mergedIncubatingEgg = mergedSlots[0]?.egg || prev.incubatingEgg || res.farm.incubatingEgg || null;
+
           const merged: FarmState = {
             ...prev,
             ...res.farm,
@@ -1307,8 +1343,8 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
             ownerName: incomingOwner || prev.ownerName,
             isInitialized: true,
             heartsCount: updatedHearts,
-            incubatingEgg: res.farm.incubatingEgg !== undefined ? res.farm.incubatingEgg : prev.incubatingEgg,
-            incubatorSlots: res.farm.incubatorSlots !== undefined ? res.farm.incubatorSlots : (prev.incubatorSlots || getFarmIncubatorSlots(prev)),
+            incubatingEgg: mergedIncubatingEgg,
+            incubatorSlots: mergedSlots,
             lotteryState: res.farm.lotteryState || prev.lotteryState,
             lastActive: serverTime || Date.now(),
             todayCount: res.farm.todayCount !== undefined ? res.farm.todayCount : prev.todayCount,
@@ -1353,11 +1389,33 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
           ? loadedFarm.trainerPlacement.skin
           : getMyTrainerSkin(localSaved);
 
+        // 🛡️ 인큐베이터 슬롯 및 알 안전 복구
+        const localSlots = localSaved?.incubatorSlots || (localSaved?.incubatingEgg ? getFarmIncubatorSlots(localSaved) : null);
+        const rawLoadedSlots = loadedFarm.incubatorSlots || (loadedFarm.incubatingEgg ? getFarmIncubatorSlots(loadedFarm) : null);
+        let resolvedLoginSlots = rawLoadedSlots ? [...rawLoadedSlots] : (localSlots ? [...localSlots] : getFarmIncubatorSlots(loadedFarm));
+        if (localSlots && rawLoadedSlots) {
+          resolvedLoginSlots = rawLoadedSlots.map((s: IncubatorSlot) => {
+            const localSlot = localSlots.find(p => p.id === s.id);
+            if (localSlot?.egg && !s.egg) {
+              return { ...s, egg: localSlot.egg };
+            }
+            return s;
+          });
+          for (const p of localSlots) {
+            if (p.egg && !resolvedLoginSlots.some(m => m.id === p.id)) {
+              resolvedLoginSlots.push(p);
+            }
+          }
+        }
+        const resolvedLoginEgg = resolvedLoginSlots[0]?.egg || loadedFarm.incubatingEgg || localSaved?.incubatingEgg || null;
+
         const newState: FarmState = {
           ...getInitialFarmState(cleanUser),
           ...loadedFarm,
           coins: safeCoins,
           inventory: safeInventory,
+          incubatorSlots: resolvedLoginSlots,
+          incubatingEgg: resolvedLoginEgg,
           ownerName: cleanUser,
           isInitialized: true,
           guestbook: res.guestbook || [],
@@ -5684,15 +5742,30 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
       return slot;
     });
 
-    setFarmState(prev => ({
-      ...prev,
-      inventory: {
-        ...prev.inventory,
-        [eggItem.id]: currentQty - 1
-      },
+    const nextInventory = {
+      ...farmState.inventory,
+      [eggItem.id]: Math.max(0, currentQty - 1)
+    };
+
+    const nextState: FarmState = {
+      ...farmState,
+      inventory: nextInventory,
       incubatorSlots: updatedSlots,
-      incubatingEgg: updatedSlots[0]?.egg || null
-    }));
+      incubatingEgg: updatedSlots[0]?.egg || null,
+      lastActive: Date.now()
+    };
+
+    // 🛡️ 로컬스토리지에 즉시 동기 플러시 (알 투입 직후 창을 급하게 닫아도 증발 방지)
+    saveFarmState(nextState);
+    setFarmState(nextState);
+
+    // 🛡️ 서버 DB에도 즉시 동기화 패킷 전송
+    if (socket && socket.connected && farmState.ownerName) {
+      socket.emit('farm-sync', {
+        username: farmState.ownerName,
+        farmData: nextState
+      });
+    }
 
     showAlert(`🥚 [${targetSlot.name}]에 [${eggItem.name}]을(를) 넣었습니다! ${targetSlot.type === 'super' ? '⚡ 2.0x 초고속 온기 가속 가동!' : '정성으로 온기를 모아주세요!'}`, 'success');
   };
@@ -5776,9 +5849,19 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         activePokemon: nextActive,
         reservePokemon: nextReserve,
         incubatorSlots: updatedSlots,
-        incubatingEgg: updatedSlots[0]?.egg || null
+        incubatingEgg: updatedSlots[0]?.egg || null,
+        lastActive: Date.now()
       };
       nextState.unlockedSpecies = syncUnlockedSpecies(nextState);
+      
+      saveFarmState(nextState);
+      if (socket && socket.connected && prev.ownerName) {
+        socket.emit('farm-sync', {
+          username: prev.ownerName,
+          farmData: nextState
+        });
+      }
+      
       return nextState;
     });
 
@@ -5789,33 +5872,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
         : `🏡 [${baby.nickname}]이(가) 보육소 목장에 안전하게 등록되었습니다!${isNewDex ? ' 📖 [도감 등록 완료!]' : ''}`,
       'success'
     );
-  };
-
-  // 🛠️ 알 부화기 및 알 긴급 복구 헬퍼 (마당 오사용으로 부화기/알 유실 피해를 입은 유저 긴급 구제)
-  const handleRestoreLostIncubator = () => {
-    if (!window.confirm('🛠️ [알 부화기 & 알 복구 지원]\n마당에서 오사용되어 사라졌던 [🚀 슈퍼 고속 알 부화기] 1대와 보상 알 2개(🌟 황금알 1개 + 🥚 신비의 알 1개)를 복원하시겠습니까?')) {
-      return;
-    }
-
-    setFarmState(prev => {
-      const currentSuper = prev.inventory?.['super_incubator'] || 0;
-      const nextSuper = currentSuper + 1;
-      const nextInv = {
-        ...(prev.inventory || {}),
-        super_incubator: nextSuper,
-        golden_egg: (prev.inventory?.['golden_egg'] || 0) + 1,
-        mystery_egg: (prev.inventory?.['mystery_egg'] || 0) + 1
-      };
-      const updated: FarmState = {
-        ...prev,
-        inventory: nextInv
-      };
-      updated.incubatorSlots = getFarmIncubatorSlots(updated);
-      saveFarmState(updated);
-      return updated;
-    });
-
-    showAlert('🎉 [알 부화기 & 알 복구 완료!]\n🚀 슈퍼 고속 알 부화기 1대와 보상 알(🌟 황금알 1개 + 🥚 신비의 알 1개)이 안전하게 지급되었습니다!', 'success');
   };
 
   // 🔄 3-6. 보육소 목장의 포켓몬으로 대표 파트너 교체하기
@@ -9095,24 +9151,6 @@ export const PokeFarmGame: React.FC<PokeFarmGameProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <h3>🥚 포켓 데이케어 & 다중 인큐베이터 챔버 (Egg Hatchery)</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <button
-                      className="excel-btn"
-                      onClick={handleRestoreLostIncubator}
-                      title="과거 마당에서 알부화기를 오사용하여 사라졌던 부화기 1대와 알을 즉시 복원합니다."
-                      style={{
-                        fontSize: '0.74rem',
-                        padding: '4px 10px',
-                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                        color: '#fff',
-                        border: '1px solid #b45309',
-                        borderRadius: 6,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}
-                    >
-                      🛠️ 유실 부화기/알 복원
-                    </button>
                     <span className="incubator-total-badge">
                       ⚡ 가동 중: {getFarmIncubatorSlots(farmState).filter(s => s.egg).length} / {getFarmIncubatorSlots(farmState).length}대 가동
                     </span>

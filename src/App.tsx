@@ -570,6 +570,15 @@ function AppMain() {
           renderActiveGameViewport()
         )}
       </main>
+
+      {/* 📜 Global Legal Disclaimer Footer */}
+      <footer className="dubu-portal-footer">
+        <div className="dubu-footer-container">
+          <p className="dubu-footer-disclaimer">
+            본 서비스는 비영리 학습 및 개인 용도로 제작되었으며, Pokémon 및 관련 캐릭터 명칭·이미지의 저작권은 Nintendo / Creatures Inc. / GAME FREAK inc.에 있습니다.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

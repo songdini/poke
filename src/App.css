@@ -704,4 +704,44 @@ body {
     padding: 18px 14px;
     border-radius: 12px;
   }
+
+  .dubu-portal-footer {
+    padding: 12px 16px;
+  }
+
+  .dubu-footer-disclaimer {
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  /* 🎮 모바일 게임 플레이 집중 모드: 푸터 숨김 */
+  .dubu-portal-app.is-game-playing .dubu-portal-footer {
+    display: none !important;
+  }
 }
+
+/* 📜 Global Legal Disclaimer Footer */
+.dubu-portal-footer {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid var(--dubu-border, #e2e8f0);
+  padding: 16px 20px;
+  box-sizing: border-box;
+  text-align: center;
+  margin-top: auto;
+}
+
+.dubu-footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dubu-footer-disclaimer {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+

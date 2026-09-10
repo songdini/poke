@@ -2134,6 +2134,8 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .evolution-modal-box {
@@ -3245,12 +3247,19 @@
 
 /* Modal Stage Styles for Expedition */
 .job-shift-modal-card.expedition-modal-card {
-  background: #ffffff !important;
+  background: #fefce8 !important;
   border-radius: 20px;
-  max-width: 520px;
+  max-width: 620px !important;
   width: 100%;
-  overflow: hidden;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  border: 3px solid #854d0e !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 .job-stage-view.stage-exp_pantry {
@@ -7235,10 +7244,79 @@
    ========================================================================= */
 
 .expedition-modal-card {
-  max-width: 640px !important;
+  max-width: 620px !important;
   border: 3px solid #854d0e !important;
   background: #fefce8 !important;
   box-shadow: 0 16px 36px rgba(133, 77, 14, 0.25) !important;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.expedition-modal-card .job-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fefce8;
+  border-bottom: 2px solid #fde68a;
+  flex-shrink: 0;
+}
+
+/* 🌲 Expedition Stage Height Optimizations: 높이 최적화로 대사/선택지/결과 버튼 짤림 원천 방지 */
+.expedition-stage-view {
+  height: 145px !important;
+  min-height: 145px;
+  flex-shrink: 0;
+  padding-bottom: 10px !important;
+  transition: height 0.25s ease;
+}
+
+.expedition-modal-card.event .expedition-stage-view {
+  height: 120px !important;
+  min-height: 120px;
+  padding-bottom: 6px !important;
+}
+
+.expedition-modal-card.result .expedition-stage-view {
+  height: 105px !important;
+  min-height: 105px;
+  padding-bottom: 6px !important;
+}
+
+.expedition-modal-card.event .working-pokemon-sprite,
+.expedition-modal-card.result .working-pokemon-sprite {
+  height: 68px !important;
+}
+
+.expedition-modal-card .job-progress-bar-wrap {
+  flex-shrink: 0;
+}
+
+.expedition-modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.expedition-modal-card::-webkit-scrollbar-thumb {
+  background: #d97706;
+  border-radius: 999px;
+}
+
+.expedition-modal-card::-webkit-scrollbar-track {
+  background: #fef3c7;
+}
+
+.expedition-receipt .claim-shift-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* Story Dialogue Box Container */
@@ -7563,6 +7641,48 @@
     max-width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
+  }
+
+  /* 🌲 사내탐험 모바일 팝업 및 버튼 최적화 */
+  .job-shift-modal-card.expedition-modal-card {
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    border-radius: 16px !important;
+    margin: 4px;
+  }
+  .expedition-stage-view {
+    height: 105px !important;
+    min-height: 105px !important;
+    padding-bottom: 6px !important;
+  }
+  .expedition-modal-card.event .expedition-stage-view,
+  .expedition-modal-card.result .expedition-stage-view {
+    height: 85px !important;
+    min-height: 85px !important;
+    padding-bottom: 4px !important;
+  }
+  .expedition-stage-view .working-pokemon-sprite {
+    height: 52px !important;
+  }
+  .story-dialogue-box {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+  .story-portrait-frame {
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+  }
+  .portrait-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.8rem;
+  }
+  .resolution-narrative-box {
+    padding: 8px 10px;
+    margin: 6px 0 8px;
   }
 
   /* ⛺ 두부월드 미니홈피 모바일 일체형 축소 프레임 */

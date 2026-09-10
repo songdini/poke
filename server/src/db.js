@@ -37,6 +37,7 @@ db.exec(`
     coins INTEGER DEFAULT 1000,
     inventory TEXT,
     incubating_egg TEXT,
+    incubator_slots TEXT,
     lottery_state TEXT,
     bg_theme TEXT DEFAULT 'classic',
     stickers TEXT,
@@ -91,6 +92,7 @@ try { db.exec('ALTER TABLE farms ADD COLUMN password_salt TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN coins INTEGER DEFAULT 1000'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN inventory TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN incubating_egg TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE farms ADD COLUMN incubator_slots TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN lottery_state TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN unlocked_species TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE farms ADD COLUMN trainer_placement TEXT'); } catch (e) {}
@@ -235,6 +237,7 @@ export function registerFarmUser({ username, password, farmData = {} }) {
   const gradPokeStr = farmData.graduatedPokemon ? JSON.stringify(farmData.graduatedPokemon) : '[]';
   const invStr = farmData.inventory ? JSON.stringify(farmData.inventory) : JSON.stringify({ 'item_oran_berry': 5, 'item_bubble_soap': 3, 'item_poke_ball_toy': 2 });
   const eggStr = farmData.incubatingEgg ? JSON.stringify(farmData.incubatingEgg) : null;
+  const incubatorSlotsStr = farmData.incubatorSlots ? JSON.stringify(farmData.incubatorSlots) : null;
   const lotStr = farmData.lotteryState ? JSON.stringify(farmData.lotteryState) : null;
   const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : '[]';
   const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : '{}';
@@ -245,12 +248,12 @@ export function registerFarmUser({ username, password, farmData = {} }) {
   const stmt = db.prepare(`
     INSERT INTO farms (
       username, farm_name, password_hash, password_salt, active_pokemon, reserve_pokemon, graduated_pokemon,
-      graduated_count, hearts_count, coins, inventory, incubating_egg, lottery_state,
+      graduated_count, hearts_count, coins, inventory, incubating_egg, incubator_slots, lottery_state,
       bg_theme, stickers, pokemon_placements, trainer_placement, rooms, current_room_id,
       status_msg, bgm_song, today_count, total_count, last_active, updated_at
     ) VALUES (
       @username, @farm_name, @password_hash, @password_salt, @active_pokemon, @reserve_pokemon, @graduated_pokemon,
-      @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @lottery_state,
+      @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @incubator_slots, @lottery_state,
       @bg_theme, @stickers, @pokemon_placements, @trainer_placement, @rooms, @current_room_id,
       @status_msg, @bgm_song, @today_count, @total_count, @last_active, CURRENT_TIMESTAMP
     )
@@ -269,6 +272,7 @@ export function registerFarmUser({ username, password, farmData = {} }) {
     coins: farmData.coins !== undefined ? farmData.coins : 1500,
     inventory: invStr,
     incubating_egg: eggStr,
+    incubator_slots: incubatorSlotsStr,
     lottery_state: lotStr,
     bg_theme: farmData.bgTheme || 'classic',
     stickers: stickersStr,
@@ -381,15 +385,20 @@ export function upsertFarm(username, farmData) {
     farmData.heartsCount !== undefined ? farmData.heartsCount : 0
   );
 
+  const hasEggProp = 'incubatingEgg' in farmData;
+  const eggStr = hasEggProp ? (farmData.incubatingEgg ? JSON.stringify(farmData.incubatingEgg) : null) : null;
+  const hasSlotsProp = 'incubatorSlots' in farmData;
+  const incubatorSlotsStr = hasSlotsProp ? (farmData.incubatorSlots ? JSON.stringify(farmData.incubatorSlots) : null) : null;
+
   const stmt = db.prepare(`
     INSERT INTO farms (
       username, farm_name, active_pokemon, reserve_pokemon, graduated_pokemon,
-      graduated_count, hearts_count, coins, inventory, incubating_egg, lottery_state,
+      graduated_count, hearts_count, coins, inventory, incubating_egg, incubator_slots, lottery_state,
       bg_theme, stickers, pokemon_placements, trainer_placement, rooms, current_room_id, unlocked_species,
       status_msg, bgm_song, today_count, total_count, last_active, updated_at
     ) VALUES (
       @username, @farm_name, @active_pokemon, @reserve_pokemon, @graduated_pokemon,
-      @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @lottery_state,
+      @graduated_count, @hearts_count, @coins, @inventory, @incubating_egg, @incubator_slots, @lottery_state,
       @bg_theme, @stickers, @pokemon_placements, @trainer_placement, @rooms, @current_room_id, @unlocked_species,
       @status_msg, @bgm_song, @today_count, @total_count, @last_active, CURRENT_TIMESTAMP
     )
@@ -402,7 +411,8 @@ export function upsertFarm(username, farmData) {
       hearts_count = MAX(COALESCE(farms.hearts_count, 0), (SELECT COUNT(*) FROM farm_hearts WHERE farm_hearts.target_username = farms.username), excluded.hearts_count),
       coins = COALESCE(excluded.coins, farms.coins),
       inventory = COALESCE(excluded.inventory, farms.inventory),
-      incubating_egg = excluded.incubating_egg,
+      incubating_egg = CASE WHEN @has_egg_prop = 1 THEN excluded.incubating_egg ELSE farms.incubating_egg END,
+      incubator_slots = CASE WHEN @has_slots_prop = 1 THEN excluded.incubator_slots ELSE farms.incubator_slots END,
       lottery_state = COALESCE(excluded.lottery_state, farms.lottery_state),
       bg_theme = COALESCE(excluded.bg_theme, farms.bg_theme),
       stickers = COALESCE(excluded.stickers, farms.stickers),
@@ -423,7 +433,6 @@ export function upsertFarm(username, farmData) {
   const reservePokeStr = farmData.reservePokemon ? JSON.stringify(farmData.reservePokemon) : null;
   const gradPokeStr = farmData.graduatedPokemon ? JSON.stringify(farmData.graduatedPokemon) : null;
   const invStr = farmData.inventory ? JSON.stringify(farmData.inventory) : null;
-  const eggStr = farmData.incubatingEgg ? JSON.stringify(farmData.incubatingEgg) : null;
   const lotStr = farmData.lotteryState ? JSON.stringify(farmData.lotteryState) : null;
   const stickersStr = farmData.stickers ? JSON.stringify(farmData.stickers) : null;
   const placementsStr = farmData.pokemonPlacements ? JSON.stringify(farmData.pokemonPlacements) : null;
@@ -445,6 +454,9 @@ export function upsertFarm(username, farmData) {
     coins: currentCoins,
     inventory: invStr,
     incubating_egg: eggStr,
+    incubator_slots: incubatorSlotsStr,
+    has_egg_prop: hasEggProp ? 1 : 0,
+    has_slots_prop: hasSlotsProp ? 1 : 0,
     lottery_state: lotStr,
     bg_theme: farmData.bgTheme || 'classic',
     stickers: stickersStr,
@@ -858,6 +870,7 @@ function parseFarmRow(row) {
     coins: row.coins !== undefined && row.coins !== null ? row.coins : 1000,
     inventory: row.inventory ? safeJsonParse(row.inventory, {}) : {},
     incubatingEgg: row.incubating_egg ? safeJsonParse(row.incubating_egg, null) : null,
+    incubatorSlots: row.incubator_slots ? safeJsonParse(row.incubator_slots, null) : null,
     lotteryState: row.lottery_state ? safeJsonParse(row.lottery_state, null) : null,
     bgTheme: row.bg_theme || 'classic',
     stickers: row.stickers ? safeJsonParse(row.stickers, []) : [],

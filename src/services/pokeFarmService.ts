@@ -146,13 +146,24 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
     }
   ],
 
-  // 5. 피존 ➔ 피죤투 (구구 제외, 피존부터 스타팅 시작)
+  // 5. 구구 ➔ 피존 ➔ 피죤투
   [
+    {
+      id: 16,
+      name: '구구',
+      minLevel: 1,
+      minHappiness: 0,
+      types: ['normal', 'flying'],
+      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png',
+      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/16.gif',
+      genCategory: 'gen1',
+      isStarter: true
+    },
     {
       id: 17,
       name: '피존',
-      minLevel: 1,
-      minHappiness: 0,
+      minLevel: 18,
+      minHappiness: 40,
       types: ['normal', 'flying'],
       sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png',
       showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/17.gif',
@@ -1094,7 +1105,7 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
       isEeveeBranch: true
     },
     {
-      id: 134,
+      id: 1339, // 가상 플레이스홀더 ID (134번 샤미드와의 ID 충돌 방지)
       name: '이브이즈 (8종 확률 진화)',
       minLevel: 25,
       minHappiness: 60,
@@ -2366,19 +2377,6 @@ export const STARTER_CHAINS: EvolutionStage[][] = [
     }
   ],
 
-  // G1-2. 구구
-  [
-    {
-      id: 16,
-      name: '구구',
-      minLevel: 1,
-      minHappiness: 0,
-      types: ['normal', 'flying'],
-      sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png',
-      showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/16.gif',
-      genCategory: 'gen1'
-    }
-  ],
 
   // G1-3. 꼬렛 ➔ 레트라
   [
@@ -3560,6 +3558,10 @@ export function getAllPokedexEntries(): PokedexEntry[] {
   STARTER_CHAINS.forEach((chain, chainIndex) => {
     const firstStage = chain[0];
     chain.forEach((stage, stageIndex) => {
+      // 🌟 이브이즈 가상 진화체 플레이스홀더는 도감 등록에서 제외 (134번 샤미드 정상 노출 보장)
+      if (stage.name.includes('이브이즈') || stage.id === 1339) {
+        return;
+      }
       if (!map.has(stage.id)) {
         map.set(stage.id, {
           speciesId: stage.id,
@@ -3578,7 +3580,10 @@ export function getAllPokedexEntries(): PokedexEntry[] {
     });
   });
 
-  // 이브이즈 8종 브랜치도 도감에 완벽 등록
+  const eeveeChainIdx = STARTER_CHAINS.findIndex(c => c[0].id === 133);
+  const safeEeveeChainIdx = eeveeChainIdx !== -1 ? eeveeChainIdx : 29;
+
+  // 이브이즈 8종 브랜치도 도감에 완벽 등록 (샤미드, 쥬피썬더, 부스터, 에브이, 블래키, 리피아, 글레이시아, 님피아)
   EEVEE_BRANCHES.forEach(branch => {
     if (!map.has(branch.id)) {
       map.set(branch.id, {
@@ -3589,7 +3594,7 @@ export function getAllPokedexEntries(): PokedexEntry[] {
         showdownSprite: branch.showdownSprite,
         baseSpeciesId: 133,
         baseName: '이브이',
-        chainIndex: 30,
+        chainIndex: safeEeveeChainIdx,
         stageIndex: 1,
         genCategory: branch.genCategory,
         minLevel: branch.minLevel
@@ -4833,7 +4838,7 @@ export function getFarmIncubatorSlots(farmState: Partial<FarmState>): IncubatorS
 
   // 1호기: 기본 인큐베이터 (표준 보온 1.0x)
   const slot0 = existingSlots.find(s => s.id === 'inc_standard_0') || existingSlots[0];
-  const slot0Egg = slot0?.egg !== undefined ? slot0.egg : (farmState?.incubatingEgg || null);
+  const slot0Egg = slot0?.egg || farmState?.incubatingEgg || null;
 
   result.push({
     id: 'inc_standard_0',
@@ -4972,6 +4977,75 @@ export function sanitizeFarmPokemon(mon: FarmPokemon): FarmPokemon {
     }
   }
 
+  // 🕊️ 구구 / 피존 / 피죤투 3단계 진화 체인 정규화 및 하위 호환 보정
+  if (mon.speciesId === 16 || mon.speciesId === 17 || mon.speciesId === 18) {
+    const PIDGEOTTO_CHAIN: EvolutionStage[] = [
+      {
+        id: 16,
+        name: '구구',
+        minLevel: 1,
+        minHappiness: 0,
+        types: ['normal', 'flying'],
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png',
+        showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/16.gif',
+        genCategory: 'gen1',
+        isStarter: true
+      },
+      {
+        id: 17,
+        name: '피존',
+        minLevel: 18,
+        minHappiness: 40,
+        types: ['normal', 'flying'],
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png',
+        showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/17.gif',
+        genCategory: 'gen1',
+        isStarter: true
+      },
+      {
+        id: 18,
+        name: '피죤투',
+        minLevel: 36,
+        minHappiness: 70,
+        types: ['normal', 'flying'],
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png',
+        showdownSprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/18.gif',
+        genCategory: 'gen1',
+        isStarter: true
+      }
+    ];
+
+    const needsChainUpdate = !Array.isArray(mon.evolutionChain) ||
+      mon.evolutionChain.length !== 3 ||
+      mon.evolutionChain[0]?.id !== 16 ||
+      mon.evolutionChain[1]?.id !== 17 ||
+      mon.evolutionChain[2]?.id !== 18;
+
+    if (needsChainUpdate) {
+      mon.evolutionChain = PIDGEOTTO_CHAIN;
+      if (mon.speciesId === 16) {
+        mon.stageIndex = 0;
+      } else if (mon.speciesId === 17) {
+        mon.stageIndex = 1;
+      } else if (mon.speciesId === 18) {
+        mon.stageIndex = 2;
+      }
+    }
+  }
+
+  // 🦊 이브이 체인 내 구버전 가상 ID(134)를 1339로 교정 (샤미드와의 ID 충돌 방지)
+  if (mon.speciesId === 133 && Array.isArray(mon.evolutionChain)) {
+    mon.evolutionChain = mon.evolutionChain.map(st => {
+      if (st && (st.id === 134 || st.id === 1339) && st.name && st.name.includes('이브이즈')) {
+        return {
+          ...st,
+          id: 1339
+        };
+      }
+      return st;
+    });
+  }
+
   return mon;
 }
 
@@ -5076,7 +5150,7 @@ export function syncUnlockedSpecies(state: Partial<FarmState>): number[] {
     });
   }
 
-  return Array.from(set).sort((a, b) => a - b);
+  return Array.from(set).filter(id => id !== 1339).sort((a, b) => a - b);
 }
 
 // 초기 농장 상태 생성 (온보딩 전)
@@ -5455,6 +5529,13 @@ export function saveFarmState(state: FarmState): void {
       state.graduatedPokemon = state.graduatedPokemon.map(sanitizeDiploma);
     }
     state.unlockedSpecies = syncUnlockedSpecies(state);
+
+    if (!state.incubatorSlots) {
+      state.incubatorSlots = getFarmIncubatorSlots(state);
+    }
+    if (state.incubatorSlots && state.incubatorSlots[0]) {
+      state.incubatingEgg = state.incubatorSlots[0].egg || null;
+    }
 
     if (!state.lastActive) {
       state.lastActive = Date.now();
