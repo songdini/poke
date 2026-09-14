@@ -22,6 +22,21 @@ const TILE_SIZE = 52;
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 600;
 
+const NPC_DIALOG_PORTRAITS: Record<string, string> = {
+  '집사': '/images/npc_butler.png',
+  '다정한 집사': '/images/npc_butler.png',
+  '순자 할머니': '/images/npc_grandma.png',
+  '길고양이 나비': '/images/npc_cat.png',
+  '나비': '/images/npc_cat.png',
+  '나비의 은밀한 제안': '/images/npc_cat.png',
+  '토끼 우체부 바니': '/images/npc_bunny.png',
+  '바니': '/images/npc_bunny.png',
+  '삐약이': '/images/npc_chicks.png',
+  '아기 병아리 삐약이': '/images/npc_chicks.png',
+  '초코': '/images/npc_choco.png',
+  '댕댕이 친구 초코': '/images/npc_choco.png'
+};
+
 export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   username = '두부집사',
   onLeaveRoom
@@ -123,6 +138,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   const dubuWalkImgRef = useRef<HTMLImageElement | null>(null);
   const dubuSleepImgRef = useRef<HTMLImageElement | null>(null);
   const mapImagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
+  const npcSpritesRef = useRef<{ [key: string]: HTMLImageElement }>({});
   const transparentSpritesRef = useRef<{ [key: string]: HTMLCanvasElement }>({});
   const animFrameRef = useRef<number>(0);
 
@@ -160,6 +176,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   });
 
   const visualPosRef = useRef<{ x: number; y: number }>({ x: 7, y: 6 });
+  const currentGridPosRef = useRef<{ x: number; y: number; dir: Direction }>({ x: 7, y: 6, dir: 'down' });
   const heldDirectionsRef = useRef<Direction[]>([]);
 
   // 🐶 Strict Horizontal Facing ('left' | 'right' - ONLY changes when Left/Right keys are pressed!)
@@ -225,30 +242,27 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       if (!ctxB) return null;
 
       if (hero === 'guruem') {
-        // Guruem stepping: front-left & hind-right in frame A, front-right & hind-left in frame B
+        // Guruem stepping: subtle vertical paw lift (NO horizontal shift)
+        // Frame A: front paws lift 2px
         ctxA.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
-        ctxA.drawImage(baseImg, 73, 175, 55, h - 175, 73, 175, 55, h - 175);
-        ctxA.drawImage(baseImg, 169, 175, 45, h - 175, 169, 175, 45, h - 175);
-        ctxA.drawImage(baseImg, 35, 175, 38, h - 175, 37, 171, 38, h - 175);
-        ctxA.drawImage(baseImg, 130, 175, 38, h - 175, 132, 171, 38, h - 175);
+        ctxA.drawImage(baseImg, 35, 175, 80, h - 175, 35, 175, 80, h - 175);
+        ctxA.drawImage(baseImg, 125, 175, 85, h - 175, 125, 173, 85, h - 175);
 
+        // Frame B: hind paws lift 2px
         ctxB.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
-        ctxB.drawImage(baseImg, 35, 175, 38, h - 175, 35, 175, 38, h - 175);
-        ctxB.drawImage(baseImg, 130, 175, 38, h - 175, 130, 175, 38, h - 175);
-        ctxB.drawImage(baseImg, 73, 175, 45, h - 175, 75, 171, 45, h - 175);
-        ctxB.drawImage(baseImg, 169, 175, 42, h - 175, 171, 171, 42, h - 175);
+        ctxB.drawImage(baseImg, 35, 175, 80, h - 175, 35, 173, 80, h - 175);
+        ctxB.drawImage(baseImg, 125, 175, 85, h - 175, 125, 175, 85, h - 175);
       } else {
-        // Dubu stepping
+        // Dubu stepping: subtle vertical paw lift (NO horizontal shift)
+        // Frame A: front paws lift 2px
         ctxA.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
-        ctxA.drawImage(baseImg, 120, 175, 55, h - 175, 120, 175, 55, h - 175);
-        ctxA.drawImage(baseImg, 65, 175, 42, h - 175, 63, 171, 42, h - 175);
-        ctxA.drawImage(baseImg, 185, 175, 30, h - 175, 183, 171, 30, h - 175);
+        ctxA.drawImage(baseImg, 55, 175, 70, h - 175, 55, 175, 70, h - 175);
+        ctxA.drawImage(baseImg, 130, 175, 85, h - 175, 130, 173, 85, h - 175);
 
+        // Frame B: hind paws lift 2px
         ctxB.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
-        ctxB.drawImage(baseImg, 65, 175, 42, h - 175, 65, 175, 42, h - 175);
-        ctxB.drawImage(baseImg, 185, 175, 30, h - 175, 185, 175, 30, h - 175);
-        ctxB.drawImage(baseImg, 120, 175, 27, h - 175, 118, 171, 27, h - 175);
-        ctxB.drawImage(baseImg, 146, 175, 28, h - 175, 144, 171, 28, h - 175);
+        ctxB.drawImage(baseImg, 55, 175, 70, h - 175, 55, 173, 70, h - 175);
+        ctxB.drawImage(baseImg, 130, 175, 85, h - 175, 130, 175, 85, h - 175);
       }
 
       return { stepA: cA, stepB: cB };
@@ -312,6 +326,21 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       const img = new Image();
       img.src = `/images/map_${k}.jpg`;
       mapImagesRef.current[k] = img;
+    });
+
+    // 🧑‍🌾 Preload NPC pixel art character sprites
+    const npcMap: Record<string, string> = {
+      human_owner: '/images/npc_butler.png',
+      npc_grandma: '/images/npc_grandma.png',
+      npc_bunny_postman: '/images/npc_bunny.png',
+      chick_piyak: '/images/npc_chicks.png',
+      npc_cat_nabi: '/images/npc_cat.png',
+      npc_dog_choco: '/images/npc_choco.png'
+    };
+    Object.entries(npcMap).forEach(([id, src]) => {
+      const img = new Image();
+      img.src = src;
+      npcSpritesRef.current[id] = img;
     });
   }, []);
 
@@ -440,6 +469,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     }
     const pos = data.playerPos || { x: 7, y: 6, dir: 'down' };
     setPlayerPos(pos);
+    currentGridPosRef.current = { ...pos };
     if (pos.dir === 'left') {
       facingHRef.current = 'left';
     } else if (pos.dir === 'right') {
@@ -1008,6 +1038,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     if (
       dialogState.isOpen ||
       isSaveModalOpen ||
+      isSettingsModalOpen ||
       isBagModalOpen ||
       isQuestModalOpen ||
       isGuideModalOpen ||
@@ -1036,13 +1067,14 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     else if (dir === 'left') dx = -1;
     else if (dir === 'right') dx = 1;
 
-    const curX = playerPos.x;
-    const curY = playerPos.y;
+    // Use currentGridPosRef as the authoritative source of position to prevent asynchronous React state lag
+    const curX = currentGridPosRef.current.x;
+    const curY = currentGridPosRef.current.y;
     const newX = curX + dx;
     const newY = curY + dy;
 
-    // Face the target direction (grid direction) & update horizontal facing ONLY on left/right
-    setPlayerPos(prev => ({ ...prev, dir }));
+    // Face the target direction & update horizontal facing ONLY on left/right
+    currentGridPosRef.current.dir = dir;
     if (dir === 'left') {
       facingHRef.current = 'left';
     } else if (dir === 'right') {
@@ -1051,17 +1083,20 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
     // Check bounds
     if (newX < 0 || newX >= currentMap.width || newY < 0 || newY >= currentMap.height) {
+      setPlayerPos(prev => ({ ...prev, dir }));
       return;
     }
 
     // Check walls / obstacles / water
     const tile = currentMap.tiles[newY]?.[newX];
     if (tile === 1 || tile === 2) {
+      setPlayerPos(prev => ({ ...prev, dir }));
       return;
     }
 
     // Check NPC collision
     if (currentMap.npcs.some(n => n.x === newX && n.y === newY)) {
+      setPlayerPos(prev => ({ ...prev, dir }));
       return;
     }
 
@@ -1070,6 +1105,11 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     if (portal) {
       dubuAudio.playMapTransition();
       setCurrentMapId(portal.targetMapId);
+      currentGridPosRef.current = {
+        x: portal.targetX,
+        y: portal.targetY,
+        dir: portal.targetDir
+      };
       setPlayerPos({
         x: portal.targetX,
         y: portal.targetY,
@@ -1104,6 +1144,10 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       return;
     }
 
+    // Advance authoritative grid position immediately
+    currentGridPosRef.current = { x: newX, y: newY, dir };
+    setPlayerPos({ x: newX, y: newY, dir });
+
     // Begin smooth tile step!
     const nextStepIndex = moveAnimRef.current.stepIndex + 1;
     moveAnimRef.current = {
@@ -1130,8 +1174,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     isGuideModalOpen,
     isEndingsModalOpen,
     currentMapId,
-    playerPos.x,
-    playerPos.y,
+    collectedItemIds,
     showToast,
     quests.quest_morning.completed,
     updateQuest,
@@ -1504,6 +1547,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           const targetY = moveAnimRef.current.targetY;
           const currentDir = moveAnimRef.current.dir;
 
+          currentGridPosRef.current = { x: targetX, y: targetY, dir: currentDir };
           setPlayerPos({ x: targetX, y: targetY, dir: currentDir });
           visualPosRef.current = { x: targetX, y: targetY };
           moveAnimRef.current.isMoving = false;
@@ -1655,20 +1699,70 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         }
       }
 
-      // 4. Render Portals with glowing aura & bounce
+      // 4. Render Portals with glowing aura & clear visual indicators
       currentMap.portals.forEach(portal => {
         const px = portal.x * TILE_SIZE;
         const py = portal.y * TILE_SIZE;
-        const aura = Math.sin(frame * 0.08) * 4;
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
-        ctx.beginPath();
-        ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, TILE_SIZE / 2 + aura, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '24px Pretendard';
-        ctx.textAlign = 'center';
-        const bounce = Math.sin(frame * 0.1) * 3;
-        ctx.fillText('🚪', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 8 + bounce);
+
+        if (currentMapId === 'home') {
+          // Warm glowing welcome wooden doormat under the painted wooden door
+          const aura = Math.sin(frame * 0.08) * 4;
+          const grad = ctx.createRadialGradient(
+            px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10, 4,
+            px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10, TILE_SIZE * 0.85 + aura
+          );
+          grad.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+          grad.addColorStop(0.6, 'rgba(245, 158, 11, 0.2)');
+          grad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10, TILE_SIZE * 0.8, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Wooden woven doormat
+          ctx.fillStyle = 'rgba(120, 53, 15, 0.9)';
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(px + 4, py + 22, TILE_SIZE - 8, 22, 6);
+          } else {
+            ctx.rect(px + 4, py + 22, TILE_SIZE - 8, 22);
+          }
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Cute paw print on mat
+          ctx.fillStyle = '#fef08a';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🐾', px + TILE_SIZE / 2, py + 38);
+
+          // Exit arrow indicator
+          const bounce = Math.sin(frame * 0.1) * 3;
+          ctx.fillStyle = '#fef08a';
+          ctx.font = 'bold 11px Pretendard, sans-serif';
+          ctx.fillText('▼ 나가기', px + TILE_SIZE / 2, py + 16 + bounce);
+        } else {
+          // Outdoor portals: glowing aura & portal ring
+          const aura = Math.sin(frame * 0.08) * 4;
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+          ctx.beginPath();
+          ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, TILE_SIZE / 2 + aura, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 6, 20, 7, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '22px Pretendard, sans-serif';
+          ctx.textAlign = 'center';
+          const bounce = Math.sin(frame * 0.1) * 3;
+          ctx.fillText('🚪', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 6 + bounce);
+        }
       });
 
       // 5. Render Interactables
@@ -1677,29 +1771,71 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         const py = item.y * TILE_SIZE;
         const isCollected = collectedItemIds.includes(item.id);
 
-        // Ground shadow
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
-        ctx.beginPath();
-        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, 18, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (currentMapId === 'home') {
+          // In Dubu's cozy room, items are beautifully pre-rendered on the background map
+          // Render elegant sparkles and interactive cues without cluttering
+          if (item.type === 'bed') {
+            const zzzBob = Math.sin(frame * 0.08) * 3;
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('💤', px + TILE_SIZE / 2 + 6, py + TILE_SIZE / 2 - 8 + zzzBob);
 
-        if (item.type === 'bed') {
-          ctx.font = '28px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('🛌', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
-        } else if (item.type === 'save_crystal') {
-          const glow = Math.sin(frame * 0.08) * 6;
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            const glow = Math.sin(frame * 0.05) * 2;
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10, 22 + glow, 10 + glow * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (item.type === 'water') {
+            const glint = Math.sin(frame * 0.07);
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 12, 16, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            if (glint > 0.4) {
+              ctx.font = '13px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('💧', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 6);
+            }
+          } else if (item.type === 'food') {
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
+            ctx.beginPath();
+            ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 12, 16, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            const glint = Math.sin(frame * 0.07 + 1);
+            if (glint > 0.4) {
+              ctx.font = '13px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('✨', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 6);
+            }
+          }
+        } else {
+          // Ground shadow
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
           ctx.beginPath();
-          ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 20 + glow, 0, Math.PI * 2);
+          ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, 18, 6, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.font = '30px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('🔮', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
-        } else if (!isCollected) {
-          ctx.font = '28px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(item.icon, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
+
+          if (item.type === 'save_crystal') {
+            const glow = Math.sin(frame * 0.08) * 6;
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.beginPath();
+            ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 20 + glow, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '30px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔮', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
+          } else if (item.type === 'giant_basket') {
+            ctx.font = '32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🍠', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
+            const steamY = py + 2 - (frame * 0.4 % 14);
+            ctx.font = '13px sans-serif';
+            ctx.fillText('♨️', px + TILE_SIZE / 2, steamY);
+          } else if (!isCollected) {
+            ctx.font = '28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(item.icon, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
+          }
         }
 
         // Sniff sparkle wave over hidden treasures
@@ -1715,28 +1851,74 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         }
       });
 
-      // 6. Render NPCs
+      // 6. Render NPCs with grounded pixel art character sprites
       currentMap.npcs.forEach(npc => {
         const px = npc.x * TILE_SIZE;
         const py = npc.y * TILE_SIZE;
 
-        // Ground shadow
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+        // Ground shadow firmly under feet
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
         ctx.beginPath();
-        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, 18, 7, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 3, 18, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.font = '36px sans-serif';
-        ctx.textAlign = 'center';
-        const bounce = Math.sin(frame * 0.06 + npc.x) * 3;
-        ctx.fillText(npc.sprite, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 12 + bounce);
+        // Subtle idle breathing motion (firmly grounded, 1.5px vertical bounce)
+        const idleBob = Math.sin(frame * 0.05 + npc.x * 1.5) * 1.5;
 
-        // Name badge
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(px - 14, py - 18, TILE_SIZE + 28, 18);
+        // Render pixel art character sprite if loaded
+        const spriteImg = npcSpritesRef.current[npc.id];
+        if (spriteImg && spriteImg.complete && spriteImg.naturalWidth > 0) {
+          const spriteW = 46;
+          const spriteH = 52;
+          const drawX = px + (TILE_SIZE - spriteW) / 2;
+          const drawY = py + TILE_SIZE - spriteH - 4 + idleBob;
+          ctx.drawImage(spriteImg, drawX, drawY, spriteW, spriteH);
+        } else {
+          // Fallback emoji
+          ctx.font = '34px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(npc.sprite, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10 + idleBob);
+        }
+
+        // Animated "💬" talk bubble when player is nearby
+        const distToPlayer = Math.hypot(npc.x - playerPos.x, npc.y - playerPos.y);
+        if (distToPlayer <= 2.2) {
+          const bubbleY = py - 26 + Math.sin(frame * 0.1) * 3;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.beginPath();
+          ctx.arc(px + TILE_SIZE / 2, bubbleY, 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('💬', px + TILE_SIZE / 2, bubbleY + 4);
+        }
+
+        // Stylish Name Badge Pill
+        ctx.font = 'bold 11px Pretendard, sans-serif';
+        const textWidth = ctx.measureText(npc.name).width;
+        const badgeW = Math.max(52, textWidth + 14);
+        const badgeH = 17;
+        const badgeX = px + (TILE_SIZE - badgeW) / 2;
+        const badgeY = py - 13;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8);
+        } else {
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
         ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 11px Pretendard';
-        ctx.fillText(npc.name, px + TILE_SIZE / 2, py - 5);
+        ctx.textAlign = 'center';
+        ctx.fillText(npc.name, px + TILE_SIZE / 2, badgeY + 12);
       });
 
       // 7. Render Dubu (Smooth Leg Movement & Directional Sprites)
@@ -1745,7 +1927,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       const curDir = moveAnimRef.current.isMoving ? moveAnimRef.current.dir : playerPos.dir;
 
       // Natural trotting bounce (pure vertical hop, NO rotational tilt)
-      const walkBob = isWalkingNow ? -Math.abs(Math.sin(walkProgress * Math.PI)) * 5 : 0;
+      const walkBob = isWalkingNow ? -Math.sin(walkProgress * Math.PI) * 3 : 0;
 
       // Soft Ground Shadow under Dubu
       const shadowRadiusX = 22 - (isWalkingNow ? Math.abs(walkBob) * 0.7 : 0);
@@ -1822,7 +2004,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
         // Direction & Leg Step sprite selection
         let spriteToDraw: HTMLCanvasElement | HTMLImageElement | null = heroSprites.walkImg;
-        if (isWalkingNow && walkProgress > 0.15 && walkProgress < 0.85) {
+        if (isWalkingNow) {
           const stepFrames = heroSprites.stepFrames;
           if (stepFrames) {
             spriteToDraw = stepCycle % 2 === 0 ? stepFrames.stepA : stepFrames.stepB;
@@ -2148,21 +2330,15 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                       alt={HEROES_CONFIG[selectedHero].name}
                       className="tsukuru-dialog-portrait-img"
                     />
+                  ) : NPC_DIALOG_PORTRAITS[dialogState.lines[dialogState.lineIndex]?.speaker || ''] ? (
+                    <img
+                      src={NPC_DIALOG_PORTRAITS[dialogState.lines[dialogState.lineIndex]?.speaker || '']}
+                      alt={dialogState.lines[dialogState.lineIndex]?.speaker}
+                      className="tsukuru-dialog-portrait-img npc-pixel-avatar"
+                    />
                   ) : (
                     <div className="tsukuru-dialog-emoji-avatar">
-                      {dialogState.lines[dialogState.lineIndex]?.speaker === '집사'
-                        ? '🧑‍💻'
-                        : dialogState.lines[dialogState.lineIndex]?.speaker === '순자 할머니'
-                        ? '👵'
-                        : dialogState.lines[dialogState.lineIndex]?.speaker === '길고양이 나비' ||
-                          dialogState.lines[dialogState.lineIndex]?.speaker === '나비'
-                        ? '🐱'
-                        : dialogState.lines[dialogState.lineIndex]?.speaker === '토끼 우체부 바니' ||
-                          dialogState.lines[dialogState.lineIndex]?.speaker === '바니'
-                        ? '🐰'
-                        : dialogState.lines[dialogState.lineIndex]?.speaker === '삐약이'
-                        ? '🐥'
-                        : dialogState.lines[dialogState.lineIndex]?.speaker === '다람쥐 도토리'
+                      {dialogState.lines[dialogState.lineIndex]?.speaker === '다람쥐 도토리'
                         ? '🐿️'
                         : '📜'}
                     </div>

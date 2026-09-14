@@ -96,7 +96,8 @@ export interface NPC {
   role: string;
   x: number;
   y: number;
-  sprite: string; // emoji or sprite key
+  sprite: string; // emoji fallback
+  spriteImg?: string; // pixel sprite image path
   dir: Direction;
   dialogs: DialogLine[];
   questIdTrigger?: string;
@@ -109,6 +110,7 @@ export interface Interactable {
   y: number;
   type: 'bed' | 'water' | 'food' | 'save_crystal' | 'dig_spot' | 'bush' | 'mailbox' | 'chest' | 'tree' | 'giant_basket';
   icon: string;
+  spriteImg?: string;
   name: string;
   reqSniff?: boolean;
   itemRewardId?: string;

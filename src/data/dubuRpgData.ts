@@ -207,12 +207,12 @@ const HOME_MAP: MapData = {
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1]
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   ],
   portals: [
     {
-      x: 7,
+      x: 2,
       y: 9,
       targetMapId: 'garden',
       targetX: 8,
@@ -221,7 +221,7 @@ const HOME_MAP: MapData = {
       label: '햇살 가득 정원으로'
     },
     {
-      x: 8,
+      x: 3,
       y: 9,
       targetMapId: 'garden',
       targetX: 8,
@@ -233,11 +233,12 @@ const HOME_MAP: MapData = {
   npcs: [
     {
       id: 'human_owner',
-      name: '집사',
-      role: '다정한 주인',
-      x: 3,
-      y: 2,
+      name: '다정한 집사',
+      role: '사랑하는 가족',
+      x: 10,
+      y: 5,
       sprite: '🧑‍💻',
+      spriteImg: '/images/npc_butler.png',
       dir: 'down',
       dialogs: [
         { speaker: '집사', text: '두부야 안녕! 오늘도 잘 잤니? 아이 예뻐라~ (머리를 쓰다듬어 준다 ❤️)', sound: 'bark' },
@@ -250,7 +251,7 @@ const HOME_MAP: MapData = {
     {
       id: 'cozy_bed',
       x: 10,
-      y: 2,
+      y: 3,
       type: 'bed',
       icon: '🛌',
       name: '두부의 폭신폭신 침대',
@@ -268,8 +269,8 @@ const HOME_MAP: MapData = {
     },
     {
       id: 'water_bowl',
-      x: 2,
-      y: 4,
+      x: 3,
+      y: 2,
       type: 'water',
       icon: '🥣',
       name: '신선한 물그릇',
@@ -280,7 +281,7 @@ const HOME_MAP: MapData = {
     {
       id: 'food_bowl',
       x: 2,
-      y: 5,
+      y: 2,
       type: 'food',
       icon: '🥩',
       name: '바삭바삭 사료 그릇',
@@ -318,7 +319,7 @@ const GARDEN_MAP: MapData = {
       x: 7,
       y: 0,
       targetMapId: 'home',
-      targetX: 7,
+      targetX: 2,
       targetY: 8,
       targetDir: 'up',
       label: '두부의 방으로 들어가기'
@@ -327,7 +328,7 @@ const GARDEN_MAP: MapData = {
       x: 8,
       y: 0,
       targetMapId: 'home',
-      targetX: 7,
+      targetX: 3,
       targetY: 8,
       targetDir: 'up',
       label: '두부의 방으로 들어가기'
@@ -336,7 +337,7 @@ const GARDEN_MAP: MapData = {
       x: 7,
       y: 11,
       targetMapId: 'village',
-      targetX: 11,
+      targetX: 10,
       targetY: 2,
       targetDir: 'down',
       label: '꽃바람 마을 광장으로 나가기'
@@ -356,9 +357,10 @@ const GARDEN_MAP: MapData = {
       id: 'chick_piyak',
       name: '아기 병아리 삐약이',
       role: '정원의 귀요미',
-      x: 12,
-      y: 4,
+      x: 5,
+      y: 5,
       sprite: '🐥',
+      spriteImg: '/images/npc_chicks.png',
       dir: 'left',
       dialogs: [
         { speaker: '삐약이', text: '삐약삐약! 두부 삼촌이다! 오늘 나비들이 마당에 많이 놀러왔어요!', sound: 'bell' },
@@ -484,9 +486,10 @@ const VILLAGE_MAP: MapData = {
       id: 'npc_grandma',
       name: '순자 할머니',
       role: '다정한 이웃 할머니',
-      x: 6,
+      x: 9,
       y: 3,
       sprite: '👵',
+      spriteImg: '/images/npc_grandma.png',
       dir: 'down',
       dialogs: [
         { speaker: '순자 할머니', text: '어이구~ 우리 귀여운 두부 왔네! 털이 어쩜 이리 하얗고 복슬복슬할까~', sound: 'bell' },
@@ -500,8 +503,9 @@ const VILLAGE_MAP: MapData = {
       name: '길고양이 나비',
       role: '마을의 도도한 고양이',
       x: 15,
-      y: 8,
+      y: 7,
       sprite: '🐱',
+      spriteImg: '/images/npc_cat.png',
       dir: 'left',
       dialogs: [
         { speaker: '나비', text: '야옹~ 두부 안녕? 서쪽 솔바람 숲속 개울가에 향기로운 [싱싱한 캣닢]이 자라난다고 하던데...', sound: 'bell' },
@@ -513,9 +517,10 @@ const VILLAGE_MAP: MapData = {
       id: 'npc_bunny_postman',
       name: '토끼 우체부 바니',
       role: '꽃바람 우체부',
-      x: 4,
+      x: 5,
       y: 8,
       sprite: '🐰',
+      spriteImg: '/images/npc_bunny.png',
       dir: 'right',
       dialogs: [
         { speaker: '바니', text: '으아앙 두부야! 솔바람 숲길에서 돌부리에 걸려 넘어지는 바람에 [편지 가방]을 잃어버렸어!', sound: 'bell' },
@@ -528,8 +533,9 @@ const VILLAGE_MAP: MapData = {
       name: '댕댕이 친구 초코',
       role: '활발한 갈색 강아지',
       x: 16,
-      y: 3,
+      y: 4,
       sprite: '🐕',
+      spriteImg: '/images/npc_choco.png',
       dir: 'down',
       dialogs: [
         { speaker: '초코', text: '두부야 왈왈! 오늘 동쪽 무지개 언덕에 무지개가 떴어! 소원의 나무에 4개 별빛을 바치면 전설의 보물이 나온대!', sound: 'bark' },
@@ -541,7 +547,7 @@ const VILLAGE_MAP: MapData = {
   interactables: [
     {
       id: 'village_save_crystal',
-      x: 11,
+      x: 13,
       y: 8,
       type: 'save_crystal',
       icon: '🔮',
@@ -563,8 +569,8 @@ const VILLAGE_MAP: MapData = {
     },
     {
       id: 'giant_sweet_potato_basket',
-      x: 18,
-      y: 11,
+      x: 10,
+      y: 3,
       type: 'giant_basket',
       icon: '🍠',
       name: '특대 꿀고구마 바구니',
