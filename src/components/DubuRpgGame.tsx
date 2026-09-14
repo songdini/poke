@@ -110,8 +110,34 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   const dubuWalkImgRef = useRef<HTMLImageElement | null>(null);
   const dubuSleepImgRef = useRef<HTMLImageElement | null>(null);
   const mapImagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
-  const walkStepRef = useRef<number>(0);
+  const transparentSpritesRef = useRef<{ [key: string]: HTMLCanvasElement }>({});
   const animFrameRef = useRef<number>(0);
+
+  // 🐾 Smooth Grid Movement & Directional Animation Refs
+  const moveAnimRef = useRef<{
+    isMoving: boolean;
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    startTime: number;
+    duration: number;
+    dir: Direction;
+    stepIndex: number;
+  }>({
+    isMoving: false,
+    startX: 7,
+    startY: 6,
+    targetX: 7,
+    targetY: 6,
+    startTime: 0,
+    duration: 170,
+    dir: 'down',
+    stepIndex: 0
+  });
+
+  const visualPosRef = useRef<{ x: number; y: number }>({ x: 7, y: 6 });
+  const heldDirectionsRef = useRef<Direction[]>([]);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -129,8 +155,32 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     return () => clearInterval(timer);
   }, [gameState]);
 
-  // 🖼️ Preload Dubu Pixel Art Images & Map Background Images
+  // 🖼️ Preload Dubu Pixel Art, Walking Steps & Map Background Images
   useEffect(() => {
+    const makeTransparentCanvas = (img: HTMLImageElement): HTMLCanvasElement => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth || img.width || 256;
+      c.height = img.naturalHeight || img.height || 256;
+      const ctx = c.getContext('2d');
+      if (!ctx) return c;
+      ctx.drawImage(img, 0, 0);
+      try {
+        const imgData = ctx.getImageData(0, 0, c.width, c.height);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i];
+          const g = d[i + 1];
+          const b = d[i + 2];
+          // Chroma-key out white/near-white pixel background
+          if (r > 230 && g > 230 && b > 230) {
+            d[i + 3] = 0;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+      } catch {}
+      return c;
+    };
+
     const walkImg = new Image();
     walkImg.src = '/images/trainer_dubu.png';
     dubuWalkImgRef.current = walkImg;
@@ -138,6 +188,16 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     const sleepImg = new Image();
     sleepImg.src = '/images/dubu_cushion_sleep.png';
     dubuSleepImgRef.current = sleepImg;
+
+    // Preload directional step sprites (down, up, side)
+    const stepKeys = ['down', 'up', 'side'];
+    stepKeys.forEach(key => {
+      const img = new Image();
+      img.src = `/images/dubu_step_${key}.jpg`;
+      img.onload = () => {
+        transparentSpritesRef.current[key] = makeTransparentCanvas(img);
+      };
+    });
 
     const mapKeys = ['home', 'garden', 'village', 'forest', 'rainbow_hill'];
     mapKeys.forEach(k => {
@@ -240,7 +300,21 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   // 📂 Load from SaveData
   const applySaveData = useCallback((data: SaveData) => {
     setCurrentMapId(data.mapId || 'home');
-    setPlayerPos(data.playerPos || { x: 7, y: 6, dir: 'down' });
+    const pos = data.playerPos || { x: 7, y: 6, dir: 'down' };
+    setPlayerPos(pos);
+    visualPosRef.current = { x: pos.x, y: pos.y };
+    moveAnimRef.current = {
+      isMoving: false,
+      startX: pos.x,
+      startY: pos.y,
+      targetX: pos.x,
+      targetY: pos.y,
+      startTime: 0,
+      duration: 170,
+      dir: pos.dir,
+      stepIndex: 0
+    };
+    heldDirectionsRef.current = [];
     setHp(data.stats?.hp ?? 100);
     setHappiness(data.stats?.happiness ?? 80);
     setBarksCount(data.stats?.barks ?? 0);
@@ -786,32 +860,55 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     handleSniff
   ]);
 
-  // 🚶 Move Player
-  const movePlayer = useCallback((dx: number, dy: number, dir: Direction) => {
-    if (dialogState.isOpen || isSaveModalOpen) return;
-    setIsRelaxing(false); // Stand up if moving
+  // 🚶 Smooth Grid Movement (한 칸 부드러운 보간 이동)
+  const tryStartMove = useCallback((dir: Direction) => {
+    if (
+      dialogState.isOpen ||
+      isSaveModalOpen ||
+      isBagModalOpen ||
+      isQuestModalOpen ||
+      isGuideModalOpen ||
+      isEndingsModalOpen
+    ) {
+      return;
+    }
+    setIsRelaxing(false);
+
+    // If currently moving between tiles, turn facing direction
+    if (moveAnimRef.current.isMoving) {
+      moveAnimRef.current.dir = dir;
+      return;
+    }
 
     const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
-    const newX = playerPos.x + dx;
-    const newY = playerPos.y + dy;
+    let dx = 0;
+    let dy = 0;
+    if (dir === 'up') dy = -1;
+    else if (dir === 'down') dy = 1;
+    else if (dir === 'left') dx = -1;
+    else if (dir === 'right') dx = 1;
+
+    const curX = playerPos.x;
+    const curY = playerPos.y;
+    const newX = curX + dx;
+    const newY = curY + dy;
+
+    // Face the target direction
+    setPlayerPos(prev => ({ ...prev, dir }));
 
     // Check bounds
     if (newX < 0 || newX >= currentMap.width || newY < 0 || newY >= currentMap.height) {
       return;
     }
 
-    // Check walls / obstacles
+    // Check walls / obstacles / water
     const tile = currentMap.tiles[newY]?.[newX];
     if (tile === 1 || tile === 2) {
-      // 1: wall, 2: water
-      setPlayerPos(prev => ({ ...prev, dir }));
       return;
     }
 
     // Check NPC collision
-    const isNpcOccupied = currentMap.npcs.some(n => n.x === newX && n.y === newY);
-    if (isNpcOccupied) {
-      setPlayerPos(prev => ({ ...prev, dir }));
+    if (currentMap.npcs.some(n => n.x === newX && n.y === newY)) {
       return;
     }
 
@@ -825,40 +922,64 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         y: portal.targetY,
         dir: portal.targetDir
       });
+      visualPosRef.current = { x: portal.targetX, y: portal.targetY };
+      moveAnimRef.current = {
+        isMoving: false,
+        startX: portal.targetX,
+        startY: portal.targetY,
+        targetX: portal.targetX,
+        targetY: portal.targetY,
+        startTime: 0,
+        duration: 170,
+        dir: portal.targetDir,
+        stepIndex: 0
+      };
       showToast(`🚪 [${portal.label}]에 도착했습니다.`);
 
-      // Complete morning quest if stepping out into garden or village
       if (portal.targetMapId === 'garden' || portal.targetMapId === 'village') {
         if (!quests.quest_morning.completed) {
           updateQuest('quest_morning', 1, true);
         }
       }
 
-      // Auto-save on map transition!
-      setTimeout(() => {
-        handleSaveGame('auto');
-      }, 200);
+      setTimeout(() => handleSaveGame('auto'), 200);
       return;
     }
 
-    // Step sound & movement
-    walkStepRef.current += 1;
-    if (walkStepRef.current % 3 === 0) {
+    // Begin smooth tile step!
+    const nextStepIndex = moveAnimRef.current.stepIndex + 1;
+    moveAnimRef.current = {
+      isMoving: true,
+      startX: curX,
+      startY: curY,
+      targetX: newX,
+      targetY: newY,
+      startTime: performance.now(),
+      duration: 170,
+      dir,
+      stepIndex: nextStepIndex
+    };
+
+    if (nextStepIndex % 2 === 0) {
       dubuAudio.playWag();
     }
-    setPlayerPos({ x: newX, y: newY, dir });
   }, [
     dialogState.isOpen,
     isSaveModalOpen,
+    isBagModalOpen,
+    isQuestModalOpen,
+    isGuideModalOpen,
+    isEndingsModalOpen,
     currentMapId,
-    playerPos,
+    playerPos.x,
+    playerPos.y,
     showToast,
     quests.quest_morning.completed,
     updateQuest,
     handleSaveGame
   ]);
 
-  // ⌨️ Keyboard Listeners
+  // ⌨️ Keyboard Listeners with Smooth Continuous Walking
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -884,31 +1005,25 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         return;
       }
 
-      if (isSaveModalOpen || isBagModalOpen || isQuestModalOpen || isGuideModalOpen) {
+      if (isSaveModalOpen || isBagModalOpen || isQuestModalOpen || isGuideModalOpen || isEndingsModalOpen) {
+        return;
+      }
+
+      let pressedDir: Direction | null = null;
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) pressedDir = 'up';
+      else if (['ArrowDown', 's', 'S'].includes(e.key)) pressedDir = 'down';
+      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) pressedDir = 'left';
+      else if (['ArrowRight', 'd', 'D'].includes(e.key)) pressedDir = 'right';
+
+      if (pressedDir) {
+        if (!heldDirectionsRef.current.includes(pressedDir)) {
+          heldDirectionsRef.current.push(pressedDir);
+        }
+        tryStartMove(pressedDir);
         return;
       }
 
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          movePlayer(0, -1, 'up');
-          break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          movePlayer(0, 1, 'down');
-          break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          movePlayer(-1, 0, 'left');
-          break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          movePlayer(1, 0, 'right');
-          break;
         case ' ':
         case 'Enter':
         case 'z':
@@ -936,8 +1051,24 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      let releasedDir: Direction | null = null;
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) releasedDir = 'up';
+      else if (['ArrowDown', 's', 'S'].includes(e.key)) releasedDir = 'down';
+      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) releasedDir = 'left';
+      else if (['ArrowRight', 'd', 'D'].includes(e.key)) releasedDir = 'right';
+
+      if (releasedDir) {
+        heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== releasedDir);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [
     gameState,
     dialogState.isOpen,
@@ -946,7 +1077,8 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     isBagModalOpen,
     isQuestModalOpen,
     isGuideModalOpen,
-    movePlayer,
+    isEndingsModalOpen,
+    tryStartMove,
     handleInteract,
     handleBark,
     handleSniff,
@@ -967,12 +1099,68 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     const render = () => {
       frame++;
       const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
+      const now = performance.now();
 
-      // 1. Camera calculation with zoom level (center on Dubu)
+      // 🚶 Smooth Movement Interpolation (한 칸 부드러운 보간 이동)
+      let isWalkingNow = false;
+      let walkProgress = 0;
+      let stepCycle = 0;
+
+      if (moveAnimRef.current.isMoving) {
+        const elapsed = now - moveAnimRef.current.startTime;
+        walkProgress = Math.min(1, elapsed / moveAnimRef.current.duration);
+        stepCycle = moveAnimRef.current.stepIndex;
+        isWalkingNow = true;
+
+        // Smoothstep progress for natural, fluid stepping
+        const t = walkProgress;
+        const smoothT = t * t * (3 - 2 * t);
+
+        const curVisualX =
+          moveAnimRef.current.startX +
+          (moveAnimRef.current.targetX - moveAnimRef.current.startX) * smoothT;
+        const curVisualY =
+          moveAnimRef.current.startY +
+          (moveAnimRef.current.targetY - moveAnimRef.current.startY) * smoothT;
+
+        visualPosRef.current = { x: curVisualX, y: curVisualY };
+
+        if (walkProgress >= 1) {
+          // Reached target tile!
+          const targetX = moveAnimRef.current.targetX;
+          const targetY = moveAnimRef.current.targetY;
+          const currentDir = moveAnimRef.current.dir;
+
+          setPlayerPos({ x: targetX, y: targetY, dir: currentDir });
+          visualPosRef.current = { x: targetX, y: targetY };
+          moveAnimRef.current.isMoving = false;
+
+          // Seamless continuous walking if key is still held down
+          if (heldDirectionsRef.current.length > 0) {
+            const nextDir = heldDirectionsRef.current[heldDirectionsRef.current.length - 1];
+            tryStartMove(nextDir);
+          }
+        }
+      } else {
+        if (
+          heldDirectionsRef.current.length > 0 &&
+          !dialogState.isOpen &&
+          !isSaveModalOpen &&
+          !isBagModalOpen &&
+          !isQuestModalOpen &&
+          !isGuideModalOpen &&
+          !isEndingsModalOpen
+        ) {
+          const nextDir = heldDirectionsRef.current[heldDirectionsRef.current.length - 1];
+          tryStartMove(nextDir);
+        }
+      }
+
+      // 1. Camera calculation with zoom level (smoothly centers on Dubu's visual position)
       const scale = zoomMode === 'large' ? 1.3 : 1.0;
 
-      const playerPixelX = playerPos.x * TILE_SIZE + TILE_SIZE / 2;
-      const playerPixelY = playerPos.y * TILE_SIZE + TILE_SIZE / 2;
+      const playerPixelX = visualPosRef.current.x * TILE_SIZE + TILE_SIZE / 2;
+      const playerPixelY = visualPosRef.current.y * TILE_SIZE + TILE_SIZE / 2;
 
       const viewW = CANVAS_WIDTH / scale;
       const viewH = CANVAS_HEIGHT / scale;
@@ -1177,16 +1365,48 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         ctx.fillText(npc.name, px + TILE_SIZE / 2, py - 5);
       });
 
-      // 7. Render Dubu (The Main Hero Dog! Bigger & Cuter)
-      const dubuX = playerPos.x * TILE_SIZE;
-      const dubuY = playerPos.y * TILE_SIZE;
-      const walkBob = Math.sin(walkStepRef.current * 0.5) * 4;
+      // 7. Render Dubu (Smooth Leg Movement & Directional Sprites)
+      const dubuX = visualPosRef.current.x * TILE_SIZE;
+      const dubuY = visualPosRef.current.y * TILE_SIZE;
+      const curDir = moveAnimRef.current.isMoving ? moveAnimRef.current.dir : playerPos.dir;
+
+      // Natural trotting bounce & side-to-side leg waddle
+      const walkBob = isWalkingNow ? -Math.abs(Math.sin(walkProgress * Math.PI)) * 5 : 0;
+      const waddleAngle = isWalkingNow
+        ? ((stepCycle % 2 === 0 ? 1 : -1) * Math.sin(walkProgress * Math.PI)) * 0.07
+        : 0;
 
       // Soft Ground Shadow under Dubu
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+      const shadowRadiusX = 22 - (isWalkingNow ? Math.abs(walkBob) * 0.7 : 0);
+      const shadowRadiusY = 8 - (isWalkingNow ? Math.abs(walkBob) * 0.3 : 0);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.32)';
       ctx.beginPath();
-      ctx.ellipse(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE - 4, 22, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(
+        dubuX + TILE_SIZE / 2,
+        dubuY + TILE_SIZE - 4,
+        shadowRadiusX,
+        shadowRadiusY,
+        0,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
+
+      // Little dust puff particle behind paws when stepping
+      if (isWalkingNow && walkProgress > 0.2 && walkProgress < 0.7) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        const puffOffsetX = curDir === 'right' ? -12 : curDir === 'left' ? 12 : 0;
+        const puffOffsetY = curDir === 'down' ? -12 : curDir === 'up' ? 12 : 0;
+        ctx.beginPath();
+        ctx.arc(
+          dubuX + TILE_SIZE / 2 + puffOffsetX,
+          dubuY + TILE_SIZE - 2 + puffOffsetY,
+          3.5 * (1 - walkProgress),
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
 
       if (isRelaxing && dubuSleepImgRef.current && dubuSleepImgRef.current.complete) {
         // 🛌 Lying down tummy up on cushion (like dubu1.jpg) - Extra Large 88x88!
@@ -1206,21 +1426,67 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         const zOffset = (frame * 0.6) % 35;
         ctx.fillText('💤', dubuX + 44, dubuY - zOffset);
         ctx.fillText('❤️', dubuX + 10, dubuY - zOffset);
-      } else if (dubuWalkImgRef.current && dubuWalkImgRef.current.complete) {
-        // 🐶 Walking / Standing Dubu - Large 74x74!
+      } else {
+        // 🐶 Active / Walking Dubu with directional sprite & moving legs!
         ctx.save();
         const drawW = 74;
         const drawH = 74;
         const drawX = dubuX - (drawW - TILE_SIZE) / 2;
         const drawY = dubuY - (drawH - TILE_SIZE) + walkBob;
 
-        if (playerPos.dir === 'left') {
-          // Flip horizontally
+        // Apply pivot rotation at paws for natural waddle
+        const pivotX = drawX + drawW / 2;
+        const pivotY = drawY + drawH;
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(waddleAngle);
+        ctx.translate(-pivotX, -pivotY);
+
+        // Direction & Leg Step sprite selection
+        let spriteToDraw: HTMLCanvasElement | HTMLImageElement | null = dubuWalkImgRef.current;
+        const stepDownCanvas = transparentSpritesRef.current.down;
+        const stepUpCanvas = transparentSpritesRef.current.up;
+        const stepSideCanvas = transparentSpritesRef.current.side;
+
+        const isMidStep = isWalkingNow && walkProgress > 0.15 && walkProgress < 0.85;
+
+        if (curDir === 'down') {
+          // Front-facing: alternate idle and front-stepping paw sprite
+          if (isMidStep && stepDownCanvas) {
+            spriteToDraw = stepDownCanvas;
+          } else {
+            spriteToDraw = dubuWalkImgRef.current;
+          }
+        } else if (curDir === 'up') {
+          // Back-facing: cute fluffy back view with wagging tail and jellybean paws
+          if (stepUpCanvas) {
+            spriteToDraw = stepUpCanvas;
+          } else {
+            spriteToDraw = dubuWalkImgRef.current;
+          }
+        } else if (curDir === 'left') {
+          // Left-facing: flip horizontally
           ctx.translate(drawX + drawW, drawY);
           ctx.scale(-1, 1);
-          ctx.drawImage(dubuWalkImgRef.current, 0, 0, drawW, drawH);
-        } else {
-          ctx.drawImage(dubuWalkImgRef.current, drawX, drawY, drawW, drawH);
+          if (isMidStep && stepSideCanvas) {
+            spriteToDraw = stepSideCanvas;
+          } else {
+            spriteToDraw = dubuWalkImgRef.current;
+          }
+        } else if (curDir === 'right') {
+          // Right-facing: side walking stride
+          if (isMidStep && stepSideCanvas) {
+            spriteToDraw = stepSideCanvas;
+          } else {
+            spriteToDraw = dubuWalkImgRef.current;
+          }
+        }
+
+        if (spriteToDraw) {
+          if (curDir === 'left') {
+            ctx.drawImage(spriteToDraw, 0, 0, drawW, drawH);
+          } else {
+            ctx.drawImage(spriteToDraw, drawX, drawY, drawW, drawH);
+          }
         }
         ctx.restore();
 
@@ -1248,16 +1514,12 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         }
 
         // Wagging tail effect
-        if (isWagging) {
+        if (isWagging || isWalkingNow) {
           ctx.font = '18px Pretendard';
           ctx.fillStyle = '#f59e0b';
-          ctx.fillText('💨🐾', dubuX + 54, dubuY + 14);
+          const tailOffset = Math.sin(now * 0.02) * 3;
+          ctx.fillText('💨🐾', dubuX + 54, dubuY + 14 + tailOffset);
         }
-      } else {
-        // Fallback emoji if image not yet loaded
-        ctx.font = '40px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🐶', dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2 + 14);
       }
 
       ctx.restore();
@@ -1276,7 +1538,8 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     isWagging,
     sniffSparkles,
     collectedItemIds,
-    zoomMode
+    zoomMode,
+    tryStartMove
   ]);
 
   const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
@@ -1610,33 +1873,78 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
               <div />
               <button
                 className="touch-dpad-btn"
-                onClick={() => movePlayer(0, -1, 'up')}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (!heldDirectionsRef.current.includes('up')) heldDirectionsRef.current.push('up');
+                  tryStartMove('up');
+                }}
+                onPointerUp={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'up');
+                }}
+                onPointerLeave={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'up');
+                }}
+                onClick={() => tryStartMove('up')}
               >
                 ▲
               </button>
               <div />
               <button
                 className="touch-dpad-btn"
-                onClick={() => movePlayer(-1, 0, 'left')}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (!heldDirectionsRef.current.includes('left')) heldDirectionsRef.current.push('left');
+                  tryStartMove('left');
+                }}
+                onPointerUp={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'left');
+                }}
+                onPointerLeave={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'left');
+                }}
+                onClick={() => tryStartMove('left')}
               >
                 ◀
               </button>
               <button
                 className="touch-dpad-btn"
                 onClick={handleInteract}
+                title="조사 / 대화"
               >
                 ●
               </button>
               <button
                 className="touch-dpad-btn"
-                onClick={() => movePlayer(1, 0, 'right')}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (!heldDirectionsRef.current.includes('right')) heldDirectionsRef.current.push('right');
+                  tryStartMove('right');
+                }}
+                onPointerUp={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'right');
+                }}
+                onPointerLeave={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'right');
+                }}
+                onClick={() => tryStartMove('right')}
               >
                 ▶
               </button>
               <div />
               <button
                 className="touch-dpad-btn"
-                onClick={() => movePlayer(0, 1, 'down')}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  if (!heldDirectionsRef.current.includes('down')) heldDirectionsRef.current.push('down');
+                  tryStartMove('down');
+                }}
+                onPointerUp={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'down');
+                }}
+                onPointerLeave={() => {
+                  heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== 'down');
+                }}
+                onClick={() => tryStartMove('down')}
               >
                 ▼
               </button>
