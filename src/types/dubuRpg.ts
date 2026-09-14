@@ -118,6 +118,7 @@ export interface MapData {
   width: number;
   height: number;
   theme: 'indoor' | 'garden' | 'village' | 'forest' | 'rainbow';
+  bgImage?: string;
   tiles: number[][]; // 0: walkable, 1: wall/obstacle, 2: water, 3: decorative flower/grass, 4: path
   portals: Portal[];
   npcs: NPC[];

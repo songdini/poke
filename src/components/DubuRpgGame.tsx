@@ -17,16 +17,17 @@ interface DubuRpgGameProps {
   onLeaveRoom?: () => void;
 }
 
-const TILE_SIZE = 40;
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 500;
+const TILE_SIZE = 52;
+const CANVAS_WIDTH = 960;
+const CANVAS_HEIGHT = 600;
 
 export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   username = '두부집사',
   onLeaveRoom
 }) => {
-  // 🎮 Game State
+  // 🎮 Game State & Screen Scale
   const [gameState, setGameState] = useState<'title' | 'playing' | 'ending'>('title');
+  const [zoomMode, setZoomMode] = useState<'normal' | 'large'>('large');
   const [currentMapId, setCurrentMapId] = useState<string>('home');
   const [playerPos, setPlayerPos] = useState<{ x: number; y: number; dir: Direction }>({
     x: 7,
@@ -108,6 +109,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dubuWalkImgRef = useRef<HTMLImageElement | null>(null);
   const dubuSleepImgRef = useRef<HTMLImageElement | null>(null);
+  const mapImagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
   const walkStepRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
 
@@ -127,7 +129,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     return () => clearInterval(timer);
   }, [gameState]);
 
-  // 🖼️ Preload Dubu Pixel Art Images
+  // 🖼️ Preload Dubu Pixel Art Images & Map Background Images
   useEffect(() => {
     const walkImg = new Image();
     walkImg.src = '/images/trainer_dubu.png';
@@ -136,6 +138,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     const sleepImg = new Image();
     sleepImg.src = '/images/dubu_cushion_sleep.png';
     dubuSleepImgRef.current = sleepImg;
+
+    const mapKeys = ['home', 'garden', 'village', 'forest', 'rainbow_hill'];
+    mapKeys.forEach(k => {
+      const img = new Image();
+      img.src = `/images/map_${k}.jpg`;
+      mapImagesRef.current[k] = img;
+    });
   }, []);
 
   // 💾 Load save slot headers from localStorage
@@ -959,22 +968,27 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       frame++;
       const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
 
-      // 1. Camera calculation (center on Dubu)
+      // 1. Camera calculation with zoom level (center on Dubu)
+      const scale = zoomMode === 'large' ? 1.3 : 1.0;
+
       const playerPixelX = playerPos.x * TILE_SIZE + TILE_SIZE / 2;
       const playerPixelY = playerPos.y * TILE_SIZE + TILE_SIZE / 2;
 
-      let camX = playerPixelX - CANVAS_WIDTH / 2;
-      let camY = playerPixelY - CANVAS_HEIGHT / 2;
+      const viewW = CANVAS_WIDTH / scale;
+      const viewH = CANVAS_HEIGHT / scale;
+
+      let camX = playerPixelX - viewW / 2;
+      let camY = playerPixelY - viewH / 2;
 
       // Clamp camera
       const mapPixelWidth = currentMap.width * TILE_SIZE;
       const mapPixelHeight = currentMap.height * TILE_SIZE;
-      camX = Math.max(0, Math.min(camX, mapPixelWidth - CANVAS_WIDTH));
-      camY = Math.max(0, Math.min(camY, mapPixelHeight - CANVAS_HEIGHT));
+      camX = Math.max(0, Math.min(camX, Math.max(0, mapPixelWidth - viewW)));
+      camY = Math.max(0, Math.min(camY, Math.max(0, mapPixelHeight - viewH)));
 
-      // If map is smaller than canvas, center map
-      if (mapPixelWidth < CANVAS_WIDTH) camX = -(CANVAS_WIDTH - mapPixelWidth) / 2;
-      if (mapPixelHeight < CANVAS_HEIGHT) camY = -(CANVAS_HEIGHT - mapPixelHeight) / 2;
+      // If map is smaller than viewport, center map
+      if (mapPixelWidth < viewW) camX = -(viewW - mapPixelWidth) / 2;
+      if (mapPixelHeight < viewH) camY = -(viewH - mapPixelHeight) / 2;
 
       ctx.save();
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -990,173 +1004,215 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           : '#86efac';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+      ctx.scale(scale, scale);
       ctx.translate(-camX, -camY);
 
-      // 2. Render Tiles
-      for (let y = 0; y < currentMap.height; y++) {
-        for (let x = 0; x < currentMap.width; x++) {
-          const tile = currentMap.tiles[y][x];
-          const px = x * TILE_SIZE;
-          const py = y * TILE_SIZE;
+      // 2. Render Full Map Background (Gorgeous AI Generated Pixel Art Map)
+      const mapBgImg = mapImagesRef.current[currentMapId];
+      if (mapBgImg && mapBgImg.complete && mapBgImg.naturalWidth > 0) {
+        ctx.drawImage(mapBgImg, 0, 0, mapPixelWidth, mapPixelHeight);
+      } else {
+        // Fallback tile renderer if image still loading
+        for (let y = 0; y < currentMap.height; y++) {
+          for (let x = 0; x < currentMap.width; x++) {
+            const tile = currentMap.tiles[y][x];
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
 
-          if (currentMap.theme === 'indoor') {
-            // Wood floor
-            ctx.fillStyle = (x + y) % 2 === 0 ? '#fef3c7' : '#fde68a';
-            ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-            ctx.strokeStyle = '#fcd34d';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
-
-            if (tile === 1) {
-              // Wall
-              ctx.fillStyle = '#b45309';
+            if (currentMap.theme === 'indoor') {
+              ctx.fillStyle = (x + y) % 2 === 0 ? '#fef3c7' : '#fde68a';
               ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              ctx.fillStyle = '#92400e';
-              ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
-            }
-          } else {
-            // Grass / Outdoor
-            if (tile === 0 || tile === 3) {
-              ctx.fillStyle = (x + y) % 2 === 0 ? '#86efac' : '#4ade80';
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-
-              // Flower petals
-              if (tile === 3) {
-                ctx.fillStyle = (x * y) % 3 === 0 ? '#f43f5e' : (x * y) % 3 === 1 ? '#eab308' : '#38bdf8';
-                ctx.beginPath();
-                ctx.arc(px + 12, py + 12, 4, 0, Math.PI * 2);
-                ctx.arc(px + 28, py + 24, 4, 0, Math.PI * 2);
-                ctx.fill();
+              if (tile === 1) {
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
               }
-            } else if (tile === 1) {
-              // Fence / Trees
-              ctx.fillStyle = '#166534';
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              ctx.fillStyle = '#15803d';
-              ctx.beginPath();
-              ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, TILE_SIZE / 2.2, 0, Math.PI * 2);
-              ctx.fill();
-            } else if (tile === 2) {
-              // Water
-              ctx.fillStyle = '#38bdf8';
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              // Animated ripple
-              ctx.strokeStyle = '#bae6fd';
-              ctx.lineWidth = 2;
-              const rippleOffset = Math.sin(frame * 0.05 + x + y) * 4;
-              ctx.beginPath();
-              ctx.moveTo(px + 6, py + 16 + rippleOffset);
-              ctx.lineTo(px + 32, py + 16 + rippleOffset);
-              ctx.stroke();
-            } else if (tile === 4) {
-              // Stone path
-              ctx.fillStyle = '#fed7aa';
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              ctx.strokeStyle = '#fdba74';
-              ctx.lineWidth = 1;
-              ctx.strokeRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            } else {
+              if (tile === 0 || tile === 3) {
+                ctx.fillStyle = (x + y) % 2 === 0 ? '#86efac' : '#4ade80';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+              } else if (tile === 1) {
+                ctx.fillStyle = '#166534';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+              } else if (tile === 2) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+              } else if (tile === 4) {
+                ctx.fillStyle = '#fed7aa';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+              }
             }
           }
         }
       }
 
-      // 3. Render Portals with pulsing arrow
+      // 3. Atmospheric Particle & Lighting Effects
+      if (currentMapId === 'home') {
+        // Warm window sunbeam light ray
+        const sunGrad = ctx.createLinearGradient(
+          mapPixelWidth * 0.45, 0,
+          mapPixelWidth * 0.75, mapPixelHeight
+        );
+        sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.22)');
+        sunGrad.addColorStop(1, 'rgba(254, 240, 138, 0.02)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.moveTo(mapPixelWidth * 0.38, 0);
+        ctx.lineTo(mapPixelWidth * 0.62, 0);
+        ctx.lineTo(mapPixelWidth * 0.9, mapPixelHeight);
+        ctx.lineTo(mapPixelWidth * 0.5, mapPixelHeight);
+        ctx.closePath();
+        ctx.fill();
+      } else if (currentMapId === 'garden') {
+        // Floating golden pollen & sparkles
+        for (let i = 0; i < 12; i++) {
+          const sx = (Math.sin(frame * 0.02 + i * 2.3) * 0.5 + 0.5) * mapPixelWidth;
+          const sy = (frame * 0.4 + i * 80) % mapPixelHeight;
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(253, 224, 71, 0.6)' : 'rgba(244, 63, 94, 0.5)';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.5 + (i % 3), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (currentMapId === 'forest') {
+        // Enchanted floating forest spores
+        for (let i = 0; i < 16; i++) {
+          const sx = (Math.sin(frame * 0.015 + i * 1.7) * 0.5 + 0.5) * mapPixelWidth;
+          const sy = (frame * 0.3 + i * 60) % mapPixelHeight;
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(56, 189, 248, 0.5)' : 'rgba(74, 222, 128, 0.5)';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (currentMapId === 'rainbow_hill') {
+        // Shimmering starlight particles
+        for (let i = 0; i < 20; i++) {
+          const sx = (Math.cos(frame * 0.02 + i * 1.9) * 0.5 + 0.5) * mapPixelWidth;
+          const sy = (frame * 0.5 + i * 50) % mapPixelHeight;
+          ctx.fillStyle = ['#f43f5e', '#eab308', '#38bdf8', '#c084fc'][i % 4];
+          ctx.font = '14px sans-serif';
+          ctx.fillText('✨', sx, sy);
+        }
+      }
+
+      // 4. Render Portals with glowing aura & bounce
       currentMap.portals.forEach(portal => {
         const px = portal.x * TILE_SIZE;
         const py = portal.y * TILE_SIZE;
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
-        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        const aura = Math.sin(frame * 0.08) * 4;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
+        ctx.beginPath();
+        ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, TILE_SIZE / 2 + aura, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = '#ffffff';
-        ctx.font = '16px Pretendard';
+        ctx.font = '24px Pretendard';
         ctx.textAlign = 'center';
         const bounce = Math.sin(frame * 0.1) * 3;
-        ctx.fillText('🚪', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 6 + bounce);
+        ctx.fillText('🚪', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 8 + bounce);
       });
 
-      // 4. Render Interactables
+      // 5. Render Interactables
       currentMap.interactables.forEach(item => {
         const px = item.x * TILE_SIZE;
         const py = item.y * TILE_SIZE;
         const isCollected = collectedItemIds.includes(item.id);
 
+        // Ground shadow
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+        ctx.beginPath();
+        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, 18, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
         if (item.type === 'bed') {
-          // Cozy Bed
-          ctx.fillStyle = '#cbd5e1';
-          ctx.beginPath();
-          ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 28, 20, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#64748b';
-          ctx.font = '22px sans-serif';
+          ctx.font = '28px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('🛌', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 8);
+          ctx.fillText('🛌', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
         } else if (item.type === 'save_crystal') {
-          // Save Monument
-          const glow = Math.sin(frame * 0.08) * 4;
-          ctx.fillStyle = '#38bdf8';
+          const glow = Math.sin(frame * 0.08) * 6;
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
           ctx.beginPath();
-          ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 16 + glow, 0, Math.PI * 2);
+          ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 20 + glow, 0, Math.PI * 2);
           ctx.fill();
-          ctx.font = '24px sans-serif';
+          ctx.font = '30px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('🔮', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 8);
+          ctx.fillText('🔮', px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
         } else if (!isCollected) {
-          ctx.font = '22px sans-serif';
+          ctx.font = '28px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(item.icon, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 8);
+          ctx.fillText(item.icon, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10);
         }
 
         // Sniff sparkle wave over hidden treasures
         if (sniffSparkles.some(s => s.x === item.x && s.y === item.y)) {
           ctx.strokeStyle = '#eab308';
-          ctx.lineWidth = 2;
-          const radius = (frame * 2) % 25;
+          ctx.lineWidth = 2.5;
+          const radius = (frame * 2.5) % 32;
           ctx.beginPath();
           ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, radius, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.font = '16px sans-serif';
+          ctx.font = '20px sans-serif';
           ctx.fillText('✨', px + TILE_SIZE / 2, py);
         }
       });
 
-      // 5. Render NPCs
+      // 6. Render NPCs
       currentMap.npcs.forEach(npc => {
         const px = npc.x * TILE_SIZE;
         const py = npc.y * TILE_SIZE;
-        ctx.font = '28px sans-serif';
+
+        // Ground shadow
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, 18, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = '36px sans-serif';
         ctx.textAlign = 'center';
-        const bounce = Math.sin(frame * 0.06 + npc.x) * 2;
-        ctx.fillText(npc.sprite, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 10 + bounce);
+        const bounce = Math.sin(frame * 0.06 + npc.x) * 3;
+        ctx.fillText(npc.sprite, px + TILE_SIZE / 2, py + TILE_SIZE / 2 + 12 + bounce);
 
         // Name badge
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-        ctx.fillRect(px - 10, py - 14, TILE_SIZE + 20, 16);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '10px Pretendard';
-        ctx.fillText(npc.name, px + TILE_SIZE / 2, py - 2);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(px - 14, py - 18, TILE_SIZE + 28, 18);
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 11px Pretendard';
+        ctx.fillText(npc.name, px + TILE_SIZE / 2, py - 5);
       });
 
-      // 6. Render Dubu (The Main Hero Dog!)
+      // 7. Render Dubu (The Main Hero Dog! Bigger & Cuter)
       const dubuX = playerPos.x * TILE_SIZE;
       const dubuY = playerPos.y * TILE_SIZE;
-      const walkBob = Math.sin(walkStepRef.current * 0.5) * 3;
+      const walkBob = Math.sin(walkStepRef.current * 0.5) * 4;
+
+      // Soft Ground Shadow under Dubu
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE - 4, 22, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
 
       if (isRelaxing && dubuSleepImgRef.current && dubuSleepImgRef.current.complete) {
-        // 🛌 Lying down tummy up on cushion (like dubu1.jpg)
-        ctx.drawImage(dubuSleepImgRef.current, dubuX - 10, dubuY - 10, 60, 60);
+        // 🛌 Lying down tummy up on cushion (like dubu1.jpg) - Extra Large 88x88!
+        const sleepW = 88;
+        const sleepH = 88;
+        ctx.drawImage(
+          dubuSleepImgRef.current,
+          dubuX - (sleepW - TILE_SIZE) / 2,
+          dubuY - (sleepH - TILE_SIZE) / 2,
+          sleepW,
+          sleepH
+        );
 
         // Sleeping Zzz and Hearts
-        ctx.font = '16px Pretendard';
+        ctx.font = '20px Pretendard';
         ctx.fillStyle = '#ec4899';
-        const zOffset = (frame * 0.5) % 30;
-        ctx.fillText('💤', dubuX + 30, dubuY - zOffset);
-        ctx.fillText('❤️', dubuX + 5, dubuY - zOffset);
+        const zOffset = (frame * 0.6) % 35;
+        ctx.fillText('💤', dubuX + 44, dubuY - zOffset);
+        ctx.fillText('❤️', dubuX + 10, dubuY - zOffset);
       } else if (dubuWalkImgRef.current && dubuWalkImgRef.current.complete) {
-        // 🐶 Walking / Standing Dubu
+        // 🐶 Walking / Standing Dubu - Large 74x74!
         ctx.save();
-        const drawW = 50;
-        const drawH = 50;
-        const drawX = dubuX - 5;
-        const drawY = dubuY - 8 + walkBob;
+        const drawW = 74;
+        const drawH = 74;
+        const drawX = dubuX - (drawW - TILE_SIZE) / 2;
+        const drawY = dubuY - (drawH - TILE_SIZE) + walkBob;
 
         if (playerPos.dir === 'left') {
           // Flip horizontally
@@ -1171,37 +1227,37 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         // Barking shockwave effect
         if (isBarking) {
           ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 3.5;
           ctx.beginPath();
-          ctx.arc(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2, 28, 0, Math.PI * 2);
+          ctx.arc(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2, 38, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.font = '16px Pretendard';
+          ctx.font = 'bold 18px Pretendard';
           ctx.fillStyle = '#b45309';
-          ctx.fillText('멍멍! 🐾', dubuX + TILE_SIZE / 2, dubuY - 10);
+          ctx.fillText('멍멍! 🐾', dubuX + TILE_SIZE / 2, dubuY - 14);
         }
 
         // Sniffing ripple effect
         if (isSniffing) {
           ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
-          ctx.arc(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2, 22, 0, Math.PI * 2);
+          ctx.arc(dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2, 30, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.font = '16px Pretendard';
-          ctx.fillText('👃✨', dubuX + TILE_SIZE / 2, dubuY - 10);
+          ctx.font = '18px Pretendard';
+          ctx.fillText('👃✨', dubuX + TILE_SIZE / 2, dubuY - 14);
         }
 
         // Wagging tail effect
         if (isWagging) {
-          ctx.font = '16px Pretendard';
+          ctx.font = '18px Pretendard';
           ctx.fillStyle = '#f59e0b';
-          ctx.fillText('💨🐾', dubuX + 35, dubuY + 10);
+          ctx.fillText('💨🐾', dubuX + 54, dubuY + 14);
         }
       } else {
         // Fallback emoji if image not yet loaded
-        ctx.font = '32px sans-serif';
+        ctx.font = '40px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🐶', dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2 + 10);
+        ctx.fillText('🐶', dubuX + TILE_SIZE / 2, dubuY + TILE_SIZE / 2 + 14);
       }
 
       ctx.restore();
@@ -1219,7 +1275,8 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     isSniffing,
     isWagging,
     sniffSparkles,
-    collectedItemIds
+    collectedItemIds,
+    zoomMode
   ]);
 
   const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
@@ -1386,6 +1443,17 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                 title="엔딩 도감 확인"
               >
                 🏆 엔딩 ({unlockedEndings.length}/4)
+              </button>
+
+              <button
+                className="hud-btn"
+                onClick={() => {
+                  setZoomMode(z => (z === 'large' ? 'normal' : 'large'));
+                  showToast(zoomMode === 'large' ? '🗺️ 전체 넓게 보기 (1.0x)' : '🐶 두부 크게 보기 (1.3x 확대)');
+                }}
+                title="화면 확대/축소 (두부 크게 보기)"
+              >
+                {zoomMode === 'large' ? '🔍 두부 크게' : '🗺️ 넓은 뷰'}
               </button>
 
               <button

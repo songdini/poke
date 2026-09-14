@@ -136,6 +136,7 @@ const HOME_MAP: MapData = {
   width: 14,
   height: 10,
   theme: 'indoor',
+  bgImage: '/images/map_home.jpg',
   tiles: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1],
@@ -236,6 +237,7 @@ const GARDEN_MAP: MapData = {
   width: 16,
   height: 12,
   theme: 'garden',
+  bgImage: '/images/map_garden.jpg',
   tiles: [
     [1, 1, 1, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 3, 0, 0, 0, 4, 4, 0, 0, 0, 3, 0, 0, 1],
@@ -341,6 +343,7 @@ const VILLAGE_MAP: MapData = {
   width: 22,
   height: 16,
   theme: 'village',
+  bgImage: '/images/map_village.jpg',
   tiles: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -526,6 +529,7 @@ const FOREST_MAP: MapData = {
   width: 22,
   height: 16,
   theme: 'forest',
+  bgImage: '/images/map_forest.jpg',
   tiles: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
@@ -629,6 +633,7 @@ const RAINBOW_MAP: MapData = {
   width: 20,
   height: 15,
   theme: 'rainbow',
+  bgImage: '/images/map_rainbow_hill.jpg',
   tiles: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],

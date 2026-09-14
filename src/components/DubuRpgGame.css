@@ -149,15 +149,15 @@
   border: 1px dashed #fcd34d;
 }
 
-/* 🎮 GAMEPLAY MAIN WRAPPER */
+/* 🎮 GAMEPLAY MAIN WRAPPER (PC EXPANDED SIZE) */
 .dubu-gameplay-wrapper {
   width: 100%;
-  max-width: 960px;
+  max-width: 1240px;
   margin: 15px auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 /* TOP STATUS HUD */
@@ -182,10 +182,10 @@
 }
 
 .hud-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  border: 2px solid #f59e0b;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 2.5px solid #f59e0b;
   object-fit: cover;
   background: #fef3c7;
 }
@@ -196,7 +196,7 @@
 }
 
 .hud-dog-name {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #78350f;
   display: flex;
@@ -223,7 +223,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #475569;
 }
@@ -285,15 +285,16 @@
   background: #059669;
 }
 
-/* 🕹️ RETRO SCREEN CANVAS BOX */
+/* 🕹️ RETRO SCREEN CANVAS BOX (WIDE & LARGE PC VIEW) */
 .dubu-canvas-frame {
   width: 100%;
+  max-width: 1200px;
   background: #1e293b;
-  border: 6px solid #b45309;
-  border-radius: 16px;
+  border: 8px solid #b45309;
+  border-radius: 18px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -301,7 +302,7 @@
 
 .dubu-rpg-canvas {
   width: 100%;
-  max-width: 860px;
+  max-width: 1180px;
   height: auto;
   aspect-ratio: 16 / 10;
   display: block;
