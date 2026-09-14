@@ -7,9 +7,10 @@ import type {
   SaveData,
   DialogLine,
   EndingType,
-  EndingMeta
+  EndingMeta,
+  HeroType
 } from '../types/dubuRpg';
-import { GAME_MAPS, INITIAL_ITEMS, INITIAL_QUESTS, ENDINGS_DATA } from '../data/dubuRpgData';
+import { GAME_MAPS, INITIAL_ITEMS, INITIAL_QUESTS, ENDINGS_DATA, HEROES_CONFIG } from '../data/dubuRpgData';
 import { dubuAudio } from '../utils/dubuRpgAudio';
 
 interface DubuRpgGameProps {
@@ -96,10 +97,22 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     auto: null
   });
 
-  // 🎒 Sub-Modals (Inventory, Quests, Guide)
+  // 🎒 Sub-Modals (Inventory, Quests, Guide, Settings)
   const [isBagModalOpen, setIsBagModalOpen] = useState<boolean>(false);
   const [isQuestModalOpen, setIsQuestModalOpen] = useState<boolean>(false);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+
+  // 🐶 Hero Selection System ('dubu' | 'guruem')
+  const [selectedHero, setSelectedHero] = useState<HeroType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dubu_rpg_hero');
+      if (saved === 'guruem' || saved === 'dubu') return saved;
+    }
+    return 'dubu';
+  });
+  const selectedHeroRef = useRef<HeroType>(selectedHero);
+  selectedHeroRef.current = selectedHero;
 
   // 🍞 Toast & Audio
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -112,6 +125,16 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   const mapImagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
   const transparentSpritesRef = useRef<{ [key: string]: HTMLCanvasElement }>({});
   const animFrameRef = useRef<number>(0);
+
+  // 🐶 Dual Hero Sprites Cache (두부 & 구름이)
+  const heroSpritesRef = useRef<Record<HeroType, {
+    walkImg: HTMLImageElement | null;
+    sleepImg: HTMLImageElement | null;
+    stepFrames: { stepA: HTMLCanvasElement; stepB: HTMLCanvasElement } | null;
+  }>>({
+    dubu: { walkImg: null, sleepImg: null, stepFrames: null },
+    guruem: { walkImg: null, sleepImg: null, stepFrames: null }
+  });
 
   // 🐾 Smooth Grid Movement & Directional Animation Refs
   const moveAnimRef = useRef<{
@@ -138,6 +161,10 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
   const visualPosRef = useRef<{ x: number; y: number }>({ x: 7, y: 6 });
   const heldDirectionsRef = useRef<Direction[]>([]);
+
+  // 🐶 Strict Horizontal Facing ('left' | 'right' - ONLY changes when Left/Right keys are pressed!)
+  const facingHRef = useRef<'left' | 'right'>('right');
+  const walkStepFramesRef = useRef<{ stepA: HTMLCanvasElement; stepB: HTMLCanvasElement } | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -181,13 +208,94 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       return c;
     };
 
-    const walkImg = new Image();
-    walkImg.src = '/images/trainer_dubu.png';
-    dubuWalkImgRef.current = walkImg;
+    const createWalkStepFrames = (baseImg: HTMLImageElement, hero: HeroType) => {
+      const w = baseImg.naturalWidth || baseImg.width || 256;
+      const h = baseImg.naturalHeight || baseImg.height || 256;
 
-    const sleepImg = new Image();
-    sleepImg.src = '/images/dubu_cushion_sleep.png';
-    dubuSleepImgRef.current = sleepImg;
+      const cA = document.createElement('canvas');
+      cA.width = w;
+      cA.height = h;
+      const ctxA = cA.getContext('2d');
+      if (!ctxA) return null;
+
+      const cB = document.createElement('canvas');
+      cB.width = w;
+      cB.height = h;
+      const ctxB = cB.getContext('2d');
+      if (!ctxB) return null;
+
+      if (hero === 'guruem') {
+        // Guruem stepping: front-left & hind-right in frame A, front-right & hind-left in frame B
+        ctxA.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
+        ctxA.drawImage(baseImg, 73, 175, 55, h - 175, 73, 175, 55, h - 175);
+        ctxA.drawImage(baseImg, 169, 175, 45, h - 175, 169, 175, 45, h - 175);
+        ctxA.drawImage(baseImg, 35, 175, 38, h - 175, 37, 171, 38, h - 175);
+        ctxA.drawImage(baseImg, 130, 175, 38, h - 175, 132, 171, 38, h - 175);
+
+        ctxB.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
+        ctxB.drawImage(baseImg, 35, 175, 38, h - 175, 35, 175, 38, h - 175);
+        ctxB.drawImage(baseImg, 130, 175, 38, h - 175, 130, 175, 38, h - 175);
+        ctxB.drawImage(baseImg, 73, 175, 45, h - 175, 75, 171, 45, h - 175);
+        ctxB.drawImage(baseImg, 169, 175, 42, h - 175, 171, 171, 42, h - 175);
+      } else {
+        // Dubu stepping
+        ctxA.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
+        ctxA.drawImage(baseImg, 120, 175, 55, h - 175, 120, 175, 55, h - 175);
+        ctxA.drawImage(baseImg, 65, 175, 42, h - 175, 63, 171, 42, h - 175);
+        ctxA.drawImage(baseImg, 185, 175, 30, h - 175, 183, 171, 30, h - 175);
+
+        ctxB.drawImage(baseImg, 0, 0, w, 175, 0, 0, w, 175);
+        ctxB.drawImage(baseImg, 65, 175, 42, h - 175, 65, 175, 42, h - 175);
+        ctxB.drawImage(baseImg, 185, 175, 30, h - 175, 185, 175, 30, h - 175);
+        ctxB.drawImage(baseImg, 120, 175, 27, h - 175, 118, 171, 27, h - 175);
+        ctxB.drawImage(baseImg, 146, 175, 28, h - 175, 144, 171, 28, h - 175);
+      }
+
+      return { stepA: cA, stepB: cB };
+    };
+
+    // Preload Dubu
+    const dubuWalk = new Image();
+    dubuWalk.src = '/images/trainer_dubu.png';
+    dubuWalk.onload = () => {
+      const frames = createWalkStepFrames(dubuWalk, 'dubu');
+      heroSpritesRef.current.dubu.stepFrames = frames;
+      walkStepFramesRef.current = frames;
+    };
+    if (dubuWalk.complete && dubuWalk.naturalWidth > 0) {
+      const frames = createWalkStepFrames(dubuWalk, 'dubu');
+      heroSpritesRef.current.dubu.stepFrames = frames;
+      walkStepFramesRef.current = frames;
+    }
+    heroSpritesRef.current.dubu.walkImg = dubuWalk;
+    dubuWalkImgRef.current = dubuWalk;
+
+    const dubuSleep = new Image();
+    dubuSleep.src = '/images/dubu_cushion_sleep.png';
+    heroSpritesRef.current.dubu.sleepImg = dubuSleep;
+    dubuSleepImgRef.current = dubuSleep;
+
+    // Preload Guruem
+    const guruemWalk = new Image();
+    guruemWalk.src = '/images/trainer_guruem.png';
+    guruemWalk.onload = () => {
+      const frames = createWalkStepFrames(guruemWalk, 'guruem');
+      heroSpritesRef.current.guruem.stepFrames = frames;
+    };
+    if (guruemWalk.complete && guruemWalk.naturalWidth > 0) {
+      heroSpritesRef.current.guruem.stepFrames = createWalkStepFrames(guruemWalk, 'guruem');
+    }
+    heroSpritesRef.current.guruem.walkImg = guruemWalk;
+
+    const guruemSleep = new Image();
+    guruemSleep.src = '/images/guruem_cushion_sleep.png';
+    heroSpritesRef.current.guruem.sleepImg = guruemSleep;
+
+    // Preload dialog portraits
+    const dubuFace = new Image();
+    dubuFace.src = '/images/dubu_dialog_face.jpg';
+    const guruemFace = new Image();
+    guruemFace.src = '/images/guruem_dialog_face.jpg';
 
     // Preload directional step sprites (down, up, side)
     const stepKeys = ['down', 'up', 'side'];
@@ -226,6 +334,27 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     refreshSaveSlots();
   }, [refreshSaveSlots]);
 
+  // 🐶 Hero Selection Handler
+  const handleSelectHero = useCallback((hero: HeroType) => {
+    setSelectedHero(hero);
+    selectedHeroRef.current = hero;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dubu_rpg_hero', hero);
+    }
+    dubuAudio.playBark();
+    showToast(`✨ 주인공이 [${HEROES_CONFIG[hero].name}]로 변경되었습니다! (${HEROES_CONFIG[hero].title})`);
+  }, [showToast]);
+
+  // 📝 Dynamic Hero Dialog / Text Formatter
+  const formatHeroText = useCallback((text: string) => {
+    if (selectedHero === 'dubu') return text;
+    return text
+      .replace(/두부야/g, '구름아')
+      .replace(/두부는/g, '구름이는')
+      .replace(/두부의/g, '구름이의')
+      .replace(/두부/g, '구름이');
+  }, [selectedHero]);
+
   // 💾 Construct current SaveData
   const buildCurrentSaveData = useCallback((): SaveData => {
     const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
@@ -237,6 +366,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       timestamp: Date.now(),
       saveDateStr,
       playerName: username,
+      heroId: selectedHero,
       playTimeSeconds,
       mapId: currentMapId,
       mapName: currentMap.name,
@@ -259,6 +389,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   }, [
     currentMapId,
     username,
+    selectedHero,
     playTimeSeconds,
     playerPos,
     happiness,
@@ -300,8 +431,20 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   // 📂 Load from SaveData
   const applySaveData = useCallback((data: SaveData) => {
     setCurrentMapId(data.mapId || 'home');
+    if (data.heroId) {
+      setSelectedHero(data.heroId);
+      selectedHeroRef.current = data.heroId;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('dubu_rpg_hero', data.heroId);
+      }
+    }
     const pos = data.playerPos || { x: 7, y: 6, dir: 'down' };
     setPlayerPos(pos);
+    if (pos.dir === 'left') {
+      facingHRef.current = 'left';
+    } else if (pos.dir === 'right') {
+      facingHRef.current = 'right';
+    }
     visualPosRef.current = { x: pos.x, y: pos.y };
     moveAnimRef.current = {
       isMoving: false,
@@ -578,7 +721,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
   // 🐶 ACTION 1: 멍멍! 짖기 (Bark)
   const handleBark = useCallback(() => {
-    if (dialogState.isOpen || isSaveModalOpen) return;
+    if (dialogState.isOpen || isSaveModalOpen || isSettingsModalOpen) return;
     setIsBarking(true);
     dubuAudio.playBark();
     setBarksCount(c => c + 1);
@@ -590,15 +733,15 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       npc => Math.abs(npc.x - playerPos.x) <= 2 && Math.abs(npc.y - playerPos.y) <= 2
     );
     if (nearbyNpc) {
-      showToast(`${nearbyNpc.name}: "두부야 멍멍 소리가 너무 맑고 씩씩하구나! ❤️"`);
+      showToast(`${nearbyNpc.name}: "${formatHeroText('두부야 멍멍 소리가 너무 맑고 씩씩하구나! ❤️')}"`);
     }
 
     setTimeout(() => setIsBarking(false), 500);
-  }, [dialogState.isOpen, isSaveModalOpen, currentMapId, playerPos, showToast]);
+  }, [dialogState.isOpen, isSaveModalOpen, isSettingsModalOpen, currentMapId, playerPos, showToast, formatHeroText]);
 
   // 👃 ACTION 2: 킁킁! 냄새맡기 (Sniff)
   const handleSniff = useCallback(() => {
-    if (dialogState.isOpen || isSaveModalOpen) return;
+    if (dialogState.isOpen || isSaveModalOpen || isSettingsModalOpen) return;
     setIsSniffing(true);
     dubuAudio.playSniff();
     setSniffsCount(c => c + 1);
@@ -619,29 +762,29 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       setIsSniffing(false);
       setSniffSparkles([]);
     }, 2500);
-  }, [dialogState.isOpen, isSaveModalOpen, currentMapId, collectedItemIds, showToast]);
+  }, [dialogState.isOpen, isSaveModalOpen, isSettingsModalOpen, currentMapId, collectedItemIds, showToast]);
 
   // 🐾 ACTION 3: 꼬리 살랑살랑 흔들기 (Wag)
   const handleWag = useCallback(() => {
-    if (dialogState.isOpen || isSaveModalOpen) return;
+    if (dialogState.isOpen || isSaveModalOpen || isSettingsModalOpen) return;
     setIsWagging(true);
     dubuAudio.playWag();
     setWagsCount(w => w + 1);
     setHappiness(h => Math.min(100, h + 5));
-    showToast('🐾 두부가 신나게 꼬리를 살랑살랑 흔듭니다! (행복도 UP!)');
+    showToast(formatHeroText('🐾 두부가 신나게 꼬리를 살랑살랑 흔듭니다! (행복도 UP!)'));
     setTimeout(() => setIsWagging(false), 800);
-  }, [dialogState.isOpen, isSaveModalOpen, showToast]);
+  }, [dialogState.isOpen, isSaveModalOpen, isSettingsModalOpen, showToast, formatHeroText]);
 
   // 🛌 ACTION 4: 발라당 눕기 (Belly Rub / Relax - dubu1.jpg)
   const handleBellyRub = useCallback(() => {
-    if (dialogState.isOpen || isSaveModalOpen) return;
+    if (dialogState.isOpen || isSaveModalOpen || isSettingsModalOpen) return;
     setIsRelaxing(prev => !prev);
     dubuAudio.playBellyRub();
     setBellyRubsCount(b => b + 1);
     setHp(100);
     setHappiness(100);
-    showToast('🛌 두부가 등을 대고 발라당 누워 뒹굴거립니다~ 힐링 100%! (체력/행복도 완충)');
-  }, [dialogState.isOpen, isSaveModalOpen, showToast]);
+    showToast(formatHeroText('🛌 두부가 등을 대고 발라당 누워 뒹굴거립니다~ 힐링 100%! (체력/행복도 완충)'));
+  }, [dialogState.isOpen, isSaveModalOpen, isSettingsModalOpen, showToast, formatHeroText]);
 
   // 🔍 ACTION 5: 조사 / 상호작용 (Interact)
   const handleInteract = useCallback(() => {
@@ -649,7 +792,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       advanceDialog();
       return;
     }
-    if (isSaveModalOpen) return;
+    if (isSaveModalOpen || isSettingsModalOpen) return;
 
     const currentMap = GAME_MAPS[currentMapId] || GAME_MAPS.home;
     const { x, y, dir } = playerPos;
@@ -877,6 +1020,11 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     // If currently moving between tiles, turn facing direction
     if (moveAnimRef.current.isMoving) {
       moveAnimRef.current.dir = dir;
+      if (dir === 'left') {
+        facingHRef.current = 'left';
+      } else if (dir === 'right') {
+        facingHRef.current = 'right';
+      }
       return;
     }
 
@@ -893,8 +1041,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     const newX = curX + dx;
     const newY = curY + dy;
 
-    // Face the target direction
+    // Face the target direction (grid direction) & update horizontal facing ONLY on left/right
     setPlayerPos(prev => ({ ...prev, dir }));
+    if (dir === 'left') {
+      facingHRef.current = 'left';
+    } else if (dir === 'right') {
+      facingHRef.current = 'right';
+    }
 
     // Check bounds
     if (newX < 0 || newX >= currentMap.width || newY < 0 || newY >= currentMap.height) {
@@ -922,6 +1075,11 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         y: portal.targetY,
         dir: portal.targetDir
       });
+      if (portal.targetDir === 'left') {
+        facingHRef.current = 'left';
+      } else if (portal.targetDir === 'right') {
+        facingHRef.current = 'right';
+      }
       visualPosRef.current = { x: portal.targetX, y: portal.targetY };
       moveAnimRef.current = {
         isMoving: false,
@@ -966,6 +1124,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   }, [
     dialogState.isOpen,
     isSaveModalOpen,
+    isSettingsModalOpen,
     isBagModalOpen,
     isQuestModalOpen,
     isGuideModalOpen,
@@ -979,112 +1138,326 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     handleSaveGame
   ]);
 
-  // ⌨️ Keyboard Listeners with Smooth Continuous Walking
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent scrolling
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-        e.preventDefault();
-      }
-
-      if (e.key === 'Escape') {
-        if (dialogState.isOpen) {
-          advanceDialog();
-        } else {
-          setIsSaveModalOpen(prev => !prev);
-        }
-        return;
-      }
-
-      if (dialogState.isOpen) {
-        if (['Enter', ' ', 'z', 'Z'].includes(e.key)) {
-          advanceDialog();
-        }
-        return;
-      }
-
-      if (isSaveModalOpen || isBagModalOpen || isQuestModalOpen || isGuideModalOpen || isEndingsModalOpen) {
-        return;
-      }
-
-      let pressedDir: Direction | null = null;
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) pressedDir = 'up';
-      else if (['ArrowDown', 's', 'S'].includes(e.key)) pressedDir = 'down';
-      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) pressedDir = 'left';
-      else if (['ArrowRight', 'd', 'D'].includes(e.key)) pressedDir = 'right';
-
-      if (pressedDir) {
-        if (!heldDirectionsRef.current.includes(pressedDir)) {
-          heldDirectionsRef.current.push(pressedDir);
-        }
-        tryStartMove(pressedDir);
-        return;
-      }
-
-      switch (e.key) {
-        case ' ':
-        case 'Enter':
-        case 'z':
-        case 'Z':
-          handleInteract();
-          break;
-        case 'c':
-        case 'C':
-          handleBark();
-          break;
-        case 'v':
-        case 'V':
-          handleSniff();
-          break;
-        case 'x':
-        case 'X':
-          handleWag();
-          break;
-        case 'b':
-        case 'B':
-          handleBellyRub();
-          break;
-        default:
-          break;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      let releasedDir: Direction | null = null;
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) releasedDir = 'up';
-      else if (['ArrowDown', 's', 'S'].includes(e.key)) releasedDir = 'down';
-      else if (['ArrowLeft', 'a', 'A'].includes(e.key)) releasedDir = 'left';
-      else if (['ArrowRight', 'd', 'D'].includes(e.key)) releasedDir = 'right';
-
-      if (releasedDir) {
-        heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== releasedDir);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [
+  // 🔗 Stable handlers ref to prevent keyboard listener teardown during movement
+  const handlersRef = useRef({
     gameState,
-    dialogState.isOpen,
+    dialogState,
     advanceDialog,
     isSaveModalOpen,
+    isSettingsModalOpen,
     isBagModalOpen,
     isQuestModalOpen,
     isGuideModalOpen,
     isEndingsModalOpen,
+    setIsSaveModalOpen,
+    setIsSettingsModalOpen,
+    setIsBagModalOpen,
+    setIsQuestModalOpen,
+    setIsGuideModalOpen,
+    setIsEndingsModalOpen,
     tryStartMove,
     handleInteract,
     handleBark,
     handleSniff,
     handleWag,
     handleBellyRub
-  ]);
+  });
+
+  handlersRef.current = {
+    gameState,
+    dialogState,
+    advanceDialog,
+    isSaveModalOpen,
+    isSettingsModalOpen,
+    isBagModalOpen,
+    isQuestModalOpen,
+    isGuideModalOpen,
+    isEndingsModalOpen,
+    setIsSaveModalOpen,
+    setIsSettingsModalOpen,
+    setIsBagModalOpen,
+    setIsQuestModalOpen,
+    setIsGuideModalOpen,
+    setIsEndingsModalOpen,
+    tryStartMove,
+    handleInteract,
+    handleBark,
+    handleSniff,
+    handleWag,
+    handleBellyRub
+  };
+
+  // Blur active button when playing to prevent button focus scroll issues
+  useEffect(() => {
+    if (gameState === 'playing') {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }
+  }, [gameState]);
+
+  // ⌨️ Keyboard Listeners with Smooth Continuous Walking (Stable listener with Capture)
+  useEffect(() => {
+    const isScrollKey = (e: KeyboardEvent): boolean => {
+      const scrollKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'Up', 'Down', 'Left', 'Right',
+        ' ', 'Spacebar',
+        'PageUp', 'PageDown', 'Home', 'End'
+      ];
+      const scrollCodes = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'Space', 'PageUp', 'PageDown', 'Home', 'End',
+        'Numpad8', 'Numpad2', 'Numpad4', 'Numpad6'
+      ];
+      const scrollKeyCodes = [32, 33, 34, 35, 36, 37, 38, 39, 40];
+
+      return (
+        scrollKeys.includes(e.key) ||
+        scrollCodes.includes(e.code) ||
+        scrollKeyCodes.includes(e.keyCode)
+      );
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const {
+        gameState: curGameState,
+        dialogState: curDialogState,
+        advanceDialog: curAdvanceDialog,
+        isSaveModalOpen: curIsSave,
+        isSettingsModalOpen: curIsSettings,
+        isBagModalOpen: curIsBag,
+        isQuestModalOpen: curIsQuest,
+        isGuideModalOpen: curIsGuide,
+        isEndingsModalOpen: curIsEndings,
+        setIsSaveModalOpen: curSetIsSave,
+        setIsSettingsModalOpen: curSetIsSettings,
+        setIsBagModalOpen: curSetIsBag,
+        setIsQuestModalOpen: curSetIsQuest,
+        setIsGuideModalOpen: curSetIsGuide,
+        setIsEndingsModalOpen: curSetIsEndings,
+        tryStartMove: curTryStartMove,
+        handleInteract: curHandleInteract,
+        handleBark: curHandleBark,
+        handleSniff: curHandleSniff,
+        handleWag: curHandleWag,
+        handleBellyRub: curHandleBellyRub
+      } = handlersRef.current;
+
+      if (curGameState !== 'playing') return;
+
+      // 🛑 1. Bulletproof Scroll Prevention for arrow & space keys during gameplay
+      if (isScrollKey(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // 🛑 2. Escape Menu / Modal toggle
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        if (curDialogState.isOpen) {
+          curAdvanceDialog();
+        } else if (curIsSettings) {
+          curSetIsSettings(false);
+        } else if (curIsBag) {
+          curSetIsBag(false);
+        } else if (curIsQuest) {
+          curSetIsQuest(false);
+        } else if (curIsGuide) {
+          curSetIsGuide(false);
+        } else if (curIsEndings) {
+          curSetIsEndings(false);
+        } else {
+          curSetIsSave(prev => !prev);
+        }
+        return;
+      }
+
+      // 🛑 3. Advance dialogue
+      if (curDialogState.isOpen) {
+        if (
+          ['Enter', ' ', 'z', 'Z'].includes(e.key) ||
+          ['Enter', 'Space', 'KeyZ'].includes(e.code)
+        ) {
+          e.preventDefault();
+          curAdvanceDialog();
+        }
+        return;
+      }
+
+      // 🛑 4. Block movement/actions while any modal is open
+      if (
+        curIsSave ||
+        curIsSettings ||
+        curIsBag ||
+        curIsQuest ||
+        curIsGuide ||
+        curIsEndings
+      ) {
+        return;
+      }
+
+      // 🚶 5. Direction Input (Supports Arrow keys, WASD, and Numpad)
+      let pressedDir: Direction | null = null;
+      if (
+        e.key === 'ArrowUp' ||
+        e.key === 'Up' ||
+        e.code === 'ArrowUp' ||
+        e.code === 'Numpad8' ||
+        e.key === 'w' ||
+        e.key === 'W' ||
+        e.code === 'KeyW'
+      ) {
+        pressedDir = 'up';
+      } else if (
+        e.key === 'ArrowDown' ||
+        e.key === 'Down' ||
+        e.code === 'ArrowDown' ||
+        e.code === 'Numpad2' ||
+        e.key === 's' ||
+        e.key === 'S' ||
+        e.code === 'KeyS'
+      ) {
+        pressedDir = 'down';
+      } else if (
+        e.key === 'ArrowLeft' ||
+        e.key === 'Left' ||
+        e.code === 'ArrowLeft' ||
+        e.code === 'Numpad4' ||
+        e.key === 'a' ||
+        e.key === 'A' ||
+        e.code === 'KeyA'
+      ) {
+        pressedDir = 'left';
+      } else if (
+        e.key === 'ArrowRight' ||
+        e.key === 'Right' ||
+        e.code === 'ArrowRight' ||
+        e.code === 'Numpad6' ||
+        e.key === 'd' ||
+        e.key === 'D' ||
+        e.code === 'KeyD'
+      ) {
+        pressedDir = 'right';
+      }
+
+      if (pressedDir) {
+        if (!heldDirectionsRef.current.includes(pressedDir)) {
+          heldDirectionsRef.current.push(pressedDir);
+        }
+        curTryStartMove(pressedDir);
+        return;
+      }
+
+      // 🐾 6. Action keys
+      if (
+        e.key === ' ' ||
+        e.code === 'Space' ||
+        e.key === 'Enter' ||
+        e.code === 'Enter' ||
+        e.key === 'z' ||
+        e.key === 'Z' ||
+        e.code === 'KeyZ'
+      ) {
+        e.preventDefault();
+        curHandleInteract();
+      } else if (
+        e.key === 'c' ||
+        e.key === 'C' ||
+        e.code === 'KeyC' ||
+        e.key === 'ㅊ'
+      ) {
+        e.preventDefault();
+        curHandleBark();
+      } else if (
+        e.key === 'v' ||
+        e.key === 'V' ||
+        e.code === 'KeyV' ||
+        e.key === 'ㅍ'
+      ) {
+        e.preventDefault();
+        curHandleSniff();
+      } else if (
+        e.key === 'x' ||
+        e.key === 'X' ||
+        e.code === 'KeyX' ||
+        e.key === 'ㅌ'
+      ) {
+        e.preventDefault();
+        curHandleWag();
+      } else if (
+        e.key === 'b' ||
+        e.key === 'B' ||
+        e.code === 'KeyB' ||
+        e.key === 'ㅠ'
+      ) {
+        e.preventDefault();
+        curHandleBellyRub();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      let releasedDir: Direction | null = null;
+      if (
+        e.key === 'ArrowUp' ||
+        e.key === 'Up' ||
+        e.code === 'ArrowUp' ||
+        e.code === 'Numpad8' ||
+        e.key === 'w' ||
+        e.key === 'W' ||
+        e.code === 'KeyW'
+      ) {
+        releasedDir = 'up';
+      } else if (
+        e.key === 'ArrowDown' ||
+        e.key === 'Down' ||
+        e.code === 'ArrowDown' ||
+        e.code === 'Numpad2' ||
+        e.key === 's' ||
+        e.key === 'S' ||
+        e.code === 'KeyS'
+      ) {
+        releasedDir = 'down';
+      } else if (
+        e.key === 'ArrowLeft' ||
+        e.key === 'Left' ||
+        e.code === 'ArrowLeft' ||
+        e.code === 'Numpad4' ||
+        e.key === 'a' ||
+        e.key === 'A' ||
+        e.code === 'KeyA'
+      ) {
+        releasedDir = 'left';
+      } else if (
+        e.key === 'ArrowRight' ||
+        e.key === 'Right' ||
+        e.code === 'ArrowRight' ||
+        e.code === 'Numpad6' ||
+        e.key === 'd' ||
+        e.key === 'D' ||
+        e.code === 'KeyD'
+      ) {
+        releasedDir = 'right';
+      }
+
+      if (releasedDir) {
+        heldDirectionsRef.current = heldDirectionsRef.current.filter(d => d !== releasedDir);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      heldDirectionsRef.current = [];
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+    window.addEventListener('blur', handleWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, []);
 
   // 🎨 CANVAS RENDERING LOOP
   useEffect(() => {
@@ -1146,6 +1519,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           heldDirectionsRef.current.length > 0 &&
           !dialogState.isOpen &&
           !isSaveModalOpen &&
+          !isSettingsModalOpen &&
           !isBagModalOpen &&
           !isQuestModalOpen &&
           !isGuideModalOpen &&
@@ -1370,11 +1744,8 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       const dubuY = visualPosRef.current.y * TILE_SIZE;
       const curDir = moveAnimRef.current.isMoving ? moveAnimRef.current.dir : playerPos.dir;
 
-      // Natural trotting bounce & side-to-side leg waddle
+      // Natural trotting bounce (pure vertical hop, NO rotational tilt)
       const walkBob = isWalkingNow ? -Math.abs(Math.sin(walkProgress * Math.PI)) * 5 : 0;
-      const waddleAngle = isWalkingNow
-        ? ((stepCycle % 2 === 0 ? 1 : -1) * Math.sin(walkProgress * Math.PI)) * 0.07
-        : 0;
 
       // Soft Ground Shadow under Dubu
       const shadowRadiusX = 22 - (isWalkingNow ? Math.abs(walkBob) * 0.7 : 0);
@@ -1392,10 +1763,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       );
       ctx.fill();
 
+      // 🐶 Strict Horizontal Facing (ONLY changes when user presses Left/Right keys!)
+      const isLeft = facingHRef.current === 'left';
+
       // Little dust puff particle behind paws when stepping
       if (isWalkingNow && walkProgress > 0.2 && walkProgress < 0.7) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        const puffOffsetX = curDir === 'right' ? -12 : curDir === 'left' ? 12 : 0;
+        const puffOffsetX = isLeft ? 14 : -14;
         const puffOffsetY = curDir === 'down' ? -12 : curDir === 'up' ? 12 : 0;
         ctx.beginPath();
         ctx.arc(
@@ -1408,12 +1782,15 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         ctx.fill();
       }
 
-      if (isRelaxing && dubuSleepImgRef.current && dubuSleepImgRef.current.complete) {
-        // 🛌 Lying down tummy up on cushion (like dubu1.jpg) - Extra Large 88x88!
+      const curHero = selectedHeroRef.current;
+      const heroSprites = heroSpritesRef.current[curHero];
+
+      if (isRelaxing && heroSprites.sleepImg && heroSprites.sleepImg.complete) {
+        // 🛌 Lying down tummy up on cushion - Extra Large 88x88!
         const sleepW = 88;
         const sleepH = 88;
         ctx.drawImage(
-          dubuSleepImgRef.current,
+          heroSprites.sleepImg,
           dubuX - (sleepW - TILE_SIZE) / 2,
           dubuY - (sleepH - TILE_SIZE) / 2,
           sleepW,
@@ -1427,66 +1804,33 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
         ctx.fillText('💤', dubuX + 44, dubuY - zOffset);
         ctx.fillText('❤️', dubuX + 10, dubuY - zOffset);
       } else {
-        // 🐶 Active / Walking Dubu with directional sprite & moving legs!
+        // 🐶 Active / Walking Dog (Direction locked to facingHRef, moving legs without flicker)
         ctx.save();
         const drawW = 74;
         const drawH = 74;
         const drawX = dubuX - (drawW - TILE_SIZE) / 2;
         const drawY = dubuY - (drawH - TILE_SIZE) + walkBob;
 
-        // Apply pivot rotation at paws for natural waddle
-        const pivotX = drawX + drawW / 2;
-        const pivotY = drawY + drawH;
-        ctx.translate(pivotX, pivotY);
-        ctx.rotate(waddleAngle);
-        ctx.translate(-pivotX, -pivotY);
+        // Horizontal flip around center ONLY when facing left
+        const centerX = drawX + drawW / 2;
+        const centerY = drawY + drawH / 2;
+        ctx.translate(centerX, centerY);
+        if (isLeft) {
+          ctx.scale(-1, 1);
+        }
+        ctx.translate(-centerX, -centerY);
 
         // Direction & Leg Step sprite selection
-        let spriteToDraw: HTMLCanvasElement | HTMLImageElement | null = dubuWalkImgRef.current;
-        const stepDownCanvas = transparentSpritesRef.current.down;
-        const stepUpCanvas = transparentSpritesRef.current.up;
-        const stepSideCanvas = transparentSpritesRef.current.side;
-
-        const isMidStep = isWalkingNow && walkProgress > 0.15 && walkProgress < 0.85;
-
-        if (curDir === 'down') {
-          // Front-facing: alternate idle and front-stepping paw sprite
-          if (isMidStep && stepDownCanvas) {
-            spriteToDraw = stepDownCanvas;
-          } else {
-            spriteToDraw = dubuWalkImgRef.current;
-          }
-        } else if (curDir === 'up') {
-          // Back-facing: cute fluffy back view with wagging tail and jellybean paws
-          if (stepUpCanvas) {
-            spriteToDraw = stepUpCanvas;
-          } else {
-            spriteToDraw = dubuWalkImgRef.current;
-          }
-        } else if (curDir === 'left') {
-          // Left-facing: flip horizontally
-          ctx.translate(drawX + drawW, drawY);
-          ctx.scale(-1, 1);
-          if (isMidStep && stepSideCanvas) {
-            spriteToDraw = stepSideCanvas;
-          } else {
-            spriteToDraw = dubuWalkImgRef.current;
-          }
-        } else if (curDir === 'right') {
-          // Right-facing: side walking stride
-          if (isMidStep && stepSideCanvas) {
-            spriteToDraw = stepSideCanvas;
-          } else {
-            spriteToDraw = dubuWalkImgRef.current;
+        let spriteToDraw: HTMLCanvasElement | HTMLImageElement | null = heroSprites.walkImg;
+        if (isWalkingNow && walkProgress > 0.15 && walkProgress < 0.85) {
+          const stepFrames = heroSprites.stepFrames;
+          if (stepFrames) {
+            spriteToDraw = stepCycle % 2 === 0 ? stepFrames.stepA : stepFrames.stepB;
           }
         }
 
         if (spriteToDraw) {
-          if (curDir === 'left') {
-            ctx.drawImage(spriteToDraw, 0, 0, drawW, drawH);
-          } else {
-            ctx.drawImage(spriteToDraw, drawX, drawY, drawW, drawH);
-          }
+          ctx.drawImage(spriteToDraw, drawX, drawY, drawW, drawH);
         }
         ctx.restore();
 
@@ -1513,12 +1857,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           ctx.fillText('👃✨', dubuX + TILE_SIZE / 2, dubuY - 14);
         }
 
-        // Wagging tail effect
+        // Wagging tail effect (positioned behind Dubu relative to horizontal facing)
         if (isWagging || isWalkingNow) {
           ctx.font = '18px Pretendard';
           ctx.fillStyle = '#f59e0b';
           const tailOffset = Math.sin(now * 0.02) * 3;
-          ctx.fillText('💨🐾', dubuX + 54, dubuY + 14 + tailOffset);
+          const tailX = isLeft ? dubuX - 10 : dubuX + 54;
+          ctx.fillText('💨🐾', tailX, dubuY + 14 + tailOffset);
         }
       }
 
@@ -1576,6 +1921,24 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           </div>
 
           <div className="dubu-title-controls">
+            {/* 🐶 CURRENT SELECTED HERO BADGE */}
+            <div
+              className={`title-hero-preview-badge ${selectedHero}`}
+              onClick={() => setIsSettingsModalOpen(true)}
+              title="클릭하여 주인공 및 설정 변경"
+              style={{ cursor: 'pointer' }}
+            >
+              <span>주인공:</span>
+              <img
+                src={HEROES_CONFIG[selectedHero].dialogImg}
+                alt={HEROES_CONFIG[selectedHero].name}
+                className="title-hero-avatar-mini"
+              />
+              <strong>{HEROES_CONFIG[selectedHero].name}</strong>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>({HEROES_CONFIG[selectedHero].englishName})</span>
+              <span style={{ marginLeft: 4, color: '#f59e0b', fontSize: '0.78rem' }}>⚙️ 변경</span>
+            </div>
+
             <div className="dubu-title-buttons">
               <button
                 className="dubu-rpg-btn primary"
@@ -1583,10 +1946,23 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                   setGameState('playing');
                   dubuAudio.startBgm();
                   dubuAudio.playBark();
-                  showToast('🐾 두부의 따뜻한 모험이 시작되었습니다! 방 안을 탐색해보세요.');
+                  showToast(formatHeroText(`🐾 ${HEROES_CONFIG[selectedHero].name}의 따뜻한 모험이 시작되었습니다! 방 안을 탐색해보세요.`));
                 }}
               >
-                🐾 새로운 모험 시작
+                🐾 새로운 모험 시작 ({HEROES_CONFIG[selectedHero].name})
+              </button>
+
+              <button
+                className="dubu-rpg-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #ea580c)',
+                  color: '#ffffff',
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
+                }}
+                onClick={() => setIsSettingsModalOpen(true)}
+              >
+                ⚙️ 게임 설정 & 주인공 변경 (두부 / 구름이)
               </button>
 
               <button
@@ -1621,7 +1997,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
             </div>
 
             <div className="dubu-title-footer-tips">
-              💡 <strong>진엔딩 1개 + 가짜엔딩 3개 지원:</strong> 댕댕이 두부의 선택에 따라 다양한 엔딩을 경험해 보세요!
+              💡 <strong>진엔딩 1개 + 가짜엔딩 3개 지원:</strong> 댕댕이 친구들의 선택에 따라 다양한 엔딩을 경험해 보세요!
             </div>
           </div>
         </div>
@@ -1634,13 +2010,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           <div className="dubu-rpg-top-hud">
             <div className="hud-left-profile">
               <img
-                src="/images/dubu_dialog_face.jpg"
-                alt="두부 프로필"
+                src={HEROES_CONFIG[selectedHero].dialogImg}
+                alt={`${HEROES_CONFIG[selectedHero].name} 프로필`}
                 className="hud-avatar"
               />
               <div className="hud-name-box">
                 <span className="hud-dog-name">
-                  두부 <span>(Dubu)</span>
+                  {HEROES_CONFIG[selectedHero].name} <span>({HEROES_CONFIG[selectedHero].englishName})</span>
                 </span>
                 <span className="hud-map-badge">📍 {currentMap.name}</span>
               </div>
@@ -1686,6 +2062,14 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
               <button
                 className="hud-btn"
+                onClick={() => setIsSettingsModalOpen(true)}
+                title="게임 설정 & 주인공 캐릭터 변경"
+              >
+                ⚙️ 설정
+              </button>
+
+              <button
+                className="hud-btn"
                 onClick={() => setIsBagModalOpen(true)}
                 title="가방 열기"
               >
@@ -1712,11 +2096,11 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                 className="hud-btn"
                 onClick={() => {
                   setZoomMode(z => (z === 'large' ? 'normal' : 'large'));
-                  showToast(zoomMode === 'large' ? '🗺️ 전체 넓게 보기 (1.0x)' : '🐶 두부 크게 보기 (1.3x 확대)');
+                  showToast(zoomMode === 'large' ? '🗺️ 전체 넓게 보기 (1.0x)' : `🐶 ${HEROES_CONFIG[selectedHero].name} 크게 보기 (1.3x 확대)`);
                 }}
-                title="화면 확대/축소 (두부 크게 보기)"
+                title="화면 확대/축소"
               >
-                {zoomMode === 'large' ? '🔍 두부 크게' : '🗺️ 넓은 뷰'}
+                {zoomMode === 'large' ? `🔍 ${HEROES_CONFIG[selectedHero].name} 크게` : '🗺️ 넓은 뷰'}
               </button>
 
               <button
@@ -1756,10 +2140,12 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                 onClick={advanceDialog}
               >
                 <div className="tsukuru-dialog-portrait-box">
-                  {dialogState.lines[dialogState.lineIndex]?.speaker === '두부' ? (
+                  {dialogState.lines[dialogState.lineIndex]?.speaker === '두부' ||
+                  dialogState.lines[dialogState.lineIndex]?.speaker === '구름이' ||
+                  dialogState.lines[dialogState.lineIndex]?.speaker === HEROES_CONFIG[selectedHero].name ? (
                     <img
-                      src="/images/dubu_dialog_face.jpg"
-                      alt="두부"
+                      src={HEROES_CONFIG[selectedHero].dialogImg}
+                      alt={HEROES_CONFIG[selectedHero].name}
                       className="tsukuru-dialog-portrait-img"
                     />
                   ) : (
@@ -1784,10 +2170,10 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                 </div>
                 <div className="tsukuru-dialog-body">
                   <div className="tsukuru-dialog-speaker">
-                    [{dialogState.lines[dialogState.lineIndex]?.speaker || '안내'}]
+                    [{formatHeroText(dialogState.lines[dialogState.lineIndex]?.speaker || '안내')}]
                   </div>
                   <p className="tsukuru-dialog-text">
-                    {dialogState.displayedText}
+                    {formatHeroText(dialogState.displayedText)}
                   </p>
                   {dialogState.lines[dialogState.lineIndex]?.choices && (
                     <div className="tsukuru-dialog-choices-box">
@@ -2430,6 +2816,151 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚙️ SETTINGS & HERO SELECTION MODAL */}
+      {isSettingsModalOpen && (
+        <div
+          className="dubu-modal-backdrop"
+          onClick={() => setIsSettingsModalOpen(false)}
+        >
+          <div
+            className="dubu-save-modal settings-modal"
+            style={{ maxWidth: 660 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="save-modal-header">
+              <h3 className="save-modal-title">
+                ⚙️ <span>게임 설정 & 주인공 캐릭터 선택</span>
+              </h3>
+              <button
+                className="save-modal-close-btn"
+                onClick={() => setIsSettingsModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="save-modal-body">
+              {/* 🐶 SECTION 1: PROTAGONIST SELECTION */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>
+                  🐾 주인공 댕댕이 선택 (언제든 변경 가능)
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: 12 }}>
+                  게임을 이끌어갈 사랑스러운 댕댕이를 선택하세요. 게임 내 아바타, 걷기/눕기 모션, 대화창 얼굴이 즉시 바뀝니다!
+                </div>
+
+                <div className="hero-selection-grid">
+                  {(['dubu', 'guruem'] as HeroType[]).map(heroId => {
+                    const hero = HEROES_CONFIG[heroId];
+                    const isSelected = selectedHero === heroId;
+                    return (
+                      <div
+                        key={heroId}
+                        className={`hero-card ${isSelected ? `selected-${heroId}` : ''}`}
+                        onClick={() => handleSelectHero(heroId)}
+                      >
+                        {isSelected && (
+                          <div className="hero-active-badge">
+                            ✓ 현재 선택됨
+                          </div>
+                        )}
+                        <div className="hero-avatar-wrap">
+                          <img
+                            src={hero.dialogImg}
+                            alt={hero.name}
+                            className="hero-avatar-img"
+                          />
+                        </div>
+                        <div className="hero-card-name">
+                          <span>{hero.name}</span>
+                        </div>
+                        <div className="hero-card-subtitle">
+                          {hero.breed} • {hero.title}
+                        </div>
+                        <p className="hero-card-desc">
+                          {hero.desc}
+                        </p>
+                        <div className="hero-card-quote">
+                          {hero.tagline}
+                        </div>
+                        <button
+                          type="button"
+                          className={`hero-select-btn ${isSelected ? 'is-active' : 'is-inactive'}`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleSelectHero(heroId);
+                          }}
+                        >
+                          {isSelected ? '✓ 플레이 중' : `${hero.name}로 변경하기`}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 🎛️ SECTION 2: AUDIO & DISPLAY SETTINGS */}
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#1e293b', marginBottom: 12 }}>
+                  🎮 게임 환경 설정
+                </div>
+
+                {/* BGM & SFX Toggle */}
+                <div className="settings-control-row">
+                  <div className="settings-control-info">
+                    <span className="settings-control-label">🎵 BGM & 효과음 사운드</span>
+                    <span className="settings-control-sub">배경음악과 발걸음, 멍멍 소리 등 효과음을 켜거나 끕니다.</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`settings-toggle-btn ${!isMuted ? 'active' : ''}`}
+                    onClick={() => {
+                      const muted = dubuAudio.toggleMute();
+                      setIsMuted(muted);
+                    }}
+                  >
+                    {isMuted ? '🔇 음소거 중' : '🔊 사운드 ON'}
+                  </button>
+                </div>
+
+                {/* Zoom Mode Toggle */}
+                <div className="settings-control-row">
+                  <div className="settings-control-info">
+                    <span className="settings-control-label">🔍 화면 뷰 배율 (주인공 확대)</span>
+                    <span className="settings-control-sub">
+                      {zoomMode === 'large'
+                        ? '1.3배 확대 뷰: 댕댕이의 귀여운 발걸음과 모션을 크게 감상합니다.'
+                        : '1.0배 표준 뷰: 전체 맵을 한눈에 넓게 조망합니다.'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`settings-toggle-btn ${zoomMode === 'large' ? 'active' : ''}`}
+                    onClick={() => {
+                      setZoomMode(z => (z === 'large' ? 'normal' : 'large'));
+                    }}
+                  >
+                    {zoomMode === 'large' ? '🔍 1.3x 확대 보기' : '🗺️ 1.0x 표준 뷰'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom Confirm Button */}
+              <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="dubu-rpg-btn primary"
+                  style={{ minWidth: 120 }}
+                  onClick={() => setIsSettingsModalOpen(false)}
+                >
+                  ✓ 설정 완료
+                </button>
               </div>
             </div>
           </div>

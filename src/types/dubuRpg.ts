@@ -1,5 +1,7 @@
 export type Direction = 'down' | 'up' | 'left' | 'right';
 
+export type HeroType = 'dubu' | 'guruem';
+
 export type EndingType = 'true_rainbow' | 'fake_sleep' | 'fake_sweet_potato' | 'fake_cat';
 
 export interface EndingMeta {
@@ -40,6 +42,7 @@ export interface SaveData {
   timestamp: number;
   saveDateStr: string;
   playerName: string;
+  heroId?: HeroType;
   playTimeSeconds: number;
   mapId: string;
   mapName: string;

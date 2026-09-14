@@ -1,4 +1,65 @@
-import type { MapData, Quest, Item, EndingType, EndingMeta } from '../types/dubuRpg';
+import type { MapData, Quest, Item, EndingType, EndingMeta, HeroType } from '../types/dubuRpg';
+
+export interface HeroInfo {
+  id: HeroType;
+  name: string;
+  englishName: string;
+  breed: string;
+  title: string;
+  desc: string;
+  tagline: string;
+  badge: string;
+  spriteImg: string;
+  dialogImg: string;
+  sleepImg: string;
+  badgeColor: string;
+  accentColor: string;
+  specialTrait: string;
+  callName: string;
+  topicName: string;
+  possessiveName: string;
+}
+
+export const HEROES_CONFIG: Record<HeroType, HeroInfo> = {
+  dubu: {
+    id: 'dubu',
+    name: '두부',
+    englishName: 'Dubu',
+    breed: '시골 믹스견',
+    title: '씩씩한 모험 대장',
+    desc: '호기심 많고 당당한 순백의 시골 강아지! 냄새맡기와 탐험을 제일 좋아해요.',
+    tagline: '🐶 "세상 모든 보물은 내 코가 다 찾아낼 거야!"',
+    badge: '🐾 씩씩한 모험가',
+    spriteImg: '/images/trainer_dubu.png',
+    dialogImg: '/images/dubu_dialog_face.jpg',
+    sleepImg: '/images/dubu_cushion_sleep.png',
+    badgeColor: '#f59e0b',
+    accentColor: '#fbbf24',
+    specialTrait: '킁킁 탐지 레이더 (보물 발견 확률 UP)',
+    callName: '두부야',
+    topicName: '두부는',
+    possessiveName: '두부의'
+  },
+  guruem: {
+    id: 'guruem',
+    name: '구름이',
+    englishName: 'Guruem',
+    breed: '사랑스러운 말티즈',
+    title: '복슬복슬 힐링 천사',
+    desc: '구름처럼 뽀송뽀송하고 해맑은 미소를 지닌 댕댕이! 따뜻한 주황색 하네스를 매고 있어요.',
+    tagline: '☁️ "보송보송 구름이와 함께라면 어디든 행복해!"',
+    badge: '☁️ 힐링 댕댕이',
+    spriteImg: '/images/trainer_guruem.png',
+    dialogImg: '/images/guruem_dialog_face.jpg',
+    sleepImg: '/images/guruem_cushion_sleep.png',
+    badgeColor: '#38bdf8',
+    accentColor: '#60a5fa',
+    specialTrait: '구름 살랑 애교 (행복도 회복 속도 UP)',
+    callName: '구름아',
+    topicName: '구름이는',
+    possessiveName: '구름이의'
+  }
+};
 
 export const ENDINGS_DATA: Record<EndingType, EndingMeta> = {
   true_rainbow: {
