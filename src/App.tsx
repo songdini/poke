@@ -11,11 +11,13 @@ import WordleGame from './components/WordleGame';
 import PokeBattle from './components/PokeBattle';
 import { PokeFarmGame } from './components/PokeFarmGame';
 import TetrisGame from './components/TetrisGame';
+import DubuRpgGame from './components/DubuRpgGame';
 import BossScreen from './components/BossScreen';
 import { SocketProvider } from './context/SocketContext';
 
 export type GameKey =
   | 'pokefarm'
+  | 'duburpg'
   | 'pokebattle'
   | 'catchmind'
   | 'mafia'
@@ -44,6 +46,15 @@ export interface GameMeta {
 }
 
 export const GAMES_LIST: GameMeta[] = [
+  {
+    key: 'duburpg',
+    name: '두부의 따뜻한 모험 (쯔꾸르 RPG)',
+    excelName: 'Dubu_Tsukuru_RPG_SaveData.xlsx',
+    icon: '🐶',
+    desc: '사랑스러운 흰둥이 두부의 힐링 쯔꾸르 모험! 멍멍 짖기, 킁킁 보물찾기, 발라당 뒹굴기 & 3개 슬롯 중간 세이브 지원',
+    badge: 'NEW 힐링',
+    themeColor: '#f59e0b'
+  },
   {
     key: 'pokefarm',
     name: '두부월드 미니홈피 (포켓농장)',
@@ -163,6 +174,7 @@ function AppMain() {
     const savedOwner = (typeof window !== 'undefined' && localStorage.getItem('pokefarm_saved_owner')) || '지우';
     return {
       pokefarm: { username: savedOwner, room: 'local', gameType: 'pokefarm' },
+      duburpg: { username: savedOwner, room: 'local', gameType: 'duburpg' },
       catchmind: null,
       mafia: null,
       liar: null,
@@ -179,7 +191,7 @@ function AppMain() {
   // 🚨 Emergency Boss Key Keyboard Listener (F2 or ESC)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F2' || e.key === 'Escape') {
+      if (e.key === 'F2') {
         e.preventDefault();
         setIsBossMode(prev => !prev);
       }
@@ -198,6 +210,12 @@ function AppMain() {
       setGameSessions(prev => ({
         ...prev,
         pokefarm: { username: farmUser, room: 'local', gameType: 'pokefarm' }
+      }));
+    } else if (gameType === 'duburpg') {
+      const savedUser = localStorage.getItem('pokefarm_saved_owner') || formUsername.trim() || '두부집사';
+      setGameSessions(prev => ({
+        ...prev,
+        duburpg: { username: savedUser, room: 'local', gameType: 'duburpg' }
       }));
     }
   };
@@ -295,6 +313,14 @@ function AppMain() {
               onSelectGame={(gameKey) => handleGameSelection(gameKey as GameKey)}
               onUserLogin={handleUserLogin}
               onUserLogout={handleUserLogout}
+            />
+          )}
+        </div>
+        <div style={{ display: selectedGame === 'duburpg' ? 'block' : 'none', minHeight: '100%', width: '100%' }}>
+          {gameSessions.duburpg && (
+            <DubuRpgGame
+              username={gameSessions.duburpg.username}
+              onLeaveRoom={() => handleLeaveGame('duburpg')}
             />
           )}
         </div>
@@ -515,10 +541,16 @@ function AppMain() {
             🏠 두부 미니홈피
           </button>
           <button
+            className={`navbar-tab ${selectedGame === 'duburpg' ? 'active' : ''}`}
+            onClick={() => handleGameSelection('duburpg')}
+          >
+            🐶 두부의 모험 (쯔꾸르)
+          </button>
+          <button
             className={`navbar-tab ${!selectedGame ? 'active' : ''}`}
             onClick={() => setSelectedGame(null)}
           >
-            🎮 두부 오락실 (10종)
+            🎮 두부 오락실
           </button>
           {selectedGame && selectedGame !== 'pokefarm' && (
             <div className="navbar-active-game-pill" style={{ borderColor: currentMeta?.themeColor }}>

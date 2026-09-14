@@ -1,0 +1,1174 @@
+/* ============================================================
+ * 🐶 DUBU'S COZY TSUKURU RPG - MODERN RETRO PIXEL STYLESHEET
+ * ============================================================ */
+
+.dubu-rpg-container {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fef9c3 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  user-select: none;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  padding-bottom: 30px;
+}
+
+/* 🌟 TITLE SCREEN */
+.dubu-title-screen {
+  width: 100%;
+  max-width: 960px;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(217, 119, 6, 0.15), 0 5px 15px rgba(0, 0, 0, 0.08);
+  border: 4px solid #f59e0b;
+}
+
+.dubu-title-hero {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #fffbeb;
+  display: flex;
+  justify-content: center;
+}
+
+.dubu-title-img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+}
+
+.dubu-title-overlay {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  gap: 8px;
+}
+
+.dubu-sound-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #f59e0b;
+  border-radius: 30px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #92400e;
+  cursor: pointer;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.dubu-sound-btn:hover {
+  background: #fef3c7;
+  transform: translateY(-2px);
+}
+
+.dubu-title-controls {
+  width: 100%;
+  padding: 24px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.dubu-title-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+}
+
+.dubu-rpg-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dubu-rpg-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.dubu-rpg-btn.primary {
+  background: #f59e0b;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.dubu-rpg-btn.primary:hover {
+  background: #d97706;
+}
+
+.dubu-rpg-btn.secondary {
+  background: #3b82f6;
+  color: #ffffff;
+}
+.dubu-rpg-btn.secondary:hover {
+  background: #2563eb;
+}
+
+.dubu-rpg-btn.outline {
+  background: #fffbeb;
+  color: #92400e;
+  border: 2px solid #fcd34d;
+}
+.dubu-rpg-btn.outline:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.dubu-title-footer-tips {
+  font-size: 0.85rem;
+  color: #78350f;
+  text-align: center;
+  background: #fffbeb;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px dashed #fcd34d;
+}
+
+/* 🎮 GAMEPLAY MAIN WRAPPER */
+.dubu-gameplay-wrapper {
+  width: 100%;
+  max-width: 960px;
+  margin: 15px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* TOP STATUS HUD */
+.dubu-rpg-top-hud {
+  width: 100%;
+  background: #ffffff;
+  border: 3px solid #f59e0b;
+  border-radius: 14px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.1);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hud-left-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid #f59e0b;
+  object-fit: cover;
+  background: #fef3c7;
+}
+
+.hud-name-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-dog-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-map-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.hud-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hud-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.hud-bar-container {
+  width: 80px;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+}
+
+.hud-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.hud-bar-fill.hp {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.hud-bar-fill.happy {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.hud-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-btn {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #92400e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-btn:hover {
+  background: #fef3c7;
+  transform: translateY(-1px);
+}
+
+.hud-btn.save-highlight {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #059669;
+}
+.hud-btn.save-highlight:hover {
+  background: #059669;
+}
+
+/* 🕹️ RETRO SCREEN CANVAS BOX */
+.dubu-canvas-frame {
+  width: 100%;
+  background: #1e293b;
+  border: 6px solid #b45309;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dubu-rpg-canvas {
+  width: 100%;
+  max-width: 860px;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  display: block;
+  image-rendering: pixelated;
+  background-color: #70c5ce;
+}
+
+/* 🐾 ACTION QUICK BAR (UNDER CANVAS) */
+.dubu-action-quickbar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #ffffff;
+  border: 2px solid #fcd34d;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-quick-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.action-quick-btn kbd {
+  background: #e2e8f0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.action-quick-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+  transform: translateY(-2px);
+}
+
+.action-quick-btn:active {
+  transform: translateY(0);
+}
+
+.action-quick-btn.bark-btn:hover {
+  background: #fef08a;
+}
+.action-quick-btn.sniff-btn:hover {
+  background: #bbf7d0;
+}
+.action-quick-btn.wag-btn:hover {
+  background: #fed7aa;
+}
+.action-quick-btn.belly-btn:hover {
+  background: #fbcfe8;
+}
+
+/* 💬 TSUKURU RETRO DIALOGUE BOX (OVERLAY) */
+.tsukuru-dialog-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(20, 24, 38, 0.94);
+  border: 3px solid #f59e0b;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  z-index: 50;
+  animation: dialogPop 0.2s ease-out;
+}
+
+@keyframes dialogPop {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.tsukuru-dialog-portrait-box {
+  width: 74px;
+  height: 74px;
+  border-radius: 10px;
+  border: 2px solid #f59e0b;
+  overflow: hidden;
+  background: #0f172a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.tsukuru-dialog-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tsukuru-dialog-emoji-avatar {
+  font-size: 2.4rem;
+}
+
+.tsukuru-dialog-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tsukuru-dialog-speaker {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f59e0b;
+  letter-spacing: 0.5px;
+}
+
+.tsukuru-dialog-text {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: #f8fafc;
+  font-weight: 600;
+  margin: 0;
+  min-height: 2.9em;
+}
+
+.tsukuru-dialog-choices-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.tsukuru-choice-btn {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: #fef08a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tsukuru-choice-btn:hover {
+  background: #f59e0b;
+  color: #1e293b;
+  transform: translateX(4px);
+}
+
+.tsukuru-dialog-arrow {
+  color: #f59e0b;
+  font-size: 1.2rem;
+  animation: arrowBounce 0.8s infinite;
+  align-self: flex-end;
+  cursor: pointer;
+}
+
+@keyframes arrowBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 📱 ON-SCREEN VIRTUAL D-PAD & BUTTONS FOR MOBILE / TOUCH */
+.dubu-touch-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+}
+
+.touch-dpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+}
+
+.touch-dpad-btn {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #334155;
+  transition: background 0.1s;
+}
+
+.touch-dpad-btn:active {
+  background: #cbd5e1;
+}
+
+.touch-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.touch-action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.touch-circle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #f59e0b;
+  background: #fffbeb;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  touch-action: manipulation;
+}
+
+.touch-circle-btn:active {
+  background: #fde68a;
+  transform: scale(0.92);
+}
+
+/* 💾 FULL SAVE / LOAD MODAL (RETRO TSUKURU STYLE) */
+.dubu-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.dubu-save-modal {
+  width: 100%;
+  max-width: 620px;
+  background: #ffffff;
+  border: 4px solid #f59e0b;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.save-modal-header {
+  background: #f59e0b;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.save-modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-modal-close-btn {
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.save-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.save-modal-tabs {
+  display: flex;
+  border-bottom: 2px solid #e2e8f0;
+  background: #fffbeb;
+}
+
+.save-tab-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #92400e;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.save-tab-btn.active {
+  color: #b45309;
+  border-bottom-color: #f59e0b;
+  background: #ffffff;
+}
+
+.save-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* SAVE SLOTS CARDS */
+.save-slot-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.save-slot-card:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  transform: translateY(-2px);
+}
+
+.save-slot-card.is-empty {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.slot-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slot-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slot-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.slot-badge.auto {
+  background: #3b82f6;
+}
+
+.slot-name {
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.slot-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.slot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.slot-action-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.slot-action-btn.save {
+  background: #10b981;
+  color: #ffffff;
+}
+.slot-action-btn.save:hover {
+  background: #059669;
+}
+
+.slot-action-btn.load {
+  background: #3b82f6;
+  color: #ffffff;
+}
+.slot-action-btn.load:hover {
+  background: #2563eb;
+}
+
+.slot-action-btn.delete {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.slot-action-btn.delete:hover {
+  background: #fecaca;
+}
+
+/* BACKUP EXPORT / IMPORT SECTION */
+.save-backup-box {
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.save-backup-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.save-backup-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 🎒 INVENTORY & QUEST MODAL */
+.dubu-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.item-card {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.item-icon {
+  font-size: 1.8rem;
+}
+
+.item-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.item-count {
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.item-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.dubu-quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quest-card {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quest-card.completed {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.quest-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quest-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.quest-giver {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.quest-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
+
+.quest-hint {
+  font-size: 0.78rem;
+  color: #0284c7;
+  margin-top: 2px;
+}
+
+/* 🍞 TOAST NOTIFICATION */
+.dubu-toast-notice {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  border: 2px solid #f59e0b;
+  z-index: 2000;
+  animation: toastFade 0.3s ease-out;
+}
+
+@keyframes toastFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 🎉 CELEBRATION ENDING OVERLAY */
+.dubu-ending-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dubu-ending-card {
+  width: 100%;
+  max-width: 580px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 4px solid #f59e0b;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(245, 158, 11, 0.4);
+  animation: modalScale 0.3s ease-out;
+}
+
+.ending-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.ending-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #78350f;
+  margin: 0 0 10px 0;
+}
+
+.ending-cushion-img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin: 10px 0;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+}
+
+.ending-desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #475569;
+  margin-bottom: 20px;
+}
+
+/* 🏆 ENDING COLLECTION MODAL */
+.endings-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fffbeb;
+  border-radius: 12px;
+  border: 1.5px solid #fde68a;
+  font-weight: 700;
+  color: #92400e;
+  font-size: 0.95rem;
+}
+
+.endings-modal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ending-record-card {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f8fafc;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.ending-record-card.unlocked {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.ending-record-card.unlocked.is-true {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.ending-record-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.ending-record-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ending-record-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ending-record-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #64748b;
+}
+
+.ending-record-badge.true {
+  background: #10b981;
+}
+
+.ending-record-badge.fake {
+  background: #f59e0b;
+}
+
+.ending-record-desc {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ending-record-hint {
+  font-size: 0.78rem;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+/* RESPONSIVE QUERIES FOR MOBILE */
+@media (max-width: 640px) {
+  .hud-stats-group {
+    display: none;
+  }
+  .dubu-rpg-top-hud {
+    padding: 8px 12px;
+  }
+  .hud-left-profile {
+    gap: 8px;
+  }
+  .hud-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  .hud-actions-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .hud-btn {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+  }
+  .dubu-title-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  .dubu-rpg-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .action-quick-btn kbd {
+    display: none;
+  }
+  .dubu-action-quickbar {
+    display: none; /* Hide keyboard action quickbar on mobile since touch D-pad & buttons are available */
+  }
+  .dubu-touch-controls {
+    padding: 12px;
+    justify-content: space-around;
+  }
+  .touch-dpad-grid {
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(3, 46px);
+  }
+  .touch-circle-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.35rem;
+  }
+  .tsukuru-dialog-overlay {
+    bottom: 6px;
+    left: 6px;
+    right: 6px;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .tsukuru-dialog-portrait-box {
+    width: 54px;
+    height: 54px;
+  }
+  .tsukuru-dialog-speaker {
+    font-size: 0.85rem;
+  }
+  .tsukuru-dialog-text {
+    font-size: 0.88rem;
+    min-height: 2.4em;
+  }
+  .tsukuru-choice-btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+  .dubu-save-modal {
+    max-height: 90vh;
+    border-radius: 14px;
+  }
+  .save-modal-body {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    padding: 14px;
+  }
+  .ending-record-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ending-record-img {
+    width: 100%;
+    height: 120px;
+  }
+}
