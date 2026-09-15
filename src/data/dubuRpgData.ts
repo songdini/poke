@@ -65,12 +65,12 @@ export const ENDINGS_DATA: Record<EndingType, EndingMeta> = {
   true_rainbow: {
     id: 'true_rainbow',
     type: 'true',
-    title: '무지개 별빛 대축제: 세상에서 가장 빛나는 꼬리',
+    title: '별빛 은하수 대축제: 영원히 함께하는 행복한 꼬리',
     badge: '🌟 TRUE ENDING',
-    icon: '🌈',
+    icon: '✨',
     image: '/images/dubu_rpg_title.jpg',
-    desc: '4개의 무지개 별빛 씨앗이 하나로 모여 영롱한 무지개 다리가 놓였습니다. 온 마을 친구들과 다정한 집사가 한자리에 모여 전설의 황금 고구마를 나누어 먹는 감동의 대축제! 두부의 꼬리 끝에서 환한 별빛이 쏟아져 내리며 모두에게 영원한 따스함과 행복을 선물했습니다! ❤️',
-    conditionHint: '모든 친구들(순자 할머니, 나비, 바니)의 퀘스트를 완료하고 4개의 별빛 조각을 모아 무지개 언덕의 황금 상자 열기'
+    desc: '4개의 영롱한 별빛 씨앗이 하나로 모여 밤하늘에 눈부신 별빛 은하수가 펼쳐졌습니다! 두부와 다정한 집사, 그리고 온 마을 친구들이 모두 건강하게 오래오래 함께하며 전설의 달콤 황금 고구마를 나누어 먹는 감동의 힐링 대축제! 두부의 꼬리 끝에서 퐁퐁 솟아난 따뜻한 행복의 별빛이 온 세상을 영원히 환하게 밝혔습니다! 🐶❤️✨',
+    conditionHint: '모든 친구들(순자 할머니, 나비, 바니)의 퀘스트를 완료하고 4개의 별빛 조각을 모아 별빛 언덕의 황금 상자 열기'
   },
   fake_sleep: {
     id: 'fake_sleep',
@@ -138,19 +138,19 @@ export const INITIAL_QUESTS: Record<string, Quest> = {
     completed: false,
     progress: 0,
     target: 1,
-    targetHint: '마을 광장 중앙 벤치 근처의 순자 할머니께 다가가 대화하세요.'
+    targetHint: '마을 광장 서쪽 쉼터 평상의 순자 할머니께 다가가 대화하세요.'
   },
   quest_cat_catnip: {
     id: 'quest_cat_catnip',
     title: '고양이 나비의 캣닢 심부름',
-    desc: '솔바람 숲속 개울가에 자라난 은빛 캣닢 풀잎을 킁킁 찾아 나비에게 가져다주자.',
+    desc: '솔바람 숲속 서쪽 개울가에 자라난 은빛 캣닢 풀잎을 킁킁 찾아 나비에게 가져다주자.',
     giver: '길고양이 나비',
     giverIcon: '🐱',
     reward: '파랑 별빛 조각, 생선 트릿',
     completed: false,
     progress: 0,
     target: 1,
-    targetHint: '솔바람 숲 서쪽 개울가 풀숲에서 [킁킁 냄새맡기]를 해보세요.'
+    targetHint: '솔바람 숲 서쪽 개울가 다리 근처, 은빛 향기 물결이 퐁퐁 피어오르는 풀숲을 조사하세요!'
   },
   quest_bunny_letter: {
     id: 'quest_bunny_letter',
@@ -166,27 +166,27 @@ export const INITIAL_QUESTS: Record<string, Quest> = {
   },
   quest_rainbow_stars: {
     id: 'quest_rainbow_stars',
-    title: '무지개 언덕의 4대 별빛 씨앗',
-    desc: '마당, 마을, 숲, 호수 곳곳에서 4개의 별빛 조각을 모아 무지개 언덕 소원의 나무에 전하자!',
+    title: '별빛 언덕의 4대 소원 씨앗',
+    desc: '마당, 마을, 숲, 호수 곳곳에서 4개의 별빛 조각을 모아 별빛 언덕 소원의 고목에게 전하자!',
     giver: '댕댕이 초코',
     giverIcon: '🐕',
-    reward: '무지개 제단 열림, 행복도 +50',
+    reward: '별빛 제단 열림, 행복도 +50',
     completed: false,
     progress: 0,
     target: 4,
-    targetHint: '정원 흙더미, 나비의 보답, 바니의 보답, 호숫가에서 4개를 모으세요.'
+    targetHint: '정원 흙더미, 나비의 보답, 바니의 보답, 은하수 호숫가에서 4개를 모으세요.'
   },
   quest_golden_sweet_potato: {
     id: 'quest_golden_sweet_potato',
     title: '전설의 황금 고구마 & 대축제',
-    desc: '무지개 언덕 소원의 나무 상자를 열어 황금 고구마를 찾고 온 마을 친구들과 힐링 파티를 즐기자!',
-    giver: '소원의 나무',
-    giverIcon: '🌈',
+    desc: '별빛 언덕 소원의 고목 상자를 열어 황금 고구마를 찾고 온 마을 친구들과 힐링 파티를 즐기자!',
+    giver: '소원의 고목',
+    giverIcon: '✨',
     reward: '✨ 해피 힐링 진엔딩 달성 ✨',
     completed: false,
     progress: 0,
     target: 1,
-    targetHint: '4개 별빛 조각을 모두 모은 뒤 무지개 언덕 보물상자를 조사하세요!'
+    targetHint: '4개 별빛 조각을 모두 모은 뒤 별빛 언덕 보물상자를 조사하세요!'
   }
 };
 
@@ -381,7 +381,7 @@ const GARDEN_MAP: MapData = {
       itemRewardId: 'rainbow_star_1',
       dialogs: [
         { speaker: '두부', text: '킁킁! 흙에서 향긋하고 신비로운 빛이 난다! 앞발로 열심히 팍팍 파헤쳤다!', sound: 'sniff' },
-        { speaker: '시스템', text: '🎉 [초록 별빛 조각]을 발견했습니다! 무지개 씨앗 중 하나다!', sound: 'item' }
+        { speaker: '시스템', text: '🎉 [초록 별빛 조각]을 발견했습니다! 소원의 별빛 씨앗 중 하나다!', sound: 'item' }
       ]
     },
     {
@@ -469,7 +469,7 @@ const VILLAGE_MAP: MapData = {
       targetX: 2,
       targetY: 7,
       targetDir: 'right',
-      label: '무지개 언덕으로'
+      label: '별빛 언덕으로'
     },
     {
       x: 21,
@@ -478,7 +478,7 @@ const VILLAGE_MAP: MapData = {
       targetX: 2,
       targetY: 7,
       targetDir: 'right',
-      label: '무지개 언덕으로'
+      label: '별빛 언덕으로'
     }
   ],
   npcs: [
@@ -486,7 +486,7 @@ const VILLAGE_MAP: MapData = {
       id: 'npc_grandma',
       name: '순자 할머니',
       role: '다정한 이웃 할머니',
-      x: 9,
+      x: 7,
       y: 3,
       sprite: '👵',
       spriteImg: '/images/npc_grandma.png',
@@ -538,7 +538,7 @@ const VILLAGE_MAP: MapData = {
       spriteImg: '/images/npc_choco.png',
       dir: 'down',
       dialogs: [
-        { speaker: '초코', text: '두부야 왈왈! 오늘 동쪽 무지개 언덕에 무지개가 떴어! 소원의 나무에 4개 별빛을 바치면 전설의 보물이 나온대!', sound: 'bark' },
+        { speaker: '초코', text: '두부야 왈왈! 오늘 동쪽 별빛 언덕에 전설의 은하수 별빛 축제가 열린대! 소원의 고목에 4개 별빛을 바치면 전설의 보물이 나온대!', sound: 'bark' },
         { speaker: '두부', text: '멍! (귀를 쫑긋 세우며 눈을 반짝였다!)', sound: 'wag' }
       ],
       questIdTrigger: 'quest_rainbow_stars'
@@ -569,7 +569,7 @@ const VILLAGE_MAP: MapData = {
     },
     {
       id: 'giant_sweet_potato_basket',
-      x: 10,
+      x: 14,
       y: 3,
       type: 'giant_basket',
       icon: '🍠',
@@ -645,7 +645,8 @@ const FOREST_MAP: MapData = {
       sprite: '🐿️',
       dir: 'down',
       dialogs: [
-        { speaker: '다람쥐 도토리', text: '안녕 흰둥아! 저기 숲속 나무 밑에 반짝이는 가방이 떨어져 있던데 토끼 아저씨 거 아니야?', sound: 'bell' },
+        { speaker: '다람쥐 도토리', text: '안녕 두부야! 저기 서쪽 개울가 다리 옆 풀숲에서 싱그러운 은빛 향기가 피어오르고 있어! 나비가 찾는 [은빛 캣닢]인 것 같아!', sound: 'bell' },
+        { speaker: '다람쥐 도토리', text: '그리고 숲속 나무 밑에 떨어진 반짝이는 가방은 토끼 아저씨 거 맞지? 둘 다 냄새로 킁킁 찾아봐!', sound: 'bell' },
         { speaker: '두부', text: '멍멍! (꼬리를 빠르게 흔들며 고마움을 전했다!)', sound: 'wag' }
       ]
     }
@@ -657,10 +658,10 @@ const FOREST_MAP: MapData = {
       y: 4,
       type: 'bush',
       icon: '🌿',
-      name: '개울가 은빛 캣닢 풀잎',
+      name: '개울가 은빛 캣닢 풀숲 (향기 솔솔)',
       itemRewardId: 'catnip_leaf',
       dialogs: [
-        { speaker: '두부', text: '킁킁! 싱그럽고 은은한 박하향 캣닢 잎을 찾았다! 나비가 무척 좋아하겠다!', sound: 'sniff' },
+        { speaker: '두부', text: '킁킁! 싱그럽고 은은한 박하향 은빛 캣닢을 찾았다! 나비가 무척 좋아하겠다!', sound: 'sniff' },
         { speaker: '시스템', text: '🎉 [싱싱한 캣닢 잎]을 획득했습니다!', sound: 'item' }
       ]
     },
@@ -693,10 +694,10 @@ const FOREST_MAP: MapData = {
   ]
 };
 
-// 🗺️ MAP 5: 무지개 언덕 & 별빛 호수 (Rainbow Hill & Starlight Lake)
+// 🗺️ MAP 5: 별빛 언덕 & 은하수 호수 (Starlight Hill & Milky Way Lake)
 const RAINBOW_MAP: MapData = {
   id: 'rainbow_hill',
-  name: '무지개 언덕 & 별빛 호수',
+  name: '별빛 언덕 & 은하수 호수',
   width: 20,
   height: 15,
   theme: 'rainbow',
@@ -741,7 +742,7 @@ const RAINBOW_MAP: MapData = {
   npcs: [
     {
       id: 'spirit_tree',
-      name: '무지개 소원의 고목',
+      name: '별빛 소원의 고목',
       role: '언덕의 수호신목',
       x: 10,
       y: 3,
@@ -749,7 +750,7 @@ const RAINBOW_MAP: MapData = {
       dir: 'down',
       dialogs: [
         { speaker: '소원의 고목', text: '두부야, 참으로 맑고 착한 마음을 지닌 강아지로구나.', sound: 'bell' },
-        { speaker: '소원의 고목', text: '친구들을 돕고 4개의 별빛 조각을 모두 모아오면, 무지개의 전설의 보물상자가 열릴 것이니라.', sound: 'bell' }
+        { speaker: '소원의 고목', text: '친구들을 돕고 4개의 별빛 조각을 모두 모아오면, 별빛 전설의 보물상자가 열릴 것이니라.', sound: 'bell' }
       ]
     }
   ],
@@ -760,7 +761,7 @@ const RAINBOW_MAP: MapData = {
       y: 10,
       type: 'water',
       icon: '🌟',
-      name: '별빛 호숫가 수초',
+      name: '은하수 호숫가 수초',
       reqSniff: true,
       itemRewardId: 'rainbow_star_4',
       dialogs: [
@@ -774,9 +775,9 @@ const RAINBOW_MAP: MapData = {
       y: 5,
       type: 'chest',
       icon: '🎁',
-      name: '무지개 전설의 황금 상자',
+      name: '별빛 전설의 황금 상자',
       dialogs: [
-        { speaker: '시스템', text: '영롱한 무지개 빛깔의 보물상자입니다. 4개의 별빛 조각이 모두 모이면 열립니다!', sound: 'bell' }
+        { speaker: '시스템', text: '영롱한 별빛으로 감싸인 전설의 보물상자입니다. 4개의 별빛 조각이 모두 모이면 열립니다!', sound: 'bell' }
       ]
     }
   ]

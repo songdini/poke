@@ -12,6 +12,7 @@ import type {
 } from '../types/dubuRpg';
 import { GAME_MAPS, INITIAL_ITEMS, INITIAL_QUESTS, ENDINGS_DATA, HEROES_CONFIG } from '../data/dubuRpgData';
 import { dubuAudio } from '../utils/dubuRpgAudio';
+import { renderCodeMap } from '../utils/dubuMapRenderer';
 
 interface DubuRpgGameProps {
   username?: string;
@@ -44,6 +45,13 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
   // 🎮 Game State & Screen Scale
   const [gameState, setGameState] = useState<'title' | 'playing' | 'ending'>('title');
   const [zoomMode, setZoomMode] = useState<'normal' | 'large'>('large');
+  const [mapRenderMode, setMapRenderMode] = useState<'code' | 'image'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dubu_rpg_map_mode');
+      if (saved === 'image' || saved === 'code') return saved;
+    }
+    return 'code';
+  });
   const [currentMapId, setCurrentMapId] = useState<string>('home');
   const [playerPos, setPlayerPos] = useState<{ x: number; y: number; dir: Direction }>({
     x: 7,
@@ -835,11 +843,24 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
     if (dir === 'left') targetX -= 1;
     if (dir === 'right') targetX += 1;
 
-    // 1. Check NPC
-    const npc = currentMap.npcs.find(
-      n => (n.x === targetX && n.y === targetY) || (Math.abs(n.x - x) <= 1 && Math.abs(n.y - y) <= 1)
-    );
-    if (npc) {
+    // 🎯 1. Target Priority: Exact tile in front of player (Facing Target)
+    const exactObj = currentMap.interactables.find(i => i.x === targetX && i.y === targetY);
+    const exactNpc = currentMap.npcs.find(n => n.x === targetX && n.y === targetY);
+    const standingObj = currentMap.interactables.find(i => i.x === x && i.y === y);
+
+    // Fallback: only if nothing directly in front, check adjacent targets (dist <= 1)
+    const fallbackNpc = !exactObj && !exactNpc ? currentMap.npcs.find(n => Math.abs(n.x - x) <= 1 && Math.abs(n.y - y) <= 1) : null;
+    const fallbackObj = !exactObj && !exactNpc && !fallbackNpc ? currentMap.interactables.find(i => Math.abs(i.x - x) <= 1 && Math.abs(i.y - y) <= 1) : null;
+
+    // 1-A. If exact object in front, handle object first! (Fixes sweet potato vs grandma issue!)
+    const targetObj = exactObj || standingObj || fallbackObj;
+    const targetNpc = exactNpc || fallbackNpc;
+
+    // Priority: If player is directly facing an interactable object, object takes priority!
+    const activeTarget = exactObj ? 'obj' : exactNpc ? 'npc' : standingObj ? 'obj' : targetNpc ? 'npc' : targetObj ? 'obj' : null;
+
+    if (activeTarget === 'npc' && targetNpc) {
+      const npc = targetNpc;
       if (npc.id === 'npc_grandma') {
         triggerDialog(npc.dialogs, () => {
           if (!quests.quest_grandma.completed) {
@@ -903,11 +924,8 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       return;
     }
 
-    // 2. Check Interactable Objects
-    const obj = currentMap.interactables.find(
-      i => (i.x === targetX && i.y === targetY) || (i.x === x && i.y === y)
-    );
-    if (obj) {
+    if (activeTarget === 'obj' && targetObj) {
+      const obj = targetObj;
       if (obj.type === 'save_crystal') {
         triggerDialog([
           ...obj.dialogs,
@@ -935,7 +953,7 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
 
         if (starCount >= 4 || quests.quest_rainbow_stars.completed) {
           triggerDialog([
-            { speaker: '무지개 상자', text: '✨ 4개의 별빛 씨앗이 공명하며 찬란한 황금빛 상자가 활짝 열렸다! ✨', sound: 'fanfare' },
+            { speaker: '별빛 상자', text: '✨ 4개의 별빛 씨앗이 공명하며 찬란한 황금빛 상자가 활짝 열렸다! ✨', sound: 'fanfare' },
             { speaker: '시스템', text: '전설의 [황금 고구마]를 발견했습니다! 온 세상이 따뜻한 행복으로 물듭니다!', sound: 'item' }
           ], () => {
             addItem({
@@ -1613,41 +1631,15 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
       ctx.scale(scale, scale);
       ctx.translate(-camX, -camY);
 
-      // 2. Render Full Map Background (Gorgeous AI Generated Pixel Art Map)
-      const mapBgImg = mapImagesRef.current[currentMapId];
-      if (mapBgImg && mapBgImg.complete && mapBgImg.naturalWidth > 0) {
-        ctx.drawImage(mapBgImg, 0, 0, mapPixelWidth, mapPixelHeight);
+      // 2. Render Full Map (100% Vector Code Map or Classic Image)
+      if (mapRenderMode === 'code') {
+        renderCodeMap(ctx, currentMapId, currentMap, frame);
       } else {
-        // Fallback tile renderer if image still loading
-        for (let y = 0; y < currentMap.height; y++) {
-          for (let x = 0; x < currentMap.width; x++) {
-            const tile = currentMap.tiles[y][x];
-            const px = x * TILE_SIZE;
-            const py = y * TILE_SIZE;
-
-            if (currentMap.theme === 'indoor') {
-              ctx.fillStyle = (x + y) % 2 === 0 ? '#fef3c7' : '#fde68a';
-              ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              if (tile === 1) {
-                ctx.fillStyle = '#b45309';
-                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              }
-            } else {
-              if (tile === 0 || tile === 3) {
-                ctx.fillStyle = (x + y) % 2 === 0 ? '#86efac' : '#4ade80';
-                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              } else if (tile === 1) {
-                ctx.fillStyle = '#166534';
-                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              } else if (tile === 2) {
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              } else if (tile === 4) {
-                ctx.fillStyle = '#fed7aa';
-                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-              }
-            }
-          }
+        const mapBgImg = mapImagesRef.current[currentMapId];
+        if (mapBgImg && mapBgImg.complete && mapBgImg.naturalWidth > 0) {
+          ctx.drawImage(mapBgImg, 0, 0, mapPixelWidth, mapPixelHeight);
+        } else {
+          renderCodeMap(ctx, currentMapId, currentMap, frame);
         }
       }
 
@@ -2047,6 +2039,42 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
           const tailX = isLeft ? dubuX - 10 : dubuX + 54;
           ctx.fillText('💨🐾', tailX, dubuY + 14 + tailOffset);
         }
+      }
+
+      // 8. Facing Target Interaction Prompt Indicator
+      let fTargetX = playerPos.x;
+      let fTargetY = playerPos.y;
+      if (playerPos.dir === 'up') fTargetY -= 1;
+      if (playerPos.dir === 'down') fTargetY += 1;
+      if (playerPos.dir === 'left') fTargetX -= 1;
+      if (playerPos.dir === 'right') fTargetX += 1;
+
+      const fObj = currentMap.interactables.find(i => i.x === fTargetX && i.y === fTargetY);
+      const fNpc = currentMap.npcs.find(n => n.x === fTargetX && n.y === fTargetY);
+      const focusedTarget = fObj || fNpc;
+
+      if (focusedTarget && !dialogState.isOpen) {
+        const tpx = focusedTarget.x * TILE_SIZE + TILE_SIZE / 2;
+        const tpy = focusedTarget.y * TILE_SIZE - 16 + Math.sin(frame * 0.12) * 3;
+        const promptLabel = `🔍 Space: ${focusedTarget.name}`;
+        ctx.font = 'bold 12px Pretendard, sans-serif';
+        const pWidth = ctx.measureText(promptLabel).width + 18;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(tpx - pWidth / 2, tpy - 12, pWidth, 22, 6);
+        } else {
+          ctx.rect(tpx - pWidth / 2, tpy - 12, pWidth, 22);
+        }
+        ctx.fill();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.textAlign = 'center';
+        ctx.fillText(promptLabel, tpx, tpy + 4);
       }
 
       ctx.restore();
@@ -3123,6 +3151,34 @@ export const DubuRpgGame: React.FC<DubuRpgGameProps> = ({
                     }}
                   >
                     {zoomMode === 'large' ? '🔍 1.3x 확대 보기' : '🗺️ 1.0x 표준 뷰'}
+                  </button>
+                </div>
+
+                {/* Map Render Mode Toggle (Code Vector Map vs Classic AI Background) */}
+                <div className="settings-control-row">
+                  <div className="settings-control-info">
+                    <span className="settings-control-label">🎨 맵 그래픽 렌더러</span>
+                    <span className="settings-control-sub">
+                      {mapRenderMode === 'code'
+                        ? '정밀 코드 벡터 맵 (권장): 타일과 상호작용 오브젝트가 1:1로 완벽히 일치합니다.'
+                        : '클래식 AI 배경 이미지: 원본 일러스트 배경을 표시합니다.'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`settings-toggle-btn ${mapRenderMode === 'code' ? 'active' : ''}`}
+                    onClick={() => {
+                      setMapRenderMode(m => {
+                        const next = m === 'code' ? 'image' : 'code';
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('dubu_rpg_map_mode', next);
+                        }
+                        showToast(next === 'code' ? '🎨 정밀 코드 벡터 맵으로 전환되었습니다!' : '🖼️ 클래식 이미지 맵으로 전환되었습니다!');
+                        return next;
+                      });
+                    }}
+                  >
+                    {mapRenderMode === 'code' ? '🎨 정밀 코드 맵 (추천)' : '🖼️ 클래식 이미지 맵'}
                   </button>
                 </div>
               </div>
